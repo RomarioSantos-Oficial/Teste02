@@ -1,5 +1,5 @@
 {
-  "version": 10,
+  "version": 9,
   "widgets": {
     "driver_panel": {
       "always_on_top": true,
@@ -94,7 +94,7 @@
           "locked": false
         },
         "header": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         },
         "history": {
@@ -102,7 +102,7 @@
           "locked": false
         },
         "penalties": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         },
         "sectors": {
@@ -110,15 +110,15 @@
           "locked": false
         },
         "session_time": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         },
         "session_type": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         },
         "track_state": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         }
       },
@@ -136,7 +136,7 @@
       "monitor": 0,
       "opacity": 0.91,
       "penalty_increment": 0.25,
-      "penalty_limit_fallback": 0.0,
+      "penalty_limit_fallback": 5.0,
       "position": {
         "x": 0.49166666666666664,
         "y": 0.196
@@ -243,7 +243,7 @@
         "sector_worse": "#FFC42E",
         "sector_session_best": "#8B4DFF"
       },
-      "penalty_limit_fallback": 0.0,
+      "penalty_limit_fallback": 5.0,
       "sector_tolerance_seconds": 0.001,
       "delta_good_side": "right",
       "penalty_increment": 0.25,

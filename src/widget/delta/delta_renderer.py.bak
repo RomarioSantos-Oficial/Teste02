@@ -231,8 +231,8 @@ class DeltaRenderer:
                 else:
                     color = muted
             else:
-                label = f"PEN  {self._format_counter(current)}/?"
-                color = warning if current > 0 else muted
+                label = f"PEN  {data.penalties}"
+                color = warning if data.penalties > 0 else muted
 
             items.append((label, color))
 

@@ -88,7 +88,7 @@
     "sector_worse": "#FFC42E",
     "sector_session_best": "#8B4DFF"
   },
-  "penalty_limit_fallback": 0.0,
+  "penalty_limit_fallback": 5.0,
   "sector_tolerance_seconds": 0.001,
   "delta_good_side": "right",
   "penalty_increment": 0.25,

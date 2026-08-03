@@ -424,7 +424,7 @@ class DeltaEditor(QDialog):
             float(
                 self.config.get(
                     "penalty_limit_fallback",
-                    0.0,
+                    5.0,
                 )
             )
         )
@@ -457,7 +457,7 @@ class DeltaEditor(QDialog):
         )
 
         form.addRow(
-            "Reserva (0 = somente sessão):",
+            "Limite reserva (API antiga):",
             fallback,
         )
         form.addRow(

@@ -758,11 +758,18 @@ class DeltaWidget(QWidget):
         """
         Prefere os valores reais calculados pelo SessionData atualizado.
 
-        O denominador vem exclusivamente dos dados da sessão do LMU.
-        Quando a API não fornece o limite, nenhum valor inventado é usado.
+        Fallback: usa o limite configurado para manter o formato 0/5 em
+        versões antigas do adapter.
         """
-        # Não inventa um limite fixo. O valor deve vir da sessão.
-        fallback_limit = 0.0
+        fallback_limit = max(
+            0.0,
+            float(
+                self.config.get(
+                    "penalty_limit_fallback",
+                    5.0,
+                )
+            ),
+        )
 
         current = self._read_number(
             session,
