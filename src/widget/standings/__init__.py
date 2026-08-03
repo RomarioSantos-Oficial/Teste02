@@ -12,11 +12,19 @@
 
 from .standings_editor import StandingsEditor
 from .standings_logic import StandingsLogic
-from .standings_models import CategoryBlock, DriverMetadata, StandingRow, StandingsView
+from .standings_models import (
+    CategoryBlock,
+    DriverMetadata,
+    OnlineDriverIdentity,
+    OnlineSnapshot,
+    StandingRow,
+    StandingsView,
+)
 from .standings_online import LocalStandingsEnrichment
 from .standings_widget import StandingsWidget
 
 __all__ = [
-    "CategoryBlock", "DriverMetadata", "LocalStandingsEnrichment", "StandingRow",
-    "StandingsEditor", "StandingsLogic", "StandingsView", "StandingsWidget",
+    "CategoryBlock", "DriverMetadata", "LocalStandingsEnrichment",
+    "OnlineDriverIdentity", "OnlineSnapshot", "StandingRow", "StandingsEditor",
+    "StandingsLogic", "StandingsView", "StandingsWidget",
 ]

@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 
+import re
 import time
 from pathlib import Path
 from typing import Any
@@ -20,9 +21,23 @@ from PySide6.QtCore import QLineF, QPoint, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
-from .standings_assets import BrandLogoStore, badge_color, badge_text, brand_short, flag_emoji
+from .standings_assets import (
+    BrandLogoStore,
+    CountryFlagStore,
+    badge_color,
+    badge_text,
+    brand_short,
+    flag_emoji,
+)
+from .lmu_online_client import LMUOnlineIdentityClient
 from .standings_logic import StandingsLogic
-from .standings_models import CategoryBlock, DriverMetadata, StandingRow, StandingsView
+from .standings_models import (
+    CategoryBlock,
+    DriverMetadata,
+    StandingRow,
+    StandingsView,
+    normalize_identity,
+)
 from .standings_online import LocalStandingsEnrichment
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -39,6 +54,9 @@ class StandingsWidget(QWidget):
         ("change", 60.0),
         ("flag", 50.0),
         ("badge", 60.0),
+        ("dr", 88.0),
+        ("sr", 88.0),
+        ("gain_dr", 76.0),
         ("driver", 360.0),
         ("brand", 72.0),
         ("number", 58.0),
@@ -58,7 +76,9 @@ class StandingsWidget(QWidget):
         self.config = config
         self.logic = StandingsLogic(config)
         self.enrichment = LocalStandingsEnrichment(PROJECT_ROOT, config)
+        self.online_client = LMUOnlineIdentityClient(PROJECT_ROOT, config)
         self.logos = BrandLogoStore(PROJECT_ROOT, config)
+        self.flags = CountryFlagStore(PROJECT_ROOT, config, self)
         self.view = StandingsView()
         self.session: Any | None = None
         self.edit_mode = False
@@ -87,7 +107,9 @@ class StandingsWidget(QWidget):
     def apply_config(self) -> None:
         self.logic.update_config(self.config)
         self.enrichment.update_config(self.config)
+        self.online_client.update_config(self.config)
         self.logos.update_config(self.config)
+        self.flags.update_config(self.config)
         self.setWindowOpacity(max(0.10, min(1.0, float(self.config.get("opacity", 0.98)))))
         self._update_scale()
         self._rebuild(force=True)
@@ -112,6 +134,7 @@ class StandingsWidget(QWidget):
         self.preview_mode = False
         self.session = session
         self.enrichment.use_live_mode()
+        self.online_client.trigger_refresh(session)
         self._rebuild()
 
     def set_preview_data(self, session: Any, metadata: list[DriverMetadata]) -> None:
@@ -129,12 +152,14 @@ class StandingsWidget(QWidget):
     def reset_session_state(self) -> None:
         self.session = None
         self.logic.reset()
+        self.online_client.reset()
         self.view = StandingsView()
         self.update()
 
     def closeEvent(self, event) -> None:
         self.timer.stop()
         self.enrichment.stop()
+        self.flags.stop()
         event.accept()
 
     def resizeEvent(self, event: QResizeEvent) -> None:
@@ -162,6 +187,10 @@ class StandingsWidget(QWidget):
             for driver in drivers
         ]
         metadata, source, _ = self.enrichment.snapshot(driver_names)
+        snapshot = self.online_client.snapshot()
+        metadata = self._merge_online_metadata(drivers, metadata)
+        if snapshot.cloud_available:
+            source = "RACECONTROL"
         self.view = self.logic.build(
             self.session,
             metadata,
@@ -171,6 +200,47 @@ class StandingsWidget(QWidget):
         self._update_scale()
         self._fit_height_to_content()
         self.update()
+
+    def _merge_online_metadata(
+        self,
+        drivers: list[Any],
+        metadata: dict[str, DriverMetadata],
+    ) -> dict[str, DriverMetadata]:
+        for driver in drivers:
+            name = str(getattr(driver, "driver_name", "") or "").strip()
+            if not name:
+                continue
+            identity = self.online_client.lookup(
+                name,
+                steam_id=str(getattr(driver, "steam_id", "") or ""),
+            )
+            if identity is None:
+                continue
+            key = normalize_identity(name)
+            current = metadata.get(key, DriverMetadata(driver_name=name))
+            current.driver_name = name
+            current.username = identity.username or current.username
+            current.steam_id = identity.steam_id or current.steam_id
+            current.team_name = identity.team_name or current.team_name
+            current.car_number = identity.car_number or current.car_number
+            nationality = str(identity.nationality or "").strip()
+            if nationality:
+                current.nationality = nationality
+                if len(nationality) in (2, 3):
+                    current.country_code = nationality.upper()
+            current.badge = identity.badge or current.badge
+            current.driver_rank = identity.driver_rank or current.driver_rank
+            if identity.driver_rank_progress is not None:
+                progress = float(identity.driver_rank_progress)
+                current.driver_rank_progress = progress * 100.0 if 0.0 <= progress <= 1.0 else progress
+            current.safety_rank = identity.safety_rank or current.safety_rank
+            if identity.estimated_driver_rank_gain is not None:
+                current.estimated_driver_rank_gain = float(
+                    identity.estimated_driver_rank_gain
+                )
+            current.source = identity.source or current.source
+            metadata[key] = current
+        return metadata
 
     def _update_scale(self) -> None:
         internal = max(0.40, float(self.config.get("internal_scale", 1.0)))
@@ -370,6 +440,7 @@ class StandingsWidget(QWidget):
         painter.drawRect(rect)
         labels = {
             "position": "P", "change": "+/-", "flag": "PAÍS", "badge": "BADGE",
+            "dr": "DR", "sr": "SR", "gain_dr": "ΔDR",
             "driver": "PILOTO", "brand": "MAR", "number": "#", "laps": "VLT",
             "best": "BEST", "last": "LAST", "gap": "GAP", "penalty": "PEN",
             "tyre": "TYR",
@@ -414,9 +485,30 @@ class StandingsWidget(QWidget):
                 text, color = "0  -", colors.get("muted", "#A7AFBA")
             self._text(painter, rect, text, 0.62, True, QColor(color))
         elif key == "flag":
-            painter.setFont(self._font(0.70, False, emoji=True))
-            painter.setPen(QColor("#FFFFFF"))
-            painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, flag_emoji(row.nationality, row.country_code))
+            max_width = max(1, int(rect.width() * 0.72))
+            max_height = max(1, int(rect.height() * 0.58))
+            pixmap = self.flags.pixmap(
+                row.nationality,
+                row.country_code,
+                max_width,
+                max_height,
+            )
+            if pixmap is not None:
+                target = QRectF(
+                    rect.center().x() - pixmap.width() / 2.0,
+                    rect.center().y() - pixmap.height() / 2.0,
+                    pixmap.width(),
+                    pixmap.height(),
+                )
+                painter.drawPixmap(target, pixmap, QRectF(pixmap.rect()))
+            else:
+                painter.setFont(self._font(0.70, False, emoji=True))
+                painter.setPen(QColor("#FFFFFF"))
+                painter.drawText(
+                    rect,
+                    Qt.AlignmentFlag.AlignCenter,
+                    flag_emoji(row.nationality, row.country_code),
+                )
         elif key == "badge":
             label = badge_text(row.badge)
             if label:
@@ -426,6 +518,32 @@ class StandingsWidget(QWidget):
                 painter.setBrush(color)
                 painter.drawRect(target)
                 self._text(painter, target, label, 0.42, True)
+        elif key == "dr":
+            self._draw_rank(
+                painter,
+                rect,
+                row.driver_rank,
+                row.driver_rank_progress,
+            )
+        elif key == "sr":
+            self._draw_rank(painter, rect, row.safety_rank)
+        elif key == "gain_dr":
+            if row.estimated_driver_rank_gain is not None:
+                gain = float(row.estimated_driver_rank_gain)
+                color = QColor(
+                    colors.get(
+                        "position_gain" if gain >= 0 else "position_loss",
+                        "#008E16" if gain >= 0 else "#E52B35",
+                    )
+                )
+                self._text(
+                    painter,
+                    rect,
+                    f"{gain:+.1f}",
+                    0.58,
+                    True,
+                    color,
+                )
         elif key == "driver":
             target = rect.adjusted(8 * self._scale, 0, -6 * self._scale, 0)
             painter.setFont(self._font(0.78, row.is_player))
@@ -554,6 +672,66 @@ class StandingsWidget(QWidget):
                 color = colors.get("damage_low", "#FFFFFF")
         self._text(painter, rect, f"{value:.1f}%" if kind == "energy" else f"{value:.0f}%", 0.68, True, QColor(color))
 
+    def _draw_rank(
+        self,
+        painter: QPainter,
+        rect: QRectF,
+        rank: str,
+        progress: float | None = None,
+    ) -> None:
+        label = self._rank_short(rank)
+        if not label:
+            self._text(
+                painter,
+                rect,
+                "--",
+                0.52,
+                True,
+                QColor(self.config.get("colors", {}).get("muted", "#A7AFBA")),
+            )
+            return
+        color = QColor(self._rank_color(rank))
+        if (
+            progress is not None
+            and bool(self.config.get("show_driver_rank_progress", True))
+        ):
+            value = max(0.0, min(100.0, float(progress)))
+            bar = QRectF(
+                rect.left() + 5 * self._scale,
+                rect.bottom() - 7 * self._scale,
+                max(0.0, (rect.width() - 10 * self._scale) * value / 100.0),
+                max(2.0, 3 * self._scale),
+            )
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(color)
+            painter.drawRect(bar)
+        self._text(painter, rect, label, 0.58, True, color)
+
+    @staticmethod
+    def _rank_short(rank: str) -> str:
+        text = str(rank or "").strip()
+        if not text:
+            return ""
+        match = re.search(
+            r"(bronze|silver|gold|platinum)\s*([0-3])?",
+            text,
+            re.IGNORECASE,
+        )
+        if not match:
+            return text[:4].upper()
+        return match.group(1)[0].upper() + (match.group(2) or "")
+
+    def _rank_color(self, rank: str) -> str:
+        text = str(rank or "").casefold()
+        colors = self.config.get("colors", {})
+        if "platinum" in text:
+            return str(colors.get("rank_platinum", "#76D7EA"))
+        if "gold" in text:
+            return str(colors.get("rank_gold", "#F2C94C"))
+        if "silver" in text:
+            return str(colors.get("rank_silver", "#C5CED8"))
+        return str(colors.get("rank_bronze", "#C47A44"))
+
     def _draw_tyre(self, painter: QPainter, rect: QRectF, compound: str) -> None:
         color = QColor(
             self.config.get("colors", {}).get("tyre", "#C7B87A")
@@ -625,6 +803,12 @@ class StandingsWidget(QWidget):
         enabled = {
             "flag": bool(self.config.get("show_country_flag", True)),
             "badge": bool(self.config.get("show_badge", True)),
+            "dr": bool(self.config.get("show_driver_rank", True)),
+            "sr": bool(self.config.get("show_safety_rank", True)),
+            "gain_dr": (
+                bool(self.config.get("show_estimated_driver_rank_gain", False))
+                and self._has_estimated_dr()
+            ),
             "brand": bool(self.config.get("show_brand_logo", True)),
             "penalty": (
                 bool(self.config.get("show_penalty_column", True))
@@ -650,6 +834,13 @@ class StandingsWidget(QWidget):
     def _has_penalties(self) -> bool:
         return any(
             row.penalties > 0
+            for category in self.view.categories
+            for row in category.rows
+        )
+
+    def _has_estimated_dr(self) -> bool:
+        return any(
+            row.estimated_driver_rank_gain is not None
             for category in self.view.categories
             for row in category.rows
         )

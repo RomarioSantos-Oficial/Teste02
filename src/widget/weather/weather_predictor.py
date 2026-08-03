@@ -335,7 +335,10 @@ class WeatherTrendPredictor:
                     cloud_coverage=cloud_coverage,
                     time_of_day_s=future_time,
                     weather_state=self.weather_state(
-                        rain=0.0,
+                        # RainChance pertence ao proprio no futuro. Usar a
+                        # chuva atual aqui fazia todos os icones repetirem o
+                        # clima presente, mesmo quando o LMU previa chuva.
+                        rain=max(0.0, min(1.0, rain)),
                         wetness=current.wetness,
                         dark_cloud=cloud_coverage / 10.0,
                         cloud_coverage=cloud_coverage,

@@ -11,6 +11,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DESTINATION = PROJECT_ROOT / "data" / "online_profiles" / "lmu_rest_probe.json"
 BASE = "http://127.0.0.1:6397"
 ENDPOINTS = (
+    "/rest/profile/",
+    "/rest/profile/profileInfo/getProfileInfo",
     "/rest/watch/standings",
     "/rest/watch/sessionInfo",
     "/rest/sessions",

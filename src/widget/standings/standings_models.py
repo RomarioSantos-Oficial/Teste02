@@ -19,6 +19,8 @@ from typing import Any
 @dataclass(slots=True)
 class DriverMetadata:
     driver_name: str = ""
+    username: str = ""
+    steam_id: str = ""
     team_name: str = ""
     vehicle_name: str = ""
     vehicle_model: str = ""
@@ -27,6 +29,10 @@ class DriverMetadata:
     nationality: str = ""
     country_code: str = ""
     badge: str = ""
+    driver_rank: str = ""
+    driver_rank_progress: float | None = None
+    safety_rank: str = ""
+    estimated_driver_rank_gain: float | None = None
     tyre_compound: str = ""
     energy_percent: float | None = None
     energy_remaining_fraction: float | None = None
@@ -57,6 +63,10 @@ class StandingRow:
     nationality: str = ""
     country_code: str = ""
     badge: str = ""
+    driver_rank: str = ""
+    driver_rank_progress: float | None = None
+    safety_rank: str = ""
+    estimated_driver_rank_gain: float | None = None
     laps: int = 0
     lap_distance_m: float = 0.0
     best_lap_s: float = 0.0
@@ -108,6 +118,38 @@ class StandingsView:
     source_text: str = "MEM"
     track_name: str = ""
     categories: list[CategoryBlock] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class OnlineDriverIdentity:
+    display_name: str = ""
+    username: str = ""
+    steam_id: str = ""
+    team_name: str = ""
+    car_number: str = ""
+    vehicle_class: str = ""
+    driver_rank: str = ""
+    driver_rank_progress: float | None = None
+    safety_rank: str = ""
+    nationality: str = ""
+    badge: str = ""
+    incidents: int | None = None
+    estimated_driver_rank_gain: float | None = None
+    source: str = ""
+    raw: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class OnlineSnapshot:
+    local_api_available: bool = False
+    cloud_available: bool = False
+    session_online: bool = False
+    event_id: str = ""
+    split_label: str = ""
+    updated_at_s: float = 0.0
+    source_message: str = ""
+    error: str = ""
+    identities: list[OnlineDriverIdentity] = field(default_factory=list)
 
 
 def normalize_identity(value: Any) -> str:

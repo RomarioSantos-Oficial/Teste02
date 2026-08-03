@@ -273,10 +273,15 @@ class WeatherWidget(QWidget):
             card.setObjectName(
                 "ForecastCard"
             )
-            card.setSizePolicy(
+            card_policy = QSizePolicy(
                 QSizePolicy.Policy.Expanding,
                 QSizePolicy.Policy.Fixed,
             )
+            # Mantem um dos cinco slots reservado quando a estimativa e
+            # ocultada pelo tempo restante da sessao. Sem isso, o QHBoxLayout
+            # alarga as caixas restantes para preencher o espaco vazio.
+            card_policy.setRetainSizeWhenHidden(True)
+            card.setSizePolicy(card_policy)
             card_layout = QVBoxLayout(
                 card
             )

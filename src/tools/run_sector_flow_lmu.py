@@ -52,7 +52,16 @@ class SectorFlowApplication:
         if not self.overlay_manager._session_allows_overlays(session):
             self.overlay_manager.set_session_active(False)
             phase = int(getattr(session, "game_phase", 0))
-            if 1 <= phase <= 7:
+            navigation = str(
+                getattr(session, "navigation_state", "") or ""
+            )
+            if navigation == "NAV_MAIN_MENU":
+                status = "— menu do jogo"
+            elif bool(getattr(session, "is_replay_active", False)):
+                status = "— replay"
+            elif bool(getattr(session, "in_monitor", False)):
+                status = "— garagem/monitor"
+            elif 1 <= phase <= 7:
                 status = "— garagem/monitor"
             elif phase == 8:
                 status = "— sessão encerrada/menu"

@@ -25,7 +25,7 @@
   "brake_base_height": 40,
   "temperature_unit": "C",
   "pressure_unit": "kpa",
-  "temperature_source": "inner_average",
+  "temperature_source": "surface_average",
   "temperature_color_mode": "optimal",
   "wear_display": "remaining",
   "show_compound": true,

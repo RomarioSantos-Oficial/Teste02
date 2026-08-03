@@ -178,8 +178,15 @@ class StandingsLogic:
                         last_lap_invalidated,
                     )
                 )
-        energy = extra.energy_percent
-        if extra.energy_remaining_fraction is not None:
+        rest_energy = _optional_float(
+            getattr(driver, "virtual_energy_fraction", None)
+        )
+        energy = (
+            rest_energy * 100.0
+            if rest_energy is not None and 0.0 <= rest_energy <= 1.0
+            else extra.energy_percent
+        )
+        if energy is None and extra.energy_remaining_fraction is not None:
             remaining = extra.energy_remaining_fraction
             used = extra.energy_use_per_lap
             reference_lap = extra.energy_reference_lap
@@ -221,7 +228,9 @@ class StandingsLogic:
                         if 0.0 <= energy <= 100.0:
                             break
                         energy = None
-        in_pits = bool(getattr(driver, "in_pits", False))
+        in_pits = bool(getattr(driver, "in_pits", False)) or bool(
+            getattr(driver, "pitting", False)
+        )
         completed_laps = int(getattr(driver, "laps", 0) or 0)
         was_in_pits = self._pit_was_inside.get(slot_id, False)
         if in_pits:
@@ -247,7 +256,11 @@ class StandingsLogic:
                 and completed_laps < pit_exit_lap + pit_status_laps
             )
         )
-        car_number = extra.car_number or extract_car_number(vehicle_name, name, slot_id)
+        car_number = (
+            extra.car_number
+            or str(getattr(driver, "car_number", "") or "")
+            or extract_car_number(vehicle_name, name, slot_id)
+        )
         vehicle_model = (
             extra.vehicle_model
             or str(catalog_entry.get("model", "") or "")
@@ -265,13 +278,25 @@ class StandingsLogic:
             extra.manufacturer
             or str(catalog_entry.get("manufacturer", "") or ""),
         )
+        damage_percent = extra.damage_percent
+        if damage_percent is None and is_player:
+            raw_damage = _optional_float(
+                getattr(getattr(session, "player", None), "vehicle_damage", None)
+            )
+            if raw_damage is not None:
+                damage_percent = (
+                    raw_damage * 100.0 if raw_damage <= 1.0 else raw_damage
+                )
         return StandingRow(
             slot_id=slot_id,
             overall_position=overall,
             class_position=class_position,
             position_change=change,
             driver_name=name,
-            team_name=extra.team_name,
+            team_name=(
+                extra.team_name
+                or str(getattr(driver, "team_name", "") or "")
+            ),
             vehicle_name=vehicle_name,
             vehicle_model=vehicle_model,
             class_name=display_name,
@@ -281,6 +306,10 @@ class StandingsLogic:
             nationality=extra.nationality,
             country_code=extra.country_code,
             badge=extra.badge,
+            driver_rank=extra.driver_rank,
+            driver_rank_progress=extra.driver_rank_progress,
+            safety_rank=extra.safety_rank,
+            estimated_driver_rank_gain=extra.estimated_driver_rank_gain,
             laps=completed_laps,
             lap_distance_m=float(getattr(driver, "lap_distance_m", 0.0) or 0.0),
             best_lap_s=float(getattr(driver, "best_lap_s", 0.0) or 0.0),
@@ -291,10 +320,11 @@ class StandingsLogic:
             interval_s=float(getattr(driver, "gap_ahead_s", 0.0) or 0.0),
             tyre_compound=extra.tyre_compound,
             energy_percent=energy,
-            damage_percent=extra.damage_percent,
+            damage_percent=damage_percent,
             penalties=int(getattr(driver, "penalties", 0) or 0),
             finish_state=(
                 extra.finish_state
+                or str(getattr(driver, "finish_status_name", "") or "")
                 or (
                     str(int(getattr(driver, "finish_status", 0) or 0))
                     if int(getattr(driver, "finish_status", 0) or 0)

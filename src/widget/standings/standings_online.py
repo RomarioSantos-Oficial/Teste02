@@ -70,9 +70,30 @@ def _flat(source: dict[str, Any]) -> dict[str, Any]:
                     result.setdefault(name_key, child)
                     result.setdefault(compound, child)
                 visit(child, compound)
+                if name_key in {
+                    "metadata",
+                    "profile",
+                    "properties",
+                    "data",
+                    "driver",
+                    "user",
+                    "account",
+                }:
+                    # Wrappers de perfil nao fazem parte do nome real do
+                    # campo. Visitar também no nível atual produz, por
+                    # exemplo, ``driverRankRank`` a partir de
+                    # ``metadata.driverRank.rank``.
+                    visit(child, prefix)
         elif isinstance(value, list):
             for child in value:
                 visit(child, prefix)
+        elif isinstance(value, str):
+            # Alguns retornos do LMU guardam o perfil RaceControl como JSON
+            # dentro de uma string (normalmente em ``metadata``). Decodificar
+            # aqui permite ler DR/SR e badges sem depender da API externa.
+            decoded = _decode(value)
+            if not isinstance(decoded, str):
+                visit(decoded, prefix)
 
     visit(source)
     return result
@@ -122,6 +143,36 @@ def _percent(value: Any) -> float | None:
     return max(0.0, min(100.0, number))
 
 
+def _rank(values: dict[str, Any], prefix: str) -> str:
+    name = str(
+        _first(
+            values,
+            f"{prefix}Rank",
+            f"{prefix}Name",
+            f"{prefix}Label",
+            f"{prefix}Title",
+            prefix,
+            default="",
+        )
+        or ""
+    ).strip()
+    tier = _first(
+        values,
+        f"{prefix}Tier",
+        f"{prefix}Level",
+        f"{prefix}SubRank",
+        f"{prefix}Division",
+        default=None,
+    )
+    if tier in (None, ""):
+        return name
+    try:
+        tier_text = str(int(float(tier)))
+    except (TypeError, ValueError):
+        tier_text = str(tier).strip()
+    return f"{name} {tier_text}".strip()
+
+
 class HttpJson:
     def get(self, url: str, timeout: float) -> tuple[bool, Any, str]:
         request = urllib.request.Request(
@@ -156,11 +207,9 @@ class LocalStandingsEnrichment:
     """
 
     ENDPOINTS = (
-        "/rest/watch/standings",
-        "/rest/watch/sessionInfo",
-        "/rest/sessions",
+        "/rest/profile/",
+        "/rest/profile/profileInfo/getProfileInfo",
         "/rest/multiplayer/teams",
-        "/rest/strategy/usage",
     )
     VEHICLE_ENDPOINTS = (
         "/rest/sessions/getAllVehicles",
@@ -218,16 +267,24 @@ class LocalStandingsEnrichment:
             if driver_names is None:
                 metadata = copy.deepcopy(self._metadata)
             else:
-                identities = {
-                    normalize_identity(name)
+                requested = {
+                    normalize_identity(name): str(name)
                     for name in driver_names
                     if normalize_identity(name)
                 }
-                metadata = {
-                    identity: copy.deepcopy(item)
-                    for identity, item in self._metadata.items()
-                    if identity in identities
-                }
+                metadata = {}
+                for requested_identity, requested_name in requested.items():
+                    exact = self._metadata.get(requested_identity)
+                    if exact is not None:
+                        metadata[requested_identity] = copy.deepcopy(exact)
+                        continue
+                    requested_aliases = self._identity_aliases(requested_name)
+                    for item in self._metadata.values():
+                        item_aliases = self._identity_aliases(item.driver_name)
+                        item_aliases.update(self._identity_aliases(item.username))
+                        if requested_aliases & item_aliases:
+                            metadata[requested_identity] = copy.deepcopy(item)
+                            break
             return metadata, self._source_text, self._last_error
 
     def vehicle_catalog(
@@ -285,6 +342,10 @@ class LocalStandingsEnrichment:
                     "nationality": item.nationality,
                     "country_code": item.country_code,
                     "badge": item.badge,
+                    "driver_rank": item.driver_rank,
+                    "driver_rank_progress": item.driver_rank_progress,
+                    "safety_rank": item.safety_rank,
+                    "estimated_driver_rank_gain": item.estimated_driver_rank_gain,
                     "tyre_compound": item.tyre_compound,
                     "energy_percent": item.energy_percent,
                     "energy_remaining_fraction": item.energy_remaining_fraction,
@@ -304,16 +365,11 @@ class LocalStandingsEnrichment:
 
     def _worker(self) -> None:
         next_fetch = 0.0
-        next_energy_fetch = 0.0
         while not self._stop.is_set():
             with self._lock:
                 config = dict(self.config)
             now = time.monotonic()
             interval = max(0.5, float(config.get("local_poll_interval_seconds", 2.0)))
-            energy_interval = max(
-                0.5,
-                float(config.get("energy_poll_interval_seconds", 1.0)),
-            )
             with self._lock:
                 test_mode = self._test_mode
             if test_mode:
@@ -323,10 +379,6 @@ class LocalStandingsEnrichment:
             if now >= next_fetch:
                 self.fetch_once()
                 next_fetch = now + interval
-                next_energy_fetch = now + energy_interval
-            elif now >= next_energy_fetch:
-                self._refresh_stint_usage(config)
-                next_energy_fetch = now + energy_interval
             self._wake.wait(timeout=0.25)
             self._wake.clear()
 
@@ -407,11 +459,74 @@ class LocalStandingsEnrichment:
         source_name: str,
     ) -> None:
         decoded = _decode(payload)
-        for record in _walk(decoded):
+        records = list(_walk(decoded))
+        if (
+            source_name.endswith("/rest/profile/")
+            or source_name.endswith("/rest/profile/profileInfo/getProfileInfo")
+        ) and isinstance(decoded, dict):
+            values = _flat(decoded)
+            profile_name = str(
+                _first(
+                    values,
+                    "driverName",
+                    "playerName",
+                    "profileName",
+                    "displayName",
+                    "nickname",
+                    "nick",
+                    "name",
+                    default="",
+                )
+                or ""
+            ).strip()
+            if profile_name:
+                records.append({**decoded, "driverName": profile_name})
+        if source_name.endswith("/rest/multiplayer/teams"):
+            for container in list(records):
+                drivers = next(
+                    (
+                        value
+                        for key, value in container.items()
+                        if _key(key) == "drivers"
+                        and isinstance(value, (dict, list))
+                    ),
+                    None,
+                )
+                if isinstance(drivers, dict):
+                    for driver_name, details in drivers.items():
+                        if isinstance(details, dict):
+                            records.append(
+                                {**details, "driverName": str(driver_name)}
+                            )
+                elif isinstance(drivers, list):
+                    for details in drivers:
+                        if not isinstance(details, dict):
+                            continue
+                        values = _flat(details)
+                        driver_name = str(
+                            _first(
+                                values,
+                                "driverName",
+                                "playerName",
+                                "profileName",
+                                "displayName",
+                                "nickname",
+                                "nick",
+                                "username",
+                                "name",
+                                default="",
+                            )
+                            or ""
+                        ).strip()
+                        if driver_name:
+                            records.append(
+                                {**details, "driverName": driver_name}
+                            )
+        for record in records:
             direct_keys = {_key(name) for name in record}
             identity_keys = {
                 _key("driverName"), _key("playerName"),
-                _key("profileName"),
+                _key("profileName"), _key("displayName"),
             }
             nested_identity = any(
                 isinstance(child, dict)
@@ -421,11 +536,24 @@ class LocalStandingsEnrichment:
             if not direct_keys & identity_keys and not nested_identity:
                 continue
             values = _flat(record)
-            name = str(_first(values, "driverName", "playerName", "profileName", default="") or "").strip()
+            name = str(
+                _first(
+                    values,
+                    "driverName",
+                    "playerName",
+                    "profileName",
+                    "displayName",
+                    default="",
+                )
+                or ""
+            ).strip()
             if not name:
                 continue
             marker_fields = (
                 "nationality", "countryCode", "badge", "driverBadge",
+                "contactBadge", "contactBadgeName", "reputationBadge",
+                "driverRank", "driverRankRank", "safetyRank",
+                "safetyRankRank", "safeRank",
                 "vehicleName", "teamName", "carNumber", "manufacturer",
                 "batteryChargeFraction", "virtualEnergy", "damage", "integrity",
                 "lapInvalidated", "lastLapInvalidated", "lastLapValid",
@@ -435,6 +563,9 @@ class LocalStandingsEnrichment:
             if source_name.startswith("CACHE:"):
                 useful_cache_fields = (
                     "nationality", "countryCode", "badge", "driverBadge",
+                    "contactBadge", "contactBadgeName", "reputationBadge",
+                    "driverRank", "driverRankRank", "safetyRank",
+                    "safetyRankRank", "safeRank",
                     "vehicleName", "teamName", "tireCompound",
                     "tyreCompound", "batteryChargeFraction",
                     "virtualEnergy", "damage", "integrity",
@@ -447,6 +578,20 @@ class LocalStandingsEnrichment:
             identity = normalize_identity(name)
             current = target.get(identity, DriverMetadata(driver_name=name))
             current.driver_name = name or current.driver_name
+            current.username = str(
+                _first(values, "username", "userName", default=current.username)
+                or current.username
+            )
+            current.steam_id = str(
+                _first(
+                    values,
+                    "steamId",
+                    "steamID",
+                    "platformId",
+                    default=current.steam_id,
+                )
+                or current.steam_id
+            )
             current.team_name = str(_first(values, "teamName", "team", "entrantName", default=current.team_name) or current.team_name)
             current.vehicle_name = str(_first(values, "vehicleName", "carName", "vehicle", default=current.vehicle_name) or current.vehicle_name)
             current.vehicle_model = str(_first(values, "vehicleModel", "carModel", "model", default=current.vehicle_model) or current.vehicle_model)
@@ -454,7 +599,52 @@ class LocalStandingsEnrichment:
             current.manufacturer = str(_first(values, "manufacturer", "make", "brand", default=current.manufacturer) or current.manufacturer)
             current.nationality = str(_first(values, "nationality", "country", "countryName", default=current.nationality) or current.nationality)
             current.country_code = str(_first(values, "countryCode", "nationalityCode", "isoCountry", default=current.country_code) or current.country_code).upper()
-            current.badge = str(_first(values, "badge", "driverBadge", "contactBadge", "srBadge", default=current.badge) or current.badge)
+            if not current.country_code and len(current.nationality.strip()) == 2:
+                current.country_code = current.nationality.strip().upper()
+            badge = str(
+                _first(
+                    values,
+                    "badge",
+                    "driverBadge",
+                    "contactBadge",
+                    "contactBadgeName",
+                    "reputationBadge",
+                    "safetyBadge",
+                    "srBadge",
+                    default=current.badge,
+                )
+                or current.badge
+            ).strip()
+            if badge.casefold() in {"", "none", "null", "undefined", "-"}:
+                badge = self._badge_from_roles(record) or current.badge
+            current.badge = badge
+            driver_rank = _rank(values, "driverRank")
+            safety_rank = _rank(values, "safetyRank") or _rank(values, "safeRank")
+            current.driver_rank = driver_rank or current.driver_rank
+            current.safety_rank = safety_rank or current.safety_rank
+            progress = _percent(
+                _first(
+                    values,
+                    "driverRankProgress",
+                    "driverRankPercentage",
+                    "driverRankPercent",
+                    "rankProgress",
+                    default=None,
+                )
+            )
+            if progress is not None:
+                current.driver_rank_progress = progress
+            estimated_gain = _float(
+                _first(
+                    values,
+                    "estimatedDriverRankGain",
+                    "driverRankGain",
+                    "estimatedRankGain",
+                    default=None,
+                )
+            )
+            if estimated_gain is not None:
+                current.estimated_driver_rank_gain = estimated_gain
             front = str(_first(values, "frontTireCompound", "frontTyreCompound", default="") or "")
             rear = str(_first(values, "rearTireCompound", "rearTyreCompound", default="") or "")
             compound = str(_first(values, "tireCompound", "tyreCompound", "compound", default="") or "")
@@ -501,6 +691,44 @@ class LocalStandingsEnrichment:
             current.source = source_name
             current.raw = record
             target[identity] = current
+
+    @staticmethod
+    def _identity_aliases(value: Any) -> set[str]:
+        text = str(value or "").strip()
+        if not text:
+            return set()
+        aliases = {normalize_identity(text)}
+        without_suffix = re.sub(r"\s*#\d{3,}$", "", text).strip()
+        if without_suffix:
+            aliases.add(normalize_identity(without_suffix))
+        return {alias for alias in aliases if alias}
+
+    @staticmethod
+    def _badge_from_roles(record: dict[str, Any]) -> str:
+        ignored = {"driver", "owner", "member", "user"}
+        preferred = {
+            "admin",
+            "staff",
+            "developer",
+            "creator",
+            "partner",
+            "moderator",
+        }
+        fallback = ""
+        for container in _walk(record):
+            for key, value in container.items():
+                if _key(key) not in {"role", "roles"}:
+                    continue
+                roles = value if isinstance(value, list) else [value]
+                for role in roles:
+                    text = str(role or "").strip()
+                    normalized = text.casefold()
+                    if not text or normalized in ignored:
+                        continue
+                    if normalized in preferred:
+                        return text
+                    fallback = fallback or text
+        return fallback
 
     def _parse_stint_usage(
         self,

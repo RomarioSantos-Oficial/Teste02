@@ -45,6 +45,7 @@ class WheelData:
 @dataclass
 class DriverData:
     slot_id: int = 0
+    steam_id: str = ""
     driver_name: str = ""
     vehicle_name: str = ""
 
@@ -53,6 +54,8 @@ class DriverData:
     # do fabricante.
     vehicle_filename: str = ""
     pit_group: str = ""
+    car_number: str = ""
+    team_name: str = ""
 
     vehicle_class: str = ""
     position: int = 0
@@ -86,6 +89,20 @@ class DriverData:
     under_yellow: bool = False
     in_garage: bool = False
     finish_status: int = 0
+    finish_status_name: str = ""
+    count_lap_flag_name: str = ""
+    pit_state_name: str = ""
+    drs_active: bool = False
+    headlights: bool = False
+    pitting: bool = False
+    pitstops: int = 0
+    qualification_position: int = 0
+    server_scored: bool = True
+    fuel_fraction: float | None = None
+    virtual_energy_fraction: float | None = None
+    attack_mode_remaining_count: int = 0
+    attack_mode_total_count: int = 0
+    attack_mode_time_remaining_s: float = 0.0
     position_in_class: int = 0
     world_x: float = 0.0
     world_y: float = 0.0
@@ -123,6 +140,11 @@ class PlayerData:
     battery_fraction: float = 0.0
     state_of_charge: float = 0.0
     virtual_energy: float = 0.0
+    fuel_fraction: float | None = None
+    vehicle_damage: float = 0.0
+    brake_condition: list[float] = field(default_factory=list)
+    suspension_damage: list[float] = field(default_factory=list)
+    tire_condition: list[float] = field(default_factory=list)
     current_lap_invalidated: bool = False
     last_lap_invalidated: bool = False
 
@@ -180,6 +202,47 @@ class SessionData:
     wind_z_ms: float = 0.0
     wind_speed_kmh: float = 0.0
     weather_schedule: dict = field(default_factory=dict)
+
+    # Estado complementar publicado pela API REST local do LMU. Os campos
+    # opcionais preservam o fallback da memoria compartilhada quando o
+    # servidor HTTP ainda nao estiver pronto.
+    local_api_available: bool = False
+    local_api_age_s: float = 0.0
+    local_api_error: str = ""
+    in_control_of_vehicle: bool | None = None
+    in_monitor: bool | None = None
+    player_vehicle_loaded: bool | None = None
+    is_replay_active: bool | None = None
+    race_finished: bool | None = None
+    in_realtime_rest: bool | None = None
+    game_phase_name: str = ""
+    game_state_name: str = ""
+    game_session_name: str = ""
+    session_name: str = ""
+    navigation_state: str = ""
+    internal_state_code: str = ""
+    navigation_loading: bool | None = None
+    navigation_loading_percent: float = 0.0
+    team_vehicle_state: str = ""
+    multi_stint_state: str = ""
+    pit_state_name: str = ""
+    pit_entry_distance_m: float = 0.0
+    yellow_flag_state_name: str = ""
+    server_name: str = ""
+    game_mode_name: str = ""
+    max_players: int = 0
+    number_of_players: int = 0
+    number_of_vehicles: int = 0
+    max_session_time_s: float = 0.0
+    start_event_time_s: float = 0.0
+    current_event_time_s: float = 0.0
+    end_event_time_s: float = 0.0
+    closest_weather_node: dict = field(default_factory=dict)
+    scheduled_sessions: dict | list = field(default_factory=dict)
+    pitstop_estimate: dict = field(default_factory=dict)
+    strategy_usage: dict = field(default_factory=dict)
+    incidents: dict | list = field(default_factory=list)
+    loading_screen: dict = field(default_factory=dict)
 
     # Parâmetros reais da sessão do LMU.
     track_limits_steps_per_penalty: int = 0

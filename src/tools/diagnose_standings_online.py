@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -12,6 +13,15 @@ from src.widget.standings.lmu_online_client import LMUOnlineIdentityClient
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Diagnóstico seguro dos perfis RaceControl do Standings."
+    )
+    parser.add_argument(
+        "--export",
+        action="store_true",
+        help="salva uma cópia sanitizada em data/online_profiles",
+    )
+    args = parser.parse_args()
     config_path = PROJECT_ROOT / "src/config/widgets.json"
     data = json.loads(config_path.read_text(encoding="utf-8"))
     config = data.get("widgets", {}).get("standings", {})
@@ -26,6 +36,7 @@ def main() -> None:
     print("Sessão online detectada:", snapshot.session_online)
     print("Event ID detectado:", bool(snapshot.event_id))
     print("Perfis online DR/SR:", snapshot.cloud_available)
+    print("Autenticacao: ticket temporario do LMU / RaceOS")
     print("Identidades encontradas:", len(snapshot.identities))
     print("Fonte:", snapshot.source_message)
     if snapshot.error:
@@ -43,17 +54,18 @@ def main() -> None:
             f"BADGE={identity.badge or '--'}"
         )
 
-    destination = (
-        PROJECT_ROOT
-        / "data"
-        / "online_profiles"
-        / "standings_online_sanitized.json"
-    )
-    client.export_sanitized_snapshot(destination)
-    print()
-    print("Diagnóstico sanitizado salvo em:")
-    print(destination)
-    print("Nenhum ticket ou token é salvo nesse arquivo.")
+    if args.export:
+        destination = (
+            PROJECT_ROOT
+            / "data"
+            / "online_profiles"
+            / "standings_online_sanitized.json"
+        )
+        client.export_sanitized_snapshot(destination)
+        print()
+        print("Diagnóstico sanitizado salvo em:")
+        print(destination)
+        print("Nenhum ticket ou token é salvo nesse arquivo.")
 
 
 if __name__ == "__main__":

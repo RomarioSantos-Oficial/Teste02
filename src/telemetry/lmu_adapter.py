@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import math
-import json
 import sys
-import time
-import urllib.error
-import urllib.request
 from pathlib import Path
 from typing import Any
 
+from .lmu_rest_client import LMULocalRestClient
+from .lmu_rest_enrichment import apply_rest_snapshot
 from .models import DriverData, PlayerData, SessionData, WheelData
 
 
@@ -68,11 +66,21 @@ def positive_difference(total: float, previous: float) -> float:
 
 
 class LMUAdapter:
-    def __init__(self, copy_access: bool = True) -> None:
+    def __init__(
+        self,
+        copy_access: bool = True,
+        *,
+        local_api_enabled: bool = True,
+        local_api_host: str = "127.0.0.1",
+        local_api_port: int = 6397,
+    ) -> None:
         self.copy_access = copy_access
         self.memory: lmu_mmap.MMapControl | None = None
-        self._weather_schedule: dict[str, Any] = {}
-        self._last_weather_poll_at = 0.0
+        self.local_api = LMULocalRestClient(
+            host=local_api_host,
+            port=local_api_port,
+            enabled=local_api_enabled,
+        )
         self._validity_vehicle_id: int | None = None
         self._validity_lap: int | None = None
         self._current_lap_was_invalid = False
@@ -143,6 +151,7 @@ class LMUAdapter:
             for index in range(vehicle_count):
                 score = data.scoring.vehScoringInfo[index]
                 slot_id = safe_int(getattr(score, "mID", index))
+                steam_id = safe_int(getattr(score, "mSteamID", 0))
                 completed_laps = safe_int(
                     getattr(score, "mTotalLaps", 0)
                 )
@@ -184,6 +193,7 @@ class LMUAdapter:
                 drivers.append(
                     DriverData(
                         slot_id=slot_id,
+                        steam_id=str(steam_id) if steam_id > 0 else "",
                         driver_name=decode_text(score.mDriverName),
                         vehicle_name=decode_text(score.mVehicleName),
                         vehicle_filename=decode_text(
@@ -302,9 +312,7 @@ class LMUAdapter:
             else:
                 yellow_state = safe_int(yellow_raw)
 
-            self._update_weather_schedule()
-
-            return SessionData(
+            session = SessionData(
                 connected=True,
                 game_version=safe_int(data.generic.gameVersion),
                 track_name=decode_text(info.mTrackName),
@@ -377,7 +385,6 @@ class LMUAdapter:
                     safe_float(getattr(getattr(info, "mWind", None), "y", 0.0)),
                     safe_float(getattr(getattr(info, "mWind", None), "z", 0.0)),
                 ) * 3.6,
-                weather_schedule=self._weather_schedule,
                 track_limits_steps_per_penalty=safe_int(
                     getattr(
                         info,
@@ -395,6 +402,10 @@ class LMUAdapter:
                 player=player,
                 drivers=drivers,
             )
+            return apply_rest_snapshot(
+                session,
+                self.local_api.snapshot(),
+            )
 
         except (
             AttributeError,
@@ -407,33 +418,6 @@ class LMUAdapter:
                 connected=False,
                 error=f"Erro de leitura: {exc}",
             )
-
-    def _update_weather_schedule(self) -> None:
-        now = time.monotonic()
-        if now - self._last_weather_poll_at < 10.0:
-            return
-
-        self._last_weather_poll_at = now
-        try:
-            with urllib.request.urlopen(
-                "http://127.0.0.1:6397/rest/sessions/weather",
-                timeout=0.35,
-            ) as response:
-                payload = json.loads(
-                    response.read().decode("utf-8")
-                )
-            if isinstance(payload, dict):
-                self._weather_schedule = payload
-        except (
-            OSError,
-            TimeoutError,
-            ValueError,
-            json.JSONDecodeError,
-            urllib.error.URLError,
-        ):
-            # A telemetria continua funcionando mesmo quando a API REST
-            # do LMU ainda nao esta pronta ou muda de disponibilidade.
-            pass
 
     def _read_player(self, raw: Any) -> PlayerData:
         velocity = raw.mLocalVel
@@ -459,9 +443,21 @@ class LMUAdapter:
                     pressure_kpa=safe_float(wheel.mPressure),
                     wear=safe_float(wheel.mWear),
                     brake_temp_c=safe_float(wheel.mBrakeTemp),
-                    surface_left_c=safe_float(temps[0]) - 273.15,
-                    surface_center_c=safe_float(temps[1]) - 273.15,
-                    surface_right_c=safe_float(temps[2]) - 273.15,
+                    surface_left_c=(
+                        safe_float(temps[0]) - 273.15
+                        if safe_float(temps[0]) > 100.0
+                        else 0.0
+                    ),
+                    surface_center_c=(
+                        safe_float(temps[1]) - 273.15
+                        if safe_float(temps[1]) > 100.0
+                        else 0.0
+                    ),
+                    surface_right_c=(
+                        safe_float(temps[2]) - 273.15
+                        if safe_float(temps[2]) > 100.0
+                        else 0.0
+                    ),
                     flat=bool(wheel.mFlat),
                     detached=bool(wheel.mDetached),
                     compound_type=safe_int(wheel.mCompoundType),
@@ -700,6 +696,7 @@ class LMUAdapter:
         return lap_time, invalidated
 
     def close(self) -> None:
+        self.local_api.close()
         if self.memory is not None:
             try:
                 self.memory.close()

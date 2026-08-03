@@ -100,7 +100,16 @@ class StandingsEditor(QDialog):
         form = QFormLayout(group)
         options = (
             ("show_country_flag", "Bandeira do piloto:", True),
+            ("use_flag_images", "Usar imagem da bandeira:", True),
             ("show_badge", "Badge do piloto:", True),
+            ("show_driver_rank", "Driver Rank (DR):", True),
+            ("show_driver_rank_progress", "Progresso do DR:", True),
+            ("show_safety_rank", "Safety Rank (SR):", True),
+            (
+                "show_estimated_driver_rank_gain",
+                "Estimativa de ganho do DR:",
+                False,
+            ),
             ("show_brand_logo", "Logo da marca:", True),
             ("show_tyre", "Pneu:", True),
             ("show_invalid_lap_status", "Volta inválida:", True),
@@ -192,7 +201,7 @@ class StandingsEditor(QDialog):
         self.layout_content.addWidget(group)
 
     def _build_local_source(self) -> None:
-        group = QGroupBox("Dados locais do LMU")
+        group = QGroupBox("Fontes de dados do LMU")
         form = QFormLayout(group)
         enabled = QCheckBox()
         enabled.setChecked(bool(self.config.get("enable_local_api", True)))
@@ -207,9 +216,32 @@ class StandingsEditor(QDialog):
         timeout.setSuffix(" s")
         timeout.setValue(float(self.config.get("local_api_timeout_seconds", 0.8)))
         timeout.valueChanged.connect(lambda value: self._set("local_api_timeout_seconds", value))
+        online = QCheckBox()
+        online.setChecked(bool(self.config.get("online_enrichment", False)))
+        online.toggled.connect(
+            lambda value: self._set("online_enrichment", value)
+        )
+        online_interval = QDoubleSpinBox()
+        online_interval.setRange(5.0, 60.0)
+        online_interval.setSuffix(" s")
+        online_interval.setValue(
+            float(self.config.get("online_refresh_seconds", 10.0))
+        )
+        online_interval.valueChanged.connect(
+            lambda value: self._set("online_refresh_seconds", value)
+        )
+        online_note = QLabel(
+            "O REST local captura país, badge, DR e SR quando o próprio LMU "
+            "publica esses campos na sessão. A consulta externa é opcional e "
+            "permanece desligada sem uma chave autorizada."
+        )
+        online_note.setWordWrap(True)
         form.addRow("REST local:", enabled)
         form.addRow("Atualização:", interval)
         form.addRow("Timeout:", timeout)
+        form.addRow("Consulta externa:", online)
+        form.addRow("Atualizar perfis:", online_interval)
+        form.addRow(online_note)
         self.layout_content.addWidget(group)
 
     def _build_colors(self) -> None:
@@ -221,6 +253,10 @@ class StandingsEditor(QDialog):
             "player_background": "Linha do jogador", "position_gain": "Posição ganha",
             "position_loss": "Posição perdida", "personal_best": "Melhor volta",
             "invalid_lap": "Volta inválida",
+            "rank_bronze": "DR/SR Bronze",
+            "rank_silver": "DR/SR Prata",
+            "rank_gold": "DR/SR Ouro",
+            "rank_platinum": "DR/SR Platina",
             "energy_low": "Energia baixa", "damage_high": "Dano alto", "edit_border": "Borda de edição",
         }
         for key, label in labels.items():

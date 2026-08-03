@@ -14,11 +14,18 @@ from __future__ import annotations
 
 import hashlib
 import re
+import time
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QObject, Qt, QUrl
 from PySide6.QtGui import QPixmap
+from PySide6.QtNetwork import (
+    QNetworkAccessManager,
+    QNetworkReply,
+    QNetworkRequest,
+)
 
 
 COUNTRY_NAMES = {
@@ -103,6 +110,199 @@ class BrandLogoStore:
             )
         pixmap = self._pixmaps[cache_key]
         return pixmap if not pixmap.isNull() else None
+
+
+class CountryFlagStore(QObject):
+    """Cache leve de bandeiras baixadas do CDN da Flagpedia.
+
+    O Qt faz a requisicao de forma assincrona. Na primeira aparicao de um pais,
+    enquanto a imagem baixa, o widget usa o emoji existente. O PNG fica salvo
+    para as proximas execucoes.
+    """
+
+    DEFAULT_URL = "https://flagcdn.com/40x30/{code}.png"
+    MAX_DOWNLOAD_BYTES = 256 * 1024
+    MAX_PIXMAP_CACHE = 256
+
+    def __init__(
+        self,
+        project_root: Path,
+        config: dict[str, Any],
+        parent: QObject | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.project_root = Path(project_root).resolve()
+        self.config = dict(config)
+        self._pending: dict[str, QNetworkReply] = {}
+        self._failed_until: dict[str, float] = {}
+        self._originals: dict[str, QPixmap] = {}
+        self._pixmaps: OrderedDict[tuple[str, int, int], QPixmap] = OrderedDict()
+        self._manager = QNetworkAccessManager(self)
+
+    def update_config(self, config: dict[str, Any]) -> None:
+        previous_url = str(
+            self.config.get("flag_provider_url", self.DEFAULT_URL)
+        )
+        previous_cache = str(
+            self.config.get("flag_cache_directory", "data/flags")
+        )
+        self.config = dict(config)
+        current_url = str(
+            self.config.get("flag_provider_url", self.DEFAULT_URL)
+        )
+        current_cache = str(
+            self.config.get("flag_cache_directory", "data/flags")
+        )
+        if (previous_url, previous_cache) != (current_url, current_cache):
+            self._originals.clear()
+            self._pixmaps.clear()
+            self._failed_until.clear()
+
+    def stop(self) -> None:
+        for reply in tuple(self._pending.values()):
+            reply.abort()
+            reply.deleteLater()
+        self._pending.clear()
+
+    def pixmap(
+        self,
+        nationality: str,
+        code: str,
+        width: int,
+        height: int,
+    ) -> QPixmap | None:
+        iso = country_code(nationality, code)
+        if len(iso) != 2 or not iso.isalpha():
+            return None
+        iso = iso.upper()
+        width = max(1, int(width))
+        height = max(1, int(height))
+        cache_key = (iso, width, height)
+        cached = self._pixmaps.get(cache_key)
+        if cached is not None:
+            self._pixmaps.move_to_end(cache_key)
+            return cached
+
+        source = self._originals.get(iso)
+        if source is None:
+            path = self._cache_path(iso)
+            if path.is_file():
+                candidate = QPixmap(str(path))
+                if not candidate.isNull():
+                    source = candidate
+                    self._originals[iso] = source
+            if source is None:
+                self._schedule(iso)
+                return None
+
+        scaled = source.scaled(
+            width,
+            height,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        if scaled.isNull():
+            return None
+        self._pixmaps[cache_key] = scaled
+        self._pixmaps.move_to_end(cache_key)
+        while len(self._pixmaps) > self.MAX_PIXMAP_CACHE:
+            self._pixmaps.popitem(last=False)
+        return scaled
+
+    def _schedule(self, iso: str) -> None:
+        if not bool(self.config.get("use_flag_images", True)):
+            return
+        if iso in self._pending:
+            return
+        if time.monotonic() < self._failed_until.get(iso, 0.0):
+            return
+        template = str(
+            self.config.get("flag_provider_url", self.DEFAULT_URL)
+            or self.DEFAULT_URL
+        )
+        url = template.format(code=iso.lower(), CODE=iso.upper())
+        if not url.startswith("https://"):
+            self._mark_failed(iso)
+            return
+        request = QNetworkRequest(QUrl(url))
+        request.setRawHeader(
+            b"User-Agent",
+            b"SectorFlowDrive/FlagCacheV1",
+        )
+        request.setAttribute(
+            QNetworkRequest.Attribute.RedirectPolicyAttribute,
+            QNetworkRequest.RedirectPolicy.NoLessSafeRedirectPolicy,
+        )
+        timeout_ms = max(
+            500,
+            min(
+                10_000,
+                round(
+                    float(
+                        self.config.get(
+                            "flag_download_timeout_seconds",
+                            3.0,
+                        )
+                    )
+                    * 1000.0
+                ),
+            ),
+        )
+        request.setTransferTimeout(timeout_ms)
+        reply = self._manager.get(request)
+        self._pending[iso] = reply
+        reply.finished.connect(
+            lambda current=reply, country=iso: self._finish_download(
+                country,
+                current,
+            )
+        )
+
+    def _finish_download(self, iso: str, reply: QNetworkReply) -> None:
+        self._pending.pop(iso, None)
+        try:
+            if reply.error() != QNetworkReply.NetworkError.NoError:
+                self._mark_failed(iso)
+                return
+            content = bytes(reply.readAll())
+            if (
+                not content.startswith(b"\x89PNG\r\n\x1a\n")
+                or len(content) > self.MAX_DOWNLOAD_BYTES
+            ):
+                self._mark_failed(iso)
+                return
+            destination = self._cache_path(iso)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            temporary = destination.with_suffix(".tmp")
+            temporary.write_bytes(content)
+            temporary.replace(destination)
+            self._failed_until.pop(iso, None)
+        except OSError:
+            self._mark_failed(iso)
+        finally:
+            reply.deleteLater()
+
+    def _mark_failed(self, iso: str) -> None:
+        retry_seconds = max(
+            30.0,
+            float(self.config.get("flag_retry_seconds", 300.0)),
+        )
+        self._failed_until[iso] = time.monotonic() + retry_seconds
+
+    def _cache_path(self, iso: str) -> Path:
+        configured = str(
+            self.config.get("flag_cache_directory", "data/flags")
+            or "data/flags"
+        ).strip()
+        candidate = Path(configured)
+        if not candidate.is_absolute():
+            candidate = self.project_root / candidate
+        try:
+            resolved = candidate.resolve()
+            resolved.relative_to(self.project_root)
+        except (OSError, ValueError):
+            resolved = self.project_root / "data" / "flags"
+        return resolved / f"{iso.lower()}.png"
 
 
 def _clean(value: str) -> str:

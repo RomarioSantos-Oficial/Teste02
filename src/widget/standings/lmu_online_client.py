@@ -1,19 +1,23 @@
 from __future__ import annotations
 
-import base64
 import json
 import os
 import re
+import ssl
 import threading
 import time
 import unicodedata
 import urllib.error
-import urllib.parse
 import urllib.request
 from dataclasses import asdict
 from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Iterable
+
+try:
+    import winreg
+except ImportError:  # pragma: no cover - somente Windows possui o LMU
+    winreg = None
 
 from .standings_models import OnlineDriverIdentity, OnlineSnapshot
 
@@ -28,9 +32,8 @@ class LMUOnlineIdentityClient:
     """Leitor direto do LMU: memória é tratada fora; aqui entram REST e perfis online."""
 
     LOCAL_ENDPOINTS = {
-        "standings": "/rest/watch/standings",
-        "session_info": "/rest/watch/sessionInfo",
-        "sessions": "/rest/sessions",
+        "profile": "/rest/profile/",
+        "profile_info": "/rest/profile/profileInfo/getProfileInfo",
         "teams": "/rest/multiplayer/teams",
     }
 
@@ -42,6 +45,15 @@ class LMUOnlineIdentityClient:
         self._index: dict[str, OnlineDriverIdentity] = {}
         self._thread: threading.Thread | None = None
         self._last_refresh = 0.0
+        self._session_signature = ""
+        self._generation = 0
+        self._ssl_context = ssl.create_default_context()
+        # Python 3.13 ativa X509_STRICT por padrao. Algumas cadeias aceitas
+        # pelo Windows e pelo cliente oficial do LMU nao marcam Basic
+        # Constraints como "critical". Mantemos hostname, validade e CA
+        # verificados, removendo somente essa exigencia de compatibilidade.
+        if hasattr(ssl, "VERIFY_X509_STRICT"):
+            self._ssl_context.verify_flags &= ~ssl.VERIFY_X509_STRICT
 
     def update_config(self, config: dict[str, Any]) -> None:
         with self._lock:
@@ -52,6 +64,8 @@ class LMUOnlineIdentityClient:
             self._snapshot = OnlineSnapshot()
             self._index = {}
             self._last_refresh = 0.0
+            self._session_signature = ""
+            self._generation += 1
 
     def snapshot(self) -> OnlineSnapshot:
         with self._lock:
@@ -74,21 +88,36 @@ class LMUOnlineIdentityClient:
             self._index = self._build_index(snapshot.identities)
 
     def trigger_refresh(self, session: Any | None = None, force: bool = False) -> None:
-        if not bool(self.config.get("online_enrichment", True)):
+        # A leitura REST local normal e feita por LocalStandingsEnrichment.
+        # Este cliente usa o mesmo fluxo RaceOS do cliente oficial do LMU.
+        # O ticket temporario nunca e persistido pelo Sector Flow.
+        if not bool(self.config.get("online_enrichment", False)):
             return
-
+        if not bool(self.config.get("use_cloud_profiles", False)):
+            return
         now = time.monotonic()
-        interval = max(2.0, float(self.config.get("online_refresh_seconds", 8.0)))
+        interval = max(
+            30.0,
+            float(self.config.get("online_refresh_seconds", 900.0)),
+        )
+        signature = self._make_session_signature(session)
 
         with self._lock:
+            if signature and signature != self._session_signature:
+                self._session_signature = signature
+                self._snapshot = OnlineSnapshot()
+                self._index = {}
+                self._last_refresh = 0.0
+                self._generation += 1
             if self._thread is not None and self._thread.is_alive():
                 return
             if not force and now - self._last_refresh < interval:
                 return
             self._last_refresh = now
+            generation = self._generation
             self._thread = threading.Thread(
                 target=self._refresh_worker,
-                args=(session,),
+                args=(session, generation),
                 daemon=True,
                 name="SectorFlow-LMUOnline",
             )
@@ -141,7 +170,7 @@ class LMUOnlineIdentityClient:
         )
         return destination
 
-    def _refresh_worker(self, session: Any | None) -> None:
+    def _refresh_worker(self, session: Any | None, generation: int) -> None:
         try:
             snapshot = self._collect_snapshot(session)
         except Exception as exc:  # proteção da thread
@@ -150,15 +179,38 @@ class LMUOnlineIdentityClient:
                 error=f"{type(exc).__name__}: {exc}",
             )
         with self._lock:
+            if generation != self._generation:
+                return
             self._snapshot = snapshot
             self._index = self._build_index(snapshot.identities)
 
+    @staticmethod
+    def _make_session_signature(session: Any | None) -> str:
+        if session is None:
+            return ""
+        names = sorted(
+            str(getattr(driver, "driver_name", "") or "").strip().casefold()
+            for driver in list(getattr(session, "drivers", []) or [])
+            if str(getattr(driver, "driver_name", "") or "").strip()
+        )
+        return "|".join(
+            (
+                str(getattr(session, "track_name", "") or ""),
+                str(getattr(session, "session", 0) or 0),
+                str(getattr(session, "max_laps", 0) or 0),
+                ",".join(names),
+            )
+        )
+
     def _collect_snapshot(self, session: Any | None) -> OnlineSnapshot:
-        del session
         timeout = max(0.5, float(self.config.get("online_timeout_seconds", 2.5)))
-        local_base = str(
-            self.config.get("local_api_base", "http://127.0.0.1:6397")
-        ).rstrip("/")
+        configured_base = str(self.config.get("local_api_base", "")).strip()
+        if configured_base:
+            local_base = configured_base.rstrip("/")
+        else:
+            local_host = str(self.config.get("local_api_host", "127.0.0.1"))
+            local_port = int(self.config.get("local_api_port", 6397))
+            local_base = f"http://{local_host}:{local_port}"
 
         payloads: dict[str, Any] = {}
         errors: list[str] = []
@@ -172,6 +224,23 @@ class LMUOnlineIdentityClient:
         local_identities = self._identities_from_payloads(
             payloads.values(), source="LMU REST local"
         )
+        session_driver_names = [
+            str(getattr(driver, "driver_name", "") or "").strip()
+            for driver in list(getattr(session, "drivers", []) or [])
+            if str(getattr(driver, "driver_name", "") or "").strip()
+        ]
+        session_driver_names.extend(
+            self._driver_names_from_teams(payloads.get("teams"))
+        )
+        session_driver_names = list(
+            dict.fromkeys(name for name in session_driver_names if name)
+        )
+        if not session_driver_names:
+            session_driver_names = [
+                item.display_name
+                for item in local_identities
+                if item.display_name
+            ]
         event_id = self._find_first_string_by_keys(
             payloads,
             {
@@ -186,16 +255,21 @@ class LMUOnlineIdentityClient:
             payloads,
             {"split", "splitlabel", "splitname", "server_split"},
         )
-        session_online = bool(event_id) or self._payload_looks_online(payloads)
+        session_online = self._multiplayer_roster_available(
+            payloads.get("teams")
+        ) or self._payload_looks_online(payloads)
 
         cloud_identities: list[OnlineDriverIdentity] = []
         cloud_error = ""
         cloud_available = False
-        if bool(self.config.get("use_cloud_profiles", True)) and event_id:
+        if (
+            bool(self.config.get("use_cloud_profiles", False))
+            and session_driver_names
+        ):
             try:
                 cloud_identities = self._fetch_cloud_identities(
                     local_base=local_base,
-                    event_id=event_id,
+                    driver_names=session_driver_names,
                     timeout=timeout,
                 )
                 cloud_available = bool(cloud_identities)
@@ -232,7 +306,7 @@ class LMUOnlineIdentityClient:
         self,
         *,
         local_base: str,
-        event_id: str,
+        driver_names: list[str],
         timeout: float,
     ) -> list[OnlineDriverIdentity]:
         ticket_payload = self._request_json(
@@ -248,132 +322,63 @@ class LMUOnlineIdentityClient:
         if not ticket:
             raise RuntimeError("LMU não retornou authSessionTicket")
 
-        client_key = self._resolve_client_key()
-        if not client_key:
-            raise RuntimeError(
-                "chave cliente Nakama não configurada; use o editor ou a variável "
-                "SECTOR_FLOW_NAKAMA_KEY"
-            )
-
         cloud_base = str(
             self.config.get(
-                "nakama_base_url",
-                "https://lmu-prod.eu-central1-a.nakamacloud.io",
+                "raceos_base_url",
+                "https://raceos.gg",
             )
         ).rstrip("/")
-        basic = base64.b64encode((client_key + ":").encode("utf-8")).decode("ascii")
         auth_response = self._request_json(
-            cloud_base + "/v2/account/authenticate/steam?create=false&sync=false",
+            cloud_base + "/authenticate",
             method="POST",
-            body={"token": ticket},
-            headers={"Authorization": "Basic " + basic},
+            body={
+                "token": ticket,
+                "game": "lmu",
+                "platform": "steam",
+            },
             timeout=timeout,
         )
         session_token = self._find_first_string_by_keys(
-            auth_response, {"token", "sessiontoken", "session_token"}
+            auth_response, {"accesstoken", "access_token"}
         )
         if not session_token:
             raise RuntimeError("autenticação online recusada")
 
-        headers = {"Authorization": "Bearer " + session_token}
-        event_type = str(self.config.get("online_event_type", "daily") or "daily")
-        event_info = self._call_rpc(
-            cloud_base,
-            "event_get",
-            {"eventType": event_type, "eventId": event_id},
-            headers,
-            timeout,
-        )
-
-        records: list[Any] = []
-        max_pages = max(1, min(20, int(self.config.get("online_max_pages", 8))))
-        for page in range(max_pages):
-            response = self._call_rpc(
-                cloud_base,
-                "event_entries_get",
-                {
-                    "eventType": event_type,
-                    "eventId": event_id,
-                    "page": page,
-                    "take": 100,
-                    "class": "",
-                },
-                headers,
-                timeout,
+        headers = {"Game-Authorization": "Bearer " + session_token}
+        profile_payloads: list[Any] = []
+        if isinstance(auth_response, dict) and auth_response.get("player"):
+            profile_payloads.append(auth_response.get("player"))
+        else:
+            profile_payloads.append(
+                self._request_json(
+                    cloud_base + "/api/v1/player",
+                    headers=headers,
+                    timeout=timeout,
+                )
             )
-            page_records = self._find_record_list(response)
-            if not page_records:
-                break
-            records.extend(page_records)
-            if len(page_records) < 100:
-                break
 
-        identities = self._identities_from_payloads(
-            [event_info, records], source="LMU Online"
+        usernames = sorted(
+            {
+                candidate
+                for value in driver_names
+                for candidate in (value, self._strip_driver_hash_suffix(value))
+                if candidate
+            }
         )
-        usernames = sorted({item.username for item in identities if item.username})
-        if usernames:
-            user_payloads: list[Any] = []
-            for start in range(0, len(usernames), 40):
-                query = urllib.parse.urlencode(
-                    [("usernames", value) for value in usernames[start : start + 40]]
+        for start in range(0, len(usernames), 40):
+            profile_payloads.append(
+                self._request_json(
+                    cloud_base + "/api/v1/players",
+                    method="POST",
+                    body={"usernames": usernames[start : start + 40]},
+                    headers=headers,
+                    timeout=timeout,
                 )
-                user_payloads.append(
-                    self._request_json(
-                        cloud_base + "/v2/user?" + query,
-                        headers=headers,
-                        timeout=timeout,
-                    )
-                )
-            profiles = self._identities_from_payloads(
-                user_payloads, source="LMU Online Profile"
             )
-            identities = self._merge_identities(identities, profiles)
-        return identities
-
-    def _resolve_client_key(self) -> str:
-        configured = str(self.config.get("nakama_client_key", "")).strip()
-        if configured:
-            return configured
-        environment = os.environ.get("SECTOR_FLOW_NAKAMA_KEY", "").strip()
-        if environment:
-            return environment
-        key_file = self.project_root / "data" / "online_profiles" / "nakama_client_key.txt"
-        if key_file.exists():
-            try:
-                return key_file.read_text(encoding="utf-8").strip()
-            except OSError:
-                return ""
-        return ""
-
-    def _call_rpc(
-        self,
-        base: str,
-        name: str,
-        payload: dict[str, Any],
-        headers: dict[str, str],
-        timeout: float,
-    ) -> Any:
-        endpoint = base + "/v2/rpc/" + name
-        attempts = [
-            (endpoint, {"payload": json.dumps(payload, ensure_ascii=False)}),
-            (endpoint + "?unwrap", payload),
-        ]
-        last_error: Exception | None = None
-        for url, body in attempts:
-            try:
-                return self._decode_jsonish(
-                    self._request_json(
-                        url,
-                        method="POST",
-                        body=body,
-                        headers=headers,
-                        timeout=timeout,
-                    )
-                )
-            except Exception as exc:
-                last_error = exc
-        raise last_error or RuntimeError(f"RPC {name} sem resposta")
+        return self._identities_from_payloads(
+            profile_payloads,
+            source="LMU RaceOS",
+        )
 
     def _request_json(
         self,
@@ -400,7 +405,10 @@ class LMUOnlineIdentityClient:
             headers=request_headers,
             method=method,
         )
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        open_kwargs: dict[str, Any] = {"timeout": timeout}
+        if url.casefold().startswith("https://"):
+            open_kwargs["context"] = self._ssl_context
+        with urllib.request.urlopen(request, **open_kwargs) as response:
             raw = response.read()
         if not raw:
             return None
@@ -432,11 +440,18 @@ class LMUOnlineIdentityClient:
         source: str,
     ) -> OnlineDriverIdentity | None:
         merged = dict(record)
-        for key in ("profile", "metadata", "properties", "data", "driver", "user", "account"):
-            nested = self._decode_jsonish(merged.get(key))
-            if isinstance(nested, dict):
-                for nested_key, value in nested.items():
-                    merged.setdefault(nested_key, value)
+        # Perfis Nakama guardam profile/driverRank/safetyRank dentro de
+        # `metadata`, que por sua vez costuma ser uma string JSON. Duas
+        # passagens incluem também os objetos que surgem após decodificá-la.
+        for _ in range(2):
+            for key in (
+                "profile", "metadata", "properties", "data", "driver",
+                "user", "account",
+            ):
+                nested = self._decode_jsonish(merged.get(key))
+                if isinstance(nested, dict):
+                    for nested_key, value in nested.items():
+                        merged.setdefault(nested_key, value)
 
         display_name = self._first_text(
             merged, ("driverName", "displayName", "display_name", "nickname", "name")
@@ -523,18 +538,26 @@ class LMUOnlineIdentityClient:
         first: list[OnlineDriverIdentity],
         second: list[OnlineDriverIdentity],
     ) -> list[OnlineDriverIdentity]:
-        merged: dict[str, OnlineDriverIdentity] = {}
+        merged: list[OnlineDriverIdentity] = []
+        aliases: dict[str, OnlineDriverIdentity] = {}
         for identity in list(first) + list(second):
-            key = (
-                self.normalize_name(identity.steam_id)
-                or self.normalize_name(identity.username)
-                or self.normalize_name(identity.display_name)
-            )
-            if not key:
+            keys = {
+                self.normalize_name(value)
+                for value in (
+                    identity.steam_id,
+                    identity.username,
+                    identity.display_name,
+                    self._strip_driver_hash_suffix(identity.display_name),
+                )
+                if self.normalize_name(value)
+            }
+            if not keys:
                 continue
-            existing = merged.get(key)
+            existing = next((aliases[key] for key in keys if key in aliases), None)
             if existing is None:
-                merged[key] = identity
+                merged.append(identity)
+                for key in keys:
+                    aliases[key] = identity
                 continue
             for field_name in (
                 "display_name",
@@ -556,7 +579,16 @@ class LMUOnlineIdentityClient:
                 if value not in ("", None):
                     setattr(existing, field_name, value)
             existing.raw.update(identity.raw)
-        return list(merged.values())
+            for value in (
+                existing.steam_id,
+                existing.username,
+                existing.display_name,
+                self._strip_driver_hash_suffix(existing.display_name),
+            ):
+                key = self.normalize_name(value)
+                if key:
+                    aliases[key] = existing
+        return merged
 
     def _build_index(
         self, identities: list[OnlineDriverIdentity]
@@ -577,19 +609,27 @@ class LMUOnlineIdentityClient:
                 continue
             try:
                 paths = sorted(
-                    [path for path in directory.iterdir() if path.is_file()],
+                    [
+                        path
+                        for path in directory.glob("trace_*.txt")
+                        if path.is_file()
+                    ],
                     key=lambda path: path.stat().st_mtime,
                     reverse=True,
-                )[:12]
+                )[:20]
             except OSError:
                 continue
             for path in paths:
                 try:
                     size = path.stat().st_size
                     with path.open("rb") as handle:
-                        if size > 2_000_000:
-                            handle.seek(size - 2_000_000)
-                        text = handle.read().decode("utf-8", errors="ignore")
+                        if size > 8_000_000:
+                            head = handle.read(2_000_000)
+                            handle.seek(max(0, size - 2_000_000))
+                            raw = head + b"\n" + handle.read()
+                        else:
+                            raw = handle.read()
+                        text = raw.decode("utf-8", errors="ignore")
                     matches = list(_EVENT_ID_PATTERN.finditer(text))
                     if matches and path.stat().st_mtime > newest_mtime:
                         newest_mtime = path.stat().st_mtime
@@ -603,19 +643,49 @@ class LMUOnlineIdentityClient:
         result: list[Path] = []
         if configured:
             result.append(Path(configured))
+        steam_roots: list[Path] = []
         for variable, fallback in (
             ("PROGRAMFILES(X86)", r"C:\Program Files (x86)"),
             ("PROGRAMFILES", r"C:\Program Files"),
         ):
-            result.append(
-                Path(os.environ.get(variable, fallback))
-                / "Steam"
+            steam_roots.append(Path(os.environ.get(variable, fallback)) / "Steam")
+        if winreg is not None:
+            for hive, key_name in (
+                (winreg.HKEY_CURRENT_USER, r"SOFTWARE\Valve\Steam"),
+                (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Valve\Steam"),
+                (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Valve\Steam"),
+            ):
+                try:
+                    with winreg.OpenKey(hive, key_name) as key:
+                        steam_roots.append(Path(winreg.QueryValueEx(key, "InstallPath")[0]))
+                except OSError:
+                    continue
+
+        libraries: list[Path] = []
+        for steam_root in steam_roots:
+            libraries.append(steam_root)
+            library_file = steam_root / "steamapps" / "libraryfolders.vdf"
+            try:
+                text = library_file.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            for raw_path in re.findall(r'"path"\s+"([^"]+)"', text, re.IGNORECASE):
+                libraries.append(Path(raw_path.replace(r"\\", "\\")))
+
+        seen: set[str] = set()
+        for library in libraries:
+            candidate = (
+                library
                 / "steamapps"
                 / "common"
                 / "Le Mans Ultimate"
                 / "UserData"
                 / "Log"
             )
+            key = str(candidate).casefold()
+            if key not in seen:
+                seen.add(key)
+                result.append(candidate)
         return result
 
     @staticmethod
@@ -626,6 +696,10 @@ class LMUOnlineIdentityClient:
         text = re.sub(r"#\s*\d+", " ", text)
         text = re.sub(r"[^a-z0-9]+", " ", text)
         return " ".join(text.split())
+
+    @staticmethod
+    def _strip_driver_hash_suffix(value: str) -> str:
+        return re.sub(r"\s*#\s*\d+\s*$", "", str(value or "")).strip()
 
     @classmethod
     def _walk_records(cls, payload: Any) -> Iterable[dict[str, Any]]:
@@ -712,6 +786,56 @@ class LMUOnlineIdentityClient:
                     }:
                         return True
         return False
+
+    @classmethod
+    def _multiplayer_roster_available(cls, payload: Any) -> bool:
+        decoded = cls._decode_jsonish(payload)
+        if not isinstance(decoded, dict):
+            return False
+        for key, value in decoded.items():
+            if str(key).casefold() != "drivers":
+                continue
+            value = cls._decode_jsonish(value)
+            return isinstance(value, (dict, list)) and bool(value)
+        return any(
+            cls._multiplayer_roster_available(value)
+            for value in decoded.values()
+            if isinstance(value, (dict, list, str))
+        )
+
+    @classmethod
+    def _driver_names_from_teams(cls, payload: Any) -> list[str]:
+        """Extrai os nomes que o LMU publica como chaves de ``drivers``."""
+        decoded = cls._decode_jsonish(payload)
+        if not isinstance(decoded, dict):
+            return []
+        result: list[str] = []
+        for key, value in decoded.items():
+            if str(key).casefold() == "drivers":
+                roster = cls._decode_jsonish(value)
+                if isinstance(roster, dict):
+                    result.extend(
+                        str(name).strip()
+                        for name in roster
+                        if str(name).strip()
+                    )
+                elif isinstance(roster, list):
+                    for record in roster:
+                        if isinstance(record, dict):
+                            name = cls._first_text(
+                                record,
+                                (
+                                    "driverName",
+                                    "displayName",
+                                    "username",
+                                    "name",
+                                ),
+                            )
+                            if name:
+                                result.append(name)
+            elif isinstance(value, (dict, list, str)):
+                result.extend(cls._driver_names_from_teams(value))
+        return list(dict.fromkeys(result))
 
     @staticmethod
     def _first_value(mapping: dict[str, Any], keys: tuple[str, ...]) -> Any:

@@ -353,9 +353,48 @@ class OverlayManager(QObject):
         if not bool(getattr(session, "connected", True)):
             return False
 
-        # Na garagem/monitor a sessao continua ativa, mas o jogador nao esta
-        # controlando o carro. Esse campo muda para True quando entra na pista.
-        if not bool(getattr(session, "in_realtime", False)):
+        # A API local distingue monitor, replay, carregamento e controle do
+        # carro. Ela corrige os quadros congelados de mInRealtime que o LMU
+        # pode manter ao entrar/sair da garagem. Sem REST, conserva o fallback
+        # da memoria compartilhada.
+        try:
+            api_age_s = float(getattr(session, "local_api_age_s", 99.0))
+        except (TypeError, ValueError):
+            api_age_s = 99.0
+        api_available = bool(
+            getattr(session, "local_api_available", False)
+        ) and api_age_s <= 5.0
+        in_control = getattr(session, "in_control_of_vehicle", None)
+        in_monitor = getattr(session, "in_monitor", None)
+        vehicle_loaded = getattr(session, "player_vehicle_loaded", None)
+        replay_active = getattr(session, "is_replay_active", None)
+        race_finished = getattr(session, "race_finished", None)
+        realtime_rest = getattr(session, "in_realtime_rest", None)
+        rest_state_complete = api_available and all(
+            value is not None
+            for value in (in_control, in_monitor, vehicle_loaded)
+        )
+
+        navigation_state = str(
+            getattr(session, "navigation_state", "") or ""
+        )
+        if api_available and navigation_state in {
+            "NAV_MAIN_MENU",
+            "NAV_OPTIONS",
+        }:
+            return False
+
+        if rest_state_complete:
+            if (
+                not bool(in_control)
+                or bool(in_monitor)
+                or not bool(vehicle_loaded)
+                or bool(replay_active)
+                or bool(race_finished)
+                or realtime_rest is False
+            ):
+                return False
+        elif not bool(getattr(session, "in_realtime", False)):
             return False
 
         try:
