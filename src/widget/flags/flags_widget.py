@@ -1127,6 +1127,15 @@ class FlagsWidget(QWidget):
         self,
         session: Any,
     ) -> None:
+        # Durante a edição, a telemetria não deve ocultar nem substituir
+        # o quadro usado para posicionar e redimensionar o widget.
+        if self.edit_mode:
+            if not self.isVisible():
+                self.show()
+            self.widget_visivel = True
+            self.update()
+            return
+
         simulated = self._read_simulation_file()
 
         self.snapshot = (
@@ -1333,14 +1342,9 @@ class FlagsWidget(QWidget):
         self.edit_mode = bool(enabled)
 
         if self.edit_mode:
-            self.snapshot = self.logic.preview(
-                str(
-                    self.config.get(
-                        "preview_mode",
-                        "yellow",
-                    )
-                )
-            )
+            # Exibe uma bandeira amarela de exemplo para facilitar o
+            # posicionamento e o redimensionamento durante a edição.
+            self.snapshot = self.logic.preview("yellow")
             self._render_snapshot()
             self.show()
             self.widget_visivel = True
@@ -1351,7 +1355,27 @@ class FlagsWidget(QWidget):
             self.setCursor(
                 Qt.CursorShape.ArrowCursor
             )
-            self.verificar_visibilidade_widget()
+            # Remove imediatamente a prévia usada apenas na edição. Uma
+            # bandeira real voltará a aparecer na próxima telemetria.
+            self.snapshot = FlagsSnapshot()
+            self.yellow_ativa = False
+            self.blue_ativa = False
+            self.green_ativa = False
+            self.yellow_card.hide()
+            self.blue_card.hide()
+            self.green_flag.hide()
+
+            if bool(
+                self.config.get(
+                    "auto_hide_when_clear",
+                    True,
+                )
+            ):
+                self.hide()
+                self.widget_visivel = False
+            else:
+                self.show()
+                self.widget_visivel = True
 
         self.update()
 

@@ -147,7 +147,7 @@
       "sector_tolerance_seconds": 0.001,
       "show_manufacturer_logo": true,
       "size": {
-        "height": 0.12685185185185185,
+        "height": 0.12037037037037036,
         "width": 0.21875
       },
       "snap_to_edges": true
@@ -156,12 +156,12 @@
       "enabled": true,
       "monitor": 0,
       "position": {
-        "x": 0.7208333333333333,
-        "y": 0.025
+        "x": 0.6848958333333334,
+        "y": 0.03518518518518519
       },
       "size": {
-        "width": 0.15625,
-        "height": 0.17037037037037037
+        "width": 0.11458333333333333,
+        "height": 0.08425925925925926
       },
       "scale": 1.0,
       "internal_scale": 1.0,
