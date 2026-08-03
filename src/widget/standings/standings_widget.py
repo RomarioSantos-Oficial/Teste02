@@ -22,6 +22,7 @@ from PySide6.QtGui import QColor, QFont, QMouseEvent, QPaintEvent, QPainter, QPe
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from .standings_assets import (
+    BadgeImageStore,
     BrandLogoStore,
     CountryFlagStore,
     badge_color,
@@ -78,6 +79,7 @@ class StandingsWidget(QWidget):
         self.enrichment = LocalStandingsEnrichment(PROJECT_ROOT, config)
         self.online_client = LMUOnlineIdentityClient(PROJECT_ROOT, config)
         self.logos = BrandLogoStore(PROJECT_ROOT, config)
+        self.badge_images = BadgeImageStore(PROJECT_ROOT, config)
         self.flags = CountryFlagStore(PROJECT_ROOT, config, self)
         self.view = StandingsView()
         self.session: Any | None = None
@@ -109,6 +111,7 @@ class StandingsWidget(QWidget):
         self.enrichment.update_config(self.config)
         self.online_client.update_config(self.config)
         self.logos.update_config(self.config)
+        self.badge_images.update_config(self.config)
         self.flags.update_config(self.config)
         self.setWindowOpacity(max(0.10, min(1.0, float(self.config.get("opacity", 0.98)))))
         self._update_scale()
@@ -510,8 +513,23 @@ class StandingsWidget(QWidget):
                     flag_emoji(row.nationality, row.country_code),
                 )
         elif key == "badge":
-            label = badge_text(row.badge)
-            if label:
+            pixmap = self.badge_images.pixmap(
+                row.badge,
+                max(1, int(rect.width() * 0.90)),
+                max(1, int(rect.height() * 0.84)),
+            )
+            if pixmap is not None:
+                target = QRectF(
+                    rect.center().x() - pixmap.width() / 2.0,
+                    rect.center().y() - pixmap.height() / 2.0,
+                    pixmap.width(),
+                    pixmap.height(),
+                )
+                painter.drawPixmap(target, pixmap, QRectF(pixmap.rect()))
+            else:
+                label = badge_text(row.badge)
+                if not label:
+                    return
                 target = rect.adjusted(5 * self._scale, 10 * self._scale, -5 * self._scale, -10 * self._scale)
                 color = QColor(badge_color(row.badge, colors))
                 painter.setPen(Qt.PenStyle.NoPen)

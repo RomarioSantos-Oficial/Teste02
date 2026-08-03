@@ -45,6 +45,8 @@
   "flag_download_timeout_seconds": 3.0,
   "flag_retry_seconds": 300.0,
   "show_badge": true,
+  "use_badge_images": true,
+  "badge_directory": "images/badge",
   "show_driver_rank": true,
   "show_driver_rank_progress": true,
   "show_safety_rank": true,

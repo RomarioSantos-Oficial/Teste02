@@ -102,6 +102,7 @@ class StandingsEditor(QDialog):
             ("show_country_flag", "Bandeira do piloto:", True),
             ("use_flag_images", "Usar imagem da bandeira:", True),
             ("show_badge", "Badge do piloto:", True),
+            ("use_badge_images", "Usar imagem do badge:", True),
             ("show_driver_rank", "Driver Rank (DR):", True),
             ("show_driver_rank_progress", "Progresso do DR:", True),
             ("show_safety_rank", "Safety Rank (SR):", True),
@@ -187,6 +188,12 @@ class StandingsEditor(QDialog):
         opacity.valueChanged.connect(lambda value: self._set("opacity", value))
         logo_dir = QLineEdit(str(self.config.get("logo_directory", "images/logos")))
         logo_dir.editingFinished.connect(lambda: self._set("logo_directory", logo_dir.text().strip()))
+        badge_dir = QLineEdit(
+            str(self.config.get("badge_directory", "images/badge"))
+        )
+        badge_dir.editingFinished.connect(
+            lambda: self._set("badge_directory", badge_dir.text().strip())
+        )
         form.addRow("Fonte:", font)
         form.addRow("Tamanho base:", size)
         form.addRow("Altura da linha:", row_height)
@@ -198,6 +205,7 @@ class StandingsEditor(QDialog):
         form.addRow("Ajustar fundo ao conteúdo:", auto_fit)
         form.addRow("Opacidade:", opacity)
         form.addRow("Pasta de logos:", logo_dir)
+        form.addRow("Pasta de badges:", badge_dir)
         self.layout_content.addWidget(group)
 
     def _build_local_source(self) -> None:
@@ -222,18 +230,19 @@ class StandingsEditor(QDialog):
             lambda value: self._set("online_enrichment", value)
         )
         online_interval = QDoubleSpinBox()
-        online_interval.setRange(5.0, 60.0)
+        online_interval.setRange(30.0, 3600.0)
+        online_interval.setSingleStep(60.0)
         online_interval.setSuffix(" s")
         online_interval.setValue(
-            float(self.config.get("online_refresh_seconds", 10.0))
+            float(self.config.get("online_refresh_seconds", 900.0))
         )
         online_interval.valueChanged.connect(
             lambda value: self._set("online_refresh_seconds", value)
         )
         online_note = QLabel(
-            "O REST local captura país, badge, DR e SR quando o próprio LMU "
-            "publica esses campos na sessão. A consulta externa é opcional e "
-            "permanece desligada sem uma chave autorizada."
+            "O REST local captura país e badge. DR e SR usam o ticket "
+            "temporário do LMU com o RaceOS oficial; nenhuma chave externa "
+            "precisa ser configurada."
         )
         online_note.setWordWrap(True)
         form.addRow("REST local:", enabled)

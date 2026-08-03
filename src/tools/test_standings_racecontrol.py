@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from typing import Any
 
 from src.widget.standings.lmu_online_client import LMUOnlineIdentityClient
+from src.widget.standings.standings_assets import badge_asset_key
 from src.widget.standings.standings_online import LocalStandingsEnrichment
 
 
@@ -92,6 +93,24 @@ class FakeRaceControlClient(LMUOnlineIdentityClient):
 
 
 class RaceControlClientTests(unittest.TestCase):
+    def test_official_badge_codes_map_to_local_images(self) -> None:
+        expected = {
+            "sr-noob": "rookie",
+            "sr-rookie": "rookie",
+            "sr-probation": "probation",
+            "sr-warning": "warning",
+            "sr-danger": "warning",
+            "sr-clean": "gooddriver",
+            "sr-saint": "trusteddrive",
+            "s397": "staff",
+            "content-creator": "creator",
+            "irl-driver": "realdriver",
+        }
+        self.assertEqual(
+            {value: badge_asset_key(value) for value in expected},
+            expected,
+        )
+
     def test_local_teams_dictionary_keeps_driver_name(self) -> None:
         parser = object.__new__(LocalStandingsEnrichment)
         metadata = {}

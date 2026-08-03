@@ -15,6 +15,7 @@ from __future__ import annotations
 import hashlib
 import re
 import time
+import unicodedata
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any
@@ -54,6 +55,37 @@ BRANDS = {
     "oreca": "Oreca", "ligier": "Ligier", "ginetta": "Ginetta",
     "gr010": "Toyota", "9x8": "Peugeot", "a424": "Alpine",
     "v-series": "Cadillac", "007": "Glickenhaus", "isotta": "Isotta",
+}
+
+BADGE_IMAGE_ALIASES = {
+    "srnoob": "rookie",
+    "srrookie": "rookie",
+    "rookie": "rookie",
+    "novato": "rookie",
+    "srprobation": "probation",
+    "probation": "probation",
+    "returnfromban": "probation",
+    "srwarning": "warning",
+    "srdanger": "warning",
+    "warning": "warning",
+    "danger": "warning",
+    "srclean": "gooddriver",
+    "gooddriver": "gooddriver",
+    "bompiloto": "gooddriver",
+    "srsaint": "trusteddrive",
+    "trustedracer": "trusteddrive",
+    "trusteddriver": "trusteddrive",
+    "trusteddrive": "trusteddrive",
+    "pilotoconfiavel": "trusteddrive",
+    "s397": "staff",
+    "staff": "staff",
+    "developer": "staff",
+    "admin": "staff",
+    "contentcreator": "creator",
+    "creator": "creator",
+    "partner": "creator",
+    "irldriver": "realdriver",
+    "realdriver": "realdriver",
 }
 
 
@@ -110,6 +142,90 @@ class BrandLogoStore:
             )
         pixmap = self._pixmaps[cache_key]
         return pixmap if not pixmap.isNull() else None
+
+
+class BadgeImageStore:
+    """Carrega os badges locais usando os codigos oficiais do RaceOS."""
+
+    def __init__(self, project_root: Path, config: dict[str, Any]) -> None:
+        self.project_root = Path(project_root)
+        self.config = dict(config)
+        self._files: dict[str, Path] = {}
+        self._pixmaps: dict[tuple[str, int, int], QPixmap] = {}
+        self.refresh()
+
+    def update_config(self, config: dict[str, Any]) -> None:
+        previous = str(
+            self.config.get("badge_directory", "images/badge")
+        )
+        self.config = dict(config)
+        current = str(
+            self.config.get("badge_directory", "images/badge")
+        )
+        if previous != current:
+            self.refresh()
+
+    def refresh(self) -> None:
+        self._files = {}
+        self._pixmaps = {}
+        configured = str(
+            self.config.get("badge_directory", "images/badge")
+            or "images/badge"
+        ).strip()
+        directories = (
+            self.project_root / configured,
+            self.project_root / "images" / "badge",
+            self.project_root / "images" / "Badge",
+        )
+        seen: set[str] = set()
+        for directory in directories:
+            key = str(directory).casefold()
+            if key in seen or not directory.is_dir():
+                continue
+            seen.add(key)
+            for path in directory.iterdir():
+                if (
+                    path.is_file()
+                    and path.suffix.casefold()
+                    in {".png", ".jpg", ".jpeg", ".bmp", ".webp"}
+                ):
+                    file_key = _asset_key(path.stem)
+                    self._files.setdefault(file_key, path)
+                    if file_key in {
+                        "trusteddrive",
+                        "trusteddriver",
+                        "pilotoconfiavel",
+                    }:
+                        self._files.setdefault("trusteddrive", path)
+
+    def pixmap(
+        self,
+        badge: str,
+        width: int,
+        height: int,
+    ) -> QPixmap | None:
+        if not bool(self.config.get("use_badge_images", True)):
+            return None
+        source_key = badge_asset_key(badge)
+        if not source_key:
+            return None
+        path = self._files.get(source_key)
+        if path is None:
+            return None
+        width = max(1, int(width))
+        height = max(1, int(height))
+        cache_key = (str(path), width, height)
+        cached = self._pixmaps.get(cache_key)
+        if cached is None:
+            source = QPixmap(str(path))
+            cached = source.scaled(
+                width,
+                height,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            self._pixmaps[cache_key] = cached
+        return cached if not cached.isNull() else None
 
 
 class CountryFlagStore(QObject):
@@ -307,6 +423,19 @@ class CountryFlagStore(QObject):
 
 def _clean(value: str) -> str:
     return "".join(c for c in str(value or "").casefold() if c.isalnum())
+
+
+def _asset_key(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", str(value or ""))
+    ascii_text = normalized.encode("ascii", errors="ignore").decode("ascii")
+    return "".join(c for c in ascii_text.casefold() if c.isalnum())
+
+
+def badge_asset_key(value: str) -> str:
+    clean = _asset_key(value)
+    if not clean or clean in {"none", "null", "undefined"}:
+        return ""
+    return BADGE_IMAGE_ALIASES.get(clean, clean)
 
 
 def detect_manufacturer(vehicle_name: str, vehicle_filename: str = "", supplied: str = "") -> str:
