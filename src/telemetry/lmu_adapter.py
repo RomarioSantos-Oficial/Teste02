@@ -143,6 +143,11 @@ class LMUAdapter:
                         + safe_float(score_velocity.z) ** 2
                     ) * 3.6
 
+                score_pos = getattr(score, "mPos", None)
+                score_ori = getattr(score, "mOri", None)
+                right = score_ori[0] if score_ori is not None else None
+                forward = score_ori[2] if score_ori is not None else None
+
                 drivers.append(
                     DriverData(
                         driver_name=decode_text(score.mDriverName),
