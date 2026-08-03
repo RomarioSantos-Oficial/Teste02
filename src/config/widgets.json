@@ -55,7 +55,8 @@
       "always_on_top": true,
       "announce_initial_fastest": false,
       "auto_fit_content": true,
-      "background_enabled": true,
+      "background_enabled": false,
+      "background_mode": "sections",
       "background_opacity": 0.86,
       "border_radius": 12,
       "click_through": true,
@@ -106,7 +107,7 @@
           "locked": false
         },
         "sectors": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         },
         "session_time": {
@@ -125,9 +126,9 @@
       "enabled": true,
       "fastest_lap_always_visible": true,
       "fastest_lap_fade_seconds": 0.35,
-      "fastest_lap_show_seconds": 5.0,
+      "fastest_lap_show_seconds": 4.5,
       "font": {
-        "family": "Bahnschrift Light SemiCondensed"
+        "family": "Arial Black"
       },
       "history_points": 240,
       "logo_auto_refresh": true,
@@ -138,16 +139,16 @@
       "penalty_increment": 0.25,
       "penalty_limit_fallback": 0.0,
       "position": {
-        "x": 0.49166666666666664,
-        "y": 0.196
+        "x": 0.48200000000000004,
+        "y": 0.10099999999999999
       },
-      "scale": 0.8,
+      "scale": 1.15,
       "section_backgrounds": true,
       "sector_tolerance_seconds": 0.001,
       "show_manufacturer_logo": true,
       "size": {
-        "height": 0.114,
-        "width": 0.21899999999999997
+        "height": 0.054000000000000006,
+        "width": 0.19899999999999998
       },
       "snap_to_edges": true
     }
@@ -166,7 +167,7 @@
       },
       "scale": 1.0,
       "opacity": 0.96,
-      "background_enabled": true,
+      "background_enabled": false,
       "section_backgrounds": true,
       "background_opacity": 0.86,
       "border_radius": 12,
@@ -247,7 +248,8 @@
       "sector_tolerance_seconds": 0.001,
       "delta_good_side": "right",
       "penalty_increment": 0.25,
-      "logo_auto_refresh": true
+      "logo_auto_refresh": true,
+      "background_mode": "sections"
     }
   }
 }

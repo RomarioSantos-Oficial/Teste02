@@ -1,5 +1,5 @@
 {
-  "version": 9,
+  "version": 10,
   "widgets": {
     "driver_panel": {
       "always_on_top": true,
@@ -54,7 +54,7 @@
     "delta": {
       "always_on_top": true,
       "announce_initial_fastest": false,
-      "auto_fit_content": true,
+      "auto_fit_content": false,
       "background_enabled": true,
       "background_opacity": 0.86,
       "border_radius": 12,
@@ -94,38 +94,38 @@
           "locked": false
         },
         "header": {
-          "enabled": false,
-          "locked": false
-        },
-        "history": {
-          "enabled": false,
-          "locked": false
-        },
-        "penalties": {
-          "enabled": false,
-          "locked": false
-        },
-        "sectors": {
           "enabled": true,
           "locked": false
         },
-        "session_time": {
+        "history": {
+          "enabled": true,
+          "locked": false
+        },
+        "penalties": {
+          "enabled": true,
+          "locked": false
+        },
+        "sectors": {
           "enabled": false,
+          "locked": false
+        },
+        "session_time": {
+          "enabled": true,
           "locked": false
         },
         "session_type": {
-          "enabled": false,
+          "enabled": true,
           "locked": false
         },
         "track_state": {
-          "enabled": false,
+          "enabled": true,
           "locked": false
         }
       },
       "enabled": true,
       "fastest_lap_always_visible": true,
       "fastest_lap_fade_seconds": 0.35,
-      "fastest_lap_show_seconds": 5.0,
+      "fastest_lap_show_seconds": 4.5,
       "font": {
         "family": "Bahnschrift Light SemiCondensed"
       },
@@ -136,18 +136,18 @@
       "monitor": 0,
       "opacity": 0.91,
       "penalty_increment": 0.25,
-      "penalty_limit_fallback": 5.0,
+      "penalty_limit_fallback": 0.0,
       "position": {
-        "x": 0.49166666666666664,
-        "y": 0.196
+        "x": 0.48200000000000004,
+        "y": 0.10099999999999999
       },
       "scale": 0.8,
       "section_backgrounds": true,
       "sector_tolerance_seconds": 0.001,
       "show_manufacturer_logo": true,
       "size": {
-        "height": 0.114,
-        "width": 0.21899999999999997
+        "height": 0.054000000000000006,
+        "width": 0.19899999999999998
       },
       "snap_to_edges": true
     }
@@ -243,7 +243,7 @@
         "sector_worse": "#FFC42E",
         "sector_session_best": "#8B4DFF"
       },
-      "penalty_limit_fallback": 5.0,
+      "penalty_limit_fallback": 0.0,
       "sector_tolerance_seconds": 0.001,
       "delta_good_side": "right",
       "penalty_increment": 0.25,

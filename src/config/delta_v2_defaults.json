@@ -11,7 +11,7 @@
   },
   "scale": 1.0,
   "opacity": 0.96,
-  "background_enabled": true,
+  "background_enabled": false,
   "section_backgrounds": true,
   "background_opacity": 0.86,
   "border_radius": 12,
@@ -92,5 +92,6 @@
   "sector_tolerance_seconds": 0.001,
   "delta_good_side": "right",
   "penalty_increment": 0.25,
-  "logo_auto_refresh": true
+  "logo_auto_refresh": true,
+  "background_mode": "sections"
 }

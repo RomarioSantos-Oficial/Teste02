@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -83,7 +84,13 @@ class DeltaRenderer:
             float(config.get("border_radius", 12)) * scale,
         )
 
-        if bool(config.get("background_enabled", True)):
+        if self._draw_outer_background(config):
+            frame_rect = layout.outer.adjusted(
+                -max(4.0, 8.0 * scale),
+                -max(4.0, 8.0 * scale),
+                max(4.0, 8.0 * scale),
+                max(4.0, 8.0 * scale),
+            )
             painter.setPen(
                 QPen(
                     border,
@@ -92,7 +99,7 @@ class DeltaRenderer:
             )
             painter.setBrush(background)
             painter.drawRoundedRect(
-                bounds.adjusted(1, 1, -1, -1),
+                frame_rect,
                 radius,
                 radius,
             )
@@ -129,10 +136,7 @@ class DeltaRenderer:
         ):
             painter.save()
             painter.setOpacity(
-                max(
-                    0.0,
-                    min(1.0, data.fastest_alpha),
-                )
+                max(0.0, min(1.0, data.fastest_alpha))
             )
             self._draw_fastest_lap(
                 painter,
@@ -153,23 +157,38 @@ class DeltaRenderer:
             )
 
         if edit_mode:
-            edit = QColor(
-                colors.get("edit_border", "#9B5CFF")
-            )
-            pen = QPen(
-                edit,
-                max(1.2, 2.0 * scale),
-            )
+            edit = QColor(colors.get("edit_border", "#9B5CFF"))
+            pen = QPen(edit, max(1.2, 2.0 * scale))
             pen.setStyle(Qt.PenStyle.DashLine)
             painter.setPen(pen)
             painter.setBrush(Qt.BrushStyle.NoBrush)
+            frame_rect = layout.outer.adjusted(
+                -max(4.0, 8.0 * scale),
+                -max(4.0, 8.0 * scale),
+                max(4.0, 8.0 * scale),
+                max(4.0, 8.0 * scale),
+            )
             painter.drawRoundedRect(
-                bounds.adjusted(2, 2, -2, -2),
+                frame_rect,
                 radius,
                 radius,
             )
 
         painter.restore()
+
+    @staticmethod
+    def _draw_outer_background(config: dict[str, Any]) -> bool:
+        mode = str(
+            config.get(
+                "background_mode",
+                "sections",
+            )
+        ).strip().lower()
+
+        if mode == "group":
+            return bool(config.get("background_enabled", True))
+
+        return False
 
     def _draw_header(
         self,
@@ -231,8 +250,8 @@ class DeltaRenderer:
                 else:
                     color = muted
             else:
-                label = f"PEN  {self._format_counter(current)}/?"
-                color = warning if current > 0 else muted
+                label = f"PEN  {data.penalties}"
+                color = warning if data.penalties > 0 else muted
 
             items.append((label, color))
 
