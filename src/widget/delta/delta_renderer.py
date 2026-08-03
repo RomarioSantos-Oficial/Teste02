@@ -35,12 +35,12 @@ class DeltaRenderer:
         self,
         width: int,
         config: dict[str, Any],
-        fastest_visible: bool,
+        fastest_count: int,
     ) -> int:
         return self.layout_engine.preferred_height(
             width,
             config,
-            fastest_visible,
+            fastest_count,
         )
 
     def draw(
@@ -66,14 +66,18 @@ class DeltaRenderer:
             float(config.get("background_opacity", 0.86))
         )
 
-        fastest_visible = (
-            data.fastest_lap is not None
-            and data.fastest_alpha > 0.001
+        fastest_laps = list(data.fastest_laps)
+        if not fastest_laps and data.fastest_lap is not None:
+            fastest_laps = [data.fastest_lap]
+        fastest_count = (
+            len(fastest_laps)
+            if data.fastest_alpha > 0.001
+            else 0
         )
         layout = self.layout_engine.build(
             bounds,
             config,
-            fastest_visible,
+            fastest_count,
         )
         scale = max(
             0.35,
@@ -132,16 +136,16 @@ class DeltaRenderer:
 
         if (
             layout.fastest is not None
-            and data.fastest_lap is not None
+            and fastest_laps
         ):
             painter.save()
             painter.setOpacity(
                 max(0.0, min(1.0, data.fastest_alpha))
             )
-            self._draw_fastest_lap(
+            self._draw_fastest_laps(
                 painter,
                 layout.fastest,
-                data.fastest_lap,
+                fastest_laps,
                 config,
                 scale,
             )
@@ -609,6 +613,35 @@ class DeltaRenderer:
         )
         painter.drawPath(loss_path)
 
+    def _draw_fastest_laps(
+        self,
+        painter: QPainter,
+        rect: QRectF,
+        fastest_laps: Sequence[FastestLapData],
+        config: dict[str, Any],
+        scale: float,
+    ) -> None:
+        if not fastest_laps:
+            return
+        gap = max(2.0, 8.0 * scale)
+        row_height = (
+            rect.height() - gap * max(0, len(fastest_laps) - 1)
+        ) / len(fastest_laps)
+        for index, fastest in enumerate(fastest_laps):
+            row = QRectF(
+                rect.left(),
+                rect.top() + index * (row_height + gap),
+                rect.width(),
+                row_height,
+            )
+            self._draw_fastest_lap(
+                painter,
+                row,
+                fastest,
+                config,
+                scale,
+            )
+
     def _draw_fastest_lap(
         self,
         painter: QPainter,
@@ -676,8 +709,8 @@ class DeltaRenderer:
             )
             else 0.0
         )
-        position_width = inner.width() * 0.09
-        lap_width = inner.width() * 0.25
+        position_width = inner.width() * 0.15
+        lap_width = inner.width() * 0.23
         driver_width = (
             inner.width()
             - logo_width
@@ -822,9 +855,11 @@ class DeltaRenderer:
             lap_text,
         )
 
+        class_position = fastest.class_position or fastest.position
+        class_name = str(fastest.vehicle_class or "").upper()
         position = (
-            f"P{fastest.position}"
-            if fastest.position > 0
+            f"P{class_position} {class_name}".strip()
+            if class_position > 0
             else ""
         )
         painter.setFont(

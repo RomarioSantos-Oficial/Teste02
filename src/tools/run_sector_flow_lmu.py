@@ -49,6 +49,20 @@ class SectorFlowApplication:
             self.menu.set_lmu_status(False, session.error or "abra o jogo e entre na pista")
             return
 
+        if not self.overlay_manager._session_allows_overlays(session):
+            self.overlay_manager.set_session_active(False)
+            phase = int(getattr(session, "game_phase", 0))
+            if 1 <= phase <= 7:
+                status = "— garagem/monitor"
+            elif phase == 8:
+                status = "— sessão encerrada/menu"
+            elif phase == 9:
+                status = "— jogo pausado"
+            else:
+                status = "— aguardando sessão"
+            self.menu.set_lmu_status(True, status)
+            return
+
         if session.player is None:
             self.overlay_manager.set_session_active(False)
             self.menu.set_lmu_status(True, "— aguardando veículo")

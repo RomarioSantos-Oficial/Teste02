@@ -193,7 +193,7 @@ class TyresEditor(QDialog):
 
         source = QComboBox()
         source.addItem(
-            "Camada interna — média",
+            "Jogo/MFD — camada interna média",
             "inner_average",
         )
         source.addItem(

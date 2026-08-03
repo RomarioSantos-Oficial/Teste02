@@ -350,23 +350,33 @@ class OverlayManager(QObject):
 
     @staticmethod
     def _session_allows_overlays(session: Any) -> bool:
-        # O LMU mantem o ultimo veiculo e a sessao na memoria quando o
-        # jogador volta ao monitor/menu. mInRealtime distingue esse
-        # estado de quando o jogador esta efetivamente dentro do carro.
-        if not bool(
-            getattr(
-                session,
-                "in_realtime",
-                False,
-            )
-        ):
+        if not bool(getattr(session, "connected", True)):
+            return False
+
+        # Na garagem/monitor a sessao continua ativa, mas o jogador nao esta
+        # controlando o carro. Esse campo muda para True quando entra na pista.
+        if not bool(getattr(session, "in_realtime", False)):
             return False
 
         try:
             session_type = int(getattr(session, "session", -1))
         except (TypeError, ValueError):
             return False
-        return 1 <= session_type <= 8 or 10 <= session_type <= 13
+        if not (1 <= session_type <= 8 or 10 <= session_type <= 13):
+            return False
+
+        game_phase = getattr(session, "game_phase", None)
+        if game_phase is not None:
+            try:
+                # A fase rejeita o ultimo mInRealtime=True que o LMU pode
+                # manter congelado depois que a sessao termina.
+                # 0 = antes da sessao; 8 = sessao encerrada; 9 = pausado.
+                if not 1 <= int(game_phase) <= 7:
+                    return False
+            except (TypeError, ValueError):
+                return False
+
+        return True
 
     def save_config(self) -> None:
         self.config_path.parent.mkdir(parents=True, exist_ok=True)

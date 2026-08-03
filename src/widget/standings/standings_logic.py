@@ -45,6 +45,13 @@ class StandingsLogic:
         self._start_class: dict[int, int] = {}
         self._pit_started: dict[int, float] = {}
         self._pit_elapsed: dict[int, float] = {}
+        self._pit_was_inside: dict[int, bool] = {}
+        self._pit_exit_lap: dict[int, int] = {}
+        self._previous_best_laps: dict[int, float] = {}
+        self._personal_best_until: dict[int, float] = {}
+        self._observed_laps_once = False
+        self._race_totals: dict[str, int] = {}
+        self._last_current_time = 0.0
 
     def update_config(self, config: dict[str, Any]) -> None:
         self.config = config
@@ -55,25 +62,48 @@ class StandingsLogic:
         self._start_class.clear()
         self._pit_started.clear()
         self._pit_elapsed.clear()
+        self._pit_was_inside.clear()
+        self._pit_exit_lap.clear()
+        self._previous_best_laps.clear()
+        self._personal_best_until.clear()
+        self._observed_laps_once = False
+        self._race_totals.clear()
+        self._last_current_time = 0.0
 
     def build(
         self,
         session: Any | None,
         metadata: dict[str, DriverMetadata],
         source_text: str,
+        vehicle_catalog: dict[str, dict[str, str]] | None = None,
     ) -> StandingsView:
         if session is None:
             return StandingsView(source_text=source_text)
         key = self._make_session_key(session)
-        if key != self._session_key:
+        if self._session_changed(key, session):
             self.reset()
             self._session_key = key
+        now = time.monotonic()
         drivers = sorted(
             list(getattr(session, "drivers", []) or []),
             key=lambda item: int(getattr(item, "position", 9999) or 9999),
         )
         class_positions = self._class_positions(drivers)
-        rows = [self._row_from_driver(driver, session, metadata, class_positions) for driver in drivers]
+        rows = [
+            self._row_from_driver(
+                driver,
+                session,
+                metadata,
+                class_positions,
+                vehicle_catalog or {},
+                now,
+            )
+            for driver in drivers
+        ]
+        self._apply_lap_states(rows, now)
+        self._last_current_time = float(
+            getattr(session, "current_time_s", 0.0) or 0.0
+        )
         player = next((row for row in rows if row.is_player), None)
         class_leaders = self._class_leaders(rows)
         for row in rows:
@@ -98,6 +128,8 @@ class StandingsLogic:
         session: Any,
         metadata: dict[str, DriverMetadata],
         class_positions: dict[int, int],
+        vehicle_catalog: dict[str, dict[str, str]],
+        now: float,
     ) -> StandingRow:
         slot_id = int(getattr(driver, "slot_id", 0) or 0)
         overall = int(getattr(driver, "position", 0) or 0)
@@ -112,10 +144,73 @@ class StandingsLogic:
         extra = metadata.get(normalize_identity(name), DriverMetadata(driver_name=name))
         vehicle_name = extra.vehicle_name or str(getattr(driver, "vehicle_name", "") or "")
         vehicle_filename = str(getattr(driver, "vehicle_filename", "") or "")
+        catalog_entry = vehicle_catalog.get(
+            normalize_identity(vehicle_name),
+            {},
+        )
         class_name = str(getattr(driver, "vehicle_class", "") or "UNKNOWN")
         class_key, display_name, _ = canonical_class(class_name, self.config)
         is_player = bool(getattr(driver, "is_player", False))
+        current_lap_invalidated = bool(
+            getattr(driver, "current_lap_invalidated", False)
+        )
+        last_lap_invalidated = bool(
+            getattr(driver, "last_lap_invalidated", False)
+        )
+        if extra.current_lap_invalidated is not None:
+            current_lap_invalidated = bool(extra.current_lap_invalidated)
+        if extra.last_lap_invalidated is not None:
+            last_lap_invalidated = bool(extra.last_lap_invalidated)
+        if is_player:
+            player_data = getattr(session, "player", None)
+            if player_data is not None:
+                current_lap_invalidated = bool(
+                    getattr(
+                        player_data,
+                        "current_lap_invalidated",
+                        current_lap_invalidated,
+                    )
+                )
+                last_lap_invalidated = bool(
+                    getattr(
+                        player_data,
+                        "last_lap_invalidated",
+                        last_lap_invalidated,
+                    )
+                )
         energy = extra.energy_percent
+        if extra.energy_remaining_fraction is not None:
+            remaining = extra.energy_remaining_fraction
+            used = extra.energy_use_per_lap
+            reference_lap = extra.energy_reference_lap
+            track_length = float(
+                getattr(session, "track_length_m", 0.0) or 0.0
+            )
+            lap_fraction = (
+                max(
+                    0.0,
+                    float(getattr(driver, "lap_distance_m", 0.0) or 0.0),
+                )
+                / track_length
+                if track_length > 0.0
+                else 0.0
+            )
+            total_progress = (
+                float(getattr(driver, "laps", 0) or 0)
+                + min(1.0, lap_fraction)
+            )
+            if (
+                used is not None
+                and used > 0.0
+                and reference_lap is not None
+                and total_progress > reference_lap
+            ):
+                remaining -= (
+                    used
+                    * 0.95
+                    * (total_progress - reference_lap)
+                )
+            energy = max(0.0, min(100.0, remaining * 100.0))
         if is_player and energy is None:
             player_data = getattr(session, "player", None)
             if player_data is not None:
@@ -127,14 +222,49 @@ class StandingsLogic:
                             break
                         energy = None
         in_pits = bool(getattr(driver, "in_pits", False))
-        now = time.monotonic()
+        completed_laps = int(getattr(driver, "laps", 0) or 0)
+        was_in_pits = self._pit_was_inside.get(slot_id, False)
         if in_pits:
             self._pit_started.setdefault(slot_id, now)
             self._pit_elapsed[slot_id] = now - self._pit_started[slot_id]
+            self._pit_exit_lap.pop(slot_id, None)
         else:
+            if was_in_pits:
+                self._pit_exit_lap[slot_id] = completed_laps
             self._pit_started.pop(slot_id, None)
+        self._pit_was_inside[slot_id] = in_pits
+        pit_status_laps = max(
+            0,
+            int(self.config.get("pit_status_laps", 2) or 0),
+        )
+        pit_exit_lap = self._pit_exit_lap.get(slot_id)
+        pit_status_visible = bool(
+            self.config.get("show_pit_status", True)
+        ) and (
+            in_pits
+            or (
+                pit_exit_lap is not None
+                and completed_laps < pit_exit_lap + pit_status_laps
+            )
+        )
         car_number = extra.car_number or extract_car_number(vehicle_name, name, slot_id)
-        manufacturer = detect_manufacturer(vehicle_name, vehicle_filename, extra.manufacturer)
+        vehicle_model = (
+            extra.vehicle_model
+            or str(catalog_entry.get("model", "") or "")
+        )
+        player_model = ""
+        if is_player:
+            player_model = str(
+                getattr(getattr(session, "player", None), "vehicle_model", "")
+                or ""
+            )
+            vehicle_model = vehicle_model or player_model
+        manufacturer = detect_manufacturer(
+            " ".join((vehicle_name, vehicle_model, player_model)),
+            vehicle_filename,
+            extra.manufacturer
+            or str(catalog_entry.get("manufacturer", "") or ""),
+        )
         return StandingRow(
             slot_id=slot_id,
             overall_position=overall,
@@ -143,6 +273,7 @@ class StandingsLogic:
             driver_name=name,
             team_name=extra.team_name,
             vehicle_name=vehicle_name,
+            vehicle_model=vehicle_model,
             class_name=display_name,
             class_key=class_key,
             car_number=car_number,
@@ -150,24 +281,80 @@ class StandingsLogic:
             nationality=extra.nationality,
             country_code=extra.country_code,
             badge=extra.badge,
-            laps=int(getattr(driver, "laps", 0) or 0),
+            laps=completed_laps,
             lap_distance_m=float(getattr(driver, "lap_distance_m", 0.0) or 0.0),
             best_lap_s=float(getattr(driver, "best_lap_s", 0.0) or 0.0),
             last_lap_s=float(getattr(driver, "last_lap_s", 0.0) or 0.0),
+            current_lap_invalidated=current_lap_invalidated,
+            last_lap_invalidated=last_lap_invalidated,
             gap_leader_s=float(getattr(driver, "gap_leader_s", 0.0) or 0.0),
             interval_s=float(getattr(driver, "gap_ahead_s", 0.0) or 0.0),
             tyre_compound=extra.tyre_compound,
             energy_percent=energy,
             damage_percent=extra.damage_percent,
             penalties=int(getattr(driver, "penalties", 0) or 0),
-            finish_state=extra.finish_state,
+            finish_state=(
+                extra.finish_state
+                or (
+                    str(int(getattr(driver, "finish_status", 0) or 0))
+                    if int(getattr(driver, "finish_status", 0) or 0)
+                    in {2, 3}
+                    else ""
+                )
+            ),
+            finish_status=int(
+                getattr(driver, "finish_status", 0) or 0
+            ),
             in_pits=in_pits,
             in_garage=bool(getattr(driver, "in_garage", False)),
             under_yellow=bool(getattr(driver, "under_yellow", False)),
             flag=int(getattr(driver, "flag", 0) or 0),
             is_player=is_player,
             pit_time_s=self._pit_elapsed.get(slot_id, 0.0),
+            pit_status_visible=pit_status_visible,
         )
+
+    def _apply_lap_states(
+        self,
+        rows: list[StandingRow],
+        now: float,
+    ) -> None:
+        highlight_seconds = max(
+            0.0,
+            float(self.config.get("lap_highlight_seconds", 5.0) or 0.0),
+        )
+
+        for row in rows:
+            current = row.best_lap_s
+            previous = self._previous_best_laps.get(row.slot_id, 0.0)
+            new_personal_best = (
+                current > 0.0
+                and (
+                    (previous > 0.0 and current < previous - 0.0005)
+                    or (previous <= 0.0 and self._observed_laps_once)
+                )
+            )
+            if new_personal_best and highlight_seconds > 0.0:
+                self._personal_best_until[row.slot_id] = (
+                    now + highlight_seconds
+                )
+            if current > 0.0:
+                self._previous_best_laps[row.slot_id] = current
+            row.personal_best_highlight = (
+                now < self._personal_best_until.get(row.slot_id, 0.0)
+            )
+
+        valid_best_times = [
+            row.best_lap_s for row in rows if row.best_lap_s > 0.0
+        ]
+        session_fastest = min(valid_best_times, default=0.0)
+        for row in rows:
+            row.is_session_fastest = (
+                session_fastest > 0.0
+                and abs(row.best_lap_s - session_fastest) <= 0.0005
+            )
+
+        self._observed_laps_once = True
 
     def _category_blocks(
         self,
@@ -178,6 +365,14 @@ class StandingsLogic:
         groups: dict[str, list[StandingRow]] = {}
         for row in rows:
             groups.setdefault(row.class_key, []).append(row)
+        session_number = int(getattr(session, "session", 0) or 0)
+        is_race = 10 <= session_number <= 13
+        if is_race:
+            for class_key, class_rows in groups.items():
+                self._race_totals[class_key] = max(
+                    self._race_totals.get(class_key, 0),
+                    len(class_rows),
+                )
         ordered = sorted(groups.items(), key=lambda item: min((row.overall_position or 9999) for row in item[1]))
         if player is not None:
             player_item = next((item for item in ordered if item[0] == player.class_key), None)
@@ -208,17 +403,43 @@ class StandingsLogic:
             reference = player if is_player_class else (class_rows[0] if class_rows else None)
             current_lap = (reference.laps + 1) if reference is not None else 0
             total_text = self._total_laps_text(reference, session)
+            active_count = sum(
+                1 for row in class_rows if self._is_active_race_car(row)
+            )
             blocks.append(CategoryBlock(
                 class_name=class_name,
                 class_key=class_key,
                 color=color,
-                started=sum(1 for row in class_rows if row.overall_position > 0),
-                total=len(class_rows),
+                started=(active_count if is_race else len(class_rows)),
+                total=(
+                    self._race_totals.get(class_key, len(class_rows))
+                    if is_race
+                    else len(class_rows)
+                ),
                 current_lap=current_lap,
                 total_laps_text=total_text,
+                show_count=is_race,
                 rows=selected_rows,
             ))
         return blocks
+
+    @staticmethod
+    def _is_active_race_car(row: StandingRow) -> bool:
+        finish = row.finish_state.casefold()
+        inactive_finish = finish in {
+            "dnf",
+            "didnotfinish",
+            "dq",
+            "disqualified",
+            "2",
+            "3",
+        }
+        return (
+            row.overall_position > 0
+            and row.finish_status not in {2, 3}
+            and not inactive_finish
+            and not row.in_garage
+        )
 
     @staticmethod
     def _select_player_class(rows: list[StandingRow], limit: int, number_classes: int) -> list[StandingRow]:
@@ -374,6 +595,17 @@ class StandingsLogic:
         if limit <= 0:
             return f"{current:g}x / --"
         return f"{current:g}x / {limit:g}x"
+
+    def _session_changed(self, key: str, session: Any) -> bool:
+        if not self._session_key or key != self._session_key:
+            return True
+        current_time = float(
+            getattr(session, "current_time_s", 0.0) or 0.0
+        )
+        return (
+            self._last_current_time > 2.0
+            and current_time + 2.0 < self._last_current_time
+        )
 
     @staticmethod
     def _make_session_key(session: Any) -> str:

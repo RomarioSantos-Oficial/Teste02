@@ -25,6 +25,7 @@
   "fastest_lap_show_seconds": 5.0,
   "fastest_lap_fade_seconds": 0.3,
   "fastest_lap_always_visible": false,
+  "fastest_lap_scope": "player_class",
   "announce_initial_fastest": false,
   "show_manufacturer_logo": true,
   "logo_directory": "images/logos",

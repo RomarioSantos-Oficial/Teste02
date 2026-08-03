@@ -73,6 +73,16 @@ class LMUAdapter:
         self.memory: lmu_mmap.MMapControl | None = None
         self._weather_schedule: dict[str, Any] = {}
         self._last_weather_poll_at = 0.0
+        self._validity_vehicle_id: int | None = None
+        self._validity_lap: int | None = None
+        self._current_lap_was_invalid = False
+        self._last_lap_was_invalid = False
+        self._driver_lap_state: dict[
+            int,
+            tuple[int, float, float, bool],
+        ] = {}
+        self._driver_session_key = ""
+        self._driver_last_current_et = 0.0
 
     def connect(self) -> bool:
         if self.memory is not None:
@@ -119,6 +129,7 @@ class LMUAdapter:
             data = self.memory.data
             info = data.scoring.scoringInfo
             telemetry = data.telemetry
+            self._prepare_driver_lap_tracking(info)
 
             drivers: list[DriverData] = []
             vehicle_count = max(
@@ -131,6 +142,13 @@ class LMUAdapter:
 
             for index in range(vehicle_count):
                 score = data.scoring.vehScoringInfo[index]
+                slot_id = safe_int(getattr(score, "mID", index))
+                completed_laps = safe_int(
+                    getattr(score, "mTotalLaps", 0)
+                )
+                lap_start_et = safe_float(
+                    getattr(score, "mLapStartET", 0.0)
+                )
 
                 best_s1 = safe_float(getattr(score, "mBestSector1", 0.0))
                 best_s12 = safe_float(getattr(score, "mBestSector2", 0.0))
@@ -138,7 +156,16 @@ class LMUAdapter:
 
                 last_s1 = safe_float(getattr(score, "mLastSector1", 0.0))
                 last_s12 = safe_float(getattr(score, "mLastSector2", 0.0))
-                last_lap = safe_float(getattr(score, "mLastLapTime", 0.0))
+                last_lap, last_lap_invalidated = (
+                    self._resolve_driver_last_lap(
+                        slot_id,
+                        completed_laps,
+                        lap_start_et,
+                        safe_float(
+                            getattr(score, "mLastLapTime", 0.0)
+                        ),
+                    )
+                )
 
                 score_velocity = getattr(score, "mLocalVel", None)
                 score_speed_kmh = 0.0
@@ -156,7 +183,7 @@ class LMUAdapter:
 
                 drivers.append(
                     DriverData(
-                        slot_id=safe_int(getattr(score, "mID", index)),
+                        slot_id=slot_id,
                         driver_name=decode_text(score.mDriverName),
                         vehicle_name=decode_text(score.mVehicleName),
                         vehicle_filename=decode_text(
@@ -167,10 +194,11 @@ class LMUAdapter:
                         ),
                         vehicle_class=decode_text(score.mVehicleClass),
                         position=safe_int(score.mPlace),
-                        laps=safe_int(score.mTotalLaps),
+                        laps=completed_laps,
                         current_sector=safe_int(getattr(score, "mSector", 0)),
                         best_lap_s=best_lap,
                         last_lap_s=last_lap,
+                        last_lap_invalidated=last_lap_invalidated,
                         best_sector1_s=best_s1,
                         best_sector2_s=positive_difference(best_s12, best_s1),
                         best_sector3_s=positive_difference(best_lap, best_s12),
@@ -201,6 +229,9 @@ class LMUAdapter:
                         ),
                         in_garage=bool(
                             getattr(score, "mInGarageStall", False)
+                        ),
+                        finish_status=safe_int(
+                            getattr(score, "mFinishStatus", 0)
                         ),
                         world_x=safe_float(score_pos.x) if score_pos is not None else 0.0,
                         world_y=safe_float(score_pos.y) if score_pos is not None else 0.0,
@@ -258,6 +289,8 @@ class LMUAdapter:
                 player = self._read_player(
                     telemetry.telemInfo[player_index]
                 )
+            else:
+                self._reset_lap_validity()
 
             yellow_raw = info.mYellowFlagState
             if isinstance(yellow_raw, bytes):
@@ -297,6 +330,16 @@ class LMUAdapter:
                 ),
                 in_realtime=bool(
                     getattr(info, "mInRealtime", False)
+                ),
+                application_location=safe_int(
+                    getattr(
+                        getattr(data.generic, "appInfo", None),
+                        "mOptionsLocation",
+                        0,
+                    )
+                ),
+                player_has_vehicle=bool(
+                    getattr(telemetry, "playerHasVehicle", False)
                 ),
                 game_phase=safe_int(info.mGamePhase),
                 yellow_flag_state=yellow_state,
@@ -513,6 +556,13 @@ class LMUAdapter:
 
         sector = safe_int(raw.mCurrentSector) & 0x7FFFFFFF
 
+        lap_number = safe_int(raw.mLapNumber)
+        current_invalid, last_invalid = self._update_lap_validity(
+            safe_int(getattr(raw, "mID", -1), -1),
+            lap_number,
+            bool(getattr(raw, "mLapInvalidated", False)),
+        )
+
         return PlayerData(
             vehicle_name=decode_text(raw.mVehicleName),
             vehicle_model=decode_text(raw.mVehicleModel),
@@ -526,7 +576,7 @@ class LMUAdapter:
             clutch=safe_float(raw.mFilteredClutch),
             fuel_liters=safe_float(raw.mFuel),
             fuel_capacity_liters=safe_float(raw.mFuelCapacity),
-            lap=safe_int(raw.mLapNumber),
+            lap=lap_number,
             sector=sector,
             delta_best_s=safe_float(raw.mDeltaBest),
             gap_ahead_s=safe_float(raw.mTimeGapCarAhead),
@@ -534,6 +584,8 @@ class LMUAdapter:
             battery_fraction=safe_float(raw.mBatteryChargeFraction),
             state_of_charge=safe_float(raw.mStateOfCharge),
             virtual_energy=safe_float(raw.mVirtualEnergy),
+            current_lap_invalidated=current_invalid,
+            last_lap_invalidated=last_invalid,
             regen_kw=safe_float(
                 getattr(raw, "mRegen", 0.0)
             ),
@@ -560,6 +612,93 @@ class LMUAdapter:
             wheels=wheels,
         )
 
+    def _update_lap_validity(
+        self,
+        vehicle_id: int,
+        lap_number: int,
+        invalidated: bool,
+    ) -> tuple[bool, bool]:
+        if (
+            self._validity_vehicle_id != vehicle_id
+            or self._validity_lap is None
+            or lap_number < self._validity_lap
+        ):
+            self._validity_vehicle_id = vehicle_id
+            self._validity_lap = lap_number
+            self._current_lap_was_invalid = bool(invalidated)
+            self._last_lap_was_invalid = False
+        elif lap_number > self._validity_lap:
+            self._last_lap_was_invalid = (
+                self._current_lap_was_invalid
+                if lap_number == self._validity_lap + 1
+                else False
+            )
+            self._validity_lap = lap_number
+            self._current_lap_was_invalid = bool(invalidated)
+        else:
+            # Conserva a invalidacao ate o fim da volta, mesmo que o jogo
+            # deixe de sinaliza-la em algum quadro da telemetria.
+            self._current_lap_was_invalid |= bool(invalidated)
+        return self._current_lap_was_invalid, self._last_lap_was_invalid
+
+    def _reset_lap_validity(self) -> None:
+        self._validity_vehicle_id = None
+        self._validity_lap = None
+        self._current_lap_was_invalid = False
+        self._last_lap_was_invalid = False
+
+    def _prepare_driver_lap_tracking(self, info: Any) -> None:
+        session_key = "|".join(
+            (
+                decode_text(getattr(info, "mTrackName", b"")),
+                str(safe_int(getattr(info, "mSession", 0))),
+                str(safe_int(getattr(info, "mMaxLaps", 0))),
+            )
+        )
+        current_et = safe_float(getattr(info, "mCurrentET", 0.0))
+        clock_restarted = (
+            self._driver_last_current_et > 2.0
+            and current_et + 2.0 < self._driver_last_current_et
+        )
+        if session_key != self._driver_session_key or clock_restarted:
+            self._driver_lap_state.clear()
+            self._driver_session_key = session_key
+        self._driver_last_current_et = current_et
+
+    def _resolve_driver_last_lap(
+        self,
+        slot_id: int,
+        completed_laps: int,
+        lap_start_et: float,
+        official_last_lap: float,
+    ) -> tuple[float, bool]:
+        """Preserva o tempo de voltas que o scoring marcou como inválidas."""
+        previous = self._driver_lap_state.get(slot_id)
+        lap_time = official_last_lap if official_last_lap > 0.0 else 0.0
+        invalidated = False
+
+        if previous is not None:
+            previous_laps, previous_start, cached_time, cached_invalid = previous
+            if completed_laps < previous_laps:
+                previous = None
+            elif completed_laps == previous_laps:
+                if lap_time <= 0.0:
+                    lap_time = cached_time
+                    invalidated = cached_invalid
+            else:
+                derived = lap_start_et - previous_start
+                if lap_time <= 0.0 and 10.0 <= derived <= 1800.0:
+                    lap_time = derived
+                    invalidated = True
+
+        self._driver_lap_state[slot_id] = (
+            completed_laps,
+            lap_start_et,
+            lap_time,
+            invalidated,
+        )
+        return lap_time, invalidated
+
     def close(self) -> None:
         if self.memory is not None:
             try:
@@ -572,3 +711,4 @@ class LMUAdapter:
                 pass
 
         self.memory = None
+        self._reset_lap_validity()

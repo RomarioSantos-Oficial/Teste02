@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 import unicodedata
 from dataclasses import dataclass
 from difflib import SequenceMatcher
@@ -32,20 +33,35 @@ class DeltaLogoManager:
         self.catalog_path = (
             self.project_root / "src" / "config" / "lmu_car_logo_catalog.json"
         )
+        self.vehicle_catalog_path = (
+            self.project_root
+            / "data"
+            / "vehicle_catalog"
+            / "lmu_vehicles.json"
+        )
         self.catalog = self._load_catalog()
+        self.vehicle_catalog = self._load_vehicle_catalog()
         self._path_index = self._index_files()
         self._pixmap_cache: dict[Path, QPixmap] = {}
         self._directory_stamp = self._directory_signature()
+        self._vehicle_catalog_stamp = self._vehicle_catalog_signature()
+        self._last_refresh_check = time.monotonic()
 
     def set_directory(self, configured_directory: str | None) -> None:
-        self.logo_directory = self._resolve_directory(configured_directory)
+        resolved = self._resolve_directory(configured_directory)
+        if resolved == self.logo_directory:
+            return
+        self.logo_directory = resolved
         self.refresh()
 
     def refresh(self) -> None:
         self.catalog = self._load_catalog()
+        self.vehicle_catalog = self._load_vehicle_catalog()
         self._path_index = self._index_files()
         self._pixmap_cache.clear()
         self._directory_stamp = self._directory_signature()
+        self._vehicle_catalog_stamp = self._vehicle_catalog_signature()
+        self._last_refresh_check = time.monotonic()
 
     def match(
         self,
@@ -56,9 +72,25 @@ class DeltaLogoManager:
 
         category = self._category_from_class(vehicle_class)
         category_data = self._category_data(category)
+        expanded_texts = list(vehicle_texts)
+        catalog_manufacturer = ""
+        for value in vehicle_texts:
+            entry = self.vehicle_catalog.get(self._identity(value), {})
+            if not isinstance(entry, dict):
+                continue
+            manufacturer = str(entry.get("manufacturer", "") or "").strip()
+            model = str(entry.get("model", "") or "").strip()
+            description = str(entry.get("description", "") or "").strip()
+            if manufacturer:
+                catalog_manufacturer = catalog_manufacturer or manufacturer
+                expanded_texts.append(manufacturer)
+            if model:
+                expanded_texts.append(model)
+            if description:
+                expanded_texts.append(description)
         combined = " ".join(
             self._normalize(value)
-            for value in vehicle_texts
+            for value in expanded_texts
             if str(value or "").strip()
         )
 
@@ -91,6 +123,21 @@ class DeltaLogoManager:
             if global_match is not None:
                 car, found_category, matched = global_match
                 return self._result(car, found_category, matched)
+
+        if catalog_manufacturer:
+            path = self._path_for_names(
+                [
+                    catalog_manufacturer,
+                    catalog_manufacturer.replace("-", " "),
+                ]
+            )
+            if path is not None:
+                return LogoMatch(
+                    manufacturer=catalog_manufacturer,
+                    path=path,
+                    matched_text=catalog_manufacturer,
+                    category=category,
+                )
 
         return LogoMatch(
             manufacturer="Car",
@@ -211,6 +258,21 @@ class DeltaLogoManager:
         except (OSError, json.JSONDecodeError):
             return {"categories": {}}
 
+    def _load_vehicle_catalog(self) -> dict[str, dict[str, str]]:
+        try:
+            payload = json.loads(
+                self.vehicle_catalog_path.read_text(encoding="utf-8")
+            )
+        except (OSError, json.JSONDecodeError):
+            return {}
+        if not isinstance(payload, dict):
+            return {}
+        return {
+            str(key): value
+            for key, value in payload.items()
+            if isinstance(value, dict)
+        }
+
     def _resolve_directory(self, configured_directory: str | None) -> Path:
         candidates: list[Path] = []
         if configured_directory:
@@ -291,9 +353,24 @@ class DeltaLogoManager:
         return best_path if best_ratio >= 0.76 else None
 
     def _refresh_if_changed(self) -> None:
+        now = time.monotonic()
+        if now - self._last_refresh_check < 2.0:
+            return
+        self._last_refresh_check = now
         current = self._directory_signature()
-        if current != self._directory_stamp:
+        vehicle_catalog_stamp = self._vehicle_catalog_signature()
+        if (
+            current != self._directory_stamp
+            or vehicle_catalog_stamp != self._vehicle_catalog_stamp
+        ):
             self.refresh()
+
+    def _vehicle_catalog_signature(self) -> tuple[int, int]:
+        try:
+            stat = self.vehicle_catalog_path.stat()
+        except OSError:
+            return (0, 0)
+        return int(stat.st_mtime_ns), int(stat.st_size)
 
     def _directory_signature(self) -> tuple[tuple[str, int, int], ...]:
         if not self.logo_directory.exists():
@@ -316,6 +393,14 @@ class DeltaLogoManager:
     @staticmethod
     def _compact(value: str) -> str:
         return re.sub(r"[^a-z0-9]+", "", str(value or "").lower())
+
+    @staticmethod
+    def _identity(value: str) -> str:
+        return "".join(
+            character
+            for character in str(value or "").casefold()
+            if character.isalnum()
+        )
 
     @staticmethod
     def _normalize(value: str) -> str:

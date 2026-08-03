@@ -155,6 +155,30 @@ class DeltaEditor(QDialog):
             )
         )
 
+        scope = QComboBox()
+        scope.addItem(
+            "Somente a classe do jogador",
+            "player_class",
+        )
+        scope.addItem(
+            "Todas as categorias",
+            "all_classes",
+        )
+        selected_scope = str(
+            self.config.get(
+                "fastest_lap_scope",
+                "player_class",
+            )
+        )
+        selected_index = scope.findData(selected_scope)
+        scope.setCurrentIndex(max(0, selected_index))
+        scope.currentIndexChanged.connect(
+            lambda _index: self._set_root(
+                "fastest_lap_scope",
+                str(scope.currentData()),
+            )
+        )
+
         fade = QDoubleSpinBox()
         fade.setRange(0.05, 3.0)
         fade.setSingleStep(0.05)
@@ -227,8 +251,12 @@ class DeltaEditor(QDialog):
         )
 
         form.addRow(
-            "Tempo de exibição:",
+            "Tempo visível (se não permanente):",
             duration,
+        )
+        form.addRow(
+            "Categorias mostradas:",
+            scope,
         )
         form.addRow(
             "Duração do fade:",

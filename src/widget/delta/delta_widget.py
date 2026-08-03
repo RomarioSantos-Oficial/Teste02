@@ -76,10 +76,8 @@ class DeltaWidget(QWidget):
             )
         )
         self._fastest_fade = TimedFade()
-        self._fastest_data: (
-            FastestLapData | None
-        ) = None
-        self._last_fastest_visible = False
+        self._fastest_data: list[FastestLapData] = []
+        self._last_fastest_count = 0
         self._delta_history: deque[float] = deque(
             maxlen=max(
                 20,
@@ -226,7 +224,7 @@ class DeltaWidget(QWidget):
             self.renderer.preferred_height(
                 width,
                 self.config,
-                self._fastest_is_visible(),
+                self._fastest_count(),
             )
             if bool(
                 self.config.get(
@@ -309,11 +307,17 @@ class DeltaWidget(QWidget):
                     False,
                 )
             ),
+            scope=str(
+                self.config.get(
+                    "fastest_lap_scope",
+                    "player_class",
+                )
+            ),
         )
 
         if result.session_changed:
             self._fastest_fade.reset()
-            self._fastest_data = None
+            self._fastest_data = []
             self._delta_history.clear()
             self._smooth_delta.reset(
                 raw_delta
@@ -328,9 +332,12 @@ class DeltaWidget(QWidget):
         )
 
         if result.new_announcement is not None:
-            self._fastest_data = (
+            # Mesmo no escopo "todas as classes", o disparo representa uma
+            # nova volta de apenas uma classe. Não repete junto os recordes
+            # antigos das demais categorias.
+            self._fastest_data = [
                 result.new_announcement
-            )
+            ]
             self._fastest_fade.start(
                 visible_seconds=float(
                     self.config.get(
@@ -351,9 +358,10 @@ class DeltaWidget(QWidget):
             always_visible
             and result.current_fastest is not None
         ):
-            self._fastest_data = (
-                result.current_fastest
-            )
+            if not self._fastest_data:
+                self._fastest_data = [
+                    result.current_fastest
+                ]
 
             if not self._fastest_fade.active:
                 self._fastest_fade.start(
@@ -450,7 +458,7 @@ class DeltaWidget(QWidget):
         self.session_tracker.reset()
         self.sector_tracker.reset()
         self._fastest_fade.reset()
-        self._fastest_data = None
+        self._fastest_data = []
         self._delta_history.clear()
         self._smooth_delta.reset(0.0)
         self.view_data = DeltaViewData()
@@ -550,7 +558,7 @@ class DeltaWidget(QWidget):
                     self.renderer.preferred_height(
                         width,
                         self.config,
-                        self._fastest_is_visible(),
+                        self._fastest_count(),
                     )
                 )
             else:
@@ -629,27 +637,33 @@ class DeltaWidget(QWidget):
                 )
             )
         ):
-            self._fastest_data = None
+            self._fastest_data = []
 
         self.view_data.fastest_lap = (
-            self._fastest_data
+            self._fastest_data[0]
+            if self._fastest_data
+            else None
         )
+        self.view_data.fastest_laps = list(self._fastest_data)
         self.view_data.fastest_alpha = alpha
 
-        visible = self._fastest_is_visible()
+        visible_count = self._fastest_count()
 
-        if visible != self._last_fastest_visible:
-            self._last_fastest_visible = visible
+        if visible_count != self._last_fastest_count:
+            self._last_fastest_count = visible_count
             self._fit_content_if_enabled()
 
         self.update()
 
     def _fastest_is_visible(self) -> bool:
         return (
-            self._fastest_data is not None
+            bool(self._fastest_data)
             and self.view_data.fastest_alpha
             > 0.001
         )
+
+    def _fastest_count(self) -> int:
+        return len(self._fastest_data) if self._fastest_is_visible() else 0
 
     def _fit_content_if_enabled(self) -> None:
         if (
@@ -670,7 +684,7 @@ class DeltaWidget(QWidget):
             self.renderer.preferred_height(
                 self.width(),
                 self.config,
-                self._fastest_is_visible(),
+                self._fastest_count(),
             )
         )
         preferred = max(

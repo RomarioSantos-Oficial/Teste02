@@ -21,6 +21,7 @@ class DriverMetadata:
     driver_name: str = ""
     team_name: str = ""
     vehicle_name: str = ""
+    vehicle_model: str = ""
     car_number: str = ""
     manufacturer: str = ""
     nationality: str = ""
@@ -28,6 +29,11 @@ class DriverMetadata:
     badge: str = ""
     tyre_compound: str = ""
     energy_percent: float | None = None
+    energy_remaining_fraction: float | None = None
+    energy_use_per_lap: float | None = None
+    energy_reference_lap: float | None = None
+    current_lap_invalidated: bool | None = None
+    last_lap_invalidated: bool | None = None
     damage_percent: float | None = None
     finish_state: str = ""
     source: str = ""
@@ -43,6 +49,7 @@ class StandingRow:
     driver_name: str = ""
     team_name: str = ""
     vehicle_name: str = ""
+    vehicle_model: str = ""
     class_name: str = "UNKNOWN"
     class_key: str = "UNKNOWN"
     car_number: str = ""
@@ -54,6 +61,10 @@ class StandingRow:
     lap_distance_m: float = 0.0
     best_lap_s: float = 0.0
     last_lap_s: float = 0.0
+    is_session_fastest: bool = False
+    personal_best_highlight: bool = False
+    current_lap_invalidated: bool = False
+    last_lap_invalidated: bool = False
     gap_leader_s: float = 0.0
     interval_s: float = 0.0
     gap_text: str = "--"
@@ -62,12 +73,14 @@ class StandingRow:
     damage_percent: float | None = None
     penalties: int = 0
     finish_state: str = ""
+    finish_status: int = 0
     in_pits: bool = False
     in_garage: bool = False
     under_yellow: bool = False
     flag: int = 0
     is_player: bool = False
     pit_time_s: float = 0.0
+    pit_status_visible: bool = False
 
 
 @dataclass(slots=True)
@@ -79,6 +92,7 @@ class CategoryBlock:
     total: int = 0
     current_lap: int = 0
     total_laps_text: str = "--"
+    show_count: bool = False
     rows: list[StandingRow] = field(default_factory=list)
 
 

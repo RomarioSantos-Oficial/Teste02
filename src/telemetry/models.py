@@ -61,6 +61,8 @@ class DriverData:
 
     best_lap_s: float = 0.0
     last_lap_s: float = 0.0
+    current_lap_invalidated: bool = False
+    last_lap_invalidated: bool = False
 
     best_sector1_s: float = 0.0
     best_sector2_s: float = 0.0
@@ -83,6 +85,7 @@ class DriverData:
     individual_phase: int = 0
     under_yellow: bool = False
     in_garage: bool = False
+    finish_status: int = 0
     position_in_class: int = 0
     world_x: float = 0.0
     world_y: float = 0.0
@@ -120,6 +123,8 @@ class PlayerData:
     battery_fraction: float = 0.0
     state_of_charge: float = 0.0
     virtual_energy: float = 0.0
+    current_lap_invalidated: bool = False
+    last_lap_invalidated: bool = False
 
     # Sistema híbrido / bateria.
     regen_kw: float = 0.0
@@ -152,6 +157,10 @@ class SessionData:
     start_light: int = 0
     num_red_lights: int = 0
     in_realtime: bool = False
+    # LMUApplicationState.mOptionsLocation:
+    # 0=menu principal, 1=carregando, 2=monitor, 3=na pista.
+    application_location: int = 0
+    player_has_vehicle: bool = False
     game_phase: int = 0
     yellow_flag_state: int = 0
     raining: float = 0.0

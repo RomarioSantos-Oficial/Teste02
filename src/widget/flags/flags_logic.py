@@ -74,10 +74,9 @@ class FlagsLogic:
             float(self.config.get("yellow_max_behind_m", 100.0)),
         )
         phase = self._int(session, "game_phase")
-        yellow_state = self._int(session, "yellow_flag_state")
-        full_course_yellow = (
-            phase == 6 or yellow_state in {1, 2, 3, 4, 5}
-        )
+        # FCY so deve ser exibido na fase oficial atual. O estado detalhado
+        # pode permanecer com o ultimo valor durante transicoes da prova.
+        full_course_yellow = phase == 6
         sector_flags = tuple(getattr(session, "sector_flags", ()) or ())
         # Na memória real do LMU, 1 representa setor sob amarela. Valores
         # como 11 também aparecem durante pista verde e não são amarelas.
@@ -88,6 +87,20 @@ class FlagsLogic:
         # não deve criar uma bandeira.
         if not (full_course_yellow or any_sector_yellow):
             return FlagAlert()
+
+        # Durante FCY todos os carros reduzem a velocidade. Tentar apontar
+        # o mais próximo como causador produz falsos positivos por definição,
+        # pois a memória compartilhada não informa qual carro iniciou o FCY.
+        if full_course_yellow:
+            return FlagAlert(
+                active=True,
+                driver="FULL COURSE YELLOW",
+                category="FCY",
+                position=0,
+                distance=0.0,
+                tempo_gap=0.0,
+                cars=[],
+            )
 
         hazard_speed = max(
             1.0,
@@ -120,6 +133,12 @@ class FlagsLogic:
         for row in self._drivers(session)[:64]:
             if self._bool(row, "is_player") or self._in_paddock(row):
                 continue
+            if self._int(row, "finish_status") != 0:
+                continue
+
+            row_speed = max(0.0, self._float(row, "speed_kmh"))
+            if row_speed >= hazard_speed:
+                continue
 
             distance = self._signed_track_gap(session, player, row)
             if distance >= 0.0:
@@ -127,8 +146,6 @@ class FlagsLogic:
                     continue
             elif abs(distance) > behind_limit:
                 continue
-
-            row_speed = max(0.0, self._float(row, "speed_kmh"))
 
             closing_speed_ms = max(1.0, (player_speed - row_speed) / 3.6)
             candidates.append(
@@ -144,18 +161,9 @@ class FlagsLogic:
 
         candidates.sort(key=lambda car: (car.distance < 0.0, abs(car.distance)))
         if not candidates:
-            # O LMU informa o setor amarelo, mas não identifica diretamente
-            # qual veículo causou o incidente. A bandeira oficial ainda deve
-            # ser exibida, sem inventar piloto, categoria ou distância.
-            return FlagAlert(
-                active=True,
-                driver="BANDEIRA AMARELA",
-                category="SETOR" if any_sector_yellow else "FCY",
-                position=0,
-                distance=0.0,
-                tempo_gap=0.0,
-                cars=[],
-            )
+            # Igual ao TinyPedal: uma amarela em outro ponto da pista nao
+            # abre o widget sem um carro lento dentro da distancia definida.
+            return FlagAlert()
 
         target = candidates[0]
         return FlagAlert(
@@ -173,10 +181,9 @@ class FlagsLogic:
         if player is None or self._in_paddock(player):
             return FlagAlert()
 
-        receiving_blue = (
-            self._int(player, "flag") == 6
-            or self._int(player, "individual_phase") == 11
-        )
+        # O TinyPedal usa exclusivamente mFlag == 6. O proprio plugin marca
+        # mIndividualPhase == 11 como "not used".
+        receiving_blue = self._int(player, "flag") == 6
         if not receiving_blue:
             return FlagAlert()
 
@@ -184,6 +191,8 @@ class FlagsLogic:
         candidates: list[FlagCar] = []
         for row in self._drivers(session)[:64]:
             if self._bool(row, "is_player") or self._in_paddock(row):
+                continue
+            if self._int(row, "finish_status") != 0:
                 continue
 
             distance = self._signed_track_gap(session, player, row)
@@ -209,7 +218,17 @@ class FlagsLogic:
 
         candidates.sort(key=lambda car: abs(car.distance))
         if not candidates:
-            return FlagAlert()
+            # A bandeira oficial continua valida mesmo quando nao e possivel
+            # identificar com seguranca qual dos carros atras a provocou.
+            return FlagAlert(
+                active=True,
+                driver="BANDEIRA AZUL",
+                category="AZUL",
+                position=0,
+                distance=0.0,
+                tempo_gap=0.0,
+                cars=[],
+            )
 
         target = candidates[0]
         return FlagAlert(
@@ -292,13 +311,6 @@ class FlagsLogic:
         return self._float(row, "path_lateral_m") - self._float(
             player, "path_lateral_m"
         )
-
-    def _sector_is_yellow(self, session: Any, row: Any) -> bool:
-        flags = tuple(getattr(session, "sector_flags", ()) or ())
-        sector = self._int(row, "current_sector")
-        if 0 <= sector < len(flags):
-            return int(flags[sector] or 0) == 1
-        return any(int(value or 0) == 1 for value in flags)
 
     def _update_green(self, session: Any, now: float) -> bool:
         if not bool(self.config.get("show_startlights", True)):

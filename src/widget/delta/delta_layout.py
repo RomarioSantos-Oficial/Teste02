@@ -25,7 +25,7 @@ class DeltaLayoutEngine:
         self,
         bounds: QRectF,
         config: dict[str, Any],
-        fastest_visible: bool,
+        fastest_count: int,
     ) -> DeltaLayout:
         elements = config.get("elements", {})
         width_scale = max(
@@ -47,11 +47,15 @@ class DeltaLayoutEngine:
             if self._enabled(elements, "history")
             else 0.0
         )
+        fastest_count = max(0, int(fastest_count))
         fastest_h = (
-            100.0 * width_scale
+            (
+                92.0 * fastest_count
+                + 8.0 * max(0, fastest_count - 1)
+            ) * width_scale
             if (
                 self._enabled(elements, "fastest_lap")
-                and fastest_visible
+                and fastest_count > 0
             )
             else 0.0
         )
@@ -150,13 +154,13 @@ class DeltaLayoutEngine:
         self,
         width: int,
         config: dict[str, Any],
-        fastest_visible: bool,
+        fastest_count: int,
     ) -> int:
         synthetic = QRectF(0, 0, max(320, width), 2000)
         return self.build(
             synthetic,
             config,
-            fastest_visible,
+            fastest_count,
         ).preferred_height
 
     @staticmethod

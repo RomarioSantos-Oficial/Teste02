@@ -26,7 +26,10 @@ class FastestLapData:
     manufacturer: str = ""
     logo_path: Path | None = None
     lap_time_s: float = 0.0
+    # `position` permanece por compatibilidade e representa a posicao na classe.
     position: int = 0
+    class_position: int = 0
+    overall_position: int = 0
 
     @property
     def valid(self) -> bool:
@@ -55,5 +58,6 @@ class DeltaViewData:
         ]
     )
     fastest_lap: FastestLapData | None = None
+    fastest_laps: list[FastestLapData] = field(default_factory=list)
     fastest_alpha: float = 0.0
     session_key: str = ""
