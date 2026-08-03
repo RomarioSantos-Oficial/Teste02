@@ -90,19 +90,19 @@
           "locked": true
         },
         "fastest_lap": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         },
         "header": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         },
         "history": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         },
         "penalties": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         },
         "sectors": {
@@ -110,15 +110,15 @@
           "locked": false
         },
         "session_time": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         },
         "session_type": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         },
         "track_state": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         }
       },
