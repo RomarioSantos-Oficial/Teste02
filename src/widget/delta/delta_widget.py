@@ -958,6 +958,14 @@ class DeltaWidget(QWidget):
             )
             or 0.0
         )
+        wetness = float(
+            getattr(
+                session,
+                "avg_path_wetness",
+                0.0,
+            )
+            or 0.0
+        )
         grip = int(
             getattr(
                 session,
@@ -967,10 +975,13 @@ class DeltaWidget(QWidget):
             or 0
         )
 
-        if raining >= 0.50:
+        # O estado da pista deve seguir a quantidade de agua acumulada
+        # na trajetoria informada pelo LMU, e nao apenas a intensidade
+        # instantanea da chuva.
+        if wetness >= 0.28:
             return "Wet"
 
-        if raining > 0.05:
+        if wetness >= 0.02 or raining > 0.05:
             return "Damp"
 
         labels = {

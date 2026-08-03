@@ -14,6 +14,8 @@ from PySide6.QtWidgets import QWidget
 from src.widget.delta.delta_widget import DeltaWidget
 from src.widget.driver_panel.driver_panel_widget import DriverPanelWidget
 from src.widget.flags.flags_widget import FlagsWidget
+from src.widget.tyres.tyres_widget import TyresWidget
+from src.widget.weather.weather_widget import WeatherWidget
 
 
 class OverlayManager(QObject):
@@ -25,6 +27,8 @@ class OverlayManager(QObject):
         self.config_path = Path(config_path)
         self.config_data = self._load_config()
         self.widgets: dict[str, QWidget] = {}
+        self.session_active = False
+        self.edit_mode = False
 
     def create_driver_panel(self) -> DriverPanelWidget:
         existing = self.widgets.get("driver_panel")
@@ -53,11 +57,35 @@ class OverlayManager(QObject):
         self._prepare_widget("flags", widget, config)
         return widget
 
+    def create_weather(self) -> WeatherWidget:
+        existing = self.widgets.get("weather")
+        if isinstance(existing, WeatherWidget):
+            return existing
+        config = deepcopy(
+            self.config_data["widgets"]["weather"]
+        )
+        widget = WeatherWidget("weather", config)
+        self._prepare_widget("weather", widget, config)
+        return widget
+
+    def create_tires(self) -> TyresWidget:
+        existing = self.widgets.get("tires")
+        if isinstance(existing, TyresWidget):
+            return existing
+        config = deepcopy(
+            self.config_data["widgets"]["tires"]
+        )
+        widget = TyresWidget("tires", config)
+        self._prepare_widget("tires", widget, config)
+        return widget
+
     def create_widget(self, widget_id: str) -> QWidget:
         creators: dict[str, Callable[[], QWidget]] = {
             "driver_panel": self.create_driver_panel,
             "delta": self.create_delta,
             "flags": self.create_flags,
+            "tires": self.create_tires,
+            "weather": self.create_weather,
         }
         creator = creators.get(widget_id)
         if creator is None:
@@ -66,7 +94,7 @@ class OverlayManager(QObject):
 
     def create_enabled_widgets(self) -> None:
         for widget_id, config in self.config_data.get("widgets", {}).items():
-            if bool(config.get("enabled", False)) and widget_id in {"driver_panel", "delta", "flags"}:
+            if bool(config.get("enabled", False)) and widget_id in {"driver_panel", "delta", "flags", "weather", "tires"}:
                 self.create_widget(widget_id)
 
     def _prepare_widget(
@@ -90,14 +118,21 @@ class OverlayManager(QObject):
             widget.geometry_changed.connect(self._save_widget_geometry)
 
         self.widgets[widget_id] = widget
-        if bool(config.get("enabled", True)):
+        if bool(config.get("enabled", True)) and (
+            self.session_active or self.edit_mode
+        ):
             widget.show()
+        else:
+            widget.hide()
         self.widget_created.emit(widget_id, widget)
 
     def show_widget(self, widget_id: str) -> None:
         widget = self.widgets.get(widget_id) or self.create_widget(widget_id)
-        widget.show()
         self.config_data["widgets"][widget_id]["enabled"] = True
+        if self.session_active or self.edit_mode:
+            widget.show()
+        else:
+            widget.hide()
         self.save_config()
 
     def hide_widget(self, widget_id: str) -> None:
@@ -135,7 +170,13 @@ class OverlayManager(QObject):
         if widget is not None and widget.isVisible():
             widget.update_telemetry(player_data)
 
+
+        tires = self.widgets.get("tires")
+        if tires is not None and tires.isVisible():
+            tires.update_telemetry(player_data)
     def update_session_data(self, session: Any) -> None:
+        self.set_session_active(self._session_allows_overlays(session))
+
         driver_panel = self.widgets.get("driver_panel")
         if (
             driver_panel is not None
@@ -143,6 +184,14 @@ class OverlayManager(QObject):
             and getattr(session, "player", None) is not None
         ):
             driver_panel.update_telemetry(session.player)
+
+        tires = self.widgets.get("tires")
+        if (
+            tires is not None
+            and tires.isVisible()
+            and getattr(session, "player", None) is not None
+        ):
+            tires.update_telemetry(session.player)
 
         delta = self.widgets.get("delta")
         if delta is not None and delta.isVisible():
@@ -160,13 +209,57 @@ class OverlayManager(QObject):
         ):
             flags.update_from_session(session)
 
+        weather = self.widgets.get("weather")
+        if weather is not None and weather.isVisible():
+            weather.update_from_session(session)
+
     def set_edit_mode(self, enabled: bool) -> None:
+        self.edit_mode = bool(enabled)
         for widget_id, widget in self.widgets.items():
             config = self.config_data["widgets"][widget_id]
             if hasattr(widget, "set_edit_mode"):
                 widget.set_edit_mode(enabled)
             click_through = bool(config.get("click_through", True)) and not enabled
             self._set_click_through(widget, click_through)
+
+            is_enabled = bool(config.get("enabled", False))
+            if is_enabled and (self.edit_mode or self.session_active):
+                widget.show()
+            else:
+                widget.hide()
+
+    def set_session_active(self, active: bool) -> None:
+        active = bool(active)
+        if active == self.session_active:
+            return
+        self.session_active = active
+        for widget_id, widget in self.widgets.items():
+            config = self.config_data.get("widgets", {}).get(widget_id, {})
+            is_enabled = bool(config.get("enabled", False))
+            if is_enabled and (self.session_active or self.edit_mode):
+                widget.show()
+            else:
+                widget.hide()
+
+    @staticmethod
+    def _session_allows_overlays(session: Any) -> bool:
+        # O LMU mantem o ultimo veiculo e a sessao na memoria quando o
+        # jogador volta ao monitor/menu. mInRealtime distingue esse
+        # estado de quando o jogador esta efetivamente dentro do carro.
+        if not bool(
+            getattr(
+                session,
+                "in_realtime",
+                False,
+            )
+        ):
+            return False
+
+        try:
+            session_type = int(getattr(session, "session", -1))
+        except (TypeError, ValueError):
+            return False
+        return 1 <= session_type <= 8 or 10 <= session_type <= 13
 
     def save_config(self) -> None:
         self.config_path.parent.mkdir(parents=True, exist_ok=True)

@@ -38,14 +38,17 @@ class SectorFlowApplication:
         try:
             session = self.adapter.read()
         except Exception as exc:
+            self.overlay_manager.set_session_active(False)
             self.menu.set_lmu_status(False, f"erro: {exc}")
             return
 
         if not session.connected:
+            self.overlay_manager.set_session_active(False)
             self.menu.set_lmu_status(False, session.error or "abra o jogo e entre na pista")
             return
 
         if session.player is None:
+            self.overlay_manager.set_session_active(False)
             self.menu.set_lmu_status(True, "— aguardando veículo")
             return
 

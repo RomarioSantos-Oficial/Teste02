@@ -1165,19 +1165,24 @@ class FlagsWidget(QWidget):
                 else "---"
             )
 
-            if yellow.distance < 0:
+            if yellow.player_is_hazard:
+                self.yellow_distance.setText(
+                    "VOCÊ É O PERIGO LOCAL"
+                )
+            elif not yellow.cars:
+                self.yellow_distance.setText(
+                    "ATENÇÃO NA PISTA"
+                )
+            elif yellow.distance < 0:
                 self.yellow_distance.setText(
                     f"Atrás: "
-                    f"{abs(int(yellow.distance))}m"
-                )
-            elif yellow.distance <= 350:
-                self.yellow_distance.setText(
-                    f"Frente: "
-                    f"{int(yellow.distance)}m"
+                    f"{abs(int(yellow.distance))}m | "
+                    f"{yellow.tempo_gap:.1f}s"
                 )
             else:
                 self.yellow_distance.setText(
                     f"Frente: "
+                    f"{int(yellow.distance)}m | "
                     f"{yellow.tempo_gap:.1f}s"
                 )
 

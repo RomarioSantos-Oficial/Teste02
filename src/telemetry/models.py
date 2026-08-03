@@ -14,10 +14,37 @@ class WheelData:
     flat: bool = False
     detached: bool = False
     compound_type: int = 0
+    suspension_deflection_m: float = 0.0
+    ride_height_m: float = 0.0
+    susp_force_n: float = 0.0
+    brake_pressure: float = 0.0
+    rotation_rad_s: float = 0.0
+    lateral_patch_velocity_ms: float = 0.0
+    longitudinal_patch_velocity_ms: float = 0.0
+    lateral_ground_velocity_ms: float = 0.0
+    longitudinal_ground_velocity_ms: float = 0.0
+    camber_rad: float = 0.0
+    toe_rad: float = 0.0
+    lateral_force_n: float = 0.0
+    longitudinal_force_n: float = 0.0
+    tire_load_n: float = 0.0
+    grip_fraction: float = 0.0
+    terrain_name: str = ""
+    surface_type: int = 0
+    static_undeflected_radius_cm: float = 0.0
+    vertical_tire_deflection_m: float = 0.0
+    wheel_y_location_m: float = 0.0
+    carcass_temp_c: float = 0.0
+    inner_left_c: float = 0.0
+    inner_center_c: float = 0.0
+    inner_right_c: float = 0.0
+    optimal_temp_c: float = 0.0
+    compound_index: int = 0
 
 
 @dataclass
 class DriverData:
+    slot_id: int = 0
     driver_name: str = ""
     vehicle_name: str = ""
 
@@ -66,6 +93,8 @@ class DriverData:
     forward_x: float = 0.0
     forward_y: float = 0.0
     forward_z: float = 0.0
+    relative_rotated_x_m: float = 0.0
+    relative_rotated_y_m: float = 0.0
     is_player: bool = False
 
 
@@ -122,6 +151,17 @@ class SessionData:
     track_temp_c: float = 0.0
     time_of_day: float = 0.0
     track_grip_level: int = 0
+
+    # Clima e condições reais da pista.
+    dark_cloud: float = 0.0
+    cloud_coverage: int = 0
+    min_path_wetness: float = 0.0
+    avg_path_wetness: float = 0.0
+    max_path_wetness: float = 0.0
+    wind_x_ms: float = 0.0
+    wind_y_ms: float = 0.0
+    wind_z_ms: float = 0.0
+    wind_speed_kmh: float = 0.0
 
     # Parâmetros reais da sessão do LMU.
     track_limits_steps_per_penalty: int = 0

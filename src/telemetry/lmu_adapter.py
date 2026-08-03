@@ -150,6 +150,7 @@ class LMUAdapter:
 
                 drivers.append(
                     DriverData(
+                        slot_id=safe_int(getattr(score, "mID", index)),
                         driver_name=decode_text(score.mDriverName),
                         vehicle_name=decode_text(score.mVehicleName),
                         vehicle_filename=decode_text(
@@ -219,6 +220,26 @@ class LMUAdapter:
                 )
                 driver.position_in_class = class_positions[class_name]
 
+            player_row = next(
+                (driver for driver in drivers if driver.is_player),
+                None,
+            )
+            if player_row is not None:
+                for driver in drivers:
+                    delta_x = driver.world_x - player_row.world_x
+                    delta_y = driver.world_y - player_row.world_y
+                    delta_z = driver.world_z - player_row.world_z
+                    driver.relative_rotated_x_m = (
+                        delta_x * player_row.right_x
+                        + delta_y * player_row.right_y
+                        + delta_z * player_row.right_z
+                    )
+                    driver.relative_rotated_y_m = (
+                        delta_x * player_row.forward_x
+                        + delta_y * player_row.forward_y
+                        + delta_z * player_row.forward_z
+                    )
+
             player = None
             player_index = safe_int(telemetry.playerVehicleIdx, -1)
 
@@ -276,6 +297,35 @@ class LMUAdapter:
                 track_temp_c=safe_float(info.mTrackTemp),
                 time_of_day=safe_float(info.mTimeOfDay),
                 track_grip_level=safe_int(info.mTrackGripLevel),
+                dark_cloud=safe_float(
+                    getattr(info, "mDarkCloud", 0.0)
+                ),
+                cloud_coverage=safe_int(
+                    getattr(info, "mCloudCoverage", 0)
+                ),
+                min_path_wetness=safe_float(
+                    getattr(info, "mMinPathWetness", 0.0)
+                ),
+                avg_path_wetness=safe_float(
+                    getattr(info, "mAvgPathWetness", 0.0)
+                ),
+                max_path_wetness=safe_float(
+                    getattr(info, "mMaxPathWetness", 0.0)
+                ),
+                wind_x_ms=safe_float(
+                    getattr(getattr(info, "mWind", None), "x", 0.0)
+                ),
+                wind_y_ms=safe_float(
+                    getattr(getattr(info, "mWind", None), "y", 0.0)
+                ),
+                wind_z_ms=safe_float(
+                    getattr(getattr(info, "mWind", None), "z", 0.0)
+                ),
+                wind_speed_kmh=math.hypot(
+                    safe_float(getattr(getattr(info, "mWind", None), "x", 0.0)),
+                    safe_float(getattr(getattr(info, "mWind", None), "y", 0.0)),
+                    safe_float(getattr(getattr(info, "mWind", None), "z", 0.0)),
+                ) * 3.6,
                 track_limits_steps_per_penalty=safe_int(
                     getattr(
                         info,
@@ -318,6 +368,12 @@ class LMUAdapter:
 
         for wheel in raw.mWheels:
             temps = wheel.mTemperature
+            inner_temps = getattr(
+                wheel, "mTireInnerLayerTemperature", (0.0, 0.0, 0.0)
+            )
+            carcass_kelvin = safe_float(
+                getattr(wheel, "mTireCarcassTemperature", 0.0)
+            )
 
             wheels.append(
                 WheelData(
@@ -330,6 +386,92 @@ class LMUAdapter:
                     flat=bool(wheel.mFlat),
                     detached=bool(wheel.mDetached),
                     compound_type=safe_int(wheel.mCompoundType),
+                    suspension_deflection_m=safe_float(
+                        getattr(wheel, "mSuspensionDeflection", 0.0)
+                    ),
+                    ride_height_m=safe_float(
+                        getattr(wheel, "mRideHeight", 0.0)
+                    ),
+                    susp_force_n=safe_float(
+                        getattr(wheel, "mSuspForce", 0.0)
+                    ),
+                    brake_pressure=safe_float(
+                        getattr(wheel, "mBrakePressure", 0.0)
+                    ),
+                    rotation_rad_s=safe_float(
+                        getattr(wheel, "mRotation", 0.0)
+                    ),
+                    lateral_patch_velocity_ms=safe_float(
+                        getattr(wheel, "mLateralPatchVel", 0.0)
+                    ),
+                    longitudinal_patch_velocity_ms=safe_float(
+                        getattr(wheel, "mLongitudinalPatchVel", 0.0)
+                    ),
+                    lateral_ground_velocity_ms=safe_float(
+                        getattr(wheel, "mLateralGroundVel", 0.0)
+                    ),
+                    longitudinal_ground_velocity_ms=safe_float(
+                        getattr(wheel, "mLongitudinalGroundVel", 0.0)
+                    ),
+                    camber_rad=safe_float(
+                        getattr(wheel, "mCamber", 0.0)
+                    ),
+                    toe_rad=safe_float(
+                        getattr(wheel, "mToe", 0.0)
+                    ),
+                    lateral_force_n=safe_float(
+                        getattr(wheel, "mLateralForce", 0.0)
+                    ),
+                    longitudinal_force_n=safe_float(
+                        getattr(wheel, "mLongitudinalForce", 0.0)
+                    ),
+                    tire_load_n=safe_float(
+                        getattr(wheel, "mTireLoad", 0.0)
+                    ),
+                    grip_fraction=safe_float(
+                        getattr(wheel, "mGripFract", 0.0)
+                    ),
+                    terrain_name=decode_text(
+                        getattr(wheel, "mTerrainName", b"")
+                    ),
+                    surface_type=safe_int(
+                        getattr(wheel, "mSurfaceType", 0)
+                    ),
+                    static_undeflected_radius_cm=safe_float(
+                        getattr(wheel, "mStaticUndeflectedRadius", 0.0)
+                    ),
+                    vertical_tire_deflection_m=safe_float(
+                        getattr(wheel, "mVerticalTireDeflection", 0.0)
+                    ),
+                    wheel_y_location_m=safe_float(
+                        getattr(wheel, "mWheelYLocation", 0.0)
+                    ),
+                    carcass_temp_c=(
+                        carcass_kelvin - 273.15
+                        if carcass_kelvin > 100.0
+                        else 0.0
+                    ),
+                    inner_left_c=(
+                        safe_float(inner_temps[0]) - 273.15
+                        if safe_float(inner_temps[0]) > 100.0
+                        else 0.0
+                    ),
+                    inner_center_c=(
+                        safe_float(inner_temps[1]) - 273.15
+                        if safe_float(inner_temps[1]) > 100.0
+                        else 0.0
+                    ),
+                    inner_right_c=(
+                        safe_float(inner_temps[2]) - 273.15
+                        if safe_float(inner_temps[2]) > 100.0
+                        else 0.0
+                    ),
+                    optimal_temp_c=safe_float(
+                        getattr(wheel, "mOptimalTemp", 0.0)
+                    ),
+                    compound_index=safe_int(
+                        getattr(wheel, "mCompoundIndex", 0)
+                    ),
                 )
             )
 

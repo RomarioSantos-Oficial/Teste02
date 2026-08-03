@@ -93,8 +93,12 @@ def main() -> None:
             player.pit_state,
         )
         print(
-            "Yaw:",
-            player.orientation_yaw_rad,
+            "Vetor frontal:",
+            (
+                player.forward_x,
+                player.forward_y,
+                player.forward_z,
+            ),
         )
         print()
 

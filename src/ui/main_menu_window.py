@@ -21,6 +21,8 @@ from src.ui.widget_registry import WIDGET_DEFINITIONS
 from src.widget.delta.delta_editor import DeltaEditor
 from src.widget.driver_panel.driver_panel_editor import DriverPanelEditor
 from src.widget.flags.flags_editor import FlagsEditor
+from src.widget.tyres.tyres_editor import TyresEditor
+from src.widget.weather.weather_editor import WeatherEditor
 
 
 class MainMenuWindow(QMainWindow):
@@ -131,15 +133,23 @@ class MainMenuWindow(QMainWindow):
     def _open_editor(self, widget_id: str) -> None:
         if widget_id == "driver_panel":
             editor = DriverPanelEditor(
-                deepcopy(self.overlay_manager.config_data["widgets"][widget_id]), self
+                deepcopy(self.overlay_manager.config_data["widgets"][widget_id]), None
             )
         elif widget_id == "delta":
             editor = DeltaEditor(
-                deepcopy(self.overlay_manager.config_data["widgets"][widget_id]), self
+                deepcopy(self.overlay_manager.config_data["widgets"][widget_id]), None
             )
         elif widget_id == "flags":
             editor = FlagsEditor(
-                deepcopy(self.overlay_manager.config_data["widgets"][widget_id]), self
+                deepcopy(self.overlay_manager.config_data["widgets"][widget_id]), None
+            )
+        elif widget_id == "tires":
+            editor = TyresEditor(
+                deepcopy(self.overlay_manager.config_data["widgets"][widget_id]), None
+            )
+        elif widget_id == "weather":
+            editor = WeatherEditor(
+                deepcopy(self.overlay_manager.config_data["widgets"][widget_id]), None
             )
         else:
             QMessageBox.information(
@@ -157,8 +167,20 @@ class MainMenuWindow(QMainWindow):
         editor.restore_requested.connect(
             lambda current_id=widget_id: self.overlay_manager.restore_widget_default(current_id)
         )
+        editor.finished.connect(
+            lambda _result, current_id=widget_id: self._editor_closed(
+                current_id
+            )
+        )
         editor.show()
         self.editors[widget_id] = editor
+        self.hide()
+
+    def _editor_closed(self, widget_id: str) -> None:
+        self.editors.pop(widget_id, None)
+        self.show()
+        self.raise_()
+        self.activateWindow()
 
     def _set_edit_mode(self, enabled: bool) -> None:
         if self.edit_mode_manager is not None:
