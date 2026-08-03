@@ -20,7 +20,6 @@ from src.ui.menu_row import MenuRow
 from src.ui.widget_registry import WIDGET_DEFINITIONS
 from src.widget.delta.delta_editor import DeltaEditor
 from src.widget.driver_panel.driver_panel_editor import DriverPanelEditor
-from src.widget.flags.flags_editor import FlagsEditor
 
 
 class MainMenuWindow(QMainWindow):
@@ -135,10 +134,6 @@ class MainMenuWindow(QMainWindow):
             )
         elif widget_id == "delta":
             editor = DeltaEditor(
-                deepcopy(self.overlay_manager.config_data["widgets"][widget_id]), self
-            )
-        elif widget_id == "flags":
-            editor = FlagsEditor(
                 deepcopy(self.overlay_manager.config_data["widgets"][widget_id]), self
             )
         else:

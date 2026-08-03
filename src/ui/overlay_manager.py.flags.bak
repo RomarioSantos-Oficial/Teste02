@@ -13,7 +13,6 @@ from PySide6.QtWidgets import QWidget
 
 from src.widget.delta.delta_widget import DeltaWidget
 from src.widget.driver_panel.driver_panel_widget import DriverPanelWidget
-from src.widget.flags.flags_widget import FlagsWidget
 
 
 class OverlayManager(QObject):
@@ -44,20 +43,10 @@ class OverlayManager(QObject):
         self._prepare_widget("delta", widget, config)
         return widget
 
-    def create_flags(self) -> FlagsWidget:
-        existing = self.widgets.get("flags")
-        if isinstance(existing, FlagsWidget):
-            return existing
-        config = deepcopy(self.config_data["widgets"]["flags"])
-        widget = FlagsWidget("flags", config)
-        self._prepare_widget("flags", widget, config)
-        return widget
-
     def create_widget(self, widget_id: str) -> QWidget:
         creators: dict[str, Callable[[], QWidget]] = {
             "driver_panel": self.create_driver_panel,
             "delta": self.create_delta,
-            "flags": self.create_flags,
         }
         creator = creators.get(widget_id)
         if creator is None:
@@ -66,7 +55,7 @@ class OverlayManager(QObject):
 
     def create_enabled_widgets(self) -> None:
         for widget_id, config in self.config_data.get("widgets", {}).items():
-            if bool(config.get("enabled", False)) and widget_id in {"driver_panel", "delta", "flags"}:
+            if bool(config.get("enabled", False)) and widget_id in {"driver_panel", "delta"}:
                 self.create_widget(widget_id)
 
     def _prepare_widget(
@@ -147,18 +136,6 @@ class OverlayManager(QObject):
         delta = self.widgets.get("delta")
         if delta is not None and delta.isVisible():
             delta.update_from_session(session)
-
-        # Flags pode se ocultar automaticamente quando a pista
-        # está limpa. Mesmo oculto, ele precisa continuar
-        # recebendo telemetria para reaparecer sozinho.
-        flags = self.widgets.get("flags")
-        flags_config = self.config_data.get("widgets", {}).get(
-            "flags", {}
-        )
-        if flags is not None and bool(
-            flags_config.get("enabled", False)
-        ):
-            flags.update_from_session(session)
 
     def set_edit_mode(self, enabled: bool) -> None:
         for widget_id, widget in self.widgets.items():

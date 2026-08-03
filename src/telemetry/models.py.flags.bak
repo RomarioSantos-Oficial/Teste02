@@ -49,23 +49,6 @@ class DriverData:
     penalties: int = 0
     flag: int = 0
     lap_distance_m: float = 0.0
-    path_lateral_m: float = 0.0
-    track_edge_m: float = 0.0
-    speed_kmh: float = 0.0
-    pit_state: int = 0
-    individual_phase: int = 0
-    under_yellow: bool = False
-    in_garage: bool = False
-    position_in_class: int = 0
-    world_x: float = 0.0
-    world_y: float = 0.0
-    world_z: float = 0.0
-    right_x: float = 0.0
-    right_y: float = 0.0
-    right_z: float = 0.0
-    forward_x: float = 0.0
-    forward_y: float = 0.0
-    forward_z: float = 0.0
     is_player: bool = False
 
 
@@ -110,11 +93,6 @@ class SessionData:
     current_time_s: float = 0.0
     remaining_time_s: float = 0.0
     max_laps: int = 0
-    track_length_m: float = 0.0
-    sector_flags: tuple[int, int, int] = (0, 0, 0)
-    start_light: int = 0
-    num_red_lights: int = 0
-    in_realtime: bool = False
     game_phase: int = 0
     yellow_flag_state: int = 0
     raining: float = 0.0

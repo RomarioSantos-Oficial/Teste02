@@ -25,7 +25,7 @@ WIDGET_DEFINITIONS: list[WidgetDefinition] = [
     WidgetDefinition("replay", "Replay", "Sistema", True, False),
     WidgetDefinition("url", "URL", "Sistema", True, False),
     WidgetDefinition("weather", "Weather", "Estratégia", True, False),
-    WidgetDefinition("flags", "Flags", "Corrida", True, True),
+    WidgetDefinition("flags", "Flags", "Corrida", True, False),
     WidgetDefinition("pit_window", "Pit Window", "Estratégia", True, False),
     WidgetDefinition("race_control", "Race Control", "Corrida", True, False),
 ]

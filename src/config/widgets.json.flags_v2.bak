@@ -1,5 +1,5 @@
 {
-  "version": 13,
+  "version": 12,
   "widgets": {
     "driver_panel": {
       "always_on_top": true,
@@ -153,43 +153,63 @@
       "snap_to_edges": true
     },
     "flags": {
-      "enabled": true,
-      "monitor": 0,
-      "position": {
-        "x": 0.7208333333333333,
-        "y": 0.025
-      },
-      "size": {
-        "width": 0.15625,
-        "height": 0.17037037037037037
-      },
-      "scale": 1.0,
-      "opacity": 1.0,
       "always_on_top": true,
-      "click_through": true,
-      "snap_to_edges": true,
-      "show_yellow_flag": true,
-      "show_blue_flag": true,
-      "show_startlights": true,
       "auto_hide_when_clear": true,
-      "duracao_minima_visivel": 1.0,
+      "background_opacity": 0.94,
+      "blue_max_behind_m": 250.0,
+      "border_radius": 14,
+      "click_through": true,
+      "colors": {
+        "background": "#080D14",
+        "blue": "#2787FF",
+        "blue_light": "#8CC6FF",
+        "border": "#344155",
+        "checkered": "#F2F2F2",
+        "edit_border": "#9B5CFF",
+        "green": "#20C763",
+        "green_light": "#89E8AD",
+        "muted": "#AAB5C5",
+        "panel": "#111923",
+        "radar_lane": "#344153",
+        "radar_player": "#FFFFFF",
+        "red": "#EF3340",
+        "red_light": "#FF9AA2",
+        "text": "#FFFFFF",
+        "yellow": "#FFD400",
+        "yellow_light": "#FFF1A6"
+      },
+      "enabled": true,
+      "font": {
+        "family": "Bahnschrift"
+      },
       "green_flag_duration_seconds": 3.0,
+      "minimum_visible_seconds": 1.0,
+      "monitor": 0,
+      "opacity": 0.98,
+      "pit_lateral_filter_m": 22.0,
+      "position": {
+        "x": 0.7041666666666667,
+        "y": 0.019444444444444445
+      },
+      "preview_flag": "yellow",
+      "scale": 1.0,
+      "show_blue_flag": true,
+      "show_checkered_flag": true,
+      "show_full_course_yellow": true,
+      "show_green_flag": true,
+      "show_local_yellow": true,
+      "show_radar": true,
+      "show_red_flag": true,
+      "show_target_details": true,
+      "size": {
+        "height": 0.08981481481481482,
+        "width": 0.1875
+      },
+      "snap_to_edges": true,
+      "yellow_hazard_speed_kmh": 20.0,
       "yellow_lookahead_seconds": 10.0,
       "yellow_max_ahead_m": 900.0,
-      "yellow_max_behind_m": 100.0,
-      "yellow_hazard_speed_kmh": 15.12,
-      "simulation_file": "simulacao_flags.json",
-      "preview_mode": "yellow",
-      "font_name": "Arial",
-      "font_size": 16,
-      "colors": {
-        "yellow_bg": "#FFEA00",
-        "yellow_light": "#FFF59D",
-        "blue_bg": "#1E88E5",
-        "blue_light": "#81D4FA",
-        "green_bg": "#00AA00",
-        "green_fg": "#FFFFFF"
-      }
+      "yellow_max_behind_m": 100.0
     }
   },
   "defaults": {
@@ -294,39 +314,59 @@
       "enabled": false,
       "monitor": 0,
       "position": {
-        "x": 0.36,
+        "x": 0.33,
         "y": 0.08
       },
       "size": {
-        "width": 0.28,
-        "height": 0.18
+        "width": 0.34,
+        "height": 0.14
       },
       "scale": 1.0,
-      "opacity": 1.0,
+      "opacity": 0.98,
+      "background_opacity": 0.94,
+      "border_radius": 14,
       "always_on_top": true,
       "click_through": true,
       "snap_to_edges": true,
-      "show_yellow_flag": true,
-      "show_blue_flag": true,
-      "show_startlights": true,
       "auto_hide_when_clear": true,
-      "duracao_minima_visivel": 1.0,
+      "minimum_visible_seconds": 1.0,
       "green_flag_duration_seconds": 3.0,
+      "show_local_yellow": true,
+      "show_full_course_yellow": true,
+      "show_blue_flag": true,
+      "show_green_flag": true,
+      "show_red_flag": true,
+      "show_checkered_flag": true,
+      "show_radar": true,
+      "show_target_details": true,
       "yellow_lookahead_seconds": 10.0,
       "yellow_max_ahead_m": 900.0,
       "yellow_max_behind_m": 100.0,
-      "yellow_hazard_speed_kmh": 15.12,
-      "simulation_file": "simulacao_flags.json",
-      "preview_mode": "yellow",
-      "font_name": "Arial",
-      "font_size": 16,
+      "yellow_hazard_speed_kmh": 20.0,
+      "blue_max_behind_m": 250.0,
+      "pit_lateral_filter_m": 22.0,
+      "preview_flag": "yellow",
+      "font": {
+        "family": "Bahnschrift"
+      },
       "colors": {
-        "yellow_bg": "#FFEA00",
-        "yellow_light": "#FFF59D",
-        "blue_bg": "#1E88E5",
-        "blue_light": "#81D4FA",
-        "green_bg": "#00AA00",
-        "green_fg": "#FFFFFF"
+        "background": "#080D14",
+        "panel": "#111923",
+        "text": "#FFFFFF",
+        "muted": "#AAB5C5",
+        "yellow": "#FFD400",
+        "yellow_light": "#FFF1A6",
+        "blue": "#2787FF",
+        "blue_light": "#8CC6FF",
+        "green": "#20C763",
+        "green_light": "#89E8AD",
+        "red": "#EF3340",
+        "red_light": "#FF9AA2",
+        "checkered": "#F2F2F2",
+        "border": "#344155",
+        "edit_border": "#9B5CFF",
+        "radar_lane": "#344153",
+        "radar_player": "#FFFFFF"
       }
     }
   }

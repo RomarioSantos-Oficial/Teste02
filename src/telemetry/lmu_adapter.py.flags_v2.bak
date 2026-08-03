@@ -190,15 +190,6 @@ class LMUAdapter:
                         in_garage=bool(
                             getattr(score, "mInGarageStall", False)
                         ),
-                        world_x=safe_float(score_pos.x) if score_pos is not None else 0.0,
-                        world_y=safe_float(score_pos.y) if score_pos is not None else 0.0,
-                        world_z=safe_float(score_pos.z) if score_pos is not None else 0.0,
-                        right_x=safe_float(right.x) if right is not None else 0.0,
-                        right_y=safe_float(right.y) if right is not None else 0.0,
-                        right_z=safe_float(right.z) if right is not None else 0.0,
-                        forward_x=safe_float(forward.x) if forward is not None else 0.0,
-                        forward_y=safe_float(forward.y) if forward is not None else 0.0,
-                        forward_z=safe_float(forward.z) if forward is not None else 0.0,
                         is_player=bool(score.mIsPlayer),
                     )
                 )

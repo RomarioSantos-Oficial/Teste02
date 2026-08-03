@@ -57,15 +57,6 @@ class DriverData:
     under_yellow: bool = False
     in_garage: bool = False
     position_in_class: int = 0
-    world_x: float = 0.0
-    world_y: float = 0.0
-    world_z: float = 0.0
-    right_x: float = 0.0
-    right_y: float = 0.0
-    right_z: float = 0.0
-    forward_x: float = 0.0
-    forward_y: float = 0.0
-    forward_z: float = 0.0
     is_player: bool = False
 
 
