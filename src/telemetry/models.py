@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
+
 
 @dataclass
 class WheelData:
@@ -13,15 +15,34 @@ class WheelData:
     detached: bool = False
     compound_type: int = 0
 
+
 @dataclass
 class DriverData:
     driver_name: str = ""
     vehicle_name: str = ""
+
+    # Identificador do arquivo VEH e grupo de boxes. Esses campos são
+    # muito mais úteis quando mVehicleName contém equipe/livery em vez
+    # do fabricante.
+    vehicle_filename: str = ""
+    pit_group: str = ""
+
     vehicle_class: str = ""
     position: int = 0
     laps: int = 0
+    current_sector: int = 0
+
     best_lap_s: float = 0.0
     last_lap_s: float = 0.0
+
+    best_sector1_s: float = 0.0
+    best_sector2_s: float = 0.0
+    best_sector3_s: float = 0.0
+
+    last_sector1_s: float = 0.0
+    last_sector2_s: float = 0.0
+    last_sector3_s: float = 0.0
+
     gap_ahead_s: float = 0.0
     gap_leader_s: float = 0.0
     in_pits: bool = False
@@ -29,6 +50,7 @@ class DriverData:
     flag: int = 0
     lap_distance_m: float = 0.0
     is_player: bool = False
+
 
 @dataclass
 class PlayerData:
@@ -52,9 +74,14 @@ class PlayerData:
     battery_fraction: float = 0.0
     state_of_charge: float = 0.0
     virtual_energy: float = 0.0
+
+    # Valor bruto do LMU: TrackLimitPoints * TrackLimitStepsPerPoint.
+    track_limits_steps: int = 0
+
     front_tire_compound: str = ""
     rear_tire_compound: str = ""
     wheels: list[WheelData] = field(default_factory=list)
+
 
 @dataclass
 class SessionData:
@@ -73,6 +100,29 @@ class SessionData:
     track_temp_c: float = 0.0
     time_of_day: float = 0.0
     track_grip_level: int = 0
+
+    # Parâmetros reais da sessão do LMU.
+    track_limits_steps_per_penalty: int = 0
+    track_limits_steps_per_point: int = 0
+
     player: PlayerData | None = None
     drivers: list[DriverData] = field(default_factory=list)
     error: str = ""
+
+    @property
+    def track_limits_current(self) -> float:
+        if self.player is None:
+            return 0.0
+
+        steps_per_point = max(1, int(self.track_limits_steps_per_point or 0))
+        return float(self.player.track_limits_steps) / steps_per_point
+
+    @property
+    def track_limits_limit(self) -> float:
+        steps_per_point = max(1, int(self.track_limits_steps_per_point or 0))
+        steps_per_penalty = max(0, int(self.track_limits_steps_per_penalty or 0))
+
+        if steps_per_penalty <= 0:
+            return 0.0
+
+        return float(steps_per_penalty) / steps_per_point

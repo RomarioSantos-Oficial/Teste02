@@ -1,5 +1,5 @@
 {
-  "version": 9,
+  "version": 6,
   "widgets": {
     "driver_panel": {
       "always_on_top": true,
@@ -72,15 +72,11 @@
         "neutral": "#5A5A5A",
         "panel": "#121821",
         "purple": "#8B4DFF",
-        "sector_better": "#00A000",
         "sector_neutral": "#5A5A5A",
-        "sector_session_best": "#8B4DFF",
-        "sector_worse": "#FFC42E",
         "text": "#FFFFFF",
         "warning": "#FFC42E",
         "yellow": "#FFC42E"
       },
-      "delta_good_side": "right",
       "delta_smoothing": 12.0,
       "design_base_height": 620,
       "design_base_width": 1500,
@@ -98,11 +94,11 @@
           "locked": false
         },
         "history": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         },
         "penalties": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         },
         "sectors": {
@@ -110,15 +106,15 @@
           "locked": false
         },
         "session_time": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         },
         "session_type": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         },
         "track_state": {
-          "enabled": true,
+          "enabled": false,
           "locked": false
         }
       },
@@ -130,20 +126,16 @@
         "family": "Bahnschrift Light SemiCondensed"
       },
       "history_points": 240,
-      "logo_auto_refresh": true,
       "logo_directory": "images/logos",
       "max_delta_seconds": 5.0,
       "monitor": 0,
       "opacity": 0.91,
-      "penalty_increment": 0.25,
-      "penalty_limit_fallback": 5.0,
       "position": {
         "x": 0.49166666666666664,
         "y": 0.196
       },
       "scale": 0.8,
       "section_backgrounds": true,
-      "sector_tolerance_seconds": 0.001,
       "show_manufacturer_logo": true,
       "size": {
         "height": 0.114,
@@ -238,16 +230,8 @@
         "warning": "#FFC42E",
         "sector_neutral": "#5A5A5A",
         "border": "#3A4452",
-        "edit_border": "#9B5CFF",
-        "sector_better": "#00A000",
-        "sector_worse": "#FFC42E",
-        "sector_session_best": "#8B4DFF"
-      },
-      "penalty_limit_fallback": 5.0,
-      "sector_tolerance_seconds": 0.001,
-      "delta_good_side": "right",
-      "penalty_increment": 0.25,
-      "logo_auto_refresh": true
+        "edit_border": "#9B5CFF"
+      }
     }
   }
 }

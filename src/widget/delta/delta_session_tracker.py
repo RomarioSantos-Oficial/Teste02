@@ -141,8 +141,32 @@ class DeltaSessionTracker:
         if best_row is None:
             return None
 
-        vehicle_name = str(getattr(best_row, "vehicle_name", "") or "")
-        logo = self.logo_manager.match(vehicle_name)
+        vehicle_name = str(
+            getattr(best_row, "vehicle_name", "") or ""
+        )
+        vehicle_filename = str(
+            getattr(best_row, "vehicle_filename", "") or ""
+        )
+        pit_group = str(
+            getattr(best_row, "pit_group", "") or ""
+        )
+
+        # Para o próprio jogador, também existe mVehicleModel na
+        # telemetria. Para carros remotos, mVehFilename é o melhor
+        # identificador disponível no scoring.
+        player_model = ""
+        if bool(getattr(best_row, "is_player", False)):
+            player = getattr(session, "player", None)
+            player_model = str(
+                getattr(player, "vehicle_model", "") or ""
+            )
+
+        logo = self.logo_manager.match(
+            vehicle_name,
+            vehicle_filename,
+            pit_group,
+            player_model,
+        )
 
         return FastestLapData(
             driver_name=str(getattr(best_row, "driver_name", "") or ""),

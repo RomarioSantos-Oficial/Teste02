@@ -1,12 +1,16 @@
 from __future__ import annotations
+
 import math
 import sys
 from pathlib import Path
 from typing import Any
+
 from .models import DriverData, PlayerData, SessionData, WheelData
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 LMU_LIBRARY = PROJECT_ROOT / "vendor" / "pyLMUSharedMemory"
+
 if str(LMU_LIBRARY) not in sys.path:
     sys.path.insert(0, str(LMU_LIBRARY))
 
@@ -14,16 +18,27 @@ try:
     import lmu_data
     import lmu_mmap
 except ImportError as exc:
-    raise ImportError("pyLMUSharedMemory nao encontrado em vendor/pyLMUSharedMemory.") from exc
+    raise ImportError(
+        "pyLMUSharedMemory nao encontrado em vendor/pyLMUSharedMemory."
+    ) from exc
+
 
 def decode_text(value: Any) -> str:
     if isinstance(value, bytes):
-        return value.split(b"\x00", 1)[0].decode("utf-8", errors="replace").strip()
+        return value.split(b"\x00", 1)[0].decode(
+            "utf-8",
+            errors="replace",
+        ).strip()
+
     try:
         raw = bytes(value)
-        return raw.split(b"\x00", 1)[0].decode("utf-8", errors="replace").strip()
+        return raw.split(b"\x00", 1)[0].decode(
+            "utf-8",
+            errors="replace",
+        ).strip()
     except Exception:
         return str(value) if value is not None else ""
+
 
 def safe_float(value: Any, default: float = 0.0) -> float:
     try:
@@ -32,11 +47,21 @@ def safe_float(value: Any, default: float = 0.0) -> float:
     except (TypeError, ValueError):
         return default
 
+
 def safe_int(value: Any, default: int = 0) -> int:
     try:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def positive_difference(total: float, previous: float) -> float:
+    if total <= 0 or previous < 0:
+        return 0.0
+
+    result = total - previous
+    return result if result > 0 else 0.0
+
 
 class LMUAdapter:
     def __init__(self, copy_access: bool = True) -> None:
@@ -46,6 +71,7 @@ class LMUAdapter:
     def connect(self) -> bool:
         if self.memory is not None:
             return self.is_connected()
+
         try:
             self.memory = lmu_mmap.MMapControl(
                 lmu_data.LMUConstants.LMU_SHARED_MEMORY_FILE,
@@ -61,6 +87,7 @@ class LMUAdapter:
     def is_connected(self) -> bool:
         if self.memory is None or self.memory.data is None:
             return False
+
         try:
             return safe_int(self.memory.data.generic.gameVersion) > 0
         except AttributeError:
@@ -68,46 +95,97 @@ class LMUAdapter:
 
     def read(self) -> SessionData:
         if self.memory is None and not self.connect():
-            return SessionData(connected=False, error="Aguardando o LMU.")
+            return SessionData(
+                connected=False,
+                error="Aguardando o LMU.",
+            )
+
         try:
             assert self.memory is not None
             self.memory.update()
+
             if not self.is_connected():
-                return SessionData(connected=False, error="LMU nao esta fornecendo dados.")
+                return SessionData(
+                    connected=False,
+                    error="LMU nao esta fornecendo dados.",
+                )
 
             data = self.memory.data
             info = data.scoring.scoringInfo
             telemetry = data.telemetry
+
             drivers: list[DriverData] = []
-            vehicle_count = max(0, min(safe_int(info.mNumVehicles), 104))
+            vehicle_count = max(
+                0,
+                min(
+                    safe_int(info.mNumVehicles),
+                    int(lmu_data.LMUConstants.MAX_MAPPED_VEHICLES),
+                ),
+            )
 
             for index in range(vehicle_count):
                 score = data.scoring.vehScoringInfo[index]
-                drivers.append(DriverData(
-                    driver_name=decode_text(score.mDriverName),
-                    vehicle_name=decode_text(score.mVehicleName),
-                    vehicle_class=decode_text(score.mVehicleClass),
-                    position=safe_int(score.mPlace),
-                    laps=safe_int(score.mTotalLaps),
-                    best_lap_s=safe_float(score.mBestLapTime),
-                    last_lap_s=safe_float(score.mLastLapTime),
-                    gap_ahead_s=safe_float(score.mTimeBehindNext),
-                    gap_leader_s=safe_float(score.mTimeBehindLeader),
-                    in_pits=bool(score.mInPits),
-                    penalties=safe_int(score.mNumPenalties),
-                    flag=safe_int(score.mFlag),
-                    lap_distance_m=safe_float(score.mLapDist),
-                    is_player=bool(score.mIsPlayer),
-                ))
+
+                best_s1 = safe_float(getattr(score, "mBestSector1", 0.0))
+                best_s12 = safe_float(getattr(score, "mBestSector2", 0.0))
+                best_lap = safe_float(getattr(score, "mBestLapTime", 0.0))
+
+                last_s1 = safe_float(getattr(score, "mLastSector1", 0.0))
+                last_s12 = safe_float(getattr(score, "mLastSector2", 0.0))
+                last_lap = safe_float(getattr(score, "mLastLapTime", 0.0))
+
+                drivers.append(
+                    DriverData(
+                        driver_name=decode_text(score.mDriverName),
+                        vehicle_name=decode_text(score.mVehicleName),
+                        vehicle_filename=decode_text(
+                            getattr(score, "mVehFilename", b"")
+                        ),
+                        pit_group=decode_text(
+                            getattr(score, "mPitGroup", b"")
+                        ),
+                        vehicle_class=decode_text(score.mVehicleClass),
+                        position=safe_int(score.mPlace),
+                        laps=safe_int(score.mTotalLaps),
+                        current_sector=safe_int(getattr(score, "mSector", 0)),
+                        best_lap_s=best_lap,
+                        last_lap_s=last_lap,
+                        best_sector1_s=best_s1,
+                        best_sector2_s=positive_difference(best_s12, best_s1),
+                        best_sector3_s=positive_difference(best_lap, best_s12),
+                        last_sector1_s=last_s1,
+                        last_sector2_s=positive_difference(last_s12, last_s1),
+                        last_sector3_s=positive_difference(last_lap, last_s12),
+                        gap_ahead_s=safe_float(score.mTimeBehindNext),
+                        gap_leader_s=safe_float(score.mTimeBehindLeader),
+                        in_pits=bool(score.mInPits),
+                        penalties=safe_int(score.mNumPenalties),
+                        flag=safe_int(score.mFlag),
+                        lap_distance_m=safe_float(score.mLapDist),
+                        is_player=bool(score.mIsPlayer),
+                    )
+                )
 
             player = None
             player_index = safe_int(telemetry.playerVehicleIdx, -1)
-            if bool(telemetry.playerHasVehicle) and 0 <= player_index < 104:
-                player = self._read_player(telemetry.telemInfo[player_index])
+
+            if (
+                bool(telemetry.playerHasVehicle)
+                and 0 <= player_index < int(
+                    lmu_data.LMUConstants.MAX_MAPPED_VEHICLES
+                )
+            ):
+                player = self._read_player(
+                    telemetry.telemInfo[player_index]
+                )
 
             yellow_raw = info.mYellowFlagState
             if isinstance(yellow_raw, bytes):
-                yellow_state = int.from_bytes(yellow_raw[:1], "little", signed=True)
+                yellow_state = int.from_bytes(
+                    yellow_raw[:1],
+                    "little",
+                    signed=True,
+                )
             else:
                 yellow_state = safe_int(yellow_raw)
 
@@ -127,30 +205,65 @@ class LMUAdapter:
                 track_temp_c=safe_float(info.mTrackTemp),
                 time_of_day=safe_float(info.mTimeOfDay),
                 track_grip_level=safe_int(info.mTrackGripLevel),
+                track_limits_steps_per_penalty=safe_int(
+                    getattr(
+                        info,
+                        "mTrackLimitsStepsPerPenalty",
+                        0,
+                    )
+                ),
+                track_limits_steps_per_point=safe_int(
+                    getattr(
+                        info,
+                        "mTrackLimitsStepsPerPoint",
+                        0,
+                    )
+                ),
                 player=player,
                 drivers=drivers,
             )
-        except (AttributeError, IndexError, OSError, ValueError, BufferError) as exc:
-            return SessionData(connected=False, error=f"Erro de leitura: {exc}")
+
+        except (
+            AttributeError,
+            IndexError,
+            OSError,
+            ValueError,
+            BufferError,
+        ) as exc:
+            return SessionData(
+                connected=False,
+                error=f"Erro de leitura: {exc}",
+            )
 
     def _read_player(self, raw: Any) -> PlayerData:
         velocity = raw.mLocalVel
-        speed_ms = math.sqrt(safe_float(velocity.x)**2 + safe_float(velocity.y)**2 + safe_float(velocity.z)**2)
+        speed_ms = math.sqrt(
+            safe_float(velocity.x) ** 2
+            + safe_float(velocity.y) ** 2
+            + safe_float(velocity.z) ** 2
+        )
+
         wheels: list[WheelData] = []
+
         for wheel in raw.mWheels:
             temps = wheel.mTemperature
-            wheels.append(WheelData(
-                pressure_kpa=safe_float(wheel.mPressure),
-                wear=safe_float(wheel.mWear),
-                brake_temp_c=safe_float(wheel.mBrakeTemp),
-                surface_left_c=safe_float(temps[0]) - 273.15,
-                surface_center_c=safe_float(temps[1]) - 273.15,
-                surface_right_c=safe_float(temps[2]) - 273.15,
-                flat=bool(wheel.mFlat),
-                detached=bool(wheel.mDetached),
-                compound_type=safe_int(wheel.mCompoundType),
-            ))
+
+            wheels.append(
+                WheelData(
+                    pressure_kpa=safe_float(wheel.mPressure),
+                    wear=safe_float(wheel.mWear),
+                    brake_temp_c=safe_float(wheel.mBrakeTemp),
+                    surface_left_c=safe_float(temps[0]) - 273.15,
+                    surface_center_c=safe_float(temps[1]) - 273.15,
+                    surface_right_c=safe_float(temps[2]) - 273.15,
+                    flat=bool(wheel.mFlat),
+                    detached=bool(wheel.mDetached),
+                    compound_type=safe_int(wheel.mCompoundType),
+                )
+            )
+
         sector = safe_int(raw.mCurrentSector) & 0x7FFFFFFF
+
         return PlayerData(
             vehicle_name=decode_text(raw.mVehicleName),
             vehicle_model=decode_text(raw.mVehicleModel),
@@ -172,6 +285,9 @@ class LMUAdapter:
             battery_fraction=safe_float(raw.mBatteryChargeFraction),
             state_of_charge=safe_float(raw.mStateOfCharge),
             virtual_energy=safe_float(raw.mVirtualEnergy),
+            track_limits_steps=safe_int(
+                getattr(raw, "mTrackLimitsSteps", 0)
+            ),
             front_tire_compound=decode_text(raw.mFrontTireCompoundName),
             rear_tire_compound=decode_text(raw.mRearTireCompoundName),
             wheels=wheels,
@@ -181,6 +297,11 @@ class LMUAdapter:
         if self.memory is not None:
             try:
                 self.memory.close()
-            except (AttributeError, OSError, BufferError):
+            except (
+                AttributeError,
+                OSError,
+                BufferError,
+            ):
                 pass
+
         self.memory = None

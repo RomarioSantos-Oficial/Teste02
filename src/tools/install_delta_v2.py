@@ -34,7 +34,7 @@ def main() -> None:
     merged = deep_merge(deepcopy(delta_defaults), previous)
     config["widgets"]["delta"] = merged
     config["defaults"]["delta"] = deepcopy(delta_defaults)
-    config["version"] = max(int(config.get("version", 1)), 6)
+    config["version"] = max(int(config.get("version", 1)), 9)
 
     CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
     CONFIG_PATH.write_text(
@@ -53,7 +53,7 @@ def main() -> None:
     if missing:
         raise FileNotFoundError("Arquivos ausentes:\n" + "\n".join(missing))
 
-    print("Delta V2 instalado e integrado.")
+    print("Delta V2.3 instalado e integrado.")
     print("Teste isolado:")
     print(r"python .\src\tools\test_delta_v2.py")
     print("Programa completo:")
