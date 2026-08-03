@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "update_hz": 20,
+  "copy_access": true,
+  "source": "pyLMUSharedMemory",
+  "shared_memory_name": "LMU_Data"
+}

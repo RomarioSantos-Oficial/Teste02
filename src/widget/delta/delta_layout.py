@@ -1,0 +1,100 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+from PySide6.QtCore import QRectF
+
+
+@dataclass(slots=True)
+class DeltaLayout:
+    outer: QRectF
+    header: QRectF | None
+    delta_bar: QRectF
+    history: QRectF | None
+    fastest: QRectF | None
+    sectors: QRectF | None
+    preferred_height: int
+
+
+class DeltaLayoutEngine:
+    BASE_WIDTH = 1200.0
+
+    def build(
+        self,
+        bounds: QRectF,
+        config: dict[str, Any],
+        fastest_visible: bool,
+    ) -> DeltaLayout:
+        elements = config.get("elements", {})
+        width_scale = max(0.35, min(2.5, bounds.width() / self.BASE_WIDTH))
+        margin = max(6.0, 18.0 * width_scale)
+        gap = max(4.0, 10.0 * width_scale)
+
+        header_h = 64.0 * width_scale if self._enabled(elements, "header") else 0.0
+        delta_h = 170.0 * width_scale
+        history_h = 92.0 * width_scale if self._enabled(elements, "history") else 0.0
+        fastest_h = (
+            100.0 * width_scale
+            if self._enabled(elements, "fastest_lap") and fastest_visible
+            else 0.0
+        )
+        sectors_h = 76.0 * width_scale if self._enabled(elements, "sectors") else 0.0
+
+        heights = [value for value in [header_h, delta_h, history_h, fastest_h, sectors_h] if value > 0]
+        preferred = int(
+            margin * 2
+            + sum(heights)
+            + gap * max(0, len(heights) - 1)
+        )
+
+        outer = bounds.adjusted(margin, margin, -margin, -margin)
+        y = outer.top()
+
+        header = None
+        if header_h > 0:
+            header = QRectF(outer.left(), y, outer.width(), header_h)
+            y += header_h + gap
+
+        delta_bar = QRectF(outer.left(), y, outer.width(), delta_h)
+        y += delta_h + gap
+
+        history = None
+        if history_h > 0:
+            history = QRectF(outer.left(), y, outer.width(), history_h)
+            y += history_h + gap
+
+        fastest = None
+        if fastest_h > 0:
+            fastest = QRectF(outer.left(), y, outer.width(), fastest_h)
+            y += fastest_h + gap
+
+        sectors = None
+        if sectors_h > 0:
+            sectors = QRectF(outer.left(), y, outer.width(), sectors_h)
+
+        return DeltaLayout(
+            outer=outer,
+            header=header,
+            delta_bar=delta_bar,
+            history=history,
+            fastest=fastest,
+            sectors=sectors,
+            preferred_height=max(130, preferred),
+        )
+
+    def preferred_height(
+        self,
+        width: int,
+        config: dict[str, Any],
+        fastest_visible: bool,
+    ) -> int:
+        synthetic = QRectF(0, 0, max(320, width), 2000)
+        return self.build(synthetic, config, fastest_visible).preferred_height
+
+    @staticmethod
+    def _enabled(elements: dict[str, Any], key: str) -> bool:
+        value = elements.get(key, {})
+        if isinstance(value, bool):
+            return value
+        return bool(value.get("enabled", False))

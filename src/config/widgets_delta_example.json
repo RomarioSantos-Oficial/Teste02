@@ -1,0 +1,201 @@
+{
+  "version": 5,
+  "widgets": {
+    "driver_panel": {
+      "enabled": true,
+      "monitor": 0,
+      "position": {
+        "x": 0.14,
+        "y": 0.66
+      },
+      "size": {
+        "width": 0.72,
+        "height": 0.3
+      },
+      "scale": 1.0,
+      "opacity": 0.96,
+      "background_opacity": 0.88,
+      "border_radius": 12,
+      "always_on_top": true,
+      "click_through": true,
+      "snap_to_edges": true,
+      "steering_visual_degrees": 180,
+      "graph_history_points": 240,
+      "graph_vertical_lines": 8,
+      "design_base_width": 1380,
+      "design_base_height": 420,
+      "font": {
+        "family": "Arial"
+      },
+      "layout": {
+        "rpm_segments": 28,
+        "shift_start": 0.78,
+        "red_start": 0.92
+      },
+      "colors": {
+        "text": "#FFFFFF",
+        "muted": "#AAB2BD",
+        "background": "#10151D",
+        "panel": "#080C12",
+        "grid": "#27313E",
+        "rpm_low": "#1769E0",
+        "rpm_shift": "#FFC400",
+        "rpm_high": "#FF2438",
+        "throttle": "#50DF42",
+        "brake": "#FF2438",
+        "wheel": "#445466",
+        "steering_center": "#FFFFFF",
+        "steering_marker": "#4CFF5E",
+        "border": "#424B56",
+        "edit_border": "#8B5CF6"
+      },
+      "elements": {}
+    },
+    "delta": {
+      "enabled": true,
+      "monitor": 0,
+      "position": {
+        "x": 0.22,
+        "y": 0.18
+      },
+      "size": {
+        "width": 0.56,
+        "height": 0.42
+      },
+      "scale": 1.0,
+      "opacity": 0.96,
+      "background_opacity": 0.86,
+      "border_radius": 12,
+      "always_on_top": true,
+      "click_through": true,
+      "snap_to_edges": true,
+      "max_delta_seconds": 5.0,
+      "design_base_width": 1500,
+      "design_base_height": 620,
+      "font": {
+        "family": "Arial"
+      },
+      "elements": {
+        "header": {
+          "enabled": true,
+          "locked": false
+        },
+        "session_time": {
+          "enabled": true,
+          "locked": false
+        },
+        "session_type": {
+          "enabled": true,
+          "locked": false
+        },
+        "track_state": {
+          "enabled": true,
+          "locked": false
+        },
+        "penalties": {
+          "enabled": true,
+          "locked": false
+        },
+        "fastest_lap": {
+          "enabled": true,
+          "locked": false
+        },
+        "sectors": {
+          "enabled": true,
+          "locked": false
+        },
+        "delta_bar": {
+          "enabled": true,
+          "locked": true
+        }
+      },
+      "colors": {
+        "text": "#FFFFFF",
+        "muted": "#AAB2BD",
+        "background": "#070B12",
+        "panel": "#121821",
+        "gain": "#009B00",
+        "loss": "#FF2828",
+        "neutral": "#5A5A5A",
+        "purple": "#8B4DFF",
+        "yellow": "#FFC42E",
+        "border": "#3A4452",
+        "edit_border": "#9B5CFF"
+      }
+    }
+  },
+  "defaults": {
+    "delta": {
+      "enabled": true,
+      "monitor": 0,
+      "position": {
+        "x": 0.22,
+        "y": 0.18
+      },
+      "size": {
+        "width": 0.56,
+        "height": 0.42
+      },
+      "scale": 1.0,
+      "opacity": 0.96,
+      "background_opacity": 0.86,
+      "border_radius": 12,
+      "always_on_top": true,
+      "click_through": true,
+      "snap_to_edges": true,
+      "max_delta_seconds": 5.0,
+      "design_base_width": 1500,
+      "design_base_height": 620,
+      "font": {
+        "family": "Arial"
+      },
+      "elements": {
+        "header": {
+          "enabled": true,
+          "locked": false
+        },
+        "session_time": {
+          "enabled": true,
+          "locked": false
+        },
+        "session_type": {
+          "enabled": true,
+          "locked": false
+        },
+        "track_state": {
+          "enabled": true,
+          "locked": false
+        },
+        "penalties": {
+          "enabled": true,
+          "locked": false
+        },
+        "fastest_lap": {
+          "enabled": true,
+          "locked": false
+        },
+        "sectors": {
+          "enabled": true,
+          "locked": false
+        },
+        "delta_bar": {
+          "enabled": true,
+          "locked": true
+        }
+      },
+      "colors": {
+        "text": "#FFFFFF",
+        "muted": "#AAB2BD",
+        "background": "#070B12",
+        "panel": "#121821",
+        "gain": "#009B00",
+        "loss": "#FF2828",
+        "neutral": "#5A5A5A",
+        "purple": "#8B4DFF",
+        "yellow": "#FFC42E",
+        "border": "#3A4452",
+        "edit_border": "#9B5CFF"
+      }
+    }
+  }
+}
