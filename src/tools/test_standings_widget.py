@@ -1,0 +1,200 @@
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.telemetry.models import DriverData, SessionData
+from src.widget.standings.standings_editor import StandingsEditor
+from src.widget.standings.standings_models import OnlineDriverIdentity, OnlineSnapshot
+from src.widget.standings.standings_widget import StandingsWidget
+
+
+class TestWindow(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        self.setWindowTitle("Teste Standings Online V1")
+        self.resize(420, 350)
+        layout = QVBoxLayout(self)
+        smaller = QPushButton("Diminuir widget")
+        larger = QPushButton("Aumentar widget")
+        change = QPushButton("Alterar posições")
+        pit = QPushButton("Alternar PIT")
+        editor_button = QPushButton("Abrir editor")
+        for button in (smaller, larger, change, pit, editor_button):
+            layout.addWidget(button)
+
+        config = json.loads(
+            (PROJECT_ROOT / "src/config/standings_defaults.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        config["enabled"] = True
+        config["click_through"] = False
+        self.session = SessionData(
+            connected=True,
+            track_name="Le Mans",
+            session=13,
+            remaining_time_s=3850,
+            in_realtime=True,
+            drivers=[
+                DriverData(
+                    slot_id=50,
+                    driver_name="Sector Flow Player",
+                    vehicle_name="Ferrari 499P #50",
+                    vehicle_class="HYPERCAR",
+                    position=1,
+                    laps=8,
+                    best_lap_s=204.810,
+                    last_lap_s=205.220,
+                    is_player=True,
+                ),
+                DriverData(
+                    slot_id=83,
+                    driver_name="Driver Online",
+                    vehicle_name="Porsche 963 #83",
+                    vehicle_class="HYPERCAR",
+                    position=2,
+                    laps=8,
+                    gap_leader_s=1.284,
+                    gap_ahead_s=1.284,
+                    best_lap_s=205.071,
+                    last_lap_s=206.003,
+                ),
+                DriverData(
+                    slot_id=46,
+                    driver_name="GT3 Driver",
+                    vehicle_name="BMW M4 GT3 #46",
+                    vehicle_class="LMGT3",
+                    position=8,
+                    laps=7,
+                    gap_leader_s=48.7,
+                    gap_ahead_s=3.4,
+                    best_lap_s=238.142,
+                    last_lap_s=239.001,
+                    in_pits=True,
+                ),
+            ],
+        )
+        snapshot = OnlineSnapshot(
+            local_api_available=True,
+            cloud_available=True,
+            session_online=True,
+            source_message="LMU REST + perfis online",
+            identities=[
+                OnlineDriverIdentity(
+                    display_name="Sector Flow Player",
+                    username="sectorflow",
+                    steam_id="1",
+                    team_name="Sector Flow Racing",
+                    car_number="50",
+                    vehicle_class="HYPERCAR",
+                    driver_rank="Gold 2",
+                    driver_rank_progress=64,
+                    safety_rank="Silver 3",
+                    nationality="BR",
+                    badge="Content Creator",
+                    incidents=1,
+                    estimated_driver_rank_gain=3,
+                ),
+                OnlineDriverIdentity(
+                    display_name="Driver Online",
+                    username="driveronline",
+                    steam_id="2",
+                    team_name="Example Team",
+                    car_number="83",
+                    vehicle_class="HYPERCAR",
+                    driver_rank="Platinum 1",
+                    driver_rank_progress=12,
+                    safety_rank="Gold 1",
+                    nationality="FR",
+                    badge="Staff",
+                    incidents=0,
+                    estimated_driver_rank_gain=-1,
+                ),
+                OnlineDriverIdentity(
+                    display_name="GT3 Driver",
+                    username="gt3driver",
+                    steam_id="3",
+                    team_name="GT Racing",
+                    car_number="46",
+                    vehicle_class="LMGT3",
+                    driver_rank="Silver 2",
+                    driver_rank_progress=88,
+                    safety_rank="Silver 2",
+                    nationality="GB",
+                    incidents=4,
+                ),
+            ],
+        )
+        self.standings = StandingsWidget("standings", config)
+        # O teste abre o widget diretamente, sem passar pelo
+        # OverlayManager. Aplicamos as mesmas flags da aplicação
+        # para evitar a moldura/título padrão do Windows.
+        self.standings.setWindowFlags(
+            Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.Tool
+            | Qt.WindowType.WindowStaysOnTopHint
+        )
+        self.standings.online_client.set_test_snapshot(snapshot)
+        self.standings.apply_normalized_geometry(QApplication.primaryScreen().geometry())
+        self.standings.update_from_session(self.session)
+        self.standings.show()
+        self.editor = StandingsEditor(config, self)
+        self.editor.config_changed.connect(self.standings.update_config)
+
+        smaller.clicked.connect(
+            lambda: self.standings.resize(
+                max(self.standings.minimumWidth(), self.standings.width() - 100),
+                self.standings.height(),
+            )
+        )
+        larger.clicked.connect(
+            lambda: self.standings.resize(
+                self.standings.width() + 100,
+                self.standings.height(),
+            )
+        )
+        change.clicked.connect(self.change_positions)
+        pit.clicked.connect(self.toggle_pit)
+        editor_button.clicked.connect(self.editor.show)
+        self.shortcut = QShortcut(QKeySequence("F12"), self)
+        self.shortcut.setContext(Qt.ShortcutContext.ApplicationShortcut)
+        self.shortcut.activated.connect(self.toggle_edit)
+
+    def change_positions(self) -> None:
+        self.session.drivers[0].position = 2
+        self.session.drivers[1].position = 1
+        self.session.drivers.sort(key=lambda item: item.position)
+        self.standings.update_from_session(self.session)
+
+    def toggle_pit(self) -> None:
+        driver = next(item for item in self.session.drivers if item.driver_name == "GT3 Driver")
+        driver.in_pits = not driver.in_pits
+        self.standings.update_from_session(self.session)
+
+    def toggle_edit(self) -> None:
+        self.standings.set_edit_mode(not self.standings.edit_mode)
+
+    def closeEvent(self, event) -> None:
+        self.standings.close()
+        event.accept()
+
+
+def main() -> None:
+    app = QApplication(sys.argv)
+    window = TestWindow()
+    window.show()
+    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()

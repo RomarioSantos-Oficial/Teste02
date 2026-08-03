@@ -1,0 +1,505 @@
+{
+  "/rest/watch/standings": "",
+  "/rest/watch/sessionInfo": {
+    "error": "timed out"
+  },
+  "/rest/sessions": {
+    "SESSSET_AI_Aggression": {
+      "currentValue": 1,
+      "numStepsTotal": 2,
+      "settingID": 46,
+      "stringValue": "Medium",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_AI_Strength": {
+      "currentValue": 92,
+      "numStepsTotal": 30,
+      "settingID": 45,
+      "stringValue": "92%",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_Damage_Multi": {
+      "currentValue": 100,
+      "numStepsTotal": 100,
+      "settingID": 44,
+      "stringValue": "100%",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_Finish_Criteria": {
+      "currentValue": 2,
+      "numStepsTotal": 5,
+      "settingID": 47,
+      "stringValue": "Time",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_Fuel_Usage": {
+      "currentValue": 1,
+      "numStepsTotal": 3,
+      "settingID": 40,
+      "stringValue": "Realistic",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_Grid_Position": {
+      "currentValue": 0,
+      "numStepsTotal": 104,
+      "settingID": 48,
+      "stringValue": "Random",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_Mech_Failures": {
+      "currentValue": 1,
+      "numStepsTotal": 2,
+      "settingID": 42,
+      "stringValue": "Normal",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_Num_Opponents": {
+      "currentValue": 0,
+      "numStepsTotal": 103,
+      "settingID": 43,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_Practice_Length": {
+      "currentValue": 20,
+      "numStepsTotal": 2000,
+      "settingID": 36,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_Qualify_Length": {
+      "currentValue": 10,
+      "numStepsTotal": 2000,
+      "settingID": 37,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_Race_Laps": {
+      "currentValue": 0.0,
+      "numStepsTotal": 1500,
+      "settingID": 39,
+      "stringValue": "N/A",
+      "uiSelectionType": "Arrow",
+      "valueType": "FLOAT"
+    },
+    "SESSSET_Tire_Wear": {
+      "currentValue": 1,
+      "numStepsTotal": 3,
+      "settingID": 41,
+      "stringValue": "Realistic",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_WarmUp_Length": {
+      "currentValue": 5,
+      "numStepsTotal": 2000,
+      "settingID": 38,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_adjust_frozen": {
+      "currentValue": 1.0,
+      "numStepsTotal": 20,
+      "settingID": 18,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "FLOAT"
+    },
+    "SESSSET_blue_flags": {
+      "currentValue": 1,
+      "numStepsTotal": 1,
+      "settingID": 20,
+      "stringValue": "Show but Never Penalize",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_cut_rules": {
+      "currentValue": 1,
+      "numStepsTotal": 3,
+      "settingID": 22,
+      "stringValue": "Default",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_cuts_allowed": {
+      "currentValue": 5,
+      "numStepsTotal": 63,
+      "settingID": 21,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_flag_rules": {
+      "currentValue": 2,
+      "numStepsTotal": 3,
+      "settingID": 19,
+      "stringValue": "Full",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_force_formation": {
+      "currentValue": 0,
+      "numStepsTotal": 15,
+      "settingID": 14,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_formation": {
+      "currentValue": 1,
+      "numStepsTotal": 1,
+      "settingID": 13,
+      "stringValue": "Fast Rolling",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_keep_tire_inv_on_track_change": {
+      "currentValue": 0,
+      "numStepsTotal": 0,
+      "settingID": 59,
+      "stringValue": "Off",
+      "uiSelectionType": "Switch",
+      "valueType": "LONG"
+    },
+    "SESSSET_num_qual_sessions": {
+      "currentValue": 0,
+      "numStepsTotal": 4,
+      "settingID": 4,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_num_race_sessions": {
+      "currentValue": 0,
+      "numStepsTotal": 4,
+      "settingID": 6,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_parc_ferme": {
+      "currentValue": 3,
+      "numStepsTotal": 3,
+      "settingID": 35,
+      "stringValue": "Default",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_pract1": {
+      "currentValue": 1,
+      "numStepsTotal": 1,
+      "settingID": 0,
+      "stringValue": "On",
+      "uiSelectionType": "Switch",
+      "valueType": "LONG"
+    },
+    "SESSSET_pract1_realroad_init": {
+      "currentValue": 0,
+      "numStepsTotal": 2147483647,
+      "settingID": 49,
+      "stringValue": "Green",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_pract1_realroad_temperatures": {
+      "currentValue": 0,
+      "numStepsTotal": 2147483647,
+      "settingID": 55,
+      "stringValue": "Generated",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_pract1_realroad_wet": {
+      "currentValue": -1,
+      "numStepsTotal": 2147483647,
+      "settingID": 52,
+      "stringValue": "Default",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_pract2": {
+      "currentValue": 0,
+      "numStepsTotal": 1,
+      "settingID": 1,
+      "stringValue": "Off",
+      "uiSelectionType": "Switch",
+      "valueType": "LONG"
+    },
+    "SESSSET_pract3": {
+      "currentValue": 0,
+      "numStepsTotal": 1,
+      "settingID": 2,
+      "stringValue": "Off",
+      "uiSelectionType": "Switch",
+      "valueType": "LONG"
+    },
+    "SESSSET_pract4": {
+      "currentValue": 0,
+      "numStepsTotal": 1,
+      "settingID": 3,
+      "stringValue": "Off",
+      "uiSelectionType": "Switch",
+      "valueType": "LONG"
+    },
+    "SESSSET_practice1_starting_time": {
+      "currentValue": -1,
+      "numStepsTotal": 1442,
+      "settingID": 28,
+      "stringValue": "Default ( 2:00 PM )",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_private_prac": {
+      "currentValue": 0,
+      "numStepsTotal": 1,
+      "settingID": 34,
+      "stringValue": "Off",
+      "uiSelectionType": "Switch",
+      "valueType": "LONG"
+    },
+    "SESSSET_private_qual": {
+      "currentValue": 2,
+      "numStepsTotal": 2,
+      "settingID": 33,
+      "stringValue": "Default",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_qual1_realroad_init": {
+      "currentValue": 1,
+      "numStepsTotal": 2147483647,
+      "settingID": 50,
+      "stringValue": "Naturally Progressing",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_qual1_realroad_temperatures": {
+      "currentValue": 0,
+      "numStepsTotal": 2147483647,
+      "settingID": 56,
+      "stringValue": "Generated",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_qual1_realroad_wet": {
+      "currentValue": -1,
+      "numStepsTotal": 2147483647,
+      "settingID": 53,
+      "stringValue": "Default",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_qualify_starting_time": {
+      "currentValue": -1,
+      "numStepsTotal": 1442,
+      "settingID": 30,
+      "stringValue": "Default ( 8:00 PM )",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_race_realroad_init": {
+      "currentValue": 1,
+      "numStepsTotal": 2147483647,
+      "settingID": 51,
+      "stringValue": "Naturally Progressing",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_race_realroad_temperatures": {
+      "currentValue": 0,
+      "numStepsTotal": 2147483647,
+      "settingID": 57,
+      "stringValue": "Generated",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_race_realroad_wet": {
+      "currentValue": -1,
+      "numStepsTotal": 2147483647,
+      "settingID": 54,
+      "stringValue": "Default",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_race_starting_time": {
+      "currentValue": 630,
+      "numStepsTotal": 1442,
+      "settingID": 31,
+      "stringValue": "10:30 AM",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_race_time": {
+      "currentValue": 60,
+      "numStepsTotal": 2000,
+      "settingID": 58,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_race_timer": {
+      "currentValue": 3600,
+      "numStepsTotal": -2147483648,
+      "settingID": 7,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_race_timescale": {
+      "currentValue": 1,
+      "numStepsTotal": 61,
+      "settingID": 32,
+      "stringValue": "Normal",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_realroad_timescale_practice": {
+      "currentValue": 1.0,
+      "numStepsTotal": 16,
+      "settingID": 25,
+      "stringValue": "Normal",
+      "uiSelectionType": "Arrow",
+      "valueType": "FLOAT"
+    },
+    "SESSSET_realroad_timescale_qualify": {
+      "currentValue": 1.0,
+      "numStepsTotal": 16,
+      "settingID": 26,
+      "stringValue": "Normal",
+      "uiSelectionType": "Arrow",
+      "valueType": "FLOAT"
+    },
+    "SESSSET_realroad_timescale_race": {
+      "currentValue": 1.0,
+      "numStepsTotal": 16,
+      "settingID": 27,
+      "stringValue": "Normal",
+      "uiSelectionType": "Arrow",
+      "valueType": "FLOAT"
+    },
+    "SESSSET_recon_pit_closed": {
+      "currentValue": 150,
+      "numStepsTotal": 870,
+      "settingID": 9,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_recon_pit_open": {
+      "currentValue": 300,
+      "numStepsTotal": 870,
+      "settingID": 8,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_recon_timer": {
+      "currentValue": 1,
+      "numStepsTotal": 1,
+      "settingID": 10,
+      "stringValue": "On",
+      "uiSelectionType": "Switch",
+      "valueType": "LONG"
+    },
+    "SESSSET_reconnaissance": {
+      "currentValue": 0,
+      "numStepsTotal": 0,
+      "settingID": 11,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_run_warmup": {
+      "currentValue": 0,
+      "numStepsTotal": 1,
+      "settingID": 5,
+      "stringValue": "Off",
+      "uiSelectionType": "Switch",
+      "valueType": "LONG"
+    },
+    "SESSSET_safetycar_thresh": {
+      "currentValue": 100.0,
+      "numStepsTotal": 2147483647,
+      "settingID": 17,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "FLOAT"
+    },
+    "SESSSET_safetycarcollision": {
+      "currentValue": 0,
+      "numStepsTotal": 1,
+      "settingID": 16,
+      "stringValue": "Off",
+      "uiSelectionType": "Switch",
+      "valueType": "LONG"
+    },
+    "SESSSET_timescaled_weather": {
+      "currentValue": 1,
+      "numStepsTotal": 1,
+      "settingID": 24,
+      "stringValue": "On",
+      "uiSelectionType": "Switch",
+      "valueType": "LONG"
+    },
+    "SESSSET_tire_warmers": {
+      "currentValue": 0,
+      "numStepsTotal": 1,
+      "settingID": 61,
+      "stringValue": "Off",
+      "uiSelectionType": "Switch",
+      "valueType": "LONG"
+    },
+    "SESSSET_tires_available_in_garage": {
+      "currentValue": 56,
+      "numStepsTotal": 96,
+      "settingID": 60,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_unsportsmanlike": {
+      "currentValue": 1.4976470470428467,
+      "numStepsTotal": 98,
+      "settingID": 15,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "FLOAT"
+    },
+    "SESSSET_walkthrough": {
+      "currentValue": 0,
+      "numStepsTotal": 1,
+      "settingID": 12,
+      "stringValue": "",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_warmup_starting_time": {
+      "currentValue": -1,
+      "numStepsTotal": 1442,
+      "settingID": 29,
+      "stringValue": "Default ( 12:00 PM )",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    },
+    "SESSSET_weather": {
+      "currentValue": 4,
+      "numStepsTotal": 4,
+      "settingID": 23,
+      "stringValue": "Scripted",
+      "uiSelectionType": "Arrow",
+      "valueType": "LONG"
+    }
+  },
+  "/rest/multiplayer/teams": null
+}

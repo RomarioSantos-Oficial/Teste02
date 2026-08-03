@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 import math
+import json
 import sys
+import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -67,6 +71,8 @@ class LMUAdapter:
     def __init__(self, copy_access: bool = True) -> None:
         self.copy_access = copy_access
         self.memory: lmu_mmap.MMapControl | None = None
+        self._weather_schedule: dict[str, Any] = {}
+        self._last_weather_poll_at = 0.0
 
     def connect(self) -> bool:
         if self.memory is not None:
@@ -263,6 +269,8 @@ class LMUAdapter:
             else:
                 yellow_state = safe_int(yellow_raw)
 
+            self._update_weather_schedule()
+
             return SessionData(
                 connected=True,
                 game_version=safe_int(data.generic.gameVersion),
@@ -326,6 +334,7 @@ class LMUAdapter:
                     safe_float(getattr(getattr(info, "mWind", None), "y", 0.0)),
                     safe_float(getattr(getattr(info, "mWind", None), "z", 0.0)),
                 ) * 3.6,
+                weather_schedule=self._weather_schedule,
                 track_limits_steps_per_penalty=safe_int(
                     getattr(
                         info,
@@ -355,6 +364,33 @@ class LMUAdapter:
                 connected=False,
                 error=f"Erro de leitura: {exc}",
             )
+
+    def _update_weather_schedule(self) -> None:
+        now = time.monotonic()
+        if now - self._last_weather_poll_at < 10.0:
+            return
+
+        self._last_weather_poll_at = now
+        try:
+            with urllib.request.urlopen(
+                "http://127.0.0.1:6397/rest/sessions/weather",
+                timeout=0.35,
+            ) as response:
+                payload = json.loads(
+                    response.read().decode("utf-8")
+                )
+            if isinstance(payload, dict):
+                self._weather_schedule = payload
+        except (
+            OSError,
+            TimeoutError,
+            ValueError,
+            json.JSONDecodeError,
+            urllib.error.URLError,
+        ):
+            # A telemetria continua funcionando mesmo quando a API REST
+            # do LMU ainda nao esta pronta ou muda de disponibilidade.
+            pass
 
     def _read_player(self, raw: Any) -> PlayerData:
         velocity = raw.mLocalVel
@@ -498,6 +534,24 @@ class LMUAdapter:
             battery_fraction=safe_float(raw.mBatteryChargeFraction),
             state_of_charge=safe_float(raw.mStateOfCharge),
             virtual_energy=safe_float(raw.mVirtualEnergy),
+            regen_kw=safe_float(
+                getattr(raw, "mRegen", 0.0)
+            ),
+            electric_motor_torque_nm=safe_float(
+                getattr(raw, "mElectricBoostMotorTorque", 0.0)
+            ),
+            electric_motor_rpm=safe_float(
+                getattr(raw, "mElectricBoostMotorRPM", 0.0)
+            ),
+            electric_motor_temp_c=safe_float(
+                getattr(raw, "mElectricBoostMotorTemperature", 0.0)
+            ),
+            electric_motor_water_temp_c=safe_float(
+                getattr(raw, "mElectricBoostWaterTemperature", 0.0)
+            ),
+            electric_motor_state=safe_int(
+                getattr(raw, "mElectricBoostMotorState", 0)
+            ),
             track_limits_steps=safe_int(
                 getattr(raw, "mTrackLimitsSteps", 0)
             ),

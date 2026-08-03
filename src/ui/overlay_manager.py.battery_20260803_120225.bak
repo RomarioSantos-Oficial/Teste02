@@ -1,0 +1,355 @@
+from __future__ import annotations
+
+import ctypes
+import json
+import sys
+from copy import deepcopy
+from pathlib import Path
+from typing import Any, Callable
+
+from PySide6.QtCore import QObject, Qt, Signal
+from PySide6.QtGui import QGuiApplication
+from PySide6.QtWidgets import QWidget
+
+from src.widget.delta.delta_widget import DeltaWidget
+from src.widget.driver_panel.driver_panel_widget import DriverPanelWidget
+from src.widget.flags.flags_widget import FlagsWidget
+from src.widget.battery.battery_widget import BatteryWidget
+from src.widget.tyres.tyres_widget import TyresWidget
+from src.widget.weather.weather_widget import WeatherWidget
+
+
+class OverlayManager(QObject):
+    config_saved = Signal(Path)
+    widget_created = Signal(str, QWidget)
+
+    def __init__(self, config_path: str | Path, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self.config_path = Path(config_path)
+        self.config_data = self._load_config()
+        self.widgets: dict[str, QWidget] = {}
+        self.session_active = False
+        self.edit_mode = False
+
+    def create_driver_panel(self) -> DriverPanelWidget:
+        existing = self.widgets.get("driver_panel")
+        if isinstance(existing, DriverPanelWidget):
+            return existing
+        config = deepcopy(self.config_data["widgets"]["driver_panel"])
+        widget = DriverPanelWidget("driver_panel", config)
+        self._prepare_widget("driver_panel", widget, config)
+        return widget
+
+    def create_delta(self) -> DeltaWidget:
+        existing = self.widgets.get("delta")
+        if isinstance(existing, DeltaWidget):
+            return existing
+        config = deepcopy(self.config_data["widgets"]["delta"])
+        widget = DeltaWidget("delta", config)
+        self._prepare_widget("delta", widget, config)
+        return widget
+
+    def create_flags(self) -> FlagsWidget:
+        existing = self.widgets.get("flags")
+        if isinstance(existing, FlagsWidget):
+            return existing
+        config = deepcopy(self.config_data["widgets"]["flags"])
+        widget = FlagsWidget("flags", config)
+        self._prepare_widget("flags", widget, config)
+        return widget
+
+    def create_weather(self) -> WeatherWidget:
+        existing = self.widgets.get("weather")
+        if isinstance(existing, WeatherWidget):
+            return existing
+        config = deepcopy(
+            self.config_data["widgets"]["weather"]
+        )
+        widget = WeatherWidget("weather", config)
+        self._prepare_widget("weather", widget, config)
+        return widget
+
+    def create_tires(self) -> TyresWidget:
+        existing = self.widgets.get("tires")
+        if isinstance(existing, TyresWidget):
+            return existing
+        config = deepcopy(
+            self.config_data["widgets"]["tires"]
+        )
+        widget = TyresWidget("tires", config)
+        self._prepare_widget("tires", widget, config)
+        return widget
+
+    def create_battery(self) -> BatteryWidget:
+        existing = self.widgets.get("battery")
+        if isinstance(existing, BatteryWidget):
+            return existing
+        config = deepcopy(
+            self.config_data["widgets"]["battery"]
+        )
+        widget = BatteryWidget("battery", config)
+        self._prepare_widget("battery", widget, config)
+        return widget
+
+    def create_widget(self, widget_id: str) -> QWidget:
+        creators: dict[str, Callable[[], QWidget]] = {
+            "driver_panel": self.create_driver_panel,
+            "delta": self.create_delta,
+            "flags": self.create_flags,
+            "battery": self.create_battery,
+            "tires": self.create_tires,
+            "weather": self.create_weather,
+        }
+        creator = creators.get(widget_id)
+        if creator is None:
+            raise KeyError(f"Widget ainda não implementado: {widget_id}")
+        return creator()
+
+    def create_enabled_widgets(self) -> None:
+        for widget_id, config in self.config_data.get("widgets", {}).items():
+            if bool(config.get("enabled", False)) and widget_id in {"driver_panel", "delta", "flags", "weather", "tires", "battery"}:
+                self.create_widget(widget_id)
+
+    def _prepare_widget(
+        self,
+        widget_id: str,
+        widget: QWidget,
+        config: dict[str, Any],
+    ) -> None:
+        self._apply_window_flags(widget, config)
+        screens = QGuiApplication.screens()
+        if not screens:
+            raise RuntimeError("Nenhum monitor detectado.")
+
+        index = min(max(int(config.get("monitor", 0)), 0), len(screens) - 1)
+        screen = screens[index]
+        widget.setScreen(screen)
+
+        if hasattr(widget, "apply_normalized_geometry"):
+            widget.apply_normalized_geometry(screen.geometry())
+        if hasattr(widget, "geometry_changed"):
+            widget.geometry_changed.connect(self._save_widget_geometry)
+
+        self.widgets[widget_id] = widget
+        if bool(config.get("enabled", True)) and (
+            self.session_active or self.edit_mode
+        ):
+            widget.show()
+        else:
+            widget.hide()
+        self.widget_created.emit(widget_id, widget)
+
+    def show_widget(self, widget_id: str) -> None:
+        widget = self.widgets.get(widget_id) or self.create_widget(widget_id)
+        self.config_data["widgets"][widget_id]["enabled"] = True
+        if self.session_active or self.edit_mode:
+            widget.show()
+        else:
+            widget.hide()
+        self.save_config()
+
+    def hide_widget(self, widget_id: str) -> None:
+        widget = self.widgets.get(widget_id)
+        if widget is not None:
+            widget.hide()
+        if widget_id in self.config_data.get("widgets", {}):
+            self.config_data["widgets"][widget_id]["enabled"] = False
+            self.save_config()
+
+    def set_widget_enabled(self, widget_id: str, enabled: bool) -> None:
+        self.show_widget(widget_id) if enabled else self.hide_widget(widget_id)
+
+    def update_widget_config(self, widget_id: str, config: dict[str, Any]) -> None:
+        self.config_data["widgets"][widget_id] = deepcopy(config)
+        widget = self.widgets.get(widget_id)
+
+        if widget is not None:
+            if hasattr(widget, "update_config"):
+                widget.update_config(deepcopy(config))
+            self._apply_window_flags(widget, config)
+            screen = widget.screen()
+            if screen is not None and hasattr(widget, "apply_normalized_geometry"):
+                widget.apply_normalized_geometry(screen.geometry())
+
+        self.save_config()
+
+    def restore_widget_default(self, widget_id: str) -> None:
+        default = self.config_data.get("defaults", {}).get(widget_id)
+        if default is not None:
+            self.update_widget_config(widget_id, deepcopy(default))
+
+    def update_player_data(self, player_data: Any) -> None:
+        widget = self.widgets.get("driver_panel")
+        if widget is not None and widget.isVisible():
+            widget.update_telemetry(player_data)
+
+
+        tires = self.widgets.get("tires")
+        if tires is not None and tires.isVisible():
+            tires.update_telemetry(player_data)
+    def update_session_data(self, session: Any) -> None:
+        self.set_session_active(self._session_allows_overlays(session))
+
+        driver_panel = self.widgets.get("driver_panel")
+        if (
+            driver_panel is not None
+            and driver_panel.isVisible()
+            and getattr(session, "player", None) is not None
+        ):
+            driver_panel.update_telemetry(session.player)
+
+        tires = self.widgets.get("tires")
+        if (
+            tires is not None
+            and tires.isVisible()
+            and getattr(session, "player", None) is not None
+        ):
+            tires.update_telemetry(session.player)
+
+        battery = self.widgets.get("battery")
+        battery_config = self.config_data.get("widgets", {}).get(
+            "battery", {}
+        )
+        if battery is not None and bool(
+            battery_config.get("enabled", False)
+        ):
+            # Continua atualizando mesmo oculto para reaparecer ao entrar em um Hypercar.
+            battery.update_from_session(session)
+
+        delta = self.widgets.get("delta")
+        if delta is not None and delta.isVisible():
+            delta.update_from_session(session)
+
+        # Flags pode se ocultar automaticamente quando a pista
+        # está limpa. Mesmo oculto, ele precisa continuar
+        # recebendo telemetria para reaparecer sozinho.
+        flags = self.widgets.get("flags")
+        flags_config = self.config_data.get("widgets", {}).get(
+            "flags", {}
+        )
+        if flags is not None and bool(
+            flags_config.get("enabled", False)
+        ):
+            flags.update_from_session(session)
+
+        weather = self.widgets.get("weather")
+        if weather is not None and weather.isVisible():
+            weather.update_from_session(session)
+
+    def set_edit_mode(self, enabled: bool) -> None:
+        self.edit_mode = bool(enabled)
+        for widget_id, widget in self.widgets.items():
+            config = self.config_data["widgets"][widget_id]
+            if hasattr(widget, "set_edit_mode"):
+                widget.set_edit_mode(enabled)
+            click_through = bool(config.get("click_through", True)) and not enabled
+            self._set_click_through(widget, click_through)
+
+            is_enabled = bool(config.get("enabled", False))
+            if is_enabled and (self.edit_mode or self.session_active):
+                widget.show()
+            else:
+                widget.hide()
+
+    def set_session_active(self, active: bool) -> None:
+        active = bool(active)
+        if active == self.session_active:
+            return
+        self.session_active = active
+        for widget_id, widget in self.widgets.items():
+            config = self.config_data.get("widgets", {}).get(widget_id, {})
+            is_enabled = bool(config.get("enabled", False))
+            if is_enabled and (self.session_active or self.edit_mode):
+                widget.show()
+            else:
+                widget.hide()
+
+    @staticmethod
+    def _session_allows_overlays(session: Any) -> bool:
+        # O LMU mantem o ultimo veiculo e a sessao na memoria quando o
+        # jogador volta ao monitor/menu. mInRealtime distingue esse
+        # estado de quando o jogador esta efetivamente dentro do carro.
+        if not bool(
+            getattr(
+                session,
+                "in_realtime",
+                False,
+            )
+        ):
+            return False
+
+        try:
+            session_type = int(getattr(session, "session", -1))
+        except (TypeError, ValueError):
+            return False
+        return 1 <= session_type <= 8 or 10 <= session_type <= 13
+
+    def save_config(self) -> None:
+        self.config_path.parent.mkdir(parents=True, exist_ok=True)
+        self.config_path.write_text(
+            json.dumps(self.config_data, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        self.config_saved.emit(self.config_path)
+
+    def close_all(self) -> None:
+        for widget in self.widgets.values():
+            widget.close()
+        self.widgets.clear()
+
+    def _load_config(self) -> dict[str, Any]:
+        if not self.config_path.exists():
+            raise FileNotFoundError(f"Configuração não encontrada: {self.config_path}")
+        try:
+            return json.loads(self.config_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise ValueError(
+                f"JSON inválido em {self.config_path}: linha {exc.lineno}, coluna {exc.colno}"
+            ) from exc
+
+    def _save_widget_geometry(
+        self,
+        widget_id: str,
+        x: float,
+        y: float,
+        width: float,
+        height: float,
+    ) -> None:
+        config = self.config_data["widgets"][widget_id]
+        config.setdefault("position", {})
+        config.setdefault("size", {})
+        config["position"]["x"] = max(0.0, min(1.0, x))
+        config["position"]["y"] = max(0.0, min(1.0, y))
+        config["size"]["width"] = max(0.05, min(1.0, width))
+        config["size"]["height"] = max(0.05, min(1.0, height))
+        config["scale"] = 1.0
+        self.save_config()
+
+    def _apply_window_flags(self, widget: QWidget, config: dict[str, Any]) -> None:
+        visible = widget.isVisible()
+        flags = Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool
+        if bool(config.get("always_on_top", True)):
+            flags |= Qt.WindowType.WindowStaysOnTopHint
+        widget.setWindowFlags(flags)
+        widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        if visible:
+            widget.show()
+        self._set_click_through(widget, bool(config.get("click_through", True)))
+
+    @staticmethod
+    def _set_click_through(widget: QWidget, enabled: bool) -> None:
+        widget.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, enabled)
+        if sys.platform != "win32":
+            return
+
+        hwnd = int(widget.winId())
+        user32 = ctypes.windll.user32
+        GWL_EXSTYLE = -20
+        WS_EX_LAYERED = 0x00080000
+        WS_EX_TRANSPARENT = 0x00000020
+        WS_EX_TOOLWINDOW = 0x00000080
+
+        style = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+        style |= WS_EX_LAYERED | WS_EX_TOOLWINDOW
+        style = style | WS_EX_TRANSPARENT if enabled else style & ~WS_EX_TRANSPARENT
+        user32.SetWindowLongW(hwnd, GWL_EXSTYLE, style)

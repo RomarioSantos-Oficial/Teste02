@@ -4,9 +4,11 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import QTimer
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+APPLICATION_LOGO = PROJECT_ROOT / "images" / "logo" / "Logo.png"
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -66,6 +68,8 @@ class SectorFlowApplication:
 
 def main() -> None:
     app = QApplication(sys.argv)
+    if APPLICATION_LOGO.is_file():
+        app.setWindowIcon(QIcon(str(APPLICATION_LOGO)))
     program = SectorFlowApplication()
     program.show()
     app.aboutToQuit.connect(program.close)

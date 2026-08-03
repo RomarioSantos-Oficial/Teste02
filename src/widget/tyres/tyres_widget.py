@@ -554,10 +554,20 @@ class WheelGroup(QWidget):
             bool(status)
         )
 
-        tyre_color = logic.temperature_color(
-            wheel,
-            temp_c,
+        zone_temperatures = (
+            wheel.surface_left_c,
+            wheel.surface_center_c,
+            wheel.surface_right_c,
         )
+        zone_colors = [
+            logic.temperature_color(
+                wheel,
+                zone_temp
+                if 1.0 < zone_temp < 300.0
+                else temp_c,
+            )
+            for zone_temp in zone_temperatures
+        ]
         brake_color = logic.brake_color(
             wheel.brake_temp_c
         )
@@ -579,20 +589,32 @@ class WheelGroup(QWidget):
         )
 
         if wheel.detached:
-            tyre_color = colors.get(
+            status_color = colors.get(
                 "detached",
                 "#6D1B1B",
             )
+            zone_colors = [status_color] * 3
         elif wheel.flat:
-            tyre_color = colors.get(
+            status_color = colors.get(
                 "flat",
                 "#7D2222",
             )
+            zone_colors = [status_color] * 3
+
+        left_color, center_color, right_color = zone_colors
 
         self.tyre_frame.setStyleSheet(
             f"""
             QFrame#TyreFrame {{
-                background-color: {tyre_color};
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 {left_color},
+                    stop: 0.32 {left_color},
+                    stop: 0.34 {center_color},
+                    stop: 0.65 {center_color},
+                    stop: 0.67 {right_color},
+                    stop: 1 {right_color}
+                );
                 border-radius: {radius}px;
                 border: 1px solid {border};
             }}

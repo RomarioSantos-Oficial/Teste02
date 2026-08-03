@@ -121,6 +121,14 @@ class PlayerData:
     state_of_charge: float = 0.0
     virtual_energy: float = 0.0
 
+    # Sistema híbrido / bateria.
+    regen_kw: float = 0.0
+    electric_motor_torque_nm: float = 0.0
+    electric_motor_rpm: float = 0.0
+    electric_motor_temp_c: float = 0.0
+    electric_motor_water_temp_c: float = 0.0
+    electric_motor_state: int = 0
+
     # Valor bruto do LMU: TrackLimitPoints * TrackLimitStepsPerPoint.
     track_limits_steps: int = 0
 
@@ -162,6 +170,7 @@ class SessionData:
     wind_y_ms: float = 0.0
     wind_z_ms: float = 0.0
     wind_speed_kmh: float = 0.0
+    weather_schedule: dict = field(default_factory=dict)
 
     # Parâmetros reais da sessão do LMU.
     track_limits_steps_per_penalty: int = 0

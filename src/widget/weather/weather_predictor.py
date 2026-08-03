@@ -218,6 +218,154 @@ class WeatherTrendPredictor:
 
         return result
 
+    def official_forecast(
+        self,
+        session: Any,
+        current: WeatherSample,
+        count: int = 5,
+        interval_minutes: int = 5,
+    ) -> list[WeatherForecast] | None:
+        """Converte a agenda oficial da API REST do LMU em tempos futuros."""
+        schedule = getattr(
+            session,
+            "weather_schedule",
+            {},
+        )
+        session_code = self._int(
+            session,
+            "session",
+        )
+        if 1 <= session_code <= 4:
+            session_name = "PRACTICE"
+        elif 5 <= session_code <= 9:
+            session_name = "QUALIFY"
+        elif 10 <= session_code <= 13:
+            session_name = "RACE"
+        else:
+            return None
+
+        nodes = (
+            schedule.get(session_name, {})
+            if isinstance(schedule, dict)
+            else {}
+        )
+        positions = (
+            (0.0, "START"),
+            (0.25, "NODE_25"),
+            (0.50, "NODE_50"),
+            (0.75, "NODE_75"),
+            (1.0, "FINISH"),
+        )
+        if not all(
+            isinstance(nodes.get(name), dict)
+            for _, name in positions
+        ):
+            return None
+
+        current_time = self._float(
+            session,
+            "current_time_s",
+        )
+        remaining_time = self._float(
+            session,
+            "remaining_time_s",
+        )
+        total_time = current_time + remaining_time
+        if current_time < 0.0 or total_time <= 1.0:
+            return None
+
+        count = max(1, min(8, int(count)))
+        interval_minutes = max(1, min(30, int(interval_minutes)))
+        result: list[WeatherForecast] = []
+
+        for index in range(count):
+            minutes = (index + 1) * interval_minutes
+            progress = max(
+                0.0,
+                min(
+                    1.0,
+                    (current_time + minutes * 60.0)
+                    / total_time,
+                ),
+            )
+            lower_pos, lower_name = positions[0]
+            upper_pos, upper_name = positions[-1]
+            for node_index in range(1, len(positions)):
+                if progress <= positions[node_index][0]:
+                    lower_pos, lower_name = positions[node_index - 1]
+                    upper_pos, upper_name = positions[node_index]
+                    break
+
+            span = max(0.0001, upper_pos - lower_pos)
+            ratio = max(0.0, min(1.0, (progress - lower_pos) / span))
+            lower = nodes[lower_name]
+            upper = nodes[upper_name]
+            air_temp = self._schedule_value(
+                lower,
+                upper,
+                "WNV_TEMPERATURE",
+                ratio,
+                current.air_temp_c,
+            )
+            rain = self._schedule_value(
+                lower,
+                upper,
+                "WNV_RAIN_CHANCE",
+                ratio,
+                0.0,
+            ) / 100.0
+            sky = self._schedule_value(
+                lower,
+                upper,
+                "WNV_SKY",
+                ratio,
+                float(current.cloud_coverage),
+            )
+            cloud_coverage = max(0, min(10, int(round(sky))))
+            future_time = (
+                current.time_of_day_s + minutes * 60.0
+            ) % 86400.0
+            result.append(
+                WeatherForecast(
+                    minutes_ahead=minutes,
+                    air_temp_c=air_temp,
+                    rain=max(0.0, min(1.0, rain)),
+                    wetness=current.wetness,
+                    dark_cloud=cloud_coverage / 10.0,
+                    cloud_coverage=cloud_coverage,
+                    time_of_day_s=future_time,
+                    weather_state=self.weather_state(
+                        rain=0.0,
+                        wetness=current.wetness,
+                        dark_cloud=cloud_coverage / 10.0,
+                        cloud_coverage=cloud_coverage,
+                        time_of_day_s=future_time,
+                    ),
+                    estimated=False,
+                )
+            )
+
+        return result
+
+    @staticmethod
+    def _schedule_value(
+        lower: dict[str, Any],
+        upper: dict[str, Any],
+        field_name: str,
+        ratio: float,
+        default: float,
+    ) -> float:
+        def value(node: dict[str, Any]) -> float:
+            field = node.get(field_name, {})
+            try:
+                return float(field.get("currentValue", default))
+            except (AttributeError, TypeError, ValueError):
+                return float(default)
+
+        start = value(lower)
+        end = value(upper)
+        return start + (end - start) * ratio
+
     @classmethod
     def weather_state(
         cls,
@@ -229,12 +377,15 @@ class WeatherTrendPredictor:
     ) -> str:
         is_day = cls.is_day(time_of_day_s)
 
-        if rain >= 0.45 or wetness >= 0.28:
+        # A agua acumulada descreve a pista, nao o ceu. Uma pista pode
+        # continuar molhada depois que a chuva terminou; nesse caso o
+        # aviso de pista molhada permanece, mas o icone nao deve indicar
+        # chuva. No LMU, cobertura 5 a 10 representa de garoa a tempestade.
+        if rain >= 0.01 or cloud_coverage >= 5:
             return "Chuva"
 
         if (
-            rain >= 0.08
-            or dark_cloud >= 0.35
+            dark_cloud >= 0.35
             or cloud_coverage >= 3
         ):
             return (

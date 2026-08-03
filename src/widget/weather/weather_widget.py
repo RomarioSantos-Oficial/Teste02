@@ -532,11 +532,50 @@ class WeatherWidget(QWidget):
             ),
         )
 
-        forecasts = self.predictor.forecast(
+        forecasts = self.predictor.official_forecast(
+            session,
             sample,
             count=count,
             interval_minutes=interval,
         )
+        if forecasts is None:
+            forecasts = self.predictor.forecast(
+                sample,
+                count=count,
+                interval_minutes=interval,
+            )
+
+        try:
+            remaining_time_s = float(
+                getattr(
+                    session,
+                    "remaining_time_s",
+                    0.0,
+                )
+                or 0.0
+            )
+        except (TypeError, ValueError):
+            remaining_time_s = 0.0
+
+        try:
+            current_time_s = float(
+                getattr(
+                    session,
+                    "current_time_s",
+                    0.0,
+                )
+                or 0.0
+            )
+        except (TypeError, ValueError):
+            current_time_s = 0.0
+
+        if remaining_time_s >= 0.0 and current_time_s > 0.0:
+            forecasts = [
+                forecast
+                for forecast in forecasts
+                if forecast.minutes_ahead * 60.0
+                <= remaining_time_s
+            ]
 
         self.current_sample = sample
         self.forecasts = forecasts
@@ -669,18 +708,22 @@ class WeatherWidget(QWidget):
                 False,
             )
         )
+        show_forecast = bool(
+            self.config.get(
+                "show_forecast",
+                True,
+            )
+        )
+        self.forecast_panel.setVisible(
+            show_forecast and bool(forecasts)
+        )
 
         for index, card in enumerate(
             self.forecast_cards
         ):
             visible = (
                 index < len(forecasts)
-                and bool(
-                    self.config.get(
-                        "show_forecast",
-                        True,
-                    )
-                )
+                and show_forecast
             )
             card["card"].setVisible(
                 visible
@@ -691,7 +734,12 @@ class WeatherWidget(QWidget):
 
             forecast = forecasts[index]
             card["time"].setText(
-                f"+{forecast.minutes_ahead}m"
+                (
+                    "EST. "
+                    if forecast.estimated
+                    else "LMU "
+                )
+                + f"+{forecast.minutes_ahead}m"
             )
             card["temp"].setText(
                 f"{self._temperature(forecast.air_temp_c):.1f}°"

@@ -1,0 +1,704 @@
+from __future__ import annotations
+
+import time
+from pathlib import Path
+from typing import Any
+
+from PySide6.QtCore import QPoint, QRectF, Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent
+from PySide6.QtWidgets import (
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
+
+from .lmu_online_client import LMUOnlineIdentityClient
+from .standings_logic import StandingsLogic
+from .standings_models import OnlineSnapshot, StandingViewRow
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+
+class StandingsWidget(QWidget):
+    geometry_changed = Signal(str, float, float, float, float)
+    selected = Signal(str)
+
+    BASE_WIDTH = 980.0
+
+    COLUMN_ORDER = (
+        "position",
+        "gain",
+        "number",
+        "flag",
+        "badge",
+        "driver",
+        "dr",
+        "sr",
+        "gain_dr",
+        "class",
+        "gap",
+        "interval",
+        "best",
+        "last",
+        "incidents",
+        "status",
+    )
+
+    COLUMN_TITLES = {
+        "position": "P",
+        "gain": "+/-",
+        "number": "#",
+        "flag": "PAÍS",
+        "badge": "BADGE",
+        "driver": "PILOTO",
+        "dr": "DR",
+        "sr": "SR",
+        "gain_dr": "DR+",
+        "class": "CLS",
+        "gap": "GAP",
+        "interval": "INT",
+        "best": "BEST",
+        "last": "LAST",
+        "incidents": "INC",
+        "status": "STATUS",
+    }
+
+    BASE_WIDTHS = {
+        "position": 34,
+        "gain": 38,
+        "number": 44,
+        "flag": 42,
+        "badge": 55,
+        "driver": 175,
+        "dr": 70,
+        "sr": 48,
+        "gain_dr": 48,
+        "class": 64,
+        "gap": 68,
+        "interval": 68,
+        "best": 86,
+        "last": 86,
+        "incidents": 42,
+        "status": 62,
+    }
+
+    def __init__(
+        self,
+        widget_id: str,
+        config: dict[str, Any],
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.widget_id = widget_id
+        self.config = config
+        self.online_client = LMUOnlineIdentityClient(PROJECT_ROOT, config)
+        self.logic = StandingsLogic(config, self.online_client)
+        self.session: Any | None = None
+        self.edit_mode = False
+        self._last_render = 0.0
+        self._responsive_scale = 1.0
+        self._dragging = False
+        self._resizing = False
+        self._drag_offset = QPoint()
+        self._resize_start_global = QPoint()
+        self._resize_start_width = 0
+
+        self.setWindowTitle("Sector Flow Drive - Standings")
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setMinimumWidth(440)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+        self.root_layout = root
+
+        self.main_frame = QFrame()
+        self.main_frame.setObjectName("StandingsMainFrame")
+        self.main_layout = QVBoxLayout(self.main_frame)
+        root.addWidget(self.main_frame)
+
+        self.header_frame = QFrame()
+        self.header_frame.setObjectName("StandingsSessionHeader")
+        self.header_layout = QHBoxLayout(self.header_frame)
+        self.title_label = QLabel("MULTICLASS STANDINGS")
+        self.title_label.setObjectName("StandingsTitle")
+        self.session_label = QLabel("AGUARDANDO LMU")
+        self.session_label.setObjectName("StandingsSession")
+        self.source_label = QLabel("MEM")
+        self.source_label.setObjectName("StandingsSource")
+        self.source_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.header_layout.addWidget(self.title_label)
+        self.header_layout.addStretch()
+        self.header_layout.addWidget(self.session_label)
+        self.header_layout.addWidget(self.source_label)
+        self.main_layout.addWidget(self.header_frame)
+
+        self.table = QWidget()
+        self.table_layout = QGridLayout(self.table)
+        self.table_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.addWidget(self.table)
+
+        self.footer = QLabel("")
+        self.footer.setObjectName("StandingsFooter")
+        self.footer.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.footer.setWordWrap(True)
+        self.main_layout.addWidget(self.footer)
+
+        self.apply_config()
+
+    def apply_config(self) -> None:
+        self.online_client.update_config(self.config)
+        self.logic.update_config(self.config)
+        self.setWindowOpacity(
+            max(0.10, min(1.0, float(self.config.get("opacity", 0.96))))
+        )
+        self.footer.setVisible(
+            bool(self.config.get("show_online_status_footer", True))
+        )
+        self._update_scale()
+        self._render()
+
+    def update_config(self, config: dict[str, Any]) -> None:
+        self.config = config
+        self.apply_config()
+
+    def apply_normalized_geometry(self, screen_geometry) -> None:
+        position = self.config.get("position", {})
+        size = self.config.get("size", {})
+        scale = max(0.35, float(self.config.get("scale", 1.0)))
+        width = max(
+            self.minimumWidth(),
+            int(screen_geometry.width() * float(size.get("width", 0.50)) * scale),
+        )
+        x = int(
+            screen_geometry.left()
+            + screen_geometry.width() * float(position.get("x", 0.02))
+        )
+        y = int(
+            screen_geometry.top()
+            + screen_geometry.height() * float(position.get("y", 0.05))
+        )
+        self.resize(width, max(120, self.height()))
+        self.move(x, y)
+        self._update_scale()
+
+    def update_from_session(self, session: Any) -> None:
+        self.session = session
+        self.online_client.trigger_refresh(session)
+        now = time.monotonic()
+        interval = max(0.05, float(self.config.get("render_interval_seconds", 0.20)))
+        if now - self._last_render < interval:
+            return
+        self._last_render = now
+        self._render()
+
+    def set_edit_mode(self, enabled: bool) -> None:
+        self.edit_mode = bool(enabled)
+        self.setCursor(
+            Qt.CursorShape.SizeAllCursor if enabled else Qt.CursorShape.ArrowCursor
+        )
+        self.show()
+        self._render()
+        self.update()
+
+    def reset_session_state(self) -> None:
+        self.session = None
+        self.logic.reset()
+        self.online_client.reset()
+        self._render()
+
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        super().resizeEvent(event)
+        self._update_scale()
+        QTimer.singleShot(0, self._render)
+
+    def _render(self) -> None:
+        snapshot = self.online_client.snapshot()
+        if self.session is None:
+            rows = self._preview_rows()
+            self.session_label.setText("PREVIEW")
+        else:
+            rows = self.logic.build_rows(self.session, snapshot)
+            self.session_label.setText(self._session_text(self.session))
+
+        self._set_source_status(snapshot)
+        self._clear_table()
+        visible_columns = [key for key in self.COLUMN_ORDER if self._column_visible(key)]
+        grid_row = 0
+
+        for column, key in enumerate(visible_columns):
+            label = self._cell(self.COLUMN_TITLES[key], header=True, key=key)
+            self.table_layout.addWidget(label, grid_row, column)
+        grid_row += 1
+
+        for class_name, class_rows in self.logic.group_rows(rows):
+            if class_name and bool(self.config.get("show_class_headers", True)):
+                label = QLabel(f"  {class_name.upper()}  |  {len(class_rows)} CARROS")
+                label.setObjectName("StandingsClassHeader")
+                label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+                self.table_layout.addWidget(
+                    label,
+                    grid_row,
+                    0,
+                    1,
+                    max(1, len(visible_columns)),
+                )
+                grid_row += 1
+
+            for row in class_rows:
+                self._add_data_row(grid_row, visible_columns, row)
+                grid_row += 1
+
+        if not rows:
+            empty = QLabel("AGUARDANDO DADOS DA SESSÃO")
+            empty.setObjectName("StandingsClassHeader")
+            empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.table_layout.addWidget(
+                empty,
+                grid_row,
+                0,
+                1,
+                max(1, len(visible_columns)),
+            )
+
+        self._apply_style()
+        QTimer.singleShot(0, self._fit_height)
+
+    def _add_data_row(
+        self,
+        grid_row: int,
+        columns: list[str],
+        row: StandingViewRow,
+    ) -> None:
+        values = self._row_values(row)
+        row_state = "normal"
+        if row.is_player:
+            row_state = "player"
+        elif row.penalties > 0:
+            row_state = "penalty"
+        elif row.under_yellow:
+            row_state = "yellow"
+        elif row.in_pits or row.in_garage:
+            row_state = "pit"
+
+        for column, key in enumerate(columns):
+            label = self._cell(values.get(key, ""), header=False, key=key)
+            label.setProperty("rowState", row_state)
+            if key == "driver":
+                label.setToolTip(
+                    row.driver_name + ("\n" + row.team_name if row.team_name else "")
+                )
+            elif key == "flag":
+                label.setToolTip(row.nationality or "Nacionalidade indisponível")
+            elif key == "badge":
+                label.setToolTip(row.badge)
+            elif key == "gain":
+                if row.position_change > 0:
+                    label.setProperty("valueState", "good")
+                elif row.position_change < 0:
+                    label.setProperty("valueState", "bad")
+            elif key == "gain_dr" and row.estimated_driver_rank_gain is not None:
+                label.setProperty(
+                    "valueState",
+                    "good" if row.estimated_driver_rank_gain >= 0 else "bad",
+                )
+            elif key in {"dr", "sr"}:
+                rank = row.driver_rank if key == "dr" else row.safety_rank
+                label.setStyleSheet(
+                    f"background-color: {self.logic.rank_color(rank)}; color: #FFFFFF;"
+                )
+            self.table_layout.addWidget(label, grid_row, column)
+
+    def _row_values(self, row: StandingViewRow) -> dict[str, str]:
+        position = self.logic.display_position(row)
+        if row.position_change > 0:
+            position_change = f"▲{row.position_change}"
+        elif row.position_change < 0:
+            position_change = f"▼{abs(row.position_change)}"
+        else:
+            position_change = "-"
+
+        progress = row.driver_rank_progress
+        dr = self.logic.rank_short(row.driver_rank)
+        if progress is not None and bool(
+            self.config.get("show_driver_rank_progress", True)
+        ):
+            if 0 < progress <= 1:
+                progress *= 100
+            dr += f" {max(0, min(100, round(progress)))}%"
+
+        estimated = (
+            "-"
+            if row.estimated_driver_rank_gain is None
+            else f"{row.estimated_driver_rank_gain:+.0f}%"
+        )
+        return {
+            "position": f"{position:02d}" if position > 0 else "--",
+            "gain": position_change,
+            "number": "#" + row.car_number if row.car_number else "-",
+            "flag": self.logic.country_flag(row.nationality) if row.online_matched else "🌐",
+            "badge": self.logic.badge_short(row.badge),
+            "driver": row.driver_name,
+            "dr": dr,
+            "sr": self.logic.rank_short(row.safety_rank),
+            "gain_dr": estimated,
+            "class": self._class_short(row.vehicle_class),
+            "gap": row.gap_text,
+            "interval": row.interval_text,
+            "best": row.best_lap_text,
+            "last": row.last_lap_text,
+            "incidents": "-" if row.incidents is None else str(row.incidents),
+            "status": row.status_text,
+        }
+
+    def _cell(self, text: str, *, header: bool, key: str) -> QLabel:
+        label = QLabel(text)
+        label.setObjectName("StandingsHeaderCell" if header else "StandingsCell")
+        label.setProperty("columnKey", key)
+        label.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+            if key == "driver"
+            else Qt.AlignmentFlag.AlignCenter
+        )
+        width = max(
+            18,
+            round(
+                float(self.config.get("column_widths", {}).get(key, self.BASE_WIDTHS[key]))
+                * self._responsive_scale
+            ),
+        )
+        label.setFixedWidth(width)
+        label.setFixedHeight(
+            max(
+                18,
+                round(float(self.config.get("row_height", 28)) * self._responsive_scale),
+            )
+        )
+        return label
+
+    def _column_visible(self, key: str) -> bool:
+        mapping = {
+            "position": True,
+            "gain": bool(self.config.get("show_position_change", True)),
+            "number": bool(self.config.get("show_car_number", True)),
+            "flag": bool(self.config.get("show_country_flag", True)),
+            "badge": bool(self.config.get("show_badge", True)),
+            "driver": True,
+            "dr": bool(self.config.get("show_driver_rank", True)),
+            "sr": bool(self.config.get("show_safety_rank", True)),
+            "gain_dr": bool(self.config.get("show_estimated_rank_gain", False)),
+            "class": bool(self.config.get("show_class", True)),
+            "gap": bool(self.config.get("show_gap", True)),
+            "interval": bool(self.config.get("show_interval", False)),
+            "best": bool(self.config.get("show_best_lap", True)),
+            "last": bool(self.config.get("show_last_lap", True)),
+            "incidents": bool(self.config.get("show_incidents", False)),
+            "status": bool(self.config.get("show_status", True)),
+        }
+        return mapping.get(key, True)
+
+    def _set_source_status(self, snapshot: OnlineSnapshot) -> None:
+        if snapshot.cloud_available:
+            self.source_label.setText("ONLINE")
+            self.source_label.setProperty("sourceState", "online")
+        elif snapshot.local_api_available:
+            self.source_label.setText("LOCAL")
+            self.source_label.setProperty("sourceState", "local")
+        else:
+            self.source_label.setText("MEM")
+            self.source_label.setProperty("sourceState", "memory")
+        self.source_label.style().unpolish(self.source_label)
+        self.source_label.style().polish(self.source_label)
+        footer = snapshot.source_message
+        if snapshot.error:
+            footer = (footer + " | " + snapshot.error).strip(" |")
+        self.footer.setText(footer)
+
+    def _update_scale(self) -> None:
+        internal = max(0.50, float(self.config.get("internal_scale", 1.0)))
+        minimum = max(0.30, float(self.config.get("responsive_min_scale", 0.48)))
+        maximum = max(minimum, float(self.config.get("responsive_max_scale", 2.20)))
+        self._responsive_scale = max(
+            minimum,
+            min(maximum, self.width() / self.BASE_WIDTH * internal),
+        )
+        s = self._responsive_scale
+        margin = max(2, round(float(self.config.get("panel_margin", 5)) * s))
+        self.main_layout.setContentsMargins(margin, margin, margin, margin)
+        self.main_layout.setSpacing(max(0, round(float(self.config.get("row_gap", 1)) * s)))
+        self.table_layout.setHorizontalSpacing(
+            max(0, round(float(self.config.get("column_gap", 1)) * s))
+        )
+        self.table_layout.setVerticalSpacing(
+            max(0, round(float(self.config.get("row_gap", 1)) * s))
+        )
+        self.header_layout.setContentsMargins(max(3, round(7 * s)), 0, max(3, round(7 * s)), 0)
+        self.header_frame.setFixedHeight(
+            max(22, round(float(self.config.get("header_height", 34)) * s))
+        )
+        self._apply_style()
+
+    def _apply_style(self) -> None:
+        c = self.config.get("colors", {})
+        s = self._responsive_scale
+        family = str(self.config.get("font_name", "Arial"))
+        base = max(8, int(self.config.get("font_size", 13)))
+        normal = max(7, round(base * s))
+        small = max(6, round(base * 0.72 * s))
+        title = max(8, round(base * 1.05 * s))
+        radius = max(4, round(8 * s))
+        border_width = max(1, round(1 * s))
+        self.setStyleSheet(
+            f'''
+            StandingsWidget {{ background: transparent; border: none; font-family: "{family}"; }}
+            QFrame#StandingsMainFrame {{
+                background-color: {c.get("background", "rgba(8,12,18,235)")};
+                border: {border_width}px solid {c.get("border", "#344155")};
+                border-radius: {radius}px;
+            }}
+            QFrame#StandingsSessionHeader {{
+                background-color: {c.get("header", "#1D2634")};
+                border-radius: {radius}px;
+            }}
+            QLabel {{
+                color: {c.get("text", "#F4F7FB")};
+                background: transparent;
+                border: none;
+                font-family: "{family}";
+                font-size: {normal}px;
+            }}
+            QLabel#StandingsTitle {{ font-size: {title}px; font-weight: 900; }}
+            QLabel#StandingsSession, QLabel#StandingsFooter {{
+                color: {c.get("muted", "#9BA8BA")}; font-size: {small}px; font-weight: bold;
+            }}
+            QLabel#StandingsSource {{
+                background-color: {c.get("panel", "#141B26")};
+                border: {border_width}px solid {c.get("border", "#344155")};
+                border-radius: {max(3, round(5*s))}px;
+                padding: 0 {max(2, round(5*s))}px;
+                font-size: {small}px; font-weight: 900;
+            }}
+            QLabel#StandingsSource[sourceState="online"] {{ color: {c.get("online", "#3EDB91")}; }}
+            QLabel#StandingsSource[sourceState="local"] {{ color: {c.get("local", "#F1B84B")}; }}
+            QLabel#StandingsSource[sourceState="memory"] {{ color: {c.get("offline", "#8792A2")}; }}
+            QLabel#StandingsHeaderCell {{
+                background-color: {c.get("panel", "#141B26")};
+                color: {c.get("muted", "#9BA8BA")};
+                font-size: {small}px; font-weight: 900;
+            }}
+            QLabel#StandingsClassHeader {{
+                background-color: {c.get("class_header", "#283647")};
+                color: {c.get("text", "#F4F7FB")};
+                font-size: {small}px; font-weight: 900;
+                padding-left: {max(2, round(5*s))}px;
+            }}
+            QLabel#StandingsCell {{ background-color: {c.get("row", "#111822")}; }}
+            QLabel#StandingsCell[rowState="player"] {{ background-color: {c.get("player", "#183E36")}; }}
+            QLabel#StandingsCell[rowState="pit"] {{ background-color: {c.get("pit", "#3E3A20")}; }}
+            QLabel#StandingsCell[rowState="penalty"] {{ background-color: {c.get("penalty", "#5A1E24")}; }}
+            QLabel#StandingsCell[rowState="yellow"] {{ background-color: {c.get("yellow", "#4B4218")}; }}
+            QLabel#StandingsCell[valueState="good"] {{ color: {c.get("position_gain", "#3EDB91")}; font-weight: 900; }}
+            QLabel#StandingsCell[valueState="bad"] {{ color: {c.get("position_loss", "#FF5A5F")}; font-weight: 900; }}
+            QLabel#StandingsCell[columnKey="driver"] {{ padding-left: {max(2, round(4*s))}px; font-weight: 700; }}
+            QLabel#StandingsCell[columnKey="flag"] {{ font-family: "Segoe UI Emoji"; font-size: {max(9, round(16*s))}px; }}
+            QLabel#StandingsCell[columnKey="badge"] {{
+                background-color: {c.get("badge", "#30425B")};
+                border-radius: {max(2, round(4*s))}px;
+                font-size: {small}px; font-weight: 900;
+            }}
+            QLabel#StandingsCell[columnKey="status"] {{ color: {c.get("status", "#F1B84B")}; font-size: {small}px; font-weight: 900; }}
+            '''
+        )
+
+    def _clear_table(self) -> None:
+        while self.table_layout.count():
+            item = self.table_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+
+    def _fit_height(self) -> None:
+        self.root_layout.activate()
+        desired = max(100, self.root_layout.sizeHint().height())
+        if abs(self.height() - desired) > 1:
+            self.resize(self.width(), desired)
+
+    def _preview_rows(self) -> list[StandingViewRow]:
+        return [
+            StandingViewRow(
+                position=1,
+                class_position=1,
+                position_change=1,
+                car_number="50",
+                nationality="BR",
+                badge="Content Creator",
+                driver_name="Sector Flow Player",
+                team_name="Sector Flow Racing",
+                vehicle_class="HYPERCAR",
+                driver_rank="Gold 2",
+                driver_rank_progress=64,
+                safety_rank="Silver 3",
+                estimated_driver_rank_gain=3,
+                incidents=1,
+                gap_text="LEADER",
+                interval_text="-",
+                best_lap_text="3:24.810",
+                last_lap_text="3:25.220",
+                is_player=True,
+                online_matched=True,
+            ),
+            StandingViewRow(
+                position=2,
+                class_position=2,
+                position_change=-1,
+                car_number="83",
+                nationality="FR",
+                badge="Staff",
+                driver_name="Driver Online",
+                team_name="Example Team",
+                vehicle_class="HYPERCAR",
+                driver_rank="Platinum 1",
+                driver_rank_progress=12,
+                safety_rank="Gold 1",
+                estimated_driver_rank_gain=-1,
+                incidents=0,
+                gap_text="+1.3",
+                interval_text="+1.3",
+                best_lap_text="3:25.071",
+                last_lap_text="3:26.003",
+                online_matched=True,
+            ),
+            StandingViewRow(
+                position=8,
+                class_position=1,
+                car_number="46",
+                nationality="GB",
+                driver_name="GT3 Driver",
+                vehicle_class="LMGT3",
+                driver_rank="Silver 2",
+                driver_rank_progress=88,
+                safety_rank="Silver 2",
+                incidents=4,
+                gap_text="+1L",
+                interval_text="-",
+                best_lap_text="3:58.142",
+                last_lap_text="3:59.001",
+                in_pits=True,
+                status_text="PIT",
+                online_matched=True,
+            ),
+        ]
+
+    @staticmethod
+    def _class_short(value: str) -> str:
+        return "".join(character for character in str(value or "") if character.isalnum())[:6].upper()
+
+    @staticmethod
+    def _session_text(session: Any) -> str:
+        labels = {
+            1: "PRÁTICA",
+            2: "PRÁTICA",
+            3: "PRÁTICA",
+            4: "QUALI",
+            5: "QUALI",
+            6: "WARMUP",
+            7: "CORRIDA",
+            8: "CORRIDA",
+            10: "PRÁTICA",
+            11: "QUALI",
+            12: "WARMUP",
+            13: "CORRIDA",
+        }
+        index = int(getattr(session, "session", 0) or 0)
+        remaining = max(0.0, float(getattr(session, "remaining_time_s", 0.0) or 0.0))
+        return f"{labels.get(index, 'SESSÃO')} {int(remaining//60):02d}:{int(remaining%60):02d}"
+
+    def paintEvent(self, event: QPaintEvent) -> None:
+        super().paintEvent(event)
+        if not self.edit_mode:
+            return
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        pen = QPen(
+            QColor(self.config.get("colors", {}).get("edit_border", "#9B5CFF")),
+            max(1.0, 2.0 * self._responsive_scale),
+        )
+        pen.setStyle(Qt.PenStyle.DashLine)
+        painter.setPen(pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawRoundedRect(QRectF(self.rect()).adjusted(1, 1, -1, -1), 10, 10)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor("#FFFFFF"))
+        painter.drawRect(self._resize_handle_rect())
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        if not self.edit_mode or event.button() != Qt.MouseButton.LeftButton:
+            event.ignore()
+            return
+        self.selected.emit(self.widget_id)
+        if self._resize_handle_rect().contains(event.position()):
+            self._resizing = True
+            self._resize_start_global = event.globalPosition().toPoint()
+            self._resize_start_width = self.width()
+            self.setCursor(Qt.CursorShape.SizeFDiagCursor)
+        else:
+            self._dragging = True
+            self._drag_offset = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            self.setCursor(Qt.CursorShape.ClosedHandCursor)
+        event.accept()
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        if not self.edit_mode:
+            event.ignore()
+            return
+        if self._resizing:
+            delta = event.globalPosition().toPoint() - self._resize_start_global
+            self.resize(max(self.minimumWidth(), self._resize_start_width + delta.x()), self.height())
+            event.accept()
+            return
+        if self._dragging:
+            self.move(event.globalPosition().toPoint() - self._drag_offset)
+            event.accept()
+            return
+        self.setCursor(
+            Qt.CursorShape.SizeFDiagCursor
+            if self._resize_handle_rect().contains(event.position())
+            else Qt.CursorShape.SizeAllCursor
+        )
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if event.button() != Qt.MouseButton.LeftButton:
+            event.ignore()
+            return
+        changed = self._dragging or self._resizing
+        self._dragging = False
+        self._resizing = False
+        self.setCursor(Qt.CursorShape.SizeAllCursor if self.edit_mode else Qt.CursorShape.ArrowCursor)
+        if changed:
+            self._emit_geometry()
+            event.accept()
+        else:
+            event.ignore()
+
+    def _resize_handle_rect(self) -> QRectF:
+        size = max(8, round(12 * self._responsive_scale))
+        return QRectF(self.width() - size - 4, self.height() - size - 4, size, size)
+
+    def _emit_geometry(self) -> None:
+        screen = self.screen()
+        if screen is None:
+            return
+        rect = screen.geometry()
+        self.geometry_changed.emit(
+            self.widget_id,
+            (self.x() - rect.left()) / rect.width(),
+            (self.y() - rect.top()) / rect.height(),
+            self.width() / rect.width(),
+            self.height() / rect.height(),
+        )
