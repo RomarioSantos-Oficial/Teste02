@@ -349,7 +349,7 @@
         "worse": "#EF4444"
       },
       "comparison_max_delta_pct": 2.0,
-      "enabled": false,
+      "enabled": true,
       "font_name": "Arial",
       "font_size": 14,
       "hide_when_unavailable": true,
@@ -430,7 +430,7 @@
       "display_detail_level": 1,
       "display_orientation": 0,
       "enable_multi_class_styling": true,
-      "enabled": true,
+      "enabled": false,
       "flip_vertical": true,
       "font_name": "Arial",
       "font_size": 24,
