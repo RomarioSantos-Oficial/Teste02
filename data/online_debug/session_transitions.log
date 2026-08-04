@@ -1,0 +1,2 @@
+{"ts": "2026-08-04 08:56:51", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "", "errors": []}}
+{"ts": "2026-08-04 08:58:52", "event": "transition", "details": {"was_connected": true, "now_connected": true, "previous_session": "", "current_session": "|PRACTICE1", "errors": []}}

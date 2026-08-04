@@ -232,6 +232,12 @@ class LocalStandingsEnrichment:
         self._vehicle_catalog = self._load_vehicle_catalog()
         self._vehicle_catalog_refreshed = bool(self._vehicle_catalog)
         self._test_mode = False
+        # Estado para detectar transições de sessão/conexão e gerar logs
+        self._last_connected = False
+        self._last_session_id = ""
+        self._session_log_path = (
+            self.project_root / "data" / "online_debug" / "session_transitions.log"
+        )
         self._thread = threading.Thread(
             target=self._worker,
             name="SectorFlow-StandingsLocal",
@@ -417,6 +423,38 @@ class LocalStandingsEnrichment:
         raw: dict[str, Any] = {}
         errors: list[str] = []
         connected = False
+        session_id = ""
+        # Evitar coletar imediatamente ao entrar numa sessão: esperar
+        # pelo menos 10 segundos de tempo de sessão para reduzir riscos
+        # de falha quando o jogo fecha logo após o carregamento.
+        try:
+            ok_sess, sess_data, sess_err = self.http.get(
+                f"http://{host}:{port}/rest/watch/sessionInfo",
+                timeout,
+            )
+            if ok_sess and isinstance(sess_data, dict):
+                sess_values = _flat(sess_data)
+                sess_time = _float(
+                    _first(
+                        sess_values,
+                        "currentEventTime",
+                        "currentEventTimeS",
+                        "current_event_time",
+                        "currentEventTime",
+                        "time",
+                        "elapsed",
+                        default=None,
+                    )
+                )
+                # Construir um identificador simples de sessão para detectar troca
+                server = str(_first(sess_values, "serverName", "server") or "").strip()
+                session_name = str(_first(sess_values, "session", "sessionName") or "").strip()
+                session_id = f"{server}|{session_name}"
+                if sess_time is not None and sess_time < 10.0:
+                    return metadata, "LMU REST", "aguardando 10s de sessão", {}
+        except Exception:
+            # Falhas na checagem não devem impedir a coleta normal abaixo
+            pass
         for endpoint in self.ENDPOINTS:
             ok, data, error = self.http.get(f"http://{host}:{port}{endpoint}", timeout)
             if ok and data is not None:
@@ -450,6 +488,25 @@ class LocalStandingsEnrichment:
             if not self._vehicle_catalog_refreshed:
                 errors.extend(vehicle_errors)
         source = "LMU REST" if connected else ("CACHE" if metadata else "MEM")
+        # Registrar transições: conectou/desconectou ou troca de sessão
+        try:
+            previous_connected = bool(self._last_connected)
+            previous_session = str(self._last_session_id or "")
+            if connected != previous_connected or (session_id and session_id != previous_session):
+                details = {
+                    "was_connected": previous_connected,
+                    "now_connected": connected,
+                    "previous_session": previous_session,
+                    "current_session": session_id,
+                    "errors": errors[:4],
+                }
+                # Gravar log e dump bruto
+                self._append_session_log("transition", details, raw if raw else None)
+            self._last_connected = connected
+            if session_id:
+                self._last_session_id = session_id
+        except Exception:
+            pass
         return metadata, source, "; ".join(errors[:2]), raw
 
     def _parse_payload(
@@ -912,3 +969,26 @@ class LocalStandingsEnrichment:
                 continue
             self._parse_payload(payload, result, f"CACHE:{path.name}")
         return result
+
+    def _append_session_log(self, event: str, details: dict[str, Any], raw_dump: dict[str, Any] | None = None) -> None:
+        try:
+            self._session_log_path.parent.mkdir(parents=True, exist_ok=True)
+            timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+            entry = {
+                "ts": timestamp,
+                "event": event,
+                "details": details,
+            }
+            with self._session_log_path.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            if raw_dump:
+                dump_path = (
+                    self._session_log_path.parent
+                    / f"session_dump_{int(time.time())}.json"
+                )
+                try:
+                    dump_path.write_text(json.dumps(raw_dump, ensure_ascii=False, indent=2), encoding="utf-8")
+                except OSError:
+                    pass
+        except Exception:
+            pass

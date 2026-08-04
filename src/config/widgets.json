@@ -40,7 +40,7 @@
       "monitor": 0,
       "opacity": 0.96,
       "position": {
-        "x": 0.40572916666666664,
+        "x": 0.40520833333333334,
         "y": 0.6111111111111112
       },
       "scale": 1.0,
@@ -300,7 +300,7 @@
       "show_optimal_temperature": false,
       "show_position_labels": false,
       "show_pressure": false,
-      "show_surface_temperatures": false,
+      "show_surface_temperatures": true,
       "show_tire_load": false,
       "show_toe": false,
       "show_value_prefixes": false,
@@ -310,11 +310,11 @@
       },
       "snap_to_edges": true,
       "temperature_color_mode": "optimal",
-      "temperature_source": "surface_average",
+      "temperature_source": "inner_average",
       "temperature_unit": "C",
       "tyre_base_height": 105,
       "tyre_base_width": 70,
-      "tyre_cold_limit_c": 70.0,
+      "tyre_cold_limit_c": 75.0,
       "tyre_optimal_limit_c": 90.0,
       "tyre_warm_limit_c": 100.0,
       "wear_display": "remaining"
@@ -556,8 +556,8 @@
       "panel_margin": 8.0,
       "pit_status_laps": 7,
       "position": {
-        "x": 0.0005208333333333333,
-        "y": 0.23333333333333334
+        "x": 0.0010416666666666667,
+        "y": 0.09537037037037037
       },
       "position_change_in_class": true,
       "render_interval_seconds": 0.2,
@@ -590,8 +590,8 @@
       "show_safety_rank": true,
       "show_tyre": true,
       "size": {
-        "height": 0.2796296296296296,
-        "width": 0.2734375
+        "height": 0.26481481481481484,
+        "width": 0.28854166666666664
       },
       "snap_to_edges": true,
       "tyre_icon_scale": 1.35,
@@ -814,7 +814,7 @@
       "brake_base_height": 40,
       "temperature_unit": "C",
       "pressure_unit": "kpa",
-      "temperature_source": "surface_average",
+      "temperature_source": "inner_average",
       "temperature_color_mode": "optimal",
       "wear_display": "remaining",
       "show_compound": true,
