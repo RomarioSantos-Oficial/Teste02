@@ -1,0 +1,196 @@
+{
+  "/rest/profile/": {
+    "name": "Romario santos",
+    "nick": "Romario santos",
+    "steamID": "76561199159238377"
+  },
+  "/rest/profile/profileInfo/getProfileInfo": {
+    "language": "brazilian",
+    "name": "Romario santos",
+    "nationality": "BR",
+    "nick": "Romario santos",
+    "steamID": "76561199159238377"
+  },
+  "/rest/multiplayer/teams": {
+    "coherenceId": 293,
+    "drivers": {
+      "Galih Agung": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "ID",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "4656003839559433571905",
+        "teamName": "The Bend Manthey",
+        "uniqueTeamId": "utid45"
+      },
+      "Horizon Orca": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "TW",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "0353456938726425593497",
+        "teamName": "Porsche Penske Motorsport",
+        "uniqueTeamId": "utid31"
+      },
+      "Jakub Adam#8772": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "CZ",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "7717258432340705092120",
+        "teamName": "AF Corse",
+        "uniqueTeamId": "utid56"
+      },
+      "Nel Red": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "BR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "1735744510170550826375",
+        "teamName": "Iron Lynx - Proton",
+        "uniqueTeamId": "utid58"
+      },
+      "Osama Basem": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "AE",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "0046339153114532714151",
+        "teamName": "Cadillac Hertz Team Jota",
+        "uniqueTeamId": "utid49"
+      },
+      "Romario santos": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "BR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "0345591239313012343825",
+        "teamName": "Team WRT",
+        "uniqueTeamId": "utid41"
+      },
+      "admin": {
+        "isConnected": false,
+        "nationality": "",
+        "roles": [
+          "Admin"
+        ]
+      }
+    },
+    "teams": {
+      "utid31": {
+        "Id": "0353456938726425593497",
+        "carNumber": "6",
+        "drivers": {
+          "Horizon Orca": {
+            "badge": "none",
+            "nationality": "TW",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Porsche Penske Motorsport",
+        "vehicle": "6_25_PENSKDB3C8E26"
+      },
+      "utid41": {
+        "Id": "0345591239313012343825",
+        "carNumber": "69",
+        "drivers": {
+          "Romario santos": {
+            "badge": "none",
+            "nationality": "BR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Team WRT",
+        "vehicle": "69_26_WRT_56324638"
+      },
+      "utid45": {
+        "Id": "4656003839559433571905",
+        "carNumber": "92",
+        "drivers": {
+          "Galih Agung": {
+            "badge": "none",
+            "nationality": "ID",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "The Bend Manthey",
+        "vehicle": "92_26_MANT22466058"
+      },
+      "utid49": {
+        "Id": "0046339153114532714151",
+        "carNumber": "12",
+        "drivers": {
+          "Osama Basem": {
+            "badge": "none",
+            "nationality": "AE",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Cadillac Hertz Team Jota",
+        "vehicle": "12_26_JOTA86515413"
+      },
+      "utid56": {
+        "Id": "7717258432340705092120",
+        "carNumber": "51",
+        "drivers": {
+          "Jakub Adam#8772": {
+            "badge": "none",
+            "nationality": "CZ",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "AF Corse",
+        "vehicle": "51_25_AFCODD49435F"
+      },
+      "utid58": {
+        "Id": "1735744510170550826375",
+        "carNumber": "9",
+        "drivers": {
+          "Nel Red": {
+            "badge": "none",
+            "nationality": "BR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Iron Lynx - Proton",
+        "vehicle": "9_25_IRONL51471837"
+      }
+    }
+  }
+}

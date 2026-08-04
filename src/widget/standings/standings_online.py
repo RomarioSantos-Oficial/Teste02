@@ -450,8 +450,8 @@ class LocalStandingsEnrichment:
                 server = str(_first(sess_values, "serverName", "server") or "").strip()
                 session_name = str(_first(sess_values, "session", "sessionName") or "").strip()
                 session_id = f"{server}|{session_name}"
-                if sess_time is not None and sess_time < 10.0:
-                    return metadata, "LMU REST", "aguardando 10s de sessão", {}
+                if sess_time is not None and sess_time < 15.0:
+                    return metadata, "LMU REST", "aguardando 15s de sessão", {}
         except Exception:
             # Falhas na checagem não devem impedir a coleta normal abaixo
             pass

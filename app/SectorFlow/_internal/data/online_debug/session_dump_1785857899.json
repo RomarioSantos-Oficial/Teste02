@@ -1,0 +1,14 @@
+{
+  "/rest/profile/": {
+    "name": "Romario santos",
+    "nick": "Romario santos",
+    "steamID": "76561199474843283"
+  },
+  "/rest/profile/profileInfo/getProfileInfo": {
+    "language": "brazilian",
+    "name": "Romario santos",
+    "nationality": "BR",
+    "nick": "Romario santos",
+    "steamID": "76561199474843283"
+  }
+}

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import sys
+import platform
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +13,37 @@ from .models import DriverData, PlayerData, SessionData, WheelData
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 LMU_LIBRARY = PROJECT_ROOT / "vendor" / "pyLMUSharedMemory"
+
+# Em executáveis empacotados pelo PyInstaller os dados podem ser colocados
+# em locais diferentes (por exemplo em sys._MEIPASS ou dentro de pastas
+# internas). Tentar detectar locais alternativos para tornar o import
+# resiliente tanto durante o desenvolvimento quanto no build.
+def _locate_pyLMU_shared():
+    # candidato original no repositório
+    candidates = [LMU_LIBRARY]
+    # PyInstaller unpack location
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        candidates.append(Path(meipass) / "vendor" / "pyLMUSharedMemory")
+        candidates.append(Path(meipass) / "pyLMUSharedMemory")
+    # procurar em sys.path por pastas que contenham o pacote
+    for p in list(sys.path):
+        try:
+            base = Path(p)
+        except Exception:
+            continue
+        candidates.append(base / "vendor" / "pyLMUSharedMemory")
+        candidates.append(base / "pyLMUSharedMemory")
+
+    for cand in candidates:
+        try:
+            if cand and cand.exists():
+                return cand.resolve()
+        except Exception:
+            continue
+    return LMU_LIBRARY
+
+LMU_LIBRARY = _locate_pyLMU_shared()
 
 if str(LMU_LIBRARY) not in sys.path:
     sys.path.insert(0, str(LMU_LIBRARY))

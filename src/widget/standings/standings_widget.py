@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QLineF, QPoint, QRectF, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QFont, QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent
+from PySide6.QtGui import QColor, QFont, QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent, QPixmap
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from .standings_assets import (
@@ -420,10 +420,16 @@ class StandingsWidget(QWidget):
                 )
             )
             x += count_width + gap
+        lap_label = f"🏁  {category.current_lap}/{category.total_laps_text}"
+        if getattr(category, "total_laps_calc", None):
+            human = self._humanize_total_calc(category.total_laps_calc)
+            # Se não há total válido, não mostramos a explicação curta
+            if category.total_laps_text != "--" and human and human not in ("—", "fixo inválido", "estimativa inválida", "volta inválida"):
+                lap_label = f"{lap_label} ({human})"
         boxes.append(
             (
                 QRectF(x, rect.top(), lap_width, rect.height() - 3 * self._scale),
-                f"🏁  {category.current_lap}/{category.total_laps_text}",
+                lap_label,
             )
         )
         painter.setFont(self._font(0.78, True))
@@ -435,6 +441,36 @@ class StandingsWidget(QWidget):
             painter.drawText(box.adjusted(8 * self._scale, 0, -8 * self._scale, 0), Qt.AlignmentFlag.AlignCenter, text)
         painter.setPen(QPen(color, max(1.0, 3.0 * self._scale)))
         painter.drawLine(rect.bottomLeft(), rect.bottomRight())
+
+    def _humanize_total_calc(self, calc: str) -> str:
+        if not calc:
+            return ""
+        c = str(calc)
+        # formatos esperados:
+        # - fixo=NN
+        # - bad_fixed:NN
+        # - lap_time_too_small:XXs
+        # - ref=player/leader lap=XX.Xs rem=600s est=18.3
+        # - ref=class_avg lap=XX.Xs rem=600s est=18.3
+        try:
+            if c.startswith("fixo="):
+                return f"fixo {c.split('=',1)[1]}"
+            if c.startswith("bad_fixed:"):
+                return "fixo inválido"
+            if c.startswith("lap_time_too_small"):
+                return "volta inválida"
+            if c in ("no_ref", "no_time"):
+                return "—"
+            if c in ("bad_estimate", "large_ratio"):
+                return "estimativa inválida"
+            # tenta extrair est (est=18.3)
+            m = re.search(r"est=([0-9]+\.?[0-9]*)", c)
+            if m:
+                return f"est. {float(m.group(1)):.1f}"
+            # fallback: limpar texto técnico e mostrar curto
+            return re.sub(r"\s+", " ", c)
+        except Exception:
+            return str(calc)
 
     def _draw_legend(self, painter: QPainter, rect: QRectF) -> None:
         colors = self.config.get("colors", {})
@@ -477,6 +513,7 @@ class StandingsWidget(QWidget):
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor(category.color))
             painter.drawRect(rect.adjusted(0, 2 * self._scale, -2 * self._scale, -2 * self._scale))
+            # Mostrar apenas a posição — a bandeira de chegada ficará na coluna 'brand'.
             self._text(painter, rect, f"{row.class_position}", 0.76, True)
         elif key == "change":
             value = row.position_change
@@ -570,7 +607,29 @@ class StandingsWidget(QWidget):
             painter.drawText(target, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, text)
             self._draw_driver_status(painter, target, row)
         elif key == "brand":
-            pixmap = self.logos.pixmap(row.manufacturer, max(1, int(rect.width() * 0.78)), max(1, int(rect.height() * 0.68)))
+            # Se o piloto terminou (finish_status == 1), usar a bandeira de chegada
+            finished = False
+            try:
+                finished = int(getattr(row, "finish_status", 0) or 0) == 1
+            except Exception:
+                finished = False
+            pixmap = None
+            if finished:
+                candidate = PROJECT_ROOT / "images" / "Flags" / "bandeira_chegada.png"
+                if candidate.is_file():
+                    try:
+                        pix = QPixmap(str(candidate))
+                        if not pix.isNull():
+                            pixmap = pix.scaled(
+                                max(1, int(rect.width() * 0.78)),
+                                max(1, int(rect.height() * 0.68)),
+                                Qt.AspectRatioMode.KeepAspectRatio,
+                                Qt.TransformationMode.SmoothTransformation,
+                            )
+                    except Exception:
+                        pixmap = None
+            if pixmap is None:
+                pixmap = self.logos.pixmap(row.manufacturer, max(1, int(rect.width() * 0.78)), max(1, int(rect.height() * 0.68)))
             if pixmap is not None:
                 x = rect.center().x() - pixmap.width() / 2
                 y = rect.center().y() - pixmap.height() / 2

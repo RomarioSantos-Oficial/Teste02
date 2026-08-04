@@ -28,9 +28,9 @@
       "elements": {},
       "enabled": true,
       "font": {
-        "family": "Arial"
+        "family": "Arial Black"
       },
-      "graph_history_points": 270,
+      "graph_history_points": 30,
       "graph_vertical_lines": 8,
       "layout": {
         "red_start": 0.87,
@@ -40,8 +40,8 @@
       "monitor": 0,
       "opacity": 0.96,
       "position": {
-        "x": 0.40520833333333334,
-        "y": 0.6111111111111112
+        "x": 0.40700000000000003,
+        "y": 0.6064814814814815
       },
       "scale": 1.0,
       "size": {
@@ -284,8 +284,8 @@
       "optimal_critical_delta_c": 30.0,
       "optimal_hot_delta_c": 15.0,
       "position": {
-        "x": 0.5072916666666667,
-        "y": 0.7657407407407407
+        "x": 0.6494791666666667,
+        "y": 0.762962962962963
       },
       "pressure_unit": "psi",
       "responsive_max_scale": 2.2,
@@ -294,13 +294,13 @@
       "show_brake_pressure": false,
       "show_camber": false,
       "show_carcass_temperature": false,
-      "show_compound": true,
+      "show_compound": false,
       "show_deflection": false,
       "show_grip_fraction": false,
       "show_optimal_temperature": false,
       "show_position_labels": false,
       "show_pressure": false,
-      "show_surface_temperatures": true,
+      "show_surface_temperatures": false,
       "show_tire_load": false,
       "show_toe": false,
       "show_value_prefixes": false,
@@ -482,6 +482,7 @@
     "standings": {
       "always_on_top": true,
       "auto_fit_height": true,
+      "badge_directory": "images/badge",
       "category_header_height": 50.0,
       "class_colors": {
         "HYPERCAR": "#D81736",
@@ -546,7 +547,6 @@
       "logo_directory": "images/logos",
       "maximum_categories": 3,
       "monitor": 0,
-      "raceos_base_url": "https://raceos.gg",
       "online_enrichment": true,
       "online_event_type": "daily",
       "online_max_pages": 10,
@@ -556,18 +556,17 @@
       "panel_margin": 8.0,
       "pit_status_laps": 7,
       "position": {
-        "x": 0.0010416666666666667,
-        "y": 0.09537037037037037
+        "x": 0.0,
+        "y": 0.0
       },
       "position_change_in_class": true,
+      "raceos_base_url": "https://raceos.gg",
       "render_interval_seconds": 0.2,
       "responsive_max_scale": 2.25,
       "responsive_min_scale": 0.22,
       "row_height": 79.0,
       "scale": 1.0,
       "show_badge": true,
-      "use_badge_images": true,
-      "badge_directory": "images/badge",
       "show_brand_logo": true,
       "show_column_legend": true,
       "show_country_flag": true,
@@ -582,7 +581,7 @@
       "show_header_server_time": true,
       "show_header_session_time": true,
       "show_header_session_type": true,
-      "show_header_source": true,
+      "show_header_source": false,
       "show_header_track_limits": true,
       "show_invalid_lap_status": true,
       "show_penalty_column": true,
@@ -590,11 +589,12 @@
       "show_safety_rank": true,
       "show_tyre": true,
       "size": {
-        "height": 0.26481481481481484,
-        "width": 0.28854166666666664
+        "height": 0.3888888888888889,
+        "width": 0.25677083333333334
       },
       "snap_to_edges": true,
       "tyre_icon_scale": 1.35,
+      "use_badge_images": true,
       "use_cloud_profiles": true
     }
   },

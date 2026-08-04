@@ -1,0 +1,415 @@
+{
+  "version": 2,
+  "categories": {
+    "hypercar": {
+      "class_aliases": [
+        "hypercar",
+        "hyper car",
+        "lmh",
+        "lmdh"
+      ],
+      "cars": [
+        {
+          "manufacturer": "alpine",
+          "models": [
+            "alpine a424",
+            "a424"
+          ],
+          "logo_files": [
+            "Alpine"
+          ]
+        },
+        {
+          "manufacturer": "aston_martin",
+          "models": [
+            "aston martin valkyrie",
+            "valkyrie lmh"
+          ],
+          "logo_files": [
+            "Aston Martin",
+            "aston_martin"
+          ]
+        },
+        {
+          "manufacturer": "bmw",
+          "models": [
+            "bmw m hybrid v8",
+            "m hybrid v8"
+          ],
+          "logo_files": [
+            "BMW"
+          ]
+        },
+        {
+          "manufacturer": "cadillac",
+          "models": [
+            "cadillac v series r",
+            "cadillac v-series.r",
+            "v series r"
+          ],
+          "logo_files": [
+            "Cadillac"
+          ]
+        },
+        {
+          "manufacturer": "ferrari",
+          "models": [
+            "ferrari 499p",
+            "499p"
+          ],
+          "logo_files": [
+            "Ferrari"
+          ]
+        },
+        {
+          "manufacturer": "genesis",
+          "models": [
+            "genesis gmr 001",
+            "genesis gmr-001",
+            "gmr 001"
+          ],
+          "logo_files": [
+            "Genesis"
+          ]
+        },
+        {
+          "manufacturer": "glickenhaus",
+          "models": [
+            "glickenhaus scg 007",
+            "scg 007",
+            "007 lmh"
+          ],
+          "logo_files": [
+            "Glickenhaus"
+          ]
+        },
+        {
+          "manufacturer": "isotta_fraschini",
+          "models": [
+            "isotta fraschini tipo 6",
+            "tipo 6",
+            "tipo6"
+          ],
+          "logo_files": [
+            "Isotta Fraschini",
+            "Isotta_Fraschini"
+          ]
+        },
+        {
+          "manufacturer": "lamborghini",
+          "models": [
+            "lamborghini sc63",
+            "sc63"
+          ],
+          "logo_files": [
+            "Lamborghini"
+          ]
+        },
+        {
+          "manufacturer": "peugeot",
+          "models": [
+            "peugeot 9x8",
+            "9x8"
+          ],
+          "logo_files": [
+            "Peugeot"
+          ]
+        },
+        {
+          "manufacturer": "porsche",
+          "models": [
+            "porsche 963",
+            "963"
+          ],
+          "logo_files": [
+            "Porsche",
+            "Porshce"
+          ]
+        },
+        {
+          "manufacturer": "toyota",
+          "models": [
+            "toyota gr010",
+            "gr010 hybrid",
+            "gr010"
+          ],
+          "logo_files": [
+            "Toyota"
+          ]
+        },
+        {
+          "manufacturer": "vanwall",
+          "models": [
+            "vanwall vandervell 680",
+            "vandervell 680",
+            "vanwall"
+          ],
+          "logo_files": [
+            "Vanwall"
+          ]
+        }
+      ]
+    },
+    "lmp2": {
+      "class_aliases": [
+        "lmp2",
+        "lmp 2",
+        "lmp2+"
+      ],
+      "force_manufacturer": "oreca",
+      "cars": [
+        {
+          "manufacturer": "oreca",
+          "models": [
+            "oreca 07 gibson",
+            "oreca 07",
+            "oreca07",
+            "lmp2+"
+          ],
+          "logo_files": [
+            "Oreca"
+          ]
+        }
+      ]
+    },
+    "lmp3": {
+      "class_aliases": [
+        "lmp3",
+        "lmp 3"
+      ],
+      "cars": [
+        {
+          "manufacturer": "ligier",
+          "models": [
+            "ligier js p325",
+            "ligier jsp325",
+            "js p325",
+            "jsp325"
+          ],
+          "logo_files": [
+            "Ligier"
+          ]
+        },
+        {
+          "manufacturer": "ginetta",
+          "models": [
+            "ginetta g61 lt p325 evo",
+            "ginetta g61-lt-p325-evo",
+            "g61 lt p325",
+            "g61-lt-p325"
+          ],
+          "logo_files": [
+            "Ginetta"
+          ]
+        },
+        {
+          "manufacturer": "duqueine",
+          "models": [
+            "duqueine d09",
+            "d09 lmp3",
+            "d09"
+          ],
+          "logo_files": [
+            "Duqueine"
+          ]
+        },
+        {
+          "manufacturer": "adess",
+          "models": [
+            "adess ad25",
+            "adess ad 25",
+            "ad25",
+            "ad 25"
+          ],
+          "logo_files": [
+            "Adess",
+            "ADESS"
+          ]
+        }
+      ]
+    },
+    "gte": {
+      "class_aliases": [
+        "gte",
+        "lmgte",
+        "lm gte",
+        "gte pro",
+        "gte am"
+      ],
+      "cars": [
+        {
+          "manufacturer": "aston_martin",
+          "models": [
+            "aston martin vantage gte",
+            "vantage gte"
+          ],
+          "logo_files": [
+            "Aston Martin",
+            "aston_martin"
+          ]
+        },
+        {
+          "manufacturer": "chevrolet",
+          "models": [
+            "corvette c8 r",
+            "corvette c8.r",
+            "chevrolet corvette c8 r"
+          ],
+          "logo_files": [
+            "Corvette",
+            "Chevrolet"
+          ]
+        },
+        {
+          "manufacturer": "ferrari",
+          "models": [
+            "ferrari 488 gte evo",
+            "488 gte evo",
+            "488 gte"
+          ],
+          "logo_files": [
+            "Ferrari"
+          ]
+        },
+        {
+          "manufacturer": "porsche",
+          "models": [
+            "porsche 911 rsr 19",
+            "911 rsr-19",
+            "911 rsr"
+          ],
+          "logo_files": [
+            "Porsche",
+            "Porshce"
+          ]
+        }
+      ]
+    },
+    "lmgt3": {
+      "class_aliases": [
+        "lmgt3",
+        "lm gt3",
+        "lmgt 3",
+        "gt3"
+      ],
+      "cars": [
+        {
+          "manufacturer": "aston_martin",
+          "models": [
+            "aston martin vantage amr lmgt3",
+            "vantage amr lmgt3",
+            "vantage lmgt3"
+          ],
+          "logo_files": [
+            "Aston Martin",
+            "aston_martin"
+          ]
+        },
+        {
+          "manufacturer": "bmw",
+          "models": [
+            "bmw m4 lmgt3",
+            "bmw m4 gt3",
+            "m4 lmgt3",
+            "m4 gt3"
+          ],
+          "logo_files": [
+            "BMW"
+          ]
+        },
+        {
+          "manufacturer": "chevrolet",
+          "models": [
+            "corvette z06 lmgt3 r",
+            "corvette z06 gt3 r",
+            "z06 lmgt3"
+          ],
+          "logo_files": [
+            "Corvette",
+            "Chevrolet"
+          ]
+        },
+        {
+          "manufacturer": "ferrari",
+          "models": [
+            "ferrari 296 lmgt3",
+            "ferrari 296 gt3",
+            "296 lmgt3",
+            "296 gt3"
+          ],
+          "logo_files": [
+            "Ferrari"
+          ]
+        },
+        {
+          "manufacturer": "ford",
+          "models": [
+            "ford mustang lmgt3",
+            "mustang lmgt3",
+            "mustang gt3"
+          ],
+          "logo_files": [
+            "Ford"
+          ]
+        },
+        {
+          "manufacturer": "lamborghini",
+          "models": [
+            "lamborghini huracan lmgt3",
+            "huracan lmgt3",
+            "huracan gt3"
+          ],
+          "logo_files": [
+            "Lamborghini"
+          ]
+        },
+        {
+          "manufacturer": "lexus",
+          "models": [
+            "lexus rc f lmgt3",
+            "lexus rcf gt3",
+            "rc f lmgt3"
+          ],
+          "logo_files": [
+            "Lexus"
+          ]
+        },
+        {
+          "manufacturer": "mclaren",
+          "models": [
+            "mclaren 720s lmgt3 evo",
+            "720s lmgt3 evo",
+            "720s gt3"
+          ],
+          "logo_files": [
+            "McLaren",
+            "mclaren"
+          ]
+        },
+        {
+          "manufacturer": "mercedes",
+          "models": [
+            "mercedes amg lmgt3",
+            "amg lmgt3 evo",
+            "amg gt3 evo"
+          ],
+          "logo_files": [
+            "Mercedes"
+          ]
+        },
+        {
+          "manufacturer": "porsche",
+          "models": [
+            "porsche 911 gt3 r lmgt3",
+            "911 gt3 r lmgt3",
+            "911 gt3 r"
+          ],
+          "logo_files": [
+            "Porsche",
+            "Porshce"
+          ]
+        }
+      ]
+    }
+  }
+}

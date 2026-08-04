@@ -46,6 +46,12 @@ class OverlayManager(QObject):
         self.session_active = False
         self.edit_mode = False
         self._last_widget_update: dict[str, float] = {}
+        # caminho de log para debug de decisões de overlay
+        try:
+            project_root = Path(self.config_path).resolve().parents[2]
+        except Exception:
+            project_root = Path.cwd()
+        self._overlay_check_log = project_root / "data" / "online_debug" / "overlay_checks.log"
 
     def create_driver_panel(self) -> DriverPanelWidget:
         existing = self.widgets.get("driver_panel")
@@ -348,9 +354,9 @@ class OverlayManager(QObject):
         self._last_widget_update[widget_id] = now
         return True
 
-    @staticmethod
-    def _session_allows_overlays(session: Any) -> bool:
+    def _session_allows_overlays(self, session: Any) -> bool:
         if not bool(getattr(session, "connected", True)):
+            self._log_overlay_decision(session, False, "not_connected")
             return False
 
         # A API local distingue monitor, replay, carregamento e controle do
@@ -375,6 +381,33 @@ class OverlayManager(QObject):
             for value in (in_control, in_monitor, vehicle_loaded)
         )
 
+        # Pré-calcula presença/atividade do jogador para uso em ambas
+        # as ramificações (REST disponível ou não).
+        drivers = list(getattr(session, "drivers", []) or [])
+        player_driver = next((d for d in drivers if bool(getattr(d, "is_player", False))), None)
+        player_present = bool(player_driver) or bool(getattr(session, "player_vehicle_loaded", False)) or (getattr(session, "player", None) is not None)
+
+        def _player_active_on_track_fallback_local(s_driver, player_obj) -> bool:
+            pd = s_driver
+            if pd is not None:
+                in_garage = bool(getattr(pd, "in_garage", False))
+                in_pits = bool(getattr(pd, "in_pits", False))
+                laps = int(getattr(pd, "laps", 0) or 0)
+                lap_dist = float(getattr(pd, "lap_distance_m", 0.0) or 0.0)
+                speed = float(getattr(pd, "speed_kmh", 0.0) or 0.0)
+                if not in_garage and not in_pits:
+                    return True
+                if laps > 0 or lap_dist > 0.0 or speed > 0.0:
+                    return True
+            if player_obj is not None:
+                if float(getattr(player_obj, "speed_kmh", 0.0) or 0.0) > 0.0:
+                    return True
+                if int(getattr(player_obj, "lap", 0) or 0) > 0:
+                    return True
+            return False
+
+        player_active = _player_active_on_track_fallback_local(player_driver, getattr(session, "player", None))
+
         navigation_state = str(
             getattr(session, "navigation_state", "") or ""
         )
@@ -382,26 +415,69 @@ class OverlayManager(QObject):
             "NAV_MAIN_MENU",
             "NAV_OPTIONS",
         }:
+            self._log_overlay_decision(session, False, "navigation_menu")
             return False
 
         if rest_state_complete:
-            if (
-                not bool(in_control)
-                or bool(in_monitor)
-                or not bool(vehicle_loaded)
-                or bool(replay_active)
-                or bool(race_finished)
-                or realtime_rest is False
-            ):
+            # Determinar se o jogador está presente e/ou ativo no carro
+            drivers = list(getattr(session, "drivers", []) or [])
+            player_driver = next((d for d in drivers if bool(getattr(d, "is_player", False))), None)
+            player_present = bool(player_driver) or bool(getattr(session, "player_vehicle_loaded", False)) or (getattr(session, "player", None) is not None)
+
+            def _player_active_on_track() -> bool:
+                pd = player_driver
+                player_obj = getattr(session, "player", None)
+                if pd is not None:
+                    in_garage = bool(getattr(pd, "in_garage", False))
+                    in_pits = bool(getattr(pd, "in_pits", False))
+                    laps = int(getattr(pd, "laps", 0) or 0)
+                    lap_dist = float(getattr(pd, "lap_distance_m", 0.0) or 0.0)
+                    speed = float(getattr(pd, "speed_kmh", 0.0) or 0.0)
+                    # Se não está na garagem nem no pit, considerar na pista
+                    if not in_garage and not in_pits:
+                        return True
+                    # Volta válida ou movimento também conta
+                    if laps > 0 or lap_dist > 0.0 or speed > 0.0:
+                        return True
+                if player_obj is not None:
+                    if float(getattr(player_obj, "speed_kmh", 0.0) or 0.0) > 0.0:
+                        return True
+                    if int(getattr(player_obj, "lap", 0) or 0) > 0:
+                        return True
+                return False
+
+            player_active = _player_active_on_track()
+
+            # Regras de ocultação:
+            # - ocultar se replay ativo
+            # - ocultar se corrida terminou e jogador não está presente/nem ativo
+            #   (exceto quando `in_control` indica que o jogador ainda controla o carro)
+            # - ocultar se não há jogador presente e o veículo não está carregado
+            hide_due_to_race_finished = bool(race_finished) and (not player_present and not player_active) and not bool(in_control)
+            if bool(replay_active) or hide_due_to_race_finished or (not player_present and not bool(vehicle_loaded)):
+                self._log_overlay_decision(session, False, "rest_state_failed", {
+                    "in_control": in_control,
+                    "in_monitor": in_monitor,
+                    "vehicle_loaded": vehicle_loaded,
+                    "replay_active": replay_active,
+                    "race_finished": race_finished,
+                    "player_present": player_present,
+                    "player_active": player_active,
+                    "in_realtime_rest": realtime_rest,
+                    "api_available": api_available,
+                    "api_age_s": api_age_s,
+                })
                 return False
         elif not bool(getattr(session, "in_realtime", False)):
-            return False
+            if not bool(vehicle_loaded):
+                return False
 
         try:
             session_type = int(getattr(session, "session", -1))
         except (TypeError, ValueError):
             return False
         if not (1 <= session_type <= 8 or 10 <= session_type <= 13):
+            self._log_overlay_decision(session, False, "session_type_invalid", {"session_type": session_type})
             return False
 
         game_phase = getattr(session, "game_phase", None)
@@ -410,12 +486,46 @@ class OverlayManager(QObject):
                 # A fase rejeita o ultimo mInRealtime=True que o LMU pode
                 # manter congelado depois que a sessao termina.
                 # 0 = antes da sessao; 8 = sessao encerrada; 9 = pausado.
-                if not 1 <= int(game_phase) <= 7:
-                    return False
+                gp = int(game_phase)
+                if not 1 <= gp <= 7:
+                    # Permitir overlays se a sessão já acabou (8/9) mas o
+                    # jogador ainda está presente/ativo na pista.
+                    if gp in (8, 9) and (player_present or player_active):
+                        pass
+                    else:
+                        self._log_overlay_decision(session, False, "game_phase_out_of_range", {"game_phase": game_phase, "player_present": player_present, "player_active": player_active})
+                        return False
             except (TypeError, ValueError):
+                self._log_overlay_decision(session, False, "game_phase_invalid", {"game_phase": game_phase})
                 return False
-
+        # todas as checagens passaram
+        self._log_overlay_decision(session, True, "allowed")
         return True
+
+    def _log_overlay_decision(self, session: Any, allowed: bool, reason: str, extra: dict | None = None) -> None:
+        try:
+            self._overlay_check_log.parent.mkdir(parents=True, exist_ok=True)
+            entry = {
+                "ts": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+                "allowed": bool(allowed),
+                "reason": reason,
+                "session": {
+                    "connected": bool(getattr(session, "connected", False)),
+                    "session": getattr(session, "session", None),
+                    "game_phase": getattr(session, "game_phase", None),
+                    "in_monitor": getattr(session, "in_monitor", None),
+                    "player_vehicle_loaded": getattr(session, "player_vehicle_loaded", None),
+                    "race_finished": getattr(session, "race_finished", None),
+                    "current_time_s": getattr(session, "current_time_s", None),
+                    "remaining_time_s": getattr(session, "remaining_time_s", None),
+                },
+            }
+            if extra:
+                entry["extra"] = extra
+            with self._overlay_check_log.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
 
     def save_config(self) -> None:
         self.config_path.parent.mkdir(parents=True, exist_ok=True)

@@ -432,7 +432,7 @@ class StandingsLogic:
             _, _, color = canonical_class(class_key, self.config)
             reference = player if is_player_class else (class_rows[0] if class_rows else None)
             current_lap = (reference.laps + 1) if reference is not None else 0
-            total_text = self._total_laps_text(reference, session)
+            total_text, total_calc = self._total_laps_info(reference, session, class_rows)
             active_count = sum(
                 1 for row in class_rows if self._is_active_race_car(row)
             )
@@ -448,6 +448,7 @@ class StandingsLogic:
                 ),
                 current_lap=current_lap,
                 total_laps_text=total_text,
+                total_laps_calc=total_calc,
                 show_count=is_race,
                 rows=selected_rows,
             ))
@@ -564,18 +565,62 @@ class StandingsLogic:
 
     @staticmethod
     def _total_laps_text(reference: StandingRow | None, session: Any) -> str:
+        # Compatibilidade retroativa: delega para a nova função que retorna
+        # também a explicação do cálculo. Aqui não temos acesso a class_rows
+        # então chamamos a versão reduzida (classe vazia) que tenta com a
+        # referência apenas.
+        text, _ = StandingsLogic._total_laps_info(reference, session, [])
+        return text
+
+    @staticmethod
+    def _total_laps_info(reference: StandingRow | None, session: Any, class_rows: list[StandingRow] | None = None) -> tuple[str, str]:
+        """Retorna (texto, explicacao).
+
+        - texto: valor curto a exibir (ex: '18' ou '18.3' ou '--')
+        - explicacao: string curta explicando a fonte do cálculo
+          (ex: 'ref=leader lap=92.3s rem=600s est=18.3')
+        """
         maximum = int(getattr(session, "max_laps", 0) or 0)
         if maximum > 0:
-            return str(maximum)
+            # sanity-check para evitar valores absurdos vindos do servidor
+            if maximum < 1 or maximum > 500:
+                return "--", f"bad_fixed:{maximum}"
+            return str(maximum), f"fixo={maximum}"
         if reference is None:
-            return "--"
-        remaining = float(getattr(session, "remaining_time_s", 0.0) or 0.0)
+            return "--", "no_ref"
+        try:
+            remaining = float(getattr(session, "remaining_time_s", 0.0) or 0.0)
+        except (TypeError, ValueError):
+            remaining = 0.0
         lap_time = reference.last_lap_s if reference.last_lap_s > 0 else reference.best_lap_s
         if remaining > 0 and lap_time > 0:
+            # Rejeitar voltas de referência impossivelmente curtas (dados corrompidos)
+            if lap_time < 3.0:
+                return "--", f"lap_time_too_small:{lap_time:.3f}s"
             progress = reference.laps + 1
+            # Estimativa de quantas voltas cabem no tempo restante usando a volta de referência
             estimate = progress + remaining / lap_time
-            return f"{estimate:.1f}"
-        return "--"
+            # Limites razoáveis para evitar overflow/valores absurdos
+            if estimate < 0 or estimate > progress + 500:
+                return "--", "bad_estimate"
+            # Evitar estimativas muito elevadas por divisão por valores pequenos
+            if remaining / lap_time > 200:
+                return "--", "large_ratio"
+            calc = f"ref={ 'player' if reference.is_player else 'leader' } lap={lap_time:.1f}s rem={int(remaining)}s est={estimate:.1f}"
+            # Se a estimativa parece muito superior ao esperado, tentar usar
+            # a média da classe (quando disponível) como fallback.
+            if estimate > progress + 20 and class_rows:
+                valid = [r.best_lap_s for r in class_rows if r.best_lap_s > 0]
+                if valid:
+                    avg = sum(valid) / len(valid)
+                    if 3.0 <= avg <= 600.0:
+                        alt_est = progress + remaining / avg
+                        if 0 <= alt_est <= progress + 500 and remaining / avg <= 200:
+                            calc = f"ref=class_avg lap={avg:.1f}s rem={int(remaining)}s est={alt_est:.1f}"
+                            return f"{alt_est:.1f}", calc
+            return f"{estimate:.1f}", calc
+        # Sem tempo/volta válida
+        return "--", "no_time"
 
     @staticmethod
     def _session_type(number: int) -> str:

@@ -102,6 +102,8 @@ class CategoryBlock:
     total: int = 0
     current_lap: int = 0
     total_laps_text: str = "--"
+    # Explicação curta do cálculo usado para estimar total de voltas (ex: "ref=leader lap=92.3s rem=600s est=18.3")
+    total_laps_calc: str = ""
     show_count: bool = False
     rows: list[StandingRow] = field(default_factory=list)
 

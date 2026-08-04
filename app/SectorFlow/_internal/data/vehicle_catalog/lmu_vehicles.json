@@ -1,0 +1,2832 @@
+{
+  "actionexpressracing311lm": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2023, Hypercar, Cadillac V-Series.R",
+    "description": "Action Express Racing #311:LM"
+  },
+  "adessracingteam202546elms": {
+    "manufacturer": "ADESS",
+    "model": "ELMS 2025, LMP3, ADESS AD25 LMP3",
+    "description": "ADESS Racing Team 2025 #46:ELMS"
+  },
+  "adessracingteam202546lmu1": {
+    "manufacturer": "ADESS",
+    "model": "ELMS 2025, LMP3, ADESS AD25 LMP3",
+    "description": "ADESS Racing Team 2025 #46:LMU1"
+  },
+  "adessracingteam202546lmu2": {
+    "manufacturer": "ADESS",
+    "model": "ELMS 2025, LMP3, ADESS AD25 LMP3",
+    "description": "ADESS Racing Team 2025 #46:LMU2"
+  },
+  "afcorse21br": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "AF Corse #21:BR"
+  },
+  "afcorse21fu": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "AF Corse #21:FU"
+  },
+  "afcorse21lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "AF Corse #21:LM"
+  },
+  "afcorse21mz": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "AF Corse #21:MZ"
+  },
+  "afcorse21ps": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "AF Corse #21:PS"
+  },
+  "afcorse21se": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "AF Corse #21:SE"
+  },
+  "afcorse54ec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "AF Corse #54:EC"
+  },
+  "afcorse54lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "AF Corse #54:LM"
+  },
+  "afcorse80lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "AF Corse #80:LM"
+  },
+  "afcorse83ec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "AF Corse #83:EC"
+  },
+  "afcorse83elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "AF Corse #83:ELMS25"
+  },
+  "afcorse83lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "AF Corse #83:LM"
+  },
+  "afcorse2024183lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "AF Corse 2024 #183:LM"
+  },
+  "afcorse202483ec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, Hypercar, Ferrari 499P",
+    "description": "AF Corse 2024 #83:EC"
+  },
+  "afcorse202483jkr": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, Hypercar, Ferrari 499P",
+    "description": "AF Corse 2024 #83:JKR"
+  },
+  "afcorse202483lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, Hypercar, Ferrari 499P",
+    "description": "AF Corse 2024 #83:LM"
+  },
+  "afcorse2025183lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "AF Corse 2025 #183:LM"
+  },
+  "afcorse202551elms": {
+    "manufacturer": "Ferrari",
+    "model": "ELMS 2025, GT3, Ferrari 296 LMGT3",
+    "description": "AF Corse 2025 #51:ELMS"
+  },
+  "afcorse202583ec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2025, Hypercar, Ferrari 499P",
+    "description": "AF Corse 2025 #83:EC"
+  },
+  "afcorse202583lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2025, Hypercar, Ferrari 499P",
+    "description": "AF Corse 2025 #83:LM"
+  },
+  "afcorse202683lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, Hypercar, Ferrari 499P",
+    "description": "AF Corse 2026 #83:LM"
+  },
+  "afcorse202683wec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, Hypercar, Ferrari 499P",
+    "description": "AF Corse 2026 #83:WEC"
+  },
+  "akkodisaspteam202478ec1": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2024, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2024 #78:EC1"
+  },
+  "akkodisaspteam202478ec2": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2024, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2024 #78:EC2"
+  },
+  "akkodisaspteam202478ec3": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2024, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2024 #78:EC3"
+  },
+  "akkodisaspteam202478ec4": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2024, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2024 #78:EC4"
+  },
+  "akkodisaspteam202478ec5": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2024, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2024 #78:EC5"
+  },
+  "akkodisaspteam202478ec6": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2024, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2024 #78:EC6"
+  },
+  "akkodisaspteam202478lm": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2024, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2024 #78:LM"
+  },
+  "akkodisaspteam202487ec": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2024, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2024 #87:EC"
+  },
+  "akkodisaspteam202487lm": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2024, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2024 #87:LM"
+  },
+  "akkodisaspteam202578ec2": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2025, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2025 #78:EC2"
+  },
+  "akkodisaspteam202578ec3": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2025, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2025 #78:EC3"
+  },
+  "akkodisaspteam202578lm": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2025, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2025 #78:LM"
+  },
+  "akkodisaspteam202578wec": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2025, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2025 #78:WEC"
+  },
+  "akkodisaspteam202587lm": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2025, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2025 #87:LM"
+  },
+  "akkodisaspteam202587wec": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2025, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2025 #87:WEC"
+  },
+  "akkodisaspteam202678wec": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2026, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2026 #78:WEC"
+  },
+  "akkodisaspteam202687wec": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2026, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2026 #87:WEC"
+  },
+  "algarveproracing20elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "Algarve Pro Racing #20:ELMS25"
+  },
+  "algarveproracing25elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "Algarve Pro Racing #25:ELMS25"
+  },
+  "algarveproracing45lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Algarve Pro Racing #45:LM"
+  },
+  "algarveproracing202425lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "Algarve Pro Racing 2024 #25:LM"
+  },
+  "algarveproracing202525lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "Algarve Pro Racing 2025 #25:LM"
+  },
+  "algarveproracing202545lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "Algarve Pro Racing 2025 #45:LM"
+  },
+  "alpineelfteam35ec": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Alpine Elf Team #35:EC"
+  },
+  "alpineelfteam35lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Alpine Elf Team #35:LM"
+  },
+  "alpineelfteam36ec": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Alpine Elf Team #36:EC"
+  },
+  "alpineelfteam36lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Alpine Elf Team #36:LM"
+  },
+  "alpineenduranceteam202435ec": {
+    "manufacturer": "Alpine",
+    "model": "WEC 2024, Hypercar, Alpine A424",
+    "description": "Alpine Endurance Team 2024 #35:EC"
+  },
+  "alpineenduranceteam202435lm": {
+    "manufacturer": "Alpine",
+    "model": "WEC 2024, Hypercar, Alpine A424",
+    "description": "Alpine Endurance Team 2024 #35:LM"
+  },
+  "alpineenduranceteam202435pl": {
+    "manufacturer": "Alpine",
+    "model": "WEC 2024, Hypercar, Alpine A424",
+    "description": "Alpine Endurance Team 2024 #35:PL"
+  },
+  "alpineenduranceteam202436ec": {
+    "manufacturer": "Alpine",
+    "model": "WEC 2024, Hypercar, Alpine A424",
+    "description": "Alpine Endurance Team 2024 #36:EC"
+  },
+  "alpineenduranceteam202436lm": {
+    "manufacturer": "Alpine",
+    "model": "WEC 2024, Hypercar, Alpine A424",
+    "description": "Alpine Endurance Team 2024 #36:LM"
+  },
+  "alpineenduranceteam202535ec": {
+    "manufacturer": "Alpine",
+    "model": "WEC 2025, Hypercar, Alpine A424",
+    "description": "Alpine Endurance Team 2025 #35:EC"
+  },
+  "alpineenduranceteam202535lm": {
+    "manufacturer": "Alpine",
+    "model": "WEC 2025, Hypercar, Alpine A424",
+    "description": "Alpine Endurance Team 2025 #35:LM"
+  },
+  "alpineenduranceteam202536ec": {
+    "manufacturer": "Alpine",
+    "model": "WEC 2025, Hypercar, Alpine A424",
+    "description": "Alpine Endurance Team 2025 #36:EC"
+  },
+  "alpineenduranceteam202536lm": {
+    "manufacturer": "Alpine",
+    "model": "WEC 2025, Hypercar, Alpine A424",
+    "description": "Alpine Endurance Team 2025 #36:LM"
+  },
+  "alpineenduranceteam202635lm": {
+    "manufacturer": "Alpine",
+    "model": "WEC 2026, Hypercar, Alpine A424",
+    "description": "Alpine Endurance Team 2026 #35:LM"
+  },
+  "alpineenduranceteam202635wec": {
+    "manufacturer": "Alpine",
+    "model": "WEC 2026, Hypercar, Alpine A424",
+    "description": "Alpine Endurance Team 2026 #35:WEC"
+  },
+  "alpineenduranceteam202636lm": {
+    "manufacturer": "Alpine",
+    "model": "WEC 2026, Hypercar, Alpine A424",
+    "description": "Alpine Endurance Team 2026 #36:LM"
+  },
+  "alpineenduranceteam202636wec": {
+    "manufacturer": "Alpine",
+    "model": "WEC 2026, Hypercar, Alpine A424",
+    "description": "Alpine Endurance Team 2026 #36:WEC"
+  },
+  "aobytf99elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "AO by TF #99:ELMS25"
+  },
+  "aobytf202414lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "AO by TF 2024 #14:LM"
+  },
+  "aobytf2025199lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "AO by TF 2025 #199:LM"
+  },
+  "astonmartinthorteam2025007ec": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2025, Hypercar, Aston Martin Valkyrie LMH",
+    "description": "Aston Martin THOR Team 2025 #007:EC"
+  },
+  "astonmartinthorteam2025007lm": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2025, Hypercar, Aston Martin Valkyrie LMH",
+    "description": "Aston Martin THOR Team 2025 #007:LM"
+  },
+  "astonmartinthorteam2025007qa": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2025, Hypercar, Aston Martin Valkyrie LMH",
+    "description": "Aston Martin THOR Team 2025 #007:QA"
+  },
+  "astonmartinthorteam2025009ec": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2025, Hypercar, Aston Martin Valkyrie LMH",
+    "description": "Aston Martin THOR Team 2025 #009:EC"
+  },
+  "astonmartinthorteam2025009lm": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2025, Hypercar, Aston Martin Valkyrie LMH",
+    "description": "Aston Martin THOR Team 2025 #009:LM"
+  },
+  "astonmartinthorteam2025009qa": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2025, Hypercar, Aston Martin Valkyrie LMH",
+    "description": "Aston Martin THOR Team 2025 #009:QA"
+  },
+  "astonmartinthorteam2026007lm": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2026, Hypercar, Aston Martin Valkyrie LMH",
+    "description": "Aston Martin THOR Team 2026 #007:LM"
+  },
+  "astonmartinthorteam2026007wec": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2026, Hypercar, Aston Martin Valkyrie LMH",
+    "description": "Aston Martin THOR Team 2026 #007:WEC"
+  },
+  "astonmartinthorteam2026009lm": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2026, Hypercar, Aston Martin Valkyrie LMH",
+    "description": "Aston Martin THOR Team 2026 #009:LM"
+  },
+  "astonmartinthorteam2026009wec": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2026, Hypercar, Aston Martin Valkyrie LMH",
+    "description": "Aston Martin THOR Team 2026 #009:WEC"
+  },
+  "awaracing202513lm": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2025, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "AWA Racing 2025 #13:LM"
+  },
+  "awaracing202513lm2": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2025, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "AWA Racing 2025 #13:LM2"
+  },
+  "bmwmteamwrt202415ec": {
+    "manufacturer": "BMW",
+    "model": "WEC 2024, Hypercar, BMW M Hybrid V8",
+    "description": "BMW M Team WRT 2024 #15:EC"
+  },
+  "bmwmteamwrt202415lm": {
+    "manufacturer": "BMW",
+    "model": "WEC 2024, Hypercar, BMW M Hybrid V8",
+    "description": "BMW M Team WRT 2024 #15:LM"
+  },
+  "bmwmteamwrt202415pl": {
+    "manufacturer": "BMW",
+    "model": "WEC 2024, Hypercar, BMW M Hybrid V8",
+    "description": "BMW M Team WRT 2024 #15:PL"
+  },
+  "bmwmteamwrt202420ec": {
+    "manufacturer": "BMW",
+    "model": "WEC 2024, Hypercar, BMW M Hybrid V8",
+    "description": "BMW M Team WRT 2024 #20:EC"
+  },
+  "bmwmteamwrt202420lm": {
+    "manufacturer": "BMW",
+    "model": "WEC 2024, Hypercar, BMW M Hybrid V8",
+    "description": "BMW M Team WRT 2024 #20:LM"
+  },
+  "bmwmteamwrt202420pl": {
+    "manufacturer": "BMW",
+    "model": "WEC 2024, Hypercar, BMW M Hybrid V8",
+    "description": "BMW M Team WRT 2024 #20:PL"
+  },
+  "bmwmteamwrt202515lm": {
+    "manufacturer": "BMW",
+    "model": "WEC 2025, Hypercar, BMW M Hybrid V8",
+    "description": "BMW M Team WRT 2025 #15:LM"
+  },
+  "bmwmteamwrt202515spa": {
+    "manufacturer": "BMW",
+    "model": "WEC 2025, Hypercar, BMW M Hybrid V8",
+    "description": "BMW M Team WRT 2025 #15:SPA"
+  },
+  "bmwmteamwrt202515wec": {
+    "manufacturer": "BMW",
+    "model": "WEC 2025, Hypercar, BMW M Hybrid V8",
+    "description": "BMW M Team WRT 2025 #15:WEC"
+  },
+  "bmwmteamwrt202520lm": {
+    "manufacturer": "BMW",
+    "model": "WEC 2025, Hypercar, BMW M Hybrid V8",
+    "description": "BMW M Team WRT 2025 #20:LM"
+  },
+  "bmwmteamwrt202520spa": {
+    "manufacturer": "BMW",
+    "model": "WEC 2025, Hypercar, BMW M Hybrid V8",
+    "description": "BMW M Team WRT 2025 #20:SPA"
+  },
+  "bmwmteamwrt202520wec": {
+    "manufacturer": "BMW",
+    "model": "WEC 2025, Hypercar, BMW M Hybrid V8",
+    "description": "BMW M Team WRT 2025 #20:WEC"
+  },
+  "bmwmteamwrt202615lm": {
+    "manufacturer": "BMW",
+    "model": "WEC 2026, Hypercar, BMW M Hybrid V8",
+    "description": "BMW M Team WRT 2026 #15:LM"
+  },
+  "bmwmteamwrt202615wec": {
+    "manufacturer": "BMW",
+    "model": "WEC 2026, Hypercar, BMW M Hybrid V8",
+    "description": "BMW M Team WRT 2026 #15:WEC"
+  },
+  "bmwmteamwrt202620lm": {
+    "manufacturer": "BMW",
+    "model": "WEC 2026, Hypercar, BMW M Hybrid V8",
+    "description": "BMW M Team WRT 2026 #20:LM"
+  },
+  "bmwmteamwrt202620wec": {
+    "manufacturer": "BMW",
+    "model": "WEC 2026, Hypercar, BMW M Hybrid V8",
+    "description": "BMW M Team WRT 2026 #20:WEC"
+  },
+  "cadillachertzteamjota202512lm": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2025, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac Hertz Team Jota 2025 #12:LM"
+  },
+  "cadillachertzteamjota202512wec": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2025, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac Hertz Team Jota 2025 #12:WEC"
+  },
+  "cadillachertzteamjota202538lm": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2025, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac Hertz Team Jota 2025 #38:LM"
+  },
+  "cadillachertzteamjota202538wec": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2025, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac Hertz Team Jota 2025 #38:WEC"
+  },
+  "cadillachertzteamjota202612lm": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2026, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac Hertz Team Jota 2026 #12:LM"
+  },
+  "cadillachertzteamjota202612wec": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2026, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac Hertz Team Jota 2026 #12:WEC"
+  },
+  "cadillachertzteamjota202638lm": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2026, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac Hertz Team Jota 2026 #38:LM"
+  },
+  "cadillachertzteamjota202638wec": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2026, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac Hertz Team Jota 2026 #38:WEC"
+  },
+  "cadillacracing2ec": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2023, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac Racing #2:EC"
+  },
+  "cadillacracing2lm": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2023, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac Racing #2:LM"
+  },
+  "cadillacracing3lm": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2023, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac Racing #3:LM"
+  },
+  "cadillacracing3sp": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2023, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac Racing #3:SP"
+  },
+  "cadillacracing20242ec": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2024, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac Racing 2024 #2:EC"
+  },
+  "cadillacracing20242lm": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2024, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac Racing 2024 #2:LM"
+  },
+  "cadillacracing20243lm": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2024, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac Racing 2024 #3:LM"
+  },
+  "cadillacwhelen2025311lm": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2025, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac Whelen 2025 #311:LM"
+  },
+  "cadillacwtr2025101lm": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2025, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac WTR 2025 #101:LM"
+  },
+  "cadillacwtr2026101lm": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2026, Hypercar, Cadillac V-Series.R",
+    "description": "Cadillac WTR 2026 #101:LM"
+  },
+  "clxpurerxcing37elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "CLX - Pure Rxcing #37:ELMS25"
+  },
+  "clxpurerxcing202537lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "CLX - Pure Rxcing 2025 #37:LM"
+  },
+  "clxmotorsport17elms25": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2025, LMP3, Ligier JS P325",
+    "description": "CLX Motorsport #17:ELMS25"
+  },
+  "clxmotorsport17portimao": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2025, LMP3, Ligier JS P325",
+    "description": "CLX Motorsport #17:Portimao"
+  },
+  "clxmotorsport47elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "CLX Motorsport #47:ELMS25"
+  },
+  "coolracing37lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Cool Racing #37:LM"
+  },
+  "coolracing47lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Cool Racing #47:LM"
+  },
+  "coolracing202437lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "Cool Racing 2024 #37:LM"
+  },
+  "coolracing202447lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "Cool Racing 2024 #47:LM"
+  },
+  "corvetteracing33ec": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2023, GTE, Corvette C8.R GTE",
+    "description": "Corvette Racing #33:EC"
+  },
+  "corvetteracing33lm": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2023, GTE, Corvette C8.R GTE",
+    "description": "Corvette Racing #33:LM"
+  },
+  "crowdstrikeracingbyapr202445lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "Crowdstrike Racing by APR 2024 #45:LM"
+  },
+  "dstationracing777br": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2023, GTE, Aston Martin Vantage AMR",
+    "description": "D'station Racing #777:BR"
+  },
+  "dstationracing777ec": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2023, GTE, Aston Martin Vantage AMR",
+    "description": "D'station Racing #777:EC"
+  },
+  "dstationracing777lm": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2023, GTE, Aston Martin Vantage AMR",
+    "description": "D'station Racing #777:LM"
+  },
+  "dstationracing2024777ec": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2024, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "D'Station Racing 2024 #777:EC"
+  },
+  "dstationracing2024777lm": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2024, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "D'Station Racing 2024 #777:LM"
+  },
+  "dempseyprotonracing77ec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "Dempsey-Proton Racing #77:EC"
+  },
+  "dempseyprotonracing77lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "Dempsey-Proton Racing #77:LM"
+  },
+  "dkrengineering3elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "DKR Engineering #3:ELMS25"
+  },
+  "dkrengineering43lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "DKR Engineering #43:LM"
+  },
+  "dkrengineering4elms25": {
+    "manufacturer": "Ginetta",
+    "model": "ELMS 2025, LMP3, Ginetta G61-LT-P325 Evo",
+    "description": "DKR Engineering #4:ELMS25"
+  },
+  "dkrengineering202433lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "DKR Engineering 2024 #33:LM"
+  },
+  "duqueineteam30elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "Duqueine Team #30:ELMS25"
+  },
+  "duqueineteam30lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Duqueine Team #30:LM"
+  },
+  "duqueineteam202430lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "Duqueine Team 2024 #30:LM"
+  },
+  "eurointernational11elms25": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2025, LMP3, Ligier JS P325",
+    "description": "EuroInternational #11:ELMS25"
+  },
+  "ferrariafcorse50ec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse #50:EC"
+  },
+  "ferrariafcorse50lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse #50:LM"
+  },
+  "ferrariafcorse51ec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse #51:EC"
+  },
+  "ferrariafcorse51lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse #51:LM"
+  },
+  "ferrariafcorse202450ec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse 2024 #50:EC"
+  },
+  "ferrariafcorse202450jkr": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse 2024 #50:JKR"
+  },
+  "ferrariafcorse202450lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse 2024 #50:LM"
+  },
+  "ferrariafcorse202451ec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse 2024 #51:EC"
+  },
+  "ferrariafcorse202451jkr": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse 2024 #51:JKR"
+  },
+  "ferrariafcorse202451lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse 2024 #51:LM"
+  },
+  "ferrariafcorse202550lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2025, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse 2025 #50:LM"
+  },
+  "ferrariafcorse202550wec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2025, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse 2025 #50:WEC"
+  },
+  "ferrariafcorse202551lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2025, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse 2025 #51:LM"
+  },
+  "ferrariafcorse202551wec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2025, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse 2025 #51:WEC"
+  },
+  "ferrariafcorse202650lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse 2026 #50:LM"
+  },
+  "ferrariafcorse202650wec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse 2026 #50:WEC"
+  },
+  "ferrariafcorse202651lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse 2026 #51:LM"
+  },
+  "ferrariafcorse202651wec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, Hypercar, Ferrari 499P",
+    "description": "Ferrari AF Corse 2026 #51:WEC"
+  },
+  "floydvanwallracingteam4be": {
+    "manufacturer": "Vanwall",
+    "model": "WEC 2023, Hypercar, Vanwall 680",
+    "description": "Floyd Vanwall Racing Team #4:BE"
+  },
+  "floydvanwallracingteam4br": {
+    "manufacturer": "Vanwall",
+    "model": "WEC 2023, Hypercar, Vanwall 680",
+    "description": "Floyd Vanwall Racing Team #4:BR"
+  },
+  "floydvanwallracingteam4it": {
+    "manufacturer": "Vanwall",
+    "model": "WEC 2023, Hypercar, Vanwall 680",
+    "description": "Floyd Vanwall Racing Team #4:IT"
+  },
+  "floydvanwallracingteam4jp": {
+    "manufacturer": "Vanwall",
+    "model": "WEC 2023, Hypercar, Vanwall 680",
+    "description": "Floyd Vanwall Racing Team #4:JP"
+  },
+  "floydvanwallracingteam4lm": {
+    "manufacturer": "Vanwall",
+    "model": "WEC 2023, Hypercar, Vanwall 680",
+    "description": "Floyd Vanwall Racing Team #4:LM"
+  },
+  "floydvanwallracingteam4pr": {
+    "manufacturer": "Vanwall",
+    "model": "WEC 2023, Hypercar, Vanwall 680",
+    "description": "Floyd Vanwall Racing Team #4:PR"
+  },
+  "floydvanwallracingteam4us": {
+    "manufacturer": "Vanwall",
+    "model": "WEC 2023, Hypercar, Vanwall 680",
+    "description": "Floyd Vanwall Racing Team #4:US"
+  },
+  "garage59202610wec": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Garage 59 2026 #10:WEC"
+  },
+  "garage59202658wec": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Garage 59 2026 #58:WEC"
+  },
+  "genesismagmaracing202617lm": {
+    "manufacturer": "Genesis",
+    "model": "WEC 2026, Hypercar, Genesis GMR001",
+    "description": "Genesis Magma Racing 2026 #17:LM"
+  },
+  "genesismagmaracing202617wec": {
+    "manufacturer": "Genesis",
+    "model": "WEC 2026, Hypercar, Genesis GMR001",
+    "description": "Genesis Magma Racing 2026 #17:WEC"
+  },
+  "genesismagmaracing202619lm": {
+    "manufacturer": "Genesis",
+    "model": "WEC 2026, Hypercar, Genesis GMR001",
+    "description": "Genesis Magma Racing 2026 #19:LM"
+  },
+  "genesismagmaracing202619wec": {
+    "manufacturer": "Genesis",
+    "model": "WEC 2026, Hypercar, Genesis GMR001",
+    "description": "Genesis Magma Racing 2026 #19:WEC"
+  },
+  "glickenhausracing708lm": {
+    "manufacturer": "Glickenhaus",
+    "model": "WEC 2023, Hypercar, Glickenhaus SCG007",
+    "description": "Glickenhaus Racing #708:LM"
+  },
+  "glickenhausracing708pr": {
+    "manufacturer": "Glickenhaus",
+    "model": "WEC 2023, Hypercar, Glickenhaus SCG007",
+    "description": "Glickenhaus Racing #708:PR"
+  },
+  "glickenhausracing709lm": {
+    "manufacturer": "Glickenhaus",
+    "model": "WEC 2023, Hypercar, Glickenhaus SCG007",
+    "description": "Glickenhaus Racing #709:LM"
+  },
+  "gmbmotorsport55lm": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2023, GTE, Aston Martin Vantage AMR",
+    "description": "GMB Motorsport #55:LM"
+  },
+  "grracing86br": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "GR Racing #86:BR"
+  },
+  "grracing86ec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "GR Racing #86:EC"
+  },
+  "grracing86lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "GR Racing #86:LM"
+  },
+  "grracing202486lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, GT3, Ferrari 296 LMGT3",
+    "description": "GR Racing 2024 #86:LM"
+  },
+  "grracing202586elms": {
+    "manufacturer": "Ferrari",
+    "model": "ELMS 2025, GT3, Ferrari 296 LMGT3",
+    "description": "GR Racing 2025 #86:ELMS"
+  },
+  "graffracing39lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Graff Racing #39:LM"
+  },
+  "heartofracingteam202427ec": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2024, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "Heart of Racing Team 2024 #27:EC"
+  },
+  "heartofracingteam202427lm": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2024, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "Heart of Racing Team 2024 #27:LM"
+  },
+  "heartofracingteam202527lm": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2025, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "Heart of Racing Team 2025 #27:LM"
+  },
+  "heartofracingteam202527wec": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2025, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "Heart of Racing Team 2025 #27:WEC"
+  },
+  "heartofracingteam202623wec": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2026, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "Heart of Racing Team 2026 #23:WEC"
+  },
+  "heartofracingteam202627wec": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2026, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "Heart of Racing Team 2026 #27:WEC"
+  },
+  "hertzteamjota38ec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, Hypercar, Porsche 963",
+    "description": "Hertz Team Jota #38:EC"
+  },
+  "hertzteamjota38lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, Hypercar, Porsche 963",
+    "description": "Hertz Team Jota #38:LM"
+  },
+  "hertzteamjota202412ec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, Hypercar, Porsche 963",
+    "description": "Hertz Team Jota 2024 #12:EC"
+  },
+  "hertzteamjota202412lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, Hypercar, Porsche 963",
+    "description": "Hertz Team Jota 2024 #12:LM"
+  },
+  "hertzteamjota202438ec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, Hypercar, Porsche 963",
+    "description": "Hertz Team Jota 2024 #38:EC"
+  },
+  "hertzteamjota202438lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, Hypercar, Porsche 963",
+    "description": "Hertz Team Jota 2024 #38:LM"
+  },
+  "hertzteamjota202438us": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, Hypercar, Porsche 963",
+    "description": "Hertz Team Jota 2024 #38:US"
+  },
+  "idecsport18elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "IDEC Sport #18:ELMS25"
+  },
+  "idecsport28elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "IDEC Sport #28:ELMS25"
+  },
+  "idecsport28portimao": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "IDEC Sport #28:Portimao"
+  },
+  "idecsport48lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "IDEC Sport #48:LM"
+  },
+  "idecsport202428lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "IDEC Sport 2024 #28:LM"
+  },
+  "idecsport202518lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "IDEC Sport 2025 #18:LM"
+  },
+  "idecsport202528lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "IDEC Sport 2025 #28:LM"
+  },
+  "inceptionracing202470lm": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2024, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Inception Racing 2024 #70:LM"
+  },
+  "intereuropolcompetition32lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Inter Europol Competition #32:LM"
+  },
+  "intereuropolcompetition34ec": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Inter Europol Competition #34:EC"
+  },
+  "intereuropolcompetition34elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "Inter Europol Competition #34:ELMS25"
+  },
+  "intereuropolcompetition34lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Inter Europol Competition #34:LM"
+  },
+  "intereuropolcompetition43elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "Inter Europol Competition #43:ELMS25"
+  },
+  "intereuropolcompetition88elms25": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2025, LMP3, Ligier JS P325",
+    "description": "Inter Europol Competition #88:ELMS25"
+  },
+  "intereuropolcompetition202434lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "Inter Europol Competition 2024 #34:LM"
+  },
+  "intereuropolcompetition202534lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "Inter Europol Competition 2025 #34:LM"
+  },
+  "intereuropolcompetition202543lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "Inter Europol Competition 2025 #43:LM"
+  },
+  "irondames85ec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "Iron Dames #85:EC"
+  },
+  "irondames85lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "Iron Dames #85:LM"
+  },
+  "irondames202485ec2": {
+    "manufacturer": "Lamborghini",
+    "model": "WEC 2024, GT3, Lamborghini Huracan LMGT3 Evo2",
+    "description": "Iron Dames 2024 #85:EC2"
+  },
+  "irondames202485lm": {
+    "manufacturer": "Lamborghini",
+    "model": "WEC 2024, GT3, Lamborghini Huracan LMGT3 Evo2",
+    "description": "Iron Dames 2024 #85:LM"
+  },
+  "irondames202485wec": {
+    "manufacturer": "Lamborghini",
+    "model": "WEC 2024, GT3, Lamborghini Huracan LMGT3 Evo2",
+    "description": "Iron Dames 2024 #85:WEC"
+  },
+  "irondames202585elms": {
+    "manufacturer": "Porsche",
+    "model": "ELMS 2025, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "Iron Dames 2025 #85:ELMS"
+  },
+  "irondames202585lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2025, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "Iron Dames 2025 #85:LM"
+  },
+  "irondames202585wec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2025, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "Iron Dames 2025 #85:WEC"
+  },
+  "ironlynx60ec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "Iron Lynx #60:EC"
+  },
+  "ironlynx60lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "Iron Lynx #60:LM"
+  },
+  "ironlynxproton9elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "Iron Lynx - Proton #9:ELMS25"
+  },
+  "ironlynxproton20259lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "Iron Lynx - Proton 2025 #9:LM"
+  },
+  "ironlynx202460ec2": {
+    "manufacturer": "Lamborghini",
+    "model": "WEC 2024, GT3, Lamborghini Huracan LMGT3 Evo2",
+    "description": "Iron Lynx 2024 #60:EC2"
+  },
+  "ironlynx202460lm": {
+    "manufacturer": "Lamborghini",
+    "model": "WEC 2024, GT3, Lamborghini Huracan LMGT3 Evo2",
+    "description": "Iron Lynx 2024 #60:LM"
+  },
+  "ironlynx202460wec": {
+    "manufacturer": "Lamborghini",
+    "model": "WEC 2024, GT3, Lamborghini Huracan LMGT3 Evo2",
+    "description": "Iron Lynx 2024 #60:WEC"
+  },
+  "ironlynx202560ec2": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2025, GT3, Mercedes-AMG LMGT3",
+    "description": "Iron Lynx 2025 #60:EC2"
+  },
+  "ironlynx202560lm": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2025, GT3, Mercedes-AMG LMGT3",
+    "description": "Iron Lynx 2025 #60:LM"
+  },
+  "ironlynx202560wec": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2025, GT3, Mercedes-AMG LMGT3",
+    "description": "Iron Lynx 2025 #60:WEC"
+  },
+  "ironlynx202560wec3": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2025, GT3, Mercedes-AMG LMGT3",
+    "description": "Iron Lynx 2025 #60:WEC3"
+  },
+  "ironlynx202561ec2": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2025, GT3, Mercedes-AMG LMGT3",
+    "description": "Iron Lynx 2025 #61:EC2"
+  },
+  "ironlynx202561ec3": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2025, GT3, Mercedes-AMG LMGT3",
+    "description": "Iron Lynx 2025 #61:EC3"
+  },
+  "ironlynx202561lm": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2025, GT3, Mercedes-AMG LMGT3",
+    "description": "Iron Lynx 2025 #61:LM"
+  },
+  "ironlynx202561wec": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2025, GT3, Mercedes-AMG LMGT3",
+    "description": "Iron Lynx 2025 #61:WEC"
+  },
+  "ironlynx202563elms": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "ELMS 2025, GT3, Mercedes-AMG LMGT3",
+    "description": "Iron Lynx 2025 #63:ELMS"
+  },
+  "ironlynx202563lm": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2025, GT3, Mercedes-AMG LMGT3",
+    "description": "Iron Lynx 2025 #63:LM"
+  },
+  "ironlynx202661lm": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2026, GT3, Mercedes-AMG LMGT3",
+    "description": "Iron Lynx 2026 #61:LM"
+  },
+  "ironlynx202661wec": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2026, GT3, Mercedes-AMG LMGT3",
+    "description": "Iron Lynx 2026 #61:WEC"
+  },
+  "ironlynx202679lm": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2026, GT3, Mercedes-AMG LMGT3",
+    "description": "Iron Lynx 2026 #79:LM"
+  },
+  "ironlynx202679wec": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2026, GT3, Mercedes-AMG LMGT3",
+    "description": "Iron Lynx 2026 #79:WEC"
+  },
+  "isottatipo6202411br": {
+    "manufacturer": "Isotta Fraschini",
+    "model": "WEC 2024, Hypercar, Isotta Fraschini TIPO6",
+    "description": "Isotta TIPO6 2024 #11:BR"
+  },
+  "isottatipo6202411lm": {
+    "manufacturer": "Isotta Fraschini",
+    "model": "WEC 2024, Hypercar, Isotta Fraschini TIPO6",
+    "description": "Isotta TIPO6 2024 #11:LM"
+  },
+  "isottatipo6202411wec": {
+    "manufacturer": "Isotta Fraschini",
+    "model": "WEC 2024, Hypercar, Isotta Fraschini TIPO6",
+    "description": "Isotta TIPO6 2024 #11:WEC"
+  },
+  "jmwmotorsport66lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "JMW Motorsport #66:LM"
+  },
+  "jmwmotorsport2024202466lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, GT3, Ferrari 296 LMGT3",
+    "description": "JMW Motorsport 2024 2024 #66:LM"
+  },
+  "jmwmotorsport202566elms": {
+    "manufacturer": "Ferrari",
+    "model": "ELMS 2025, GT3, Ferrari 296 LMGT3",
+    "description": "JMW Motorsport 2025 #66:ELMS"
+  },
+  "jota28ec": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "JOTA #28:EC"
+  },
+  "jota28lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "JOTA #28:LM"
+  },
+  "jota48pm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "JOTA #48:PM"
+  },
+  "jota48se": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "JOTA #48:SE"
+  },
+  "kesselracing57bl": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "Kessel Racing #57:BL"
+  },
+  "kesselracing57br": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "Kessel Racing #57:BR"
+  },
+  "kesselracing57fu": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "Kessel Racing #57:FU"
+  },
+  "kesselracing57lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "Kessel Racing #57:LM"
+  },
+  "kesselracing57mz": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "Kessel Racing #57:MZ"
+  },
+  "kesselracing74lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "Kessel Racing #74:LM"
+  },
+  "kesselracing202557elms": {
+    "manufacturer": "Ferrari",
+    "model": "ELMS 2025, GT3, Ferrari 296 LMGT3",
+    "description": "Kessel Racing 2025 #57:ELMS"
+  },
+  "kesselracing202557lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2025, GT3, Ferrari 296 LMGT3",
+    "description": "Kessel Racing 2025 #57:LM"
+  },
+  "kesselracing202574elms": {
+    "manufacturer": "Ferrari",
+    "model": "ELMS 2025, GT3, Ferrari 296 LMGT3",
+    "description": "Kessel Racing 2025 #74:ELMS"
+  },
+  "lamborghiniironlynx202419lm": {
+    "manufacturer": "Lamborghini",
+    "model": "WEC 2024, Hypercar, Lamborghini SC63",
+    "description": "Lamborghini Iron Lynx 2024 #19:LM"
+  },
+  "lamborghiniironlynx202463ec": {
+    "manufacturer": "Lamborghini",
+    "model": "WEC 2024, Hypercar, Lamborghini SC63",
+    "description": "Lamborghini Iron Lynx 2024 #63:EC"
+  },
+  "lamborghiniironlynx202463lm": {
+    "manufacturer": "Lamborghini",
+    "model": "WEC 2024, Hypercar, Lamborghini SC63",
+    "description": "Lamborghini Iron Lynx 2024 #63:LM"
+  },
+  "logitechgchallenge10lgc": {
+    "manufacturer": "McLaren",
+    "model": "Logitech 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Logitech G Challenge #10:LGC"
+  },
+  "logitechgchallenge11lgc": {
+    "manufacturer": "McLaren",
+    "model": "Logitech 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Logitech G Challenge #11:LGC"
+  },
+  "logitechgchallenge12lgc": {
+    "manufacturer": "McLaren",
+    "model": "Logitech 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Logitech G Challenge #12:LGC"
+  },
+  "logitechgchallenge1lgc": {
+    "manufacturer": "McLaren",
+    "model": "Logitech 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Logitech G Challenge #1:LGC"
+  },
+  "logitechgchallenge2lgc": {
+    "manufacturer": "McLaren",
+    "model": "Logitech 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Logitech G Challenge #2:LGC"
+  },
+  "logitechgchallenge3lgc": {
+    "manufacturer": "McLaren",
+    "model": "Logitech 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Logitech G Challenge #3:LGC"
+  },
+  "logitechgchallenge4lgc": {
+    "manufacturer": "McLaren",
+    "model": "Logitech 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Logitech G Challenge #4:LGC"
+  },
+  "logitechgchallenge5lgc": {
+    "manufacturer": "McLaren",
+    "model": "Logitech 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Logitech G Challenge #5:LGC"
+  },
+  "logitechgchallenge6lgc": {
+    "manufacturer": "McLaren",
+    "model": "Logitech 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Logitech G Challenge #6:LGC"
+  },
+  "logitechgchallenge7lgc": {
+    "manufacturer": "McLaren",
+    "model": "Logitech 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Logitech G Challenge #7:LGC"
+  },
+  "logitechgchallenge8lgc": {
+    "manufacturer": "McLaren",
+    "model": "Logitech 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Logitech G Challenge #8:LGC"
+  },
+  "logitechgchallenge9lgc": {
+    "manufacturer": "McLaren",
+    "model": "Logitech 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Logitech G Challenge #9:LGC"
+  },
+  "mracing68elms25": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2025, LMP3, Ligier JS P325",
+    "description": "M Racing #68:ELMS25"
+  },
+  "manthey1stphorm202592lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2025, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "Manthey 1st Phorm 2025 #92:LM"
+  },
+  "manthey1stphorm202592wec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2025, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "Manthey 1st Phorm 2025 #92:WEC"
+  },
+  "manthey202590lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2025, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "Manthey 2025 #90:LM"
+  },
+  "mantheydkengineering202691wec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2026, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "Manthey DK Engineering 2026 #91:WEC"
+  },
+  "mantheyema202491ec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "Manthey Ema 2024 #91:EC"
+  },
+  "mantheyema202491lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "Manthey Ema 2024 #91:LM"
+  },
+  "mantheypurerxcing202492ec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "Manthey PureRxcing 2024 #92:EC"
+  },
+  "mantheypurerxcing202492lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "Manthey PureRxcing 2024 #92:LM"
+  },
+  "nielsenracing14lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Nielsen Racing #14:LM"
+  },
+  "nielsenracing24elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "Nielsen Racing #24:ELMS25"
+  },
+  "nielsenracing27elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "Nielsen Racing #27:ELMS25"
+  },
+  "nielsenracing202424lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "Nielsen Racing 2024 #24:LM"
+  },
+  "nielsenracing202524lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "Nielsen Racing 2025 #24:LM"
+  },
+  "northwestamr98pl": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2023, GTE, Aston Martin Vantage AMR",
+    "description": "Northwest AMR #98:PL"
+  },
+  "ortbytf25al": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2023, GTE, Aston Martin Vantage AMR",
+    "description": "ORT by TF #25:AL"
+  },
+  "ortbytf25bl": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2023, GTE, Aston Martin Vantage AMR",
+    "description": "ORT by TF #25:BL"
+  },
+  "ortbytf25lm": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2023, GTE, Aston Martin Vantage AMR",
+    "description": "ORT by TF #25:LM"
+  },
+  "panisracing65lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Panis Racing #65:LM"
+  },
+  "panisracing202465lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "Panis Racing 2024 #65:LM"
+  },
+  "peugeottotalenergies93al": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2023, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies #93:AL"
+  },
+  "peugeottotalenergies93bl": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2023, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies #93:BL"
+  },
+  "peugeottotalenergies93lm": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2023, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies #93:LM"
+  },
+  "peugeottotalenergies94al": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2023, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies #94:AL"
+  },
+  "peugeottotalenergies94bl": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2023, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies #94:BL"
+  },
+  "peugeottotalenergies94lm": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2023, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies #94:LM"
+  },
+  "peugeottotalenergies202493ec": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2024, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies 2024 #93:EC"
+  },
+  "peugeottotalenergies202493lm": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2024, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies 2024 #93:LM"
+  },
+  "peugeottotalenergies202493qa": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2024, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies 2024 #93:QA"
+  },
+  "peugeottotalenergies202494ec": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2024, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies 2024 #94:EC"
+  },
+  "peugeottotalenergies202494lm": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2024, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies 2024 #94:LM"
+  },
+  "peugeottotalenergies202494qa": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2024, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies 2024 #94:QA"
+  },
+  "peugeottotalenergies202593ec": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2025, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies 2025 #93:EC"
+  },
+  "peugeottotalenergies202593lm": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2025, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies 2025 #93:LM"
+  },
+  "peugeottotalenergies202594ec": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2025, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies 2025 #94:EC"
+  },
+  "peugeottotalenergies202594lm": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2025, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies 2025 #94:LM"
+  },
+  "peugeottotalenergies202693lm": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2026, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies 2026 #93:LM"
+  },
+  "peugeottotalenergies202693wec": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2026, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies 2026 #93:WEC"
+  },
+  "peugeottotalenergies202694lm": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2026, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies 2026 #94:LM"
+  },
+  "peugeottotalenergies202694wec": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2026, Hypercar, Peugeot 9x8",
+    "description": "Peugeot TotalEnergies 2026 #94:WEC"
+  },
+  "porschepenskemotorsport5ec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport #5:EC"
+  },
+  "porschepenskemotorsport5lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport #5:LM"
+  },
+  "porschepenskemotorsport6ec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport #6:EC"
+  },
+  "porschepenskemotorsport6lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport #6:LM"
+  },
+  "porschepenskemotorsport75lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport #75:LM"
+  },
+  "porschepenskemotorsport20244lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport 2024 #4:LM"
+  },
+  "porschepenskemotorsport20245ec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport 2024 #5:EC"
+  },
+  "porschepenskemotorsport20245lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport 2024 #5:LM"
+  },
+  "porschepenskemotorsport20246ec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport 2024 #6:EC"
+  },
+  "porschepenskemotorsport20246lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport 2024 #6:LM"
+  },
+  "porschepenskemotorsport20254lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2025, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport 2025 #4:LM"
+  },
+  "porschepenskemotorsport20255ec2": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2025, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport 2025 #5:EC2"
+  },
+  "porschepenskemotorsport20255lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2025, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport 2025 #5:LM"
+  },
+  "porschepenskemotorsport20255wec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2025, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport 2025 #5:WEC"
+  },
+  "porschepenskemotorsport20256lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2025, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport 2025 #6:LM"
+  },
+  "porschepenskemotorsport20256spa": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2025, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport 2025 #6:SPA"
+  },
+  "porschepenskemotorsport20256wec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2025, Hypercar, Porsche 963",
+    "description": "Porsche Penske Motorsport 2025 #6:WEC"
+  },
+  "premaracing63ec": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Prema Racing #63:EC"
+  },
+  "premaracing63fu": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Prema Racing #63:FU"
+  },
+  "premaracing63lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Prema Racing #63:LM"
+  },
+  "premaracing63mz": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Prema Racing #63:MZ"
+  },
+  "premaracing9g1": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Prema Racing #9:G1"
+  },
+  "premaracing9g2": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Prema Racing #9:G2"
+  },
+  "premaracing9lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Prema Racing #9:LM"
+  },
+  "project1ao56fb": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "Project 1 - AO #56:FB"
+  },
+  "project1ao56lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "Project 1 - AO #56:LM"
+  },
+  "project1ao56mz": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "Project 1 - AO #56:MZ"
+  },
+  "project1ao56sp": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "Project 1 - AO #56:SP"
+  },
+  "protoncompetition16lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "Proton Competition #16:LM"
+  },
+  "protoncompetition77elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "Proton Competition #77:ELMS25"
+  },
+  "protoncompetition88ec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "Proton Competition #88:EC"
+  },
+  "protoncompetition88lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "Proton Competition #88:LM"
+  },
+  "protoncompetition911lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "Proton Competition #911:LM"
+  },
+  "protoncompetition99al": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, Hypercar, Porsche 963",
+    "description": "Proton Competition #99:AL"
+  },
+  "protoncompetition202499ec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, Hypercar, Porsche 963",
+    "description": "Proton Competition 2024 #99:EC"
+  },
+  "protoncompetition202499lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, Hypercar, Porsche 963",
+    "description": "Proton Competition 2024 #99:LM"
+  },
+  "protoncompetition202499we2": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, Hypercar, Porsche 963",
+    "description": "Proton Competition 2024 #99:WE2"
+  },
+  "protoncompetition20249lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "Proton Competition 2024 #9:LM"
+  },
+  "protoncompetition202511lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "Proton Competition 2025 #11:LM"
+  },
+  "protoncompetition202560elms": {
+    "manufacturer": "Porsche",
+    "model": "ELMS 2025, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "Proton Competition 2025 #60:ELMS"
+  },
+  "protoncompetition202577lm": {
+    "manufacturer": "Ford",
+    "model": "WEC 2025, GT3, Ford Mustang LMGT3",
+    "description": "Proton Competition 2025 #77:LM"
+  },
+  "protoncompetition202577wec": {
+    "manufacturer": "Ford",
+    "model": "WEC 2025, GT3, Ford Mustang LMGT3",
+    "description": "Proton Competition 2025 #77:WEC"
+  },
+  "protoncompetition202588lm": {
+    "manufacturer": "Ford",
+    "model": "WEC 2025, GT3, Ford Mustang LMGT3",
+    "description": "Proton Competition 2025 #88:LM"
+  },
+  "protoncompetition202588wec": {
+    "manufacturer": "Ford",
+    "model": "WEC 2025, GT3, Ford Mustang LMGT3",
+    "description": "Proton Competition 2025 #88:WEC"
+  },
+  "protoncompetition202599lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2025, Hypercar, Porsche 963",
+    "description": "Proton Competition 2025 #99:LM"
+  },
+  "protoncompetition202599wec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2025, Hypercar, Porsche 963",
+    "description": "Proton Competition 2025 #99:WEC"
+  },
+  "protoncompetition202677wec": {
+    "manufacturer": "Ford",
+    "model": "WEC 2026, GT3, Ford Mustang LMGT3",
+    "description": "Proton Competition 2026 #77:WEC"
+  },
+  "protoncompetition202688wec": {
+    "manufacturer": "Ford",
+    "model": "WEC 2026, GT3, Ford Mustang LMGT3",
+    "description": "Proton Competition 2026 #88:WEC"
+  },
+  "protonracing202444lm": {
+    "manufacturer": "Ford",
+    "model": "WEC 2024, GT3, Ford Mustang LMGT3",
+    "description": "Proton Racing 2024 #44:LM"
+  },
+  "protonracing202477lm": {
+    "manufacturer": "Ford",
+    "model": "WEC 2024, GT3, Ford Mustang LMGT3",
+    "description": "Proton Racing 2024 #77:LM"
+  },
+  "protonracing202477wec": {
+    "manufacturer": "Ford",
+    "model": "WEC 2024, GT3, Ford Mustang LMGT3",
+    "description": "Proton Racing 2024 #77:WEC"
+  },
+  "protonracing202488br": {
+    "manufacturer": "Ford",
+    "model": "WEC 2024, GT3, Ford Mustang LMGT3",
+    "description": "Proton Racing 2024 #88:BR"
+  },
+  "protonracing202488lm": {
+    "manufacturer": "Ford",
+    "model": "WEC 2024, GT3, Ford Mustang LMGT3",
+    "description": "Proton Racing 2024 #88:LM"
+  },
+  "protonracing202488sp": {
+    "manufacturer": "Ford",
+    "model": "WEC 2024, GT3, Ford Mustang LMGT3",
+    "description": "Proton Racing 2024 #88:SP"
+  },
+  "protonracing202488us": {
+    "manufacturer": "Ford",
+    "model": "WEC 2024, GT3, Ford Mustang LMGT3",
+    "description": "Proton Racing 2024 #88:US"
+  },
+  "protonracing202488wec": {
+    "manufacturer": "Ford",
+    "model": "WEC 2024, GT3, Ford Mustang LMGT3",
+    "description": "Proton Racing 2024 #88:WEC"
+  },
+  "racingspiritofléman31elms25": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2025, LMP3, Ligier JS P325",
+    "description": "Racing Spirit of Léman #31:ELMS25"
+  },
+  "racingspiritofléman202510cota": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2025, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "Racing Spirit of Léman 2025 #10:COTA"
+  },
+  "racingspiritofléman202510lm": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2025, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "Racing Spirit of Léman 2025 #10:LM"
+  },
+  "racingspiritofléman202510wec": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2025, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "Racing Spirit of Léman 2025 #10:WEC"
+  },
+  "racingspiritofléman202559elms": {
+    "manufacturer": "Aston Martin",
+    "model": "ELMS 2025, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "Racing Spirit of Léman 2025 #59:ELMS"
+  },
+  "racingteamturkey923lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Racing Team Turkey #923:LM"
+  },
+  "racingteamturkeybytf202634wec": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2026, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "Racing Team Turkey by TF 2026 #34:WEC"
+  },
+  "richardmilleafcorse2025150lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2025, GT3, Ferrari 296 LMGT3",
+    "description": "Richard Mille AF Corse 2025 #150:LM"
+  },
+  "richardmilleafcorse202550elms": {
+    "manufacturer": "Ferrari",
+    "model": "ELMS 2025, GT3, Ferrari 296 LMGT3",
+    "description": "Richard Mille AF Corse 2025 #50:ELMS"
+  },
+  "rlrmsport15elms25": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2025, LMP3, Ligier JS P325",
+    "description": "RLR MSport #15:ELMS25"
+  },
+  "rlrmsport202516lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "RLR MSport 2025 #16:LM"
+  },
+  "spiritofrace2024155lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, GT3, Ferrari 296 LMGT3",
+    "description": "Spirit Of Race 2024 #155:LM"
+  },
+  "spiritofrace202555elms": {
+    "manufacturer": "Ferrari",
+    "model": "ELMS 2025, GT3, Ferrari 296 LMGT3",
+    "description": "Spirit of Race 2025 #55:ELMS"
+  },
+  "tdsracing29elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "TDS Racing #29:ELMS25"
+  },
+  "tdsracing202529lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "TDS Racing 2025 #29:LM"
+  },
+  "teamqatarbyironlynx202662lm": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2026, GT3, Mercedes-AMG LMGT3",
+    "description": "Team Qatar by Iron Lynx 2026 #62:LM"
+  },
+  "teamvirage8elms25": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2025, LMP3, Ligier JS P325",
+    "description": "Team Virage #8:ELMS25"
+  },
+  "teamwrt31ec": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Team WRT #31:EC"
+  },
+  "teamwrt31lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Team WRT #31:LM"
+  },
+  "teamwrt41ec": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Team WRT #41:EC"
+  },
+  "teamwrt41lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Team WRT #41:LM"
+  },
+  "teamwrt202431lm": {
+    "manufacturer": "BMW",
+    "model": "WEC 2024, GT3, BMW M4 LMGT3",
+    "description": "Team WRT 2024 #31:LM"
+  },
+  "teamwrt202431we2": {
+    "manufacturer": "BMW",
+    "model": "WEC 2024, GT3, BMW M4 LMGT3",
+    "description": "Team WRT 2024 #31:WE2"
+  },
+  "teamwrt202431wec": {
+    "manufacturer": "BMW",
+    "model": "WEC 2024, GT3, BMW M4 LMGT3",
+    "description": "Team WRT 2024 #31:WEC"
+  },
+  "teamwrt202446lm": {
+    "manufacturer": "BMW",
+    "model": "WEC 2024, GT3, BMW M4 LMGT3",
+    "description": "Team WRT 2024 #46:LM"
+  },
+  "teamwrt202446we2": {
+    "manufacturer": "BMW",
+    "model": "WEC 2024, GT3, BMW M4 LMGT3",
+    "description": "Team WRT 2024 #46:WE2"
+  },
+  "teamwrt202446wec": {
+    "manufacturer": "BMW",
+    "model": "WEC 2024, GT3, BMW M4 LMGT3",
+    "description": "Team WRT 2024 #46:WEC"
+  },
+  "teamwrt202546lm": {
+    "manufacturer": "BMW",
+    "model": "WEC 2025, GT3, BMW M4 LMGT3",
+    "description": "Team WRT 2025 #46:LM"
+  },
+  "teamwrt202546wec": {
+    "manufacturer": "BMW",
+    "model": "WEC 2025, GT3, BMW M4 LMGT3",
+    "description": "Team WRT 2025 #46:WEC"
+  },
+  "teamwrt202632wec": {
+    "manufacturer": "BMW",
+    "model": "WEC 2026, GT3, BMW M4 LMGT3",
+    "description": "Team WRT 2026 #32:WEC"
+  },
+  "teamwrt202669wec": {
+    "manufacturer": "BMW",
+    "model": "WEC 2026, GT3, BMW M4 LMGT3",
+    "description": "Team WRT 2026 #69:WEC"
+  },
+  "tfsport72lm": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2023, GTE, Aston Martin Vantage AMR",
+    "description": "TF Sport #72:LM"
+  },
+  "tfsport81ec": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2024, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "TF Sport #81:EC"
+  },
+  "tfsport81lm": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2024, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "TF Sport #81:LM"
+  },
+  "tfsport82ec": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2024, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "TF Sport #82:EC"
+  },
+  "tfsport82lm": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2024, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "TF Sport #82:LM"
+  },
+  "tfsport202533lm": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2025, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "TF Sport 2025 #33:LM"
+  },
+  "tfsport202533wec": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2025, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "TF Sport 2025 #33:WEC"
+  },
+  "tfsport202581lm": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2025, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "TF Sport 2025 #81:LM"
+  },
+  "tfsport202581wec": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2025, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "TF Sport 2025 #81:WEC"
+  },
+  "tfsport202582elms": {
+    "manufacturer": "Corvette",
+    "model": "ELMS 2025, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "TF Sport 2025 #82:ELMS"
+  },
+  "tfsport202633wec": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2026, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "TF Sport 2026 #33:WEC"
+  },
+  "thebendmanthey202692wec": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2026, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "The Bend Manthey 2026 #92:WEC"
+  },
+  "thebendteamwrt202531brz": {
+    "manufacturer": "BMW",
+    "model": "WEC 2025, GT3, BMW M4 LMGT3",
+    "description": "The Bend Team WRT 2025 #31:BRZ"
+  },
+  "thebendteamwrt202531lm": {
+    "manufacturer": "BMW",
+    "model": "WEC 2025, GT3, BMW M4 LMGT3",
+    "description": "The Bend Team WRT 2025 #31:LM"
+  },
+  "thebendteamwrt202531wec": {
+    "manufacturer": "BMW",
+    "model": "WEC 2025, GT3, BMW M4 LMGT3",
+    "description": "The Bend Team WRT 2025 #31:WEC"
+  },
+  "theheartofracing98al": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2023, GTE, Aston Martin Vantage AMR",
+    "description": "The Heart of Racing #98:AL"
+  },
+  "theheartofracing98lm": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2023, GTE, Aston Martin Vantage AMR",
+    "description": "The Heart of Racing #98:LM"
+  },
+  "towermotorsports13lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Tower Motorsports #13:LM"
+  },
+  "toyotagazooracing7al": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2023, Hypercar, Toyota GR010",
+    "description": "Toyota Gazoo Racing #7:AL"
+  },
+  "toyotagazooracing7bl": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2023, Hypercar, Toyota GR010",
+    "description": "Toyota Gazoo Racing #7:BL"
+  },
+  "toyotagazooracing7lm": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2023, Hypercar, Toyota GR010",
+    "description": "Toyota Gazoo Racing #7:LM"
+  },
+  "toyotagazooracing8al": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2023, Hypercar, Toyota GR010",
+    "description": "Toyota Gazoo Racing #8:AL"
+  },
+  "toyotagazooracing8bl": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2023, Hypercar, Toyota GR010",
+    "description": "Toyota Gazoo Racing #8:BL"
+  },
+  "toyotagazooracing8lm": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2023, Hypercar, Toyota GR010",
+    "description": "Toyota Gazoo Racing #8:LM"
+  },
+  "toyotagazooracing20247ec": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2024, Hypercar, Toyota GR010",
+    "description": "Toyota Gazoo Racing 2024 #7:EC"
+  },
+  "toyotagazooracing20247lm": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2024, Hypercar, Toyota GR010",
+    "description": "Toyota Gazoo Racing 2024 #7:LM"
+  },
+  "toyotagazooracing20248ec": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2024, Hypercar, Toyota GR010",
+    "description": "Toyota Gazoo Racing 2024 #8:EC"
+  },
+  "toyotagazooracing20248lm": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2024, Hypercar, Toyota GR010",
+    "description": "Toyota Gazoo Racing 2024 #8:LM"
+  },
+  "toyotagazooracing20257ec": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2025, Hypercar, Toyota GR010",
+    "description": "Toyota Gazoo Racing 2025 #7:EC"
+  },
+  "toyotagazooracing20257lm": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2025, Hypercar, Toyota GR010",
+    "description": "Toyota Gazoo Racing 2025 #7:LM"
+  },
+  "toyotagazooracing20258lm": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2025, Hypercar, Toyota GR010",
+    "description": "Toyota Gazoo Racing 2025 #8:LM"
+  },
+  "toyotagazooracing20258wec": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2025, Hypercar, Toyota GR010",
+    "description": "Toyota Gazoo Racing 2025 #8:WEC"
+  },
+  "toyotaracing20267lm": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2026, Hypercar, Toyota TR010",
+    "description": "Toyota Racing 2026 #7:LM"
+  },
+  "toyotaracing20267wec": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2026, Hypercar, Toyota TR010",
+    "description": "Toyota Racing 2026 #7:WEC"
+  },
+  "toyotaracing20268lm": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2026, Hypercar, Toyota TR010",
+    "description": "Toyota Racing 2026 #8:LM"
+  },
+  "toyotaracing20268wec": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2026, Hypercar, Toyota TR010",
+    "description": "Toyota Racing 2026 #8:WEC"
+  },
+  "ultimate35elms25": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2025, LMP3, Ligier JS P325",
+    "description": "Ultimate #35:ELMS25"
+  },
+  "unitedautosports21elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "United Autosports #21:ELMS25"
+  },
+  "unitedautosports22ec": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "United Autosports #22:EC"
+  },
+  "unitedautosports22elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "United Autosports #22:ELMS25"
+  },
+  "unitedautosports22lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "United Autosports #22:LM"
+  },
+  "unitedautosports22pm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "United Autosports #22:PM"
+  },
+  "unitedautosports23ec": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "United Autosports #23:EC"
+  },
+  "unitedautosports23fu": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "United Autosports #23:FU"
+  },
+  "unitedautosports23lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "United Autosports #23:LM"
+  },
+  "unitedautosports23pm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "United Autosports #23:PM"
+  },
+  "unitedautosports202422lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "United Autosports 2024 #22:LM"
+  },
+  "unitedautosports202459ec": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2024, GT3, McLaren 720S LMGT3 Evo",
+    "description": "United Autosports 2024 #59:EC"
+  },
+  "unitedautosports202459ec2": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2024, GT3, McLaren 720S LMGT3 Evo",
+    "description": "United Autosports 2024 #59:EC2"
+  },
+  "unitedautosports202459ec3": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2024, GT3, McLaren 720S LMGT3 Evo",
+    "description": "United Autosports 2024 #59:EC3"
+  },
+  "unitedautosports202459lm": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2024, GT3, McLaren 720S LMGT3 Evo",
+    "description": "United Autosports 2024 #59:LM"
+  },
+  "unitedautosports202495ec": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2024, GT3, McLaren 720S LMGT3 Evo",
+    "description": "United Autosports 2024 #95:EC"
+  },
+  "unitedautosports202495ec2": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2024, GT3, McLaren 720S LMGT3 Evo",
+    "description": "United Autosports 2024 #95:EC2"
+  },
+  "unitedautosports202495lm": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2024, GT3, McLaren 720S LMGT3 Evo",
+    "description": "United Autosports 2024 #95:LM"
+  },
+  "unitedautosports202522lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "United Autosports 2025 #22:LM"
+  },
+  "unitedautosports202523elms": {
+    "manufacturer": "McLaren",
+    "model": "ELMS 2025, GT3, McLaren 720S LMGT3 Evo",
+    "description": "United Autosports 2025 #23:ELMS"
+  },
+  "unitedautosports202523lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "United Autosports 2025 #23:LM"
+  },
+  "unitedautosports202559lm": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2025, GT3, McLaren 720S LMGT3 Evo",
+    "description": "United Autosports 2025 #59:LM"
+  },
+  "unitedautosports202559wec": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2025, GT3, McLaren 720S LMGT3 Evo",
+    "description": "United Autosports 2025 #59:WEC"
+  },
+  "unitedautosports202595lm": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2025, GT3, McLaren 720S LMGT3 Evo",
+    "description": "United Autosports 2025 #95:LM"
+  },
+  "unitedautosports202595wec": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2025, GT3, McLaren 720S LMGT3 Evo",
+    "description": "United Autosports 2025 #95:WEC"
+  },
+  "unitedautosportsusa202423lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "United Autosports USA 2024 #23:LM"
+  },
+  "vdspanisracing48elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "VDS Panis Racing #48:ELMS25"
+  },
+  "vdspanisracing202548lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "VDS Panis Racing 2025 #48:LM"
+  },
+  "vectorsport10al": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Vector Sport #10:AL"
+  },
+  "vectorsport10bl": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Vector Sport #10:BL"
+  },
+  "vectorsport10elms25": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "Vector Sport #10:ELMS25"
+  },
+  "vectorsport10lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Vector Sport #10:LM"
+  },
+  "vectorsport202410lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "Vector Sport 2024 #10:LM"
+  },
+  "vistaafcorse202454ec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, GT3, Ferrari 296 LMGT3",
+    "description": "Vista AF Corse 2024 #54:EC"
+  },
+  "vistaafcorse202454lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, GT3, Ferrari 296 LMGT3",
+    "description": "Vista AF Corse 2024 #54:LM"
+  },
+  "vistaafcorse202455ec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, GT3, Ferrari 296 LMGT3",
+    "description": "Vista AF Corse 2024 #55:EC"
+  },
+  "vistaafcorse202455lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, GT3, Ferrari 296 LMGT3",
+    "description": "Vista AF Corse 2024 #55:LM"
+  },
+  "vistaafcorse202521lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2025, GT3, Ferrari 296 LMGT3",
+    "description": "Vista AF Corse 2025 #21:LM"
+  },
+  "vistaafcorse202521wec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2025, GT3, Ferrari 296 LMGT3",
+    "description": "Vista AF Corse 2025 #21:WEC"
+  },
+  "vistaafcorse202554lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2025, GT3, Ferrari 296 LMGT3",
+    "description": "Vista AF Corse 2025 #54:LM"
+  },
+  "vistaafcorse202554wec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2025, GT3, Ferrari 296 LMGT3",
+    "description": "Vista AF Corse 2025 #54:WEC"
+  },
+  "vistaafcorse202621wec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "Vista AF Corse 2026 #21:WEC"
+  },
+  "vistaafcorse202654wec": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "Vista AF Corse 2026 #54:WEC"
+  },
+  "walkenhorstmotorsport100lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "Walkenhorst Motorsport #100:LM"
+  },
+  "whelencadillacracing2024311lm": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2024, Hypercar, Cadillac V-Series.R",
+    "description": "Whelen Cadillac Racing 2024 #311:LM"
+  },
+  "wtmbyrinaldiracing202512elms": {
+    "manufacturer": "Duqueine",
+    "model": "ELMS 2025, LMP3, Duqueine D09 P3",
+    "description": "WTM by Rinaldi Racing 2025 #12:ELMS"
+  },
+  "ziggosporttempesta2025193lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2025, GT3, Ferrari 296 LMGT3",
+    "description": "Ziggo Sport Tempesta 2025 #193:LM"
+  },
+  "amrgt3elmscustomteam2025397": {
+    "manufacturer": "Aston Martin",
+    "model": "ELMS 2025, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "AMR GT3 ELMS Custom Team 2025 #397"
+  },
+  "z06gt3relmscustomteam2025397": {
+    "manufacturer": "Corvette",
+    "model": "ELMS 2025, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "Z06GT3R ELMS Custom Team 2025 #397"
+  },
+  "296gt3elmscustomteam2025397": {
+    "manufacturer": "Ferrari",
+    "model": "ELMS 2025, GT3, Ferrari 296 LMGT3",
+    "description": "296GT3 ELMS Custom Team 2025 #397"
+  },
+  "mclarenelmscustomteam2025397": {
+    "manufacturer": "McLaren",
+    "model": "ELMS 2025, GT3, McLaren 720S LMGT3 Evo",
+    "description": "McLaren ELMS Custom Team 2025 #397"
+  },
+  "mercedesamgelmscustomteam2025397": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "ELMS 2025, GT3, Mercedes-AMG LMGT3",
+    "description": "Mercedes AMG ELMS Custom Team 2025 #397"
+  },
+  "911gt3relmscustomteam2025397": {
+    "manufacturer": "Porsche",
+    "model": "ELMS 2025, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "911GT3R ELMS Custom Team 2025 #397"
+  },
+  "oreca07elmscustomteam2025397": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2025, LMP2_ELMS, Oreca 07",
+    "description": "Oreca 07 ELMS Custom Team 2025 #397"
+  },
+  "adessad25lmp3customteam2025397": {
+    "manufacturer": "ADESS",
+    "model": "ELMS 2025, LMP3, ADESS AD25 LMP3",
+    "description": "ADESS AD25 LMP3 Custom Team 2025 #397"
+  },
+  "duqueined09p3customteam2025397": {
+    "manufacturer": "Duqueine",
+    "model": "ELMS 2025, LMP3, Duqueine D09 P3",
+    "description": "Duqueine D09 P3 Custom Team 2025 #397"
+  },
+  "ginettag61ltp3customteam397elms25": {
+    "manufacturer": "Ginetta",
+    "model": "ELMS 2025, LMP3, Ginetta G61-LT-P325 Evo",
+    "description": "Ginetta G61-LT-P3 Custom Team #397:ELMS25"
+  },
+  "ligierjsp325customteam2025397": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2025, LMP3, Ligier JS P325",
+    "description": "Ligier JS P325 Custom Team 2025 #397"
+  },
+  "porsche992spacecar": {
+    "manufacturer": "Michelin",
+    "model": "Pace Car",
+    "description": "Porsche 992S Pace Car"
+  },
+  "amvcustomteam2023397": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2023, GTE, Aston Martin Vantage AMR",
+    "description": "AMV Custom Team 2023 #397"
+  },
+  "c8rgtecustomteam2023397": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2023, GTE, Corvette C8.R GTE",
+    "description": "C8RGTE Custom Team 2023 #397"
+  },
+  "488gtecustomteam2023397": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, GTE, Ferrari 488 GTE EVO",
+    "description": "488GTE Custom Team 2023 #397"
+  },
+  "911gtecustomteam2023397": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, GTE, Porsche 911 RSR-19",
+    "description": "911GTE Custom Team 2023 #397"
+  },
+  "vlmdhcustomteam2023397": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2023, Hypercar, Cadillac V-Series.R",
+    "description": "VLMDH Custom Team 2023 #397"
+  },
+  "499pcustomteam2023397": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2023, Hypercar, Ferrari 499P",
+    "description": "499P Custom Team 2023 #397"
+  },
+  "glickenhauscustomteam2023397": {
+    "manufacturer": "Glickenhaus",
+    "model": "WEC 2023, Hypercar, Glickenhaus SCG007",
+    "description": "Glickenhaus Custom Team 2023 #397"
+  },
+  "peugeot9x8customteam2023397": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2023, Hypercar, Peugeot 9x8",
+    "description": "Peugeot 9x8 Custom Team 2023 #397"
+  },
+  "porsche963customteam2023397": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2023, Hypercar, Porsche 963",
+    "description": "Porsche 963 Custom Team 2023 #397"
+  },
+  "toyotagr010customteam2023397": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2023, Hypercar, Toyota GR010",
+    "description": "Toyota GR010 Custom Team 2023 #397"
+  },
+  "vanwallcustomteam2023397": {
+    "manufacturer": "Vanwall",
+    "model": "WEC 2023, Hypercar, Vanwall 680",
+    "description": "Vanwall Custom Team 2023 #397"
+  },
+  "oreca07customteam2023397": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2023, LMP2, Oreca 07",
+    "description": "Oreca 07 Custom Team 2023 #397"
+  },
+  "amrgt3customteam397": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2024, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "AMR GT3 Custom Team #397"
+  },
+  "bmwgt3customteam397": {
+    "manufacturer": "BMW",
+    "model": "WEC 2024, GT3, BMW M4 LMGT3",
+    "description": "BMW GT3 Custom Team #397"
+  },
+  "z06gt3rcustomteam397": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2024, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "Z06GT3R Custom Team #397"
+  },
+  "296gt3customteam2024397": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, GT3, Ferrari 296 LMGT3",
+    "description": "296GT3 Custom Team 2024 #397"
+  },
+  "mustangcustomteam2024397": {
+    "manufacturer": "Ford",
+    "model": "WEC 2024, GT3, Ford Mustang LMGT3",
+    "description": "Mustang Custom Team 2024 #397"
+  },
+  "huracancustomteam2024397": {
+    "manufacturer": "Lamborghini",
+    "model": "WEC 2024, GT3, Lamborghini Huracan LMGT3 Evo2",
+    "description": "Huracan Custom Team 2024 #397"
+  },
+  "lexuscustomteam2024397": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2024, GT3, Lexus RCF LMGT3",
+    "description": "Lexus Custom Team 2024 #397"
+  },
+  "mclarencustomteam2024397": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2024, GT3, McLaren 720S LMGT3 Evo",
+    "description": "McLaren Custom Team 2024 #397"
+  },
+  "911gt3rcustomteam2024397": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "911GT3R Custom Team 2024 #397"
+  },
+  "alpinecustomteam2024397": {
+    "manufacturer": "Alpine",
+    "model": "WEC 2024, Hypercar, Alpine A424",
+    "description": "Alpine Custom Team 2024 #397"
+  },
+  "bmwmhcustomteam2024397": {
+    "manufacturer": "BMW",
+    "model": "WEC 2024, Hypercar, BMW M Hybrid V8",
+    "description": "BMWMH Custom Team 2024 #397"
+  },
+  "vlmdhcustomteam2024397": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2024, Hypercar, Cadillac V-Series.R",
+    "description": "VLMDH Custom Team 2024 #397"
+  },
+  "499pcustomteam2024397": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2024, Hypercar, Ferrari 499P",
+    "description": "499P Custom Team 2024 #397"
+  },
+  "isottafraschinicustomteam2024397": {
+    "manufacturer": "Isotta Fraschini",
+    "model": "WEC 2024, Hypercar, Isotta Fraschini TIPO6",
+    "description": "Isotta Fraschini Custom Team 2024 #397"
+  },
+  "sc63customteam2024397": {
+    "manufacturer": "Lamborghini",
+    "model": "WEC 2024, Hypercar, Lamborghini SC63",
+    "description": "SC63 Custom Team 2024 #397"
+  },
+  "9x8wingcustomteam2024397": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2024, Hypercar, Peugeot 9x8",
+    "description": "9x8 Wing Custom Team 2024 #397"
+  },
+  "peugeot9x8customteam2024397": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2024, Hypercar, Peugeot 9x8",
+    "description": "Peugeot 9x8 Custom Team 2024 #397"
+  },
+  "porsche963customteam2024397": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2024, Hypercar, Porsche 963",
+    "description": "Porsche 963 Custom Team 2024 #397"
+  },
+  "toyotagr010customteam2024397": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2024, Hypercar, Toyota GR010",
+    "description": "Toyota GR010 Custom Team 2024 #397"
+  },
+  "oreca07customteam2024397": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2024, LMP2, Oreca 07",
+    "description": "Oreca 07 Custom Team 2024 #397"
+  },
+  "amrgt3customteam2025397": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2025, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "AMR GT3 Custom Team 2025 #397"
+  },
+  "bmwgt3customteam2025397": {
+    "manufacturer": "BMW",
+    "model": "WEC 2025, GT3, BMW M4 LMGT3",
+    "description": "BMW GT3 Custom Team 2025 #397"
+  },
+  "z06gt3rcustomteam2025397": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2025, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "Z06GT3R Custom Team 2025 #397"
+  },
+  "296gt3customteam2025397": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2025, GT3, Ferrari 296 LMGT3",
+    "description": "296GT3 Custom Team 2025 #397"
+  },
+  "mustangcustomteam2025397": {
+    "manufacturer": "Ford",
+    "model": "WEC 2025, GT3, Ford Mustang LMGT3",
+    "description": "Mustang Custom Team 2025 #397"
+  },
+  "lexuscustomteam2025397": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2025, GT3, Lexus RCF LMGT3",
+    "description": "Lexus Custom Team 2025 #397"
+  },
+  "mclarencustomteam2025397": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2025, GT3, McLaren 720S LMGT3 Evo",
+    "description": "McLaren Custom Team 2025 #397"
+  },
+  "mercedesamgcustomteam2025397": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2025, GT3, Mercedes-AMG LMGT3",
+    "description": "Mercedes AMG Custom Team 2025 #397"
+  },
+  "911gt3rcustomteam2025397": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2025, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "911GT3R Custom Team 2025 #397"
+  },
+  "alpinecustomteam2025397": {
+    "manufacturer": "Alpine",
+    "model": "WEC 2025, Hypercar, Alpine A424",
+    "description": "Alpine Custom Team 2025 #397"
+  },
+  "amvalkyriecustomteam2025397": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2025, Hypercar, Aston Martin Valkyrie LMH",
+    "description": "AM Valkyrie Custom Team 2025 #397"
+  },
+  "bmwmhcustomteam2025397": {
+    "manufacturer": "BMW",
+    "model": "WEC 2025, Hypercar, BMW M Hybrid V8",
+    "description": "BMWMH Custom Team 2025 #397"
+  },
+  "vlmdhcustomteam2025397": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2025, Hypercar, Cadillac V-Series.R",
+    "description": "VLMDH Custom Team 2025 #397"
+  },
+  "499pcustomteam2025397": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2025, Hypercar, Ferrari 499P",
+    "description": "499P Custom Team 2025 #397"
+  },
+  "9x8wingcustomteam2025397": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2025, Hypercar, Peugeot 9x8",
+    "description": "9x8 Wing Custom Team 2025 #397"
+  },
+  "porsche963customteam2025397": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2025, Hypercar, Porsche 963",
+    "description": "Porsche 963 Custom Team 2025 #397"
+  },
+  "toyotagr010customteam2025397": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2025, Hypercar, Toyota GR010",
+    "description": "Toyota GR010 Custom Team 2025 #397"
+  },
+  "oreca07customteam2025397": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2025, LMP2, Oreca 07",
+    "description": "Oreca 07 Custom Team 2025 #397"
+  },
+  "amrgt3customteam2026397": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2026, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "AMR GT3 Custom Team 2026 #397"
+  },
+  "bmwgt3customteam2026397": {
+    "manufacturer": "BMW",
+    "model": "WEC 2026, GT3, BMW M4 LMGT3",
+    "description": "BMW GT3 Custom Team 2026 #397"
+  },
+  "z06gt3rcustomteam2026397cs1": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2026, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "Z06GT3R Custom Team 2026 #397:CS1"
+  },
+  "z06gt3rcustomteam2026397cs": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2026, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "Z06GT3R Custom Team 2026 #397:CS"
+  },
+  "296gt3customteam2026397": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "296GT3 Custom Team 2026 #397"
+  },
+  "mustangcustomteam2026397": {
+    "manufacturer": "Ford",
+    "model": "WEC 2026, GT3, Ford Mustang LMGT3",
+    "description": "Mustang Custom Team 2026 #397"
+  },
+  "lexuscustomteam2026397": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2026, GT3, Lexus RCF LMGT3",
+    "description": "Lexus Custom Team 2026 #397"
+  },
+  "mclarencustomteam2026397": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "McLaren Custom Team 2026 #397"
+  },
+  "mercedesamgcustomteam2026397": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2026, GT3, Mercedes-AMG LMGT3",
+    "description": "Mercedes AMG Custom Team 2026 #397"
+  },
+  "911gt3rcustomteam2026397": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2026, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "911GT3R Custom Team 2026 #397"
+  },
+  "alpinecustomteam2026397": {
+    "manufacturer": "Alpine",
+    "model": "WEC 2026, Hypercar, Alpine A424",
+    "description": "Alpine Custom Team 2026 #397"
+  },
+  "amvalkyriecustomteam2026397": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2026, Hypercar, Aston Martin Valkyrie LMH",
+    "description": "AM Valkyrie Custom Team 2026 #397"
+  },
+  "bmwmhcustomteam2026397": {
+    "manufacturer": "BMW",
+    "model": "WEC 2026, Hypercar, BMW M Hybrid V8",
+    "description": "BMWMH Custom Team 2026 #397"
+  },
+  "vlmdhcustomteam2026397": {
+    "manufacturer": "Cadillac",
+    "model": "WEC 2026, Hypercar, Cadillac V-Series.R",
+    "description": "VLMDH Custom Team 2026 #397"
+  },
+  "499pcustomteam2026397": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, Hypercar, Ferrari 499P",
+    "description": "499P Custom Team 2026 #397"
+  },
+  "genesiscustomteam2026397": {
+    "manufacturer": "Genesis",
+    "model": "WEC 2026, Hypercar, Genesis GMR001",
+    "description": "Genesis Custom Team 2026 #397"
+  },
+  "9x8wingcustomteam2026397": {
+    "manufacturer": "Peugeot",
+    "model": "WEC 2026, Hypercar, Peugeot 9x8",
+    "description": "9x8 Wing Custom Team 2026 #397"
+  },
+  "toyotatr010customteam2026397": {
+    "manufacturer": "Toyota",
+    "model": "WEC 2026, Hypercar, Toyota TR010",
+    "description": "Toyota TR010 Custom Team 2026 #397"
+  }
+}

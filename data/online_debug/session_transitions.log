@@ -1,2 +1,53 @@
 {"ts": "2026-08-04 08:56:51", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "", "errors": []}}
 {"ts": "2026-08-04 08:58:52", "event": "transition", "details": {"was_connected": true, "now_connected": true, "previous_session": "", "current_session": "|PRACTICE1", "errors": []}}
+{"ts": "2026-08-04 09:30:23", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "|PRACTICE1", "errors": []}}
+{"ts": "2026-08-04 09:52:01", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "|PRACTICE1", "errors": []}}
+{"ts": "2026-08-04 09:53:06", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "|PRACTICE1", "errors": []}}
+{"ts": "2026-08-04 09:53:35", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "|PRACTICE1", "errors": []}}
+{"ts": "2026-08-04 09:54:20", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "|PRACTICE1", "errors": []}}
+{"ts": "2026-08-04 09:54:28", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "|PRACTICE1", "errors": []}}
+{"ts": "2026-08-04 09:54:40", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "|PRACTICE1", "errors": []}}
+{"ts": "2026-08-04 09:55:38", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "|PRACTICE1", "errors": []}}
+{"ts": "2026-08-04 09:58:47", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "", "errors": []}}
+{"ts": "2026-08-04 09:59:35", "event": "transition", "details": {"was_connected": true, "now_connected": false, "previous_session": "", "current_session": "", "errors": ["/rest/profile/: <urlopen error timed out>", "/rest/profile/profileInfo/getProfileInfo: <urlopen error timed out>", "/rest/multiplayer/teams: <urlopen error timed out>"]}}
+{"ts": "2026-08-04 10:00:03", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "", "errors": []}}
+{"ts": "2026-08-04 10:08:24", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "|PRACTICE1", "errors": []}}
+{"ts": "2026-08-04 10:20:09", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "|PRACTICE1", "errors": []}}
+{"ts": "2026-08-04 10:41:32", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "|PRACTICE1", "errors": []}}
+{"ts": "2026-08-04 10:58:10", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "", "errors": []}}
+{"ts": "2026-08-04 11:03:36", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "", "errors": []}}
+{"ts": "2026-08-04 11:03:48", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "", "errors": []}}
+{"ts": "2026-08-04 11:04:21", "event": "transition", "details": {"was_connected": true, "now_connected": false, "previous_session": "", "current_session": "", "errors": ["/rest/profile/: <urlopen error timed out>", "/rest/profile/profileInfo/getProfileInfo: <urlopen error timed out>", "/rest/multiplayer/teams: <urlopen error timed out>"]}}
+{"ts": "2026-08-04 11:05:09", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "", "errors": []}}
+{"ts": "2026-08-04 11:06:25", "event": "transition", "details": {"was_connected": true, "now_connected": true, "previous_session": "", "current_session": "|PRACTICE1", "errors": []}}
+{"ts": "2026-08-04 13:09:23", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "|QUALIFY1", "errors": []}}
+{"ts": "2026-08-04 13:09:41", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "|QUALIFY1", "errors": []}}
+{"ts": "2026-08-04 13:12:27", "event": "transition", "details": {"was_connected": true, "now_connected": true, "previous_session": "|QUALIFY1", "current_session": "|RACE1", "errors": []}}
+{"ts": "2026-08-04 13:12:39", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "|RACE1", "errors": []}}
+{"ts": "2026-08-04 13:48:06", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "", "errors": []}}
+{"ts": "2026-08-04 13:51:08", "event": "transition", "details": {"was_connected": true, "now_connected": true, "previous_session": "", "current_session": "-none-|PRACTICE1", "errors": []}}
+{"ts": "2026-08-04 13:58:07", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "-none-|QUALIFY1", "errors": []}}
+{"ts": "2026-08-04 14:35:25", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "-none-|QUALIFY1", "errors": []}}
+{"ts": "2026-08-04 14:36:25", "event": "transition", "details": {"was_connected": true, "now_connected": true, "previous_session": "-none-|QUALIFY1", "current_session": "-none-|RACE1", "errors": []}}
+{"ts": "2026-08-04 14:53:09", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "-none-|RACE1", "errors": []}}
+{"ts": "2026-08-04 15:01:24", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "-none-|RACE1", "errors": []}}
+{"ts": "2026-08-04 15:03:13", "event": "transition", "details": {"was_connected": true, "now_connected": false, "previous_session": "-none-|RACE1", "current_session": "", "errors": ["/rest/profile/: <urlopen error timed out>", "/rest/profile/profileInfo/getProfileInfo: <urlopen error timed out>", "/rest/multiplayer/teams: <urlopen error timed out>"]}}
+{"ts": "2026-08-04 15:09:27", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "", "errors": []}}
+{"ts": "2026-08-04 15:10:12", "event": "transition", "details": {"was_connected": true, "now_connected": true, "previous_session": "", "current_session": "-none-|PRACTICE1", "errors": []}}
+{"ts": "2026-08-04 15:12:43", "event": "transition", "details": {"was_connected": true, "now_connected": true, "previous_session": "-none-|PRACTICE1", "current_session": "-none-|QUALIFY1", "errors": []}}
+{"ts": "2026-08-04 15:19:02", "event": "transition", "details": {"was_connected": true, "now_connected": true, "previous_session": "-none-|QUALIFY1", "current_session": "-none-|RACE1", "errors": []}}
+{"ts": "2026-08-04 15:31:05", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "-none-|RACE1", "errors": []}}
+{"ts": "2026-08-04 15:37:24", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "-none-|RACE1", "errors": []}}
+{"ts": "2026-08-04 15:41:03", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "-none-|RACE1", "errors": []}}
+{"ts": "2026-08-04 15:45:01", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "-none-|RACE1", "errors": []}}
+{"ts": "2026-08-04 15:45:48", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "-none-|RACE1", "errors": []}}
+{"ts": "2026-08-04 15:47:38", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "-none-|RACE1", "errors": []}}
+{"ts": "2026-08-04 15:47:46", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "-none-|RACE1", "errors": []}}
+{"ts": "2026-08-04 15:50:05", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "-none-|RACE1", "errors": []}}
+{"ts": "2026-08-04 15:53:31", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "-none-|RACE1", "errors": []}}
+{"ts": "2026-08-04 15:54:59", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "-none-|RACE1", "errors": []}}
+{"ts": "2026-08-04 15:57:08", "event": "transition", "details": {"was_connected": false, "now_connected": true, "previous_session": "", "current_session": "-none-|RACE1", "errors": []}}
+{"ts": "2026-08-04 16:11:19", "event": "transition", "details": {"was_connected": true, "now_connected": true, "previous_session": "-none-|RACE1", "current_session": "|PRACTICE1", "errors": []}}
+{"ts": "2026-08-04 16:13:04", "event": "transition", "details": {"was_connected": true, "now_connected": true, "previous_session": "|PRACTICE1", "current_session": "|QUALIFY1", "errors": []}}
+{"ts": "2026-08-04 16:22:54", "event": "transition", "details": {"was_connected": true, "now_connected": true, "previous_session": "|QUALIFY1", "current_session": "|RACE1", "errors": []}}
+{"ts": "2026-08-04 16:47:54", "event": "transition", "details": {"was_connected": true, "now_connected": false, "previous_session": "|RACE1", "current_session": "", "errors": ["/rest/profile/: <urlopen error timed out>", "/rest/profile/profileInfo/getProfileInfo: <urlopen error timed out>", "/rest/multiplayer/teams: <urlopen error timed out>"]}}

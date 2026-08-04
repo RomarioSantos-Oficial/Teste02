@@ -1,0 +1,336 @@
+{
+  "/rest/profile/": {
+    "name": "Romario santos",
+    "nick": "Romario santos",
+    "steamID": "76561199159238377"
+  },
+  "/rest/profile/profileInfo/getProfileInfo": {
+    "language": "brazilian",
+    "name": "Romario santos",
+    "nationality": "BR",
+    "nick": "Romario santos",
+    "steamID": "76561199159238377"
+  },
+  "/rest/multiplayer/teams": {
+    "coherenceId": 193,
+    "drivers": {
+      "Francesco Baiano": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "IT",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "0967660778986857338516",
+        "teamName": "IDEC Sport",
+        "uniqueTeamId": "utid33"
+      },
+      "Gerard Gonzalvez": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "ES",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "2192573219202335277925",
+        "teamName": "Toyota Racing",
+        "uniqueTeamId": "utid37"
+      },
+      "Horizon Orca": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "TW",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "0353456938726425593497",
+        "teamName": "Porsche Penske Motorsport",
+        "uniqueTeamId": "utid31"
+      },
+      "Jakub Adam#8772": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "CZ",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "6695750500620517635418",
+        "teamName": "Manthey Ema",
+        "uniqueTeamId": "utid26"
+      },
+      "Ori Lee": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "GB",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "6893235925424418391617",
+        "teamName": "Porsche Penske Motorsport",
+        "uniqueTeamId": "utid38"
+      },
+      "Pablo deffewz": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "FR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "3500826673187350223544",
+        "teamName": "It's DeffewZ Baby ! GT3",
+        "uniqueTeamId": "utid21"
+      },
+      "Paul Ridard": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "FR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "1557985849806865274631",
+        "teamName": "IDEC Sport",
+        "uniqueTeamId": "utid28"
+      },
+      "Romario santos": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "BR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "0345591239313012343825",
+        "teamName": "Team WRT",
+        "uniqueTeamId": "utid41"
+      },
+      "Stefan Brychcy": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "DE",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "1862373753944450116321",
+        "teamName": "Iron Lynx",
+        "uniqueTeamId": "utid39"
+      },
+      "Timo Hochhausen": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "DE",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "4617860092841034922825",
+        "teamName": "Alpine Endurance Team",
+        "uniqueTeamId": "utid36"
+      },
+      "admin": {
+        "isConnected": false,
+        "nationality": "",
+        "roles": [
+          "Admin"
+        ]
+      },
+      "yashvir singh": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "IN",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "1219069190970200089424",
+        "teamName": "Dream Team GT DGT HY",
+        "uniqueTeamId": "utid23"
+      }
+    },
+    "teams": {
+      "utid21": {
+        "Id": "3500826673187350223544",
+        "carNumber": "25",
+        "drivers": {
+          "Pablo deffewz": {
+            "badge": "none",
+            "nationality": "FR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "It's DeffewZ Baby ! GT3",
+        "vehicle": "397_26_911GT3R"
+      },
+      "utid23": {
+        "Id": "1219069190970200089424",
+        "carNumber": "22",
+        "drivers": {
+          "yashvir singh": {
+            "badge": "none",
+            "nationality": "IN",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Dream Team GT DGT HY",
+        "vehicle": "397_25_BMW"
+      },
+      "utid26": {
+        "Id": "6695750500620517635418",
+        "carNumber": "91",
+        "drivers": {
+          "Jakub Adam#8772": {
+            "badge": "none",
+            "nationality": "CZ",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Manthey Ema",
+        "vehicle": "91_24_MANT5728CF9F"
+      },
+      "utid28": {
+        "Id": "1557985849806865274631",
+        "carNumber": "48",
+        "drivers": {
+          "Paul Ridard": {
+            "badge": "none",
+            "nationality": "FR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "IDEC Sport",
+        "vehicle": "48_IDEC6A6273C"
+      },
+      "utid31": {
+        "Id": "0353456938726425593497",
+        "carNumber": "6",
+        "drivers": {
+          "Horizon Orca": {
+            "badge": "none",
+            "nationality": "TW",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Porsche Penske Motorsport",
+        "vehicle": "6_25_PENSKDB3C8E26"
+      },
+      "utid33": {
+        "Id": "0967660778986857338516",
+        "carNumber": "28",
+        "drivers": {
+          "Francesco Baiano": {
+            "badge": "none",
+            "nationality": "IT",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "IDEC Sport",
+        "vehicle": "28_25_IDECF1C46D7C"
+      },
+      "utid36": {
+        "Id": "4617860092841034922825",
+        "carNumber": "35",
+        "drivers": {
+          "Timo Hochhausen": {
+            "badge": "none",
+            "nationality": "DE",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Alpine Endurance Team",
+        "vehicle": "35_26_ALPI86162428"
+      },
+      "utid37": {
+        "Id": "2192573219202335277925",
+        "carNumber": "8",
+        "drivers": {
+          "Gerard Gonzalvez": {
+            "badge": "none",
+            "nationality": "ES",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Toyota Racing",
+        "vehicle": "8_26_TOYOT66538972"
+      },
+      "utid38": {
+        "Id": "6893235925424418391617",
+        "carNumber": "5",
+        "drivers": {
+          "Ori Lee": {
+            "badge": "none",
+            "nationality": "GB",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Porsche Penske Motorsport",
+        "vehicle": "5_25_PENSK118975AD"
+      },
+      "utid39": {
+        "Id": "1862373753944450116321",
+        "carNumber": "79",
+        "drivers": {
+          "Stefan Brychcy": {
+            "badge": "none",
+            "nationality": "DE",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Iron Lynx",
+        "vehicle": "79_26_IRON79382419"
+      },
+      "utid41": {
+        "Id": "0345591239313012343825",
+        "carNumber": "69",
+        "drivers": {
+          "Romario santos": {
+            "badge": "none",
+            "nationality": "BR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Team WRT",
+        "vehicle": "69_26_WRT_56324638"
+      }
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "enabled": false,
+  "monitor": 0,
+  "position": {
+    "x": 0.3,
+    "y": 0.04
+  },
+  "size": {
+    "width": 0.4,
+    "height": 0.12
+  },
+  "scale": 1.0,
+  "internal_scale": 1.0,
+  "responsive_min_scale": 0.48,
+  "responsive_max_scale": 2.0,
+  "opacity": 0.98,
+  "always_on_top": true,
+  "click_through": true,
+  "snap_to_edges": true,
+  "font_name": "Arial",
+  "font_size": 16,
+  "bar_gap": 4,
+  "icon_size": 30,
+  "icon_directory": "images/tempo",
+  "temperature_unit": "C",
+  "show_forecast": true,
+  "forecast_count": 5,
+  "forecast_interval_minutes": 5,
+  "show_forecast_rain": false,
+  "show_wet_status": true,
+  "show_wind": false,
+  "rain_alert_threshold": 0.01,
+  "wet_alert_threshold": 0.02,
+  "sample_interval_seconds": 2.0,
+  "history_samples": 180,
+  "colors": {
+    "background": "#10151D",
+    "panel": "#232323",
+    "track_temp": "#FFAA00",
+    "air_temp": "#FFFFFF",
+    "muted": "#999999",
+    "forecast_text": "#E0E0E0",
+    "wet_background": "#0C274A",
+    "wet_text": "#00AAFF",
+    "border": "#344155",
+    "edit_border": "#9B5CFF"
+  }
+}

@@ -1,0 +1,237 @@
+{
+  "version": 6,
+  "widgets": {
+    "driver_panel": {
+      "always_on_top": true,
+      "background_opacity": 0.88,
+      "border_radius": 12,
+      "click_through": true,
+      "colors": {
+        "background": "#10151D",
+        "border": "#424B56",
+        "brake": "#FF2438",
+        "edit_border": "#8B5CF6",
+        "grid": "#27313E",
+        "muted": "#AAB2BD",
+        "panel": "#080C12",
+        "rpm_high": "#FF2438",
+        "rpm_low": "#1769E0",
+        "rpm_shift": "#FFC400",
+        "steering_center": "#FFFFFF",
+        "steering_marker": "#4CFF5E",
+        "text": "#FFFFFF",
+        "throttle": "#50DF42",
+        "wheel": "#445466"
+      },
+      "design_base_height": 420,
+      "design_base_width": 1380,
+      "elements": {},
+      "enabled": true,
+      "font": {
+        "family": "Arial"
+      },
+      "graph_history_points": 270,
+      "graph_vertical_lines": 8,
+      "layout": {
+        "red_start": 0.87,
+        "rpm_segments": 20,
+        "shift_start": 0.77
+      },
+      "monitor": 0,
+      "opacity": 0.96,
+      "position": {
+        "x": 0.39947916666666666,
+        "y": 0.7101851851851851
+      },
+      "scale": 1.0,
+      "size": {
+        "height": 0.12037037037037036,
+        "width": 0.1875
+      },
+      "snap_to_edges": true,
+      "steering_visual_degrees": 180
+    },
+    "delta": {
+      "always_on_top": true,
+      "announce_initial_fastest": false,
+      "auto_fit_content": true,
+      "background_enabled": true,
+      "background_opacity": 0.86,
+      "border_radius": 12,
+      "click_through": true,
+      "colors": {
+        "background": "#070B12",
+        "border": "#3A4452",
+        "edit_border": "#9B5CFF",
+        "fastest": "#8B4DFF",
+        "fastest_panel": "#111720",
+        "gain": "#009B00",
+        "grid": "#27313E",
+        "loss": "#FF2828",
+        "muted": "#AAB2BD",
+        "neutral": "#5A5A5A",
+        "panel": "#121821",
+        "purple": "#8B4DFF",
+        "sector_neutral": "#5A5A5A",
+        "text": "#FFFFFF",
+        "warning": "#FFC42E",
+        "yellow": "#FFC42E"
+      },
+      "delta_smoothing": 12.0,
+      "design_base_height": 620,
+      "design_base_width": 1500,
+      "elements": {
+        "delta_bar": {
+          "enabled": true,
+          "locked": true
+        },
+        "fastest_lap": {
+          "enabled": false,
+          "locked": false
+        },
+        "header": {
+          "enabled": true,
+          "locked": false
+        },
+        "history": {
+          "enabled": true,
+          "locked": false
+        },
+        "penalties": {
+          "enabled": true,
+          "locked": false
+        },
+        "sectors": {
+          "enabled": false,
+          "locked": false
+        },
+        "session_time": {
+          "enabled": true,
+          "locked": false
+        },
+        "session_type": {
+          "enabled": true,
+          "locked": false
+        },
+        "track_state": {
+          "enabled": true,
+          "locked": false
+        }
+      },
+      "enabled": true,
+      "fastest_lap_always_visible": true,
+      "fastest_lap_fade_seconds": 0.35,
+      "fastest_lap_show_seconds": 5.0,
+      "font": {
+        "family": "Bahnschrift Light SemiCondensed"
+      },
+      "history_points": 240,
+      "logo_directory": "images/logos",
+      "max_delta_seconds": 5.0,
+      "monitor": 0,
+      "opacity": 0.91,
+      "position": {
+        "x": 0.49166666666666664,
+        "y": 0.196
+      },
+      "scale": 0.8,
+      "section_backgrounds": true,
+      "show_manufacturer_logo": true,
+      "size": {
+        "height": 0.114,
+        "width": 0.21899999999999997
+      },
+      "snap_to_edges": true
+    }
+  },
+  "defaults": {
+    "delta": {
+      "enabled": true,
+      "monitor": 0,
+      "position": {
+        "x": 0.22,
+        "y": 0.18
+      },
+      "size": {
+        "width": 0.56,
+        "height": 0.36
+      },
+      "scale": 1.0,
+      "opacity": 0.96,
+      "background_enabled": true,
+      "section_backgrounds": true,
+      "background_opacity": 0.86,
+      "border_radius": 12,
+      "always_on_top": true,
+      "click_through": true,
+      "snap_to_edges": true,
+      "auto_fit_content": true,
+      "max_delta_seconds": 5.0,
+      "delta_smoothing": 12.0,
+      "history_points": 240,
+      "fastest_lap_show_seconds": 5.0,
+      "fastest_lap_fade_seconds": 0.3,
+      "fastest_lap_always_visible": false,
+      "announce_initial_fastest": false,
+      "show_manufacturer_logo": true,
+      "logo_directory": "images/logos",
+      "font": {
+        "family": "Arial"
+      },
+      "elements": {
+        "header": {
+          "enabled": true,
+          "locked": false
+        },
+        "session_time": {
+          "enabled": true,
+          "locked": false
+        },
+        "session_type": {
+          "enabled": true,
+          "locked": false
+        },
+        "track_state": {
+          "enabled": true,
+          "locked": false
+        },
+        "penalties": {
+          "enabled": true,
+          "locked": false
+        },
+        "history": {
+          "enabled": false,
+          "locked": false
+        },
+        "fastest_lap": {
+          "enabled": true,
+          "locked": false
+        },
+        "sectors": {
+          "enabled": true,
+          "locked": false
+        },
+        "delta_bar": {
+          "enabled": true,
+          "locked": true
+        }
+      },
+      "colors": {
+        "text": "#FFFFFF",
+        "muted": "#AAB2BD",
+        "background": "#070B12",
+        "panel": "#121821",
+        "fastest_panel": "#111720",
+        "grid": "#27313E",
+        "gain": "#009B00",
+        "loss": "#FF2828",
+        "neutral": "#5A5A5A",
+        "fastest": "#8B4DFF",
+        "warning": "#FFC42E",
+        "sector_neutral": "#5A5A5A",
+        "border": "#3A4452",
+        "edit_border": "#9B5CFF"
+      }
+    }
+  }
+}
