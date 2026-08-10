@@ -1,0 +1,56 @@
+{
+  "/rest/profile/": {
+    "name": "Romario santos",
+    "nick": "Romario santos",
+    "steamID": "76561199159238377"
+  },
+  "/rest/profile/profileInfo/getProfileInfo": {
+    "language": "brazilian",
+    "name": "Romario santos",
+    "nationality": "BR",
+    "nick": "Romario santos",
+    "steamID": "76561199159238377"
+  },
+  "/rest/multiplayer/teams": {
+    "coherenceId": 153,
+    "drivers": {
+      "Romario santos": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "BR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "0344474885647892615834",
+        "teamName": "DKR Engineering",
+        "uniqueTeamId": "utid2"
+      },
+      "admin": {
+        "isConnected": false,
+        "nationality": "",
+        "roles": [
+          "Admin"
+        ]
+      }
+    },
+    "teams": {
+      "utid2": {
+        "Id": "0344474885647892615834",
+        "carNumber": "4",
+        "drivers": {
+          "Romario santos": {
+            "badge": "none",
+            "nationality": "BR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "DKR Engineering",
+        "vehicle": "4_25_DKR_E8E7FBE8C"
+      }
+    }
+  }
+}

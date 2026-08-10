@@ -1,0 +1,196 @@
+{
+  "/rest/profile/": {
+    "name": "Romario santos",
+    "nick": "Romario santos",
+    "steamID": "76561199159238377"
+  },
+  "/rest/profile/profileInfo/getProfileInfo": {
+    "language": "brazilian",
+    "name": "Romario santos",
+    "nationality": "BR",
+    "nick": "Romario santos",
+    "steamID": "76561199159238377"
+  },
+  "/rest/multiplayer/teams": {
+    "coherenceId": 143,
+    "drivers": {
+      "Joao Neves#9594": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "BR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "9306086143018351730704",
+        "teamName": "CLX Motorsport",
+        "uniqueTeamId": "utid22"
+      },
+      "Manuel Ti": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "DE",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "4146172916429034984767",
+        "teamName": "Iron Lynx - Proton",
+        "uniqueTeamId": "utid29"
+      },
+      "Roman Sudarenko": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "DE",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "2369141431395767902734",
+        "teamName": "Iron Lynx - Proton",
+        "uniqueTeamId": "utid26"
+      },
+      "Roman Zukov": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "RU",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "2495685089446689453693",
+        "teamName": "Vector Sport",
+        "uniqueTeamId": "utid23"
+      },
+      "Romario santos": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "BR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "0344474885647892615834",
+        "teamName": "DKR Engineering",
+        "uniqueTeamId": "utid2"
+      },
+      "admin": {
+        "isConnected": false,
+        "nationality": "",
+        "roles": [
+          "Admin"
+        ]
+      },
+      "jawad frd": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "SA",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "9893087381146097956820",
+        "teamName": "Algarve Pro Racing",
+        "uniqueTeamId": "utid16"
+      }
+    },
+    "teams": {
+      "utid16": {
+        "Id": "9893087381146097956820",
+        "carNumber": "20",
+        "drivers": {
+          "jawad frd": {
+            "badge": "none",
+            "nationality": "SA",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Algarve Pro Racing",
+        "vehicle": "20_25_APR_712FB5CD"
+      },
+      "utid2": {
+        "Id": "0344474885647892615834",
+        "carNumber": "4",
+        "drivers": {
+          "Romario santos": {
+            "badge": "none",
+            "nationality": "BR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "DKR Engineering",
+        "vehicle": "4_25_DKR_E8E7FBE8C"
+      },
+      "utid22": {
+        "Id": "9306086143018351730704",
+        "carNumber": "47",
+        "drivers": {
+          "Joao Neves#9594": {
+            "badge": "none",
+            "nationality": "BR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "CLX Motorsport",
+        "vehicle": "47_25_CLX_44FB70E0"
+      },
+      "utid23": {
+        "Id": "2495685089446689453693",
+        "carNumber": "10",
+        "drivers": {
+          "Roman Zukov": {
+            "badge": "none",
+            "nationality": "RU",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Vector Sport",
+        "vehicle": "10_25_VECTEBE95FDC"
+      },
+      "utid26": {
+        "Id": "2369141431395767902734",
+        "carNumber": "9",
+        "drivers": {
+          "Roman Sudarenko": {
+            "badge": "none",
+            "nationality": "DE",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Iron Lynx - Proton",
+        "vehicle": "9_25_IRONL246BF580"
+      },
+      "utid29": {
+        "Id": "4146172916429034984767",
+        "carNumber": "9",
+        "drivers": {
+          "Manuel Ti": {
+            "badge": "none",
+            "nationality": "DE",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Iron Lynx - Proton",
+        "vehicle": "9_25_IRONL246BF580"
+      }
+    }
+  }
+}

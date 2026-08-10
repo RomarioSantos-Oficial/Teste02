@@ -1,0 +1,140 @@
+{
+  "/rest/profile/": {
+    "name": "Romario santos",
+    "nick": "Romario santos",
+    "steamID": "76561199159238377"
+  },
+  "/rest/profile/profileInfo/getProfileInfo": {
+    "language": "brazilian",
+    "name": "Romario santos",
+    "nationality": "BR",
+    "nick": "Romario santos",
+    "steamID": "76561199159238377"
+  },
+  "/rest/multiplayer/teams": {
+    "coherenceId": 17,
+    "drivers": {
+      "Ivan Mironov": {
+        "badge": "none",
+        "isConnected": false,
+        "nationality": "RU",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "3650646166330583360369",
+        "teamName": "Vector Sport",
+        "uniqueTeamId": "utid1"
+      },
+      "John booker": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "US",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "4111306169066619875069",
+        "teamName": "IDEC Sport",
+        "uniqueTeamId": "utid0"
+      },
+      "Marcos Carracedo": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "ES",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "5099155433606470169988",
+        "teamName": "TDS Racing",
+        "uniqueTeamId": "utid3"
+      },
+      "Romario santos": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "BR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "0344474885647892615834",
+        "teamName": "DKR Engineering",
+        "uniqueTeamId": "utid2"
+      },
+      "admin": {
+        "isConnected": false,
+        "nationality": "",
+        "roles": [
+          "Admin"
+        ]
+      }
+    },
+    "teams": {
+      "utid0": {
+        "Id": "4111306169066619875069",
+        "carNumber": "28",
+        "drivers": {
+          "John booker": {
+            "badge": "none",
+            "nationality": "US",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "IDEC Sport",
+        "vehicle": "28_25_IDECF74BA723"
+      },
+      "utid1": {
+        "Id": "3650646166330583360369",
+        "carNumber": "10",
+        "drivers": {
+          "Ivan Mironov": {
+            "badge": "none",
+            "nationality": "RU",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Vector Sport",
+        "vehicle": "10_25_VECTEBE95FDC"
+      },
+      "utid2": {
+        "Id": "0344474885647892615834",
+        "carNumber": "4",
+        "drivers": {
+          "Romario santos": {
+            "badge": "none",
+            "nationality": "BR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "DKR Engineering",
+        "vehicle": "4_25_DKR_E8E7FBE8C"
+      },
+      "utid3": {
+        "Id": "5099155433606470169988",
+        "carNumber": "29",
+        "drivers": {
+          "Marcos Carracedo": {
+            "badge": "none",
+            "nationality": "ES",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "TDS Racing",
+        "vehicle": "29_25_TDS_E049AA24"
+      }
+    }
+  }
+}

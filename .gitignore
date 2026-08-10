@@ -4,10 +4,6 @@ dist/
 build/work/
 
 # Configurações e dados locais do usuário
-src/config/widgets.local.json
-data/online_debug/
-data/online_profiles/*.json
-data/vehicle_catalog/*.local.json
 
 # Backups locais nunca fazem parte do pacote distribuível
 *.bak

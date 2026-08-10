@@ -1,0 +1,700 @@
+{
+  "/rest/profile/": {
+    "name": "Joana Silva",
+    "nick": "Joana Silva",
+    "steamID": "76561199474843283"
+  },
+  "/rest/profile/profileInfo/getProfileInfo": {
+    "language": "brazilian",
+    "name": "Joana Silva",
+    "nationality": "BR",
+    "nick": "Joana Silva",
+    "steamID": "76561199474843283"
+  },
+  "/rest/multiplayer/teams": {
+    "coherenceId": 132,
+    "drivers": {
+      "Davi Moraes": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "BR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "4401762060215253171628",
+        "teamName": "Iron Lynx",
+        "uniqueTeamId": "utid29"
+      },
+      "David Barba#5040": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "ES",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "5262513452575717205952",
+        "teamName": "Iron Lynx",
+        "uniqueTeamId": "utid8"
+      },
+      "Erik Hanke": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "DE",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "2670730215424271666077",
+        "teamName": "Heart of Racing Team",
+        "uniqueTeamId": "utid19"
+      },
+      "Evan Vaesken": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "FR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "8882078474797218696576",
+        "teamName": "Manthey DK Engineering",
+        "uniqueTeamId": "utid30"
+      },
+      "Florian Sommer#9716": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "AT",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "2319435617387769712166",
+        "teamName": "Proton Competition",
+        "uniqueTeamId": "utid26"
+      },
+      "Fra Erra": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "IT",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "7832020869390063845836",
+        "teamName": "Heart of Racing Team",
+        "uniqueTeamId": "utid34"
+      },
+      "Giorgos Kts": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "GR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "6979377080171635695895",
+        "teamName": "Racing Team Turkey by TF",
+        "uniqueTeamId": "utid2"
+      },
+      "J Bogerd": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "NL",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "7292743714786597535263",
+        "teamName": "United Autosports",
+        "uniqueTeamId": "utid20"
+      },
+      "Jef Haouari": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "BE",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "8258843271327927656823",
+        "teamName": "The Bend Manthey",
+        "uniqueTeamId": "utid31"
+      },
+      "Jethro Louis Punzalan": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "PH",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "4900081744757166632349",
+        "teamName": "Team WRT",
+        "uniqueTeamId": "utid16"
+      },
+      "Joana Silva": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "BR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "7986211279602322090809",
+        "teamName": "Team WRT",
+        "uniqueTeamId": "utid21"
+      },
+      "Koszegi Mate": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "HU",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "5010168279595366814569",
+        "teamName": "Akkodis ASP Team",
+        "uniqueTeamId": "utid32"
+      },
+      "Lee van Bee": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "ZA",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "5589650506686005640402",
+        "teamName": "Team WRT",
+        "uniqueTeamId": "utid27"
+      },
+      "Loic Menut": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "FR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "5152238160785252351651",
+        "teamName": "The Bend Manthey",
+        "uniqueTeamId": "utid9"
+      },
+      "Lorenzo Vaccari": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "IT",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "8249392624445552239911",
+        "teamName": "Proton Competition",
+        "uniqueTeamId": "utid4"
+      },
+      "Maks Hildebrandt": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "PL",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "0828115391054267205271",
+        "teamName": "Akkodis ASP Team",
+        "uniqueTeamId": "utid6"
+      },
+      "Martin Meike": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "DE",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "6481453213639066115769",
+        "teamName": "Team WRT",
+        "uniqueTeamId": "utid0"
+      },
+      "Paulie Dough": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "US",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "5660255480383035830648",
+        "teamName": "BMW M4 GT3 Custom Team 2026",
+        "uniqueTeamId": "utid28"
+      },
+      "Piotr Bryk": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "PL",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "2746832403044224540440",
+        "teamName": "Team WRT",
+        "uniqueTeamId": "utid13"
+      },
+      "Sergio Toledo": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "ES",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "8372260745266761905502",
+        "teamName": "Manthey DK Engineering",
+        "uniqueTeamId": "utid10"
+      },
+      "Stuart Harvey": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "GB",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "7771766687042241646611",
+        "teamName": "GR Racing",
+        "uniqueTeamId": "utid17"
+      },
+      "Wade Hoffman": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "ZA",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "4420942798177460272065",
+        "teamName": "Kessel Racing",
+        "uniqueTeamId": "utid3"
+      },
+      "admin": {
+        "isConnected": false,
+        "nationality": "",
+        "roles": [
+          "Admin"
+        ]
+      },
+      "kevin wallet": {
+        "badge": "none",
+        "isConnected": false,
+        "nationality": "FR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "1905918343102687324709",
+        "teamName": "Iron Lynx",
+        "uniqueTeamId": "utid33"
+      },
+      "kyrian Chauvet": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "FR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "7434407469451801877013",
+        "teamName": "Iron Lynx",
+        "uniqueTeamId": "utid15"
+      }
+    },
+    "teams": {
+      "utid0": {
+        "Id": "6481453213639066115769",
+        "carNumber": "32",
+        "drivers": {
+          "Martin Meike": {
+            "badge": "none",
+            "nationality": "DE",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Team WRT",
+        "vehicle": "32_26_WRT_83524148"
+      },
+      "utid10": {
+        "Id": "8372260745266761905502",
+        "carNumber": "91",
+        "drivers": {
+          "Sergio Toledo": {
+            "badge": "none",
+            "nationality": "ES",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Manthey DK Engineering",
+        "vehicle": "91_26_MANT18218509"
+      },
+      "utid13": {
+        "Id": "2746832403044224540440",
+        "carNumber": "69",
+        "drivers": {
+          "Piotr Bryk": {
+            "badge": "none",
+            "nationality": "PL",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Team WRT",
+        "vehicle": "69_26_WRT_56324638"
+      },
+      "utid15": {
+        "Id": "7434407469451801877013",
+        "carNumber": "61",
+        "drivers": {
+          "kyrian Chauvet": {
+            "badge": "none",
+            "nationality": "FR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Iron Lynx",
+        "vehicle": "61_26_IRON17109319"
+      },
+      "utid16": {
+        "Id": "4900081744757166632349",
+        "carNumber": "32",
+        "drivers": {
+          "Jethro Louis Punzalan": {
+            "badge": "none",
+            "nationality": "PH",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Team WRT",
+        "vehicle": "32_26_WRT_83524148"
+      },
+      "utid17": {
+        "Id": "7771766687042241646611",
+        "carNumber": "86",
+        "drivers": {
+          "Stuart Harvey": {
+            "badge": "none",
+            "nationality": "GB",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "GR Racing",
+        "vehicle": "86_24_GRR_82B297D8"
+      },
+      "utid19": {
+        "Id": "2670730215424271666077",
+        "carNumber": "23",
+        "drivers": {
+          "Erik Hanke": {
+            "badge": "none",
+            "nationality": "DE",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Heart of Racing Team",
+        "vehicle": "23_26_THOR59931582"
+      },
+      "utid2": {
+        "Id": "6979377080171635695895",
+        "carNumber": "34",
+        "drivers": {
+          "Giorgos Kts": {
+            "badge": "none",
+            "nationality": "GR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Racing Team Turkey by TF",
+        "vehicle": "34_26_TFSP47451091"
+      },
+      "utid20": {
+        "Id": "7292743714786597535263",
+        "carNumber": "95",
+        "drivers": {
+          "J Bogerd": {
+            "badge": "none",
+            "nationality": "NL",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "United Autosports",
+        "vehicle": "95_24_UNITE72F634D"
+      },
+      "utid21": {
+        "Id": "7986211279602322090809",
+        "carNumber": "69",
+        "drivers": {
+          "Joana Silva": {
+            "badge": "none",
+            "nationality": "BR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Team WRT",
+        "vehicle": "69_26_WRT_56324638"
+      },
+      "utid26": {
+        "Id": "2319435617387769712166",
+        "carNumber": "88",
+        "drivers": {
+          "Florian Sommer#9716": {
+            "badge": "none",
+            "nationality": "AT",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Proton Competition",
+        "vehicle": "88_25_PROTEFF5EDCF"
+      },
+      "utid27": {
+        "Id": "5589650506686005640402",
+        "carNumber": "31",
+        "drivers": {
+          "Lee van Bee": {
+            "badge": "none",
+            "nationality": "ZA",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Team WRT",
+        "vehicle": "31_24_WRT_6CBE4475"
+      },
+      "utid28": {
+        "Id": "5660255480383035830648",
+        "carNumber": "397",
+        "drivers": {
+          "Paulie Dough": {
+            "badge": "none",
+            "nationality": "US",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "BMW M4 GT3 Custom Team 2026",
+        "vehicle": "397_26_BMW"
+      },
+      "utid29": {
+        "Id": "4401762060215253171628",
+        "carNumber": "61",
+        "drivers": {
+          "Davi Moraes": {
+            "badge": "none",
+            "nationality": "BR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Iron Lynx",
+        "vehicle": "61_26_IRON17109319"
+      },
+      "utid3": {
+        "Id": "4420942798177460272065",
+        "carNumber": "57",
+        "drivers": {
+          "Wade Hoffman": {
+            "badge": "none",
+            "nationality": "ZA",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Kessel Racing",
+        "vehicle": "57_25_KESS202D81B1"
+      },
+      "utid30": {
+        "Id": "8882078474797218696576",
+        "carNumber": "91",
+        "drivers": {
+          "Evan Vaesken": {
+            "badge": "none",
+            "nationality": "FR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Manthey DK Engineering",
+        "vehicle": "91_26_MANT18218509"
+      },
+      "utid31": {
+        "Id": "8258843271327927656823",
+        "carNumber": "92",
+        "drivers": {
+          "Jef Haouari": {
+            "badge": "none",
+            "nationality": "BE",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "The Bend Manthey",
+        "vehicle": "92_26_MANT22466058"
+      },
+      "utid32": {
+        "Id": "5010168279595366814569",
+        "carNumber": "87",
+        "drivers": {
+          "Koszegi Mate": {
+            "badge": "none",
+            "nationality": "HU",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Akkodis ASP Team",
+        "vehicle": "87_26_AKKO74271960"
+      },
+      "utid33": {
+        "Id": "1905918343102687324709",
+        "carNumber": "60",
+        "drivers": {
+          "kevin wallet": {
+            "badge": "none",
+            "nationality": "FR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Iron Lynx",
+        "vehicle": "60_24_IRONDCDFC07B"
+      },
+      "utid34": {
+        "Id": "7832020869390063845836",
+        "carNumber": "23",
+        "drivers": {
+          "Fra Erra": {
+            "badge": "none",
+            "nationality": "IT",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Heart of Racing Team",
+        "vehicle": "23_26_THOR59931582"
+      },
+      "utid4": {
+        "Id": "8249392624445552239911",
+        "carNumber": "77",
+        "drivers": {
+          "Lorenzo Vaccari": {
+            "badge": "none",
+            "nationality": "IT",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Proton Competition",
+        "vehicle": "77_26_PROT51390877"
+      },
+      "utid6": {
+        "Id": "0828115391054267205271",
+        "carNumber": "78",
+        "drivers": {
+          "Maks Hildebrandt": {
+            "badge": "none",
+            "nationality": "PL",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Akkodis ASP Team",
+        "vehicle": "78_25_AKKOF71490E4"
+      },
+      "utid8": {
+        "Id": "5262513452575717205952",
+        "carNumber": "60",
+        "drivers": {
+          "David Barba#5040": {
+            "badge": "none",
+            "nationality": "ES",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Iron Lynx",
+        "vehicle": "60_24_IRONDCDFC07B"
+      },
+      "utid9": {
+        "Id": "5152238160785252351651",
+        "carNumber": "92",
+        "drivers": {
+          "Loic Menut": {
+            "badge": "none",
+            "nationality": "FR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "The Bend Manthey",
+        "vehicle": "92_26_MANT22466058"
+      }
+    }
+  }
+}

@@ -1,0 +1,560 @@
+{
+  "/rest/profile/": {
+    "name": "Romario santos",
+    "nick": "Romario santos",
+    "steamID": "76561199159238377"
+  },
+  "/rest/profile/profileInfo/getProfileInfo": {
+    "language": "brazilian",
+    "name": "Romario santos",
+    "nationality": "BR",
+    "nick": "Romario santos",
+    "steamID": "76561199159238377"
+  },
+  "/rest/multiplayer/teams": {
+    "coherenceId": 97,
+    "drivers": {
+      "Beni Romero": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "ES",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "8653942708359958584144",
+        "teamName": "Iron Lynx - Proton",
+        "uniqueTeamId": "utid15"
+      },
+      "Charlie Sheen": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "PT",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "4252887346932859617091",
+        "teamName": "United Autosports",
+        "uniqueTeamId": "utid14"
+      },
+      "Daniel Rodriguez Martinez": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "ES",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "3242994300656799449891",
+        "teamName": "Algarve Pro Racing",
+        "uniqueTeamId": "utid20"
+      },
+      "Demetrio Anastasio": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "IT",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "8169815423098412012589",
+        "teamName": "EuroInternational",
+        "uniqueTeamId": "utid9"
+      },
+      "Italo Lucano": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "IT",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "6509037962135905291200",
+        "teamName": "TDS Racing",
+        "uniqueTeamId": "utid25"
+      },
+      "Ivan Pegoraro": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "IT",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "9550699614410733414421",
+        "teamName": "SIMRACING CREW",
+        "uniqueTeamId": "utid7"
+      },
+      "Joao Neves#9594": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "BR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "9306086143018351730704",
+        "teamName": "CLX Motorsport",
+        "uniqueTeamId": "utid22"
+      },
+      "Jortx Lemans": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "ES",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "1271538147765202776544",
+        "teamName": "Proton Competition",
+        "uniqueTeamId": "utid21"
+      },
+      "Maks Sobczak": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "PL",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "2013660666839245179773",
+        "teamName": "Inter Europol Competition",
+        "uniqueTeamId": "utid18"
+      },
+      "Manuel Ti": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "DE",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "0256090660166859761637",
+        "teamName": "ADESS Racing Team 2025",
+        "uniqueTeamId": "utid8"
+      },
+      "Marcos Carracedo": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "ES",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "5099155433606470169988",
+        "teamName": "TDS Racing",
+        "uniqueTeamId": "utid3"
+      },
+      "Mr Lolek": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "PL",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "4485807082048088708256",
+        "teamName": "Inter Europol Competition",
+        "uniqueTeamId": "utid19"
+      },
+      "Rafael Pastore": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "BR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "8353593063811289217368",
+        "teamName": "TDS Racing",
+        "uniqueTeamId": "utid11"
+      },
+      "Roman Baker": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "FR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "3579854108940026768254",
+        "teamName": "TDS Racing",
+        "uniqueTeamId": "utid10"
+      },
+      "Roman Zukov": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "RU",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "2495685089446689453693",
+        "teamName": "Vector Sport",
+        "uniqueTeamId": "utid23"
+      },
+      "Romario santos": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "BR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "0344474885647892615834",
+        "teamName": "DKR Engineering",
+        "uniqueTeamId": "utid2"
+      },
+      "Thomas Grube": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "DE",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "1391997596541842688146",
+        "teamName": "Proton Competition",
+        "uniqueTeamId": "utid13"
+      },
+      "UN ANSWERED": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "UA",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "7378306670903970293200",
+        "teamName": "WTM by Rinaldi Racing",
+        "uniqueTeamId": "utid12"
+      },
+      "admin": {
+        "isConnected": false,
+        "nationality": "",
+        "roles": [
+          "Admin"
+        ]
+      },
+      "jawad frd": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "SA",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "9893087381146097956820",
+        "teamName": "Algarve Pro Racing",
+        "uniqueTeamId": "utid16"
+      }
+    },
+    "teams": {
+      "utid10": {
+        "Id": "3579854108940026768254",
+        "carNumber": "29",
+        "drivers": {
+          "Roman Baker": {
+            "badge": "none",
+            "nationality": "FR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "TDS Racing",
+        "vehicle": "29_25_TDS_E049AA24"
+      },
+      "utid11": {
+        "Id": "8353593063811289217368",
+        "carNumber": "29",
+        "drivers": {
+          "Rafael Pastore": {
+            "badge": "none",
+            "nationality": "BR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "TDS Racing",
+        "vehicle": "29_25_TDS_E049AA24"
+      },
+      "utid12": {
+        "Id": "7378306670903970293200",
+        "carNumber": "12",
+        "drivers": {
+          "UN ANSWERED": {
+            "badge": "none",
+            "nationality": "UA",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "WTM by Rinaldi Racing",
+        "vehicle": "12_25_WTM_7FC250D8"
+      },
+      "utid13": {
+        "Id": "1391997596541842688146",
+        "carNumber": "77",
+        "drivers": {
+          "Thomas Grube": {
+            "badge": "none",
+            "nationality": "DE",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Proton Competition",
+        "vehicle": "77_25_PROTA67EED77"
+      },
+      "utid14": {
+        "Id": "4252887346932859617091",
+        "carNumber": "21",
+        "drivers": {
+          "Charlie Sheen": {
+            "badge": "none",
+            "nationality": "PT",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "United Autosports",
+        "vehicle": "21_25_UNIT606848DD"
+      },
+      "utid15": {
+        "Id": "8653942708359958584144",
+        "carNumber": "9",
+        "drivers": {
+          "Beni Romero": {
+            "badge": "none",
+            "nationality": "ES",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Iron Lynx - Proton",
+        "vehicle": "9_25_IRONL246BF580"
+      },
+      "utid16": {
+        "Id": "9893087381146097956820",
+        "carNumber": "20",
+        "drivers": {
+          "jawad frd": {
+            "badge": "none",
+            "nationality": "SA",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Algarve Pro Racing",
+        "vehicle": "20_25_APR_712FB5CD"
+      },
+      "utid18": {
+        "Id": "2013660666839245179773",
+        "carNumber": "43",
+        "drivers": {
+          "Maks Sobczak": {
+            "badge": "none",
+            "nationality": "PL",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Inter Europol Competition",
+        "vehicle": "43_25_INTEDD73CA23"
+      },
+      "utid19": {
+        "Id": "4485807082048088708256",
+        "carNumber": "43",
+        "drivers": {
+          "Mr Lolek": {
+            "badge": "none",
+            "nationality": "PL",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Inter Europol Competition",
+        "vehicle": "43_25_INTEDD73CA23"
+      },
+      "utid2": {
+        "Id": "0344474885647892615834",
+        "carNumber": "4",
+        "drivers": {
+          "Romario santos": {
+            "badge": "none",
+            "nationality": "BR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "DKR Engineering",
+        "vehicle": "4_25_DKR_E8E7FBE8C"
+      },
+      "utid20": {
+        "Id": "3242994300656799449891",
+        "carNumber": "20",
+        "drivers": {
+          "Daniel Rodriguez Martinez": {
+            "badge": "none",
+            "nationality": "ES",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Algarve Pro Racing",
+        "vehicle": "20_25_APR_712FB5CD"
+      },
+      "utid21": {
+        "Id": "1271538147765202776544",
+        "carNumber": "77",
+        "drivers": {
+          "Jortx Lemans": {
+            "badge": "none",
+            "nationality": "ES",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Proton Competition",
+        "vehicle": "77_25_PROTA67EED77"
+      },
+      "utid22": {
+        "Id": "9306086143018351730704",
+        "carNumber": "47",
+        "drivers": {
+          "Joao Neves#9594": {
+            "badge": "none",
+            "nationality": "BR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "CLX Motorsport",
+        "vehicle": "47_25_CLX_44FB70E0"
+      },
+      "utid23": {
+        "Id": "2495685089446689453693",
+        "carNumber": "10",
+        "drivers": {
+          "Roman Zukov": {
+            "badge": "none",
+            "nationality": "RU",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Vector Sport",
+        "vehicle": "10_25_VECTEBE95FDC"
+      },
+      "utid25": {
+        "Id": "6509037962135905291200",
+        "carNumber": "29",
+        "drivers": {
+          "Italo Lucano": {
+            "badge": "none",
+            "nationality": "IT",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "TDS Racing",
+        "vehicle": "29_25_TDS_E049AA24"
+      },
+      "utid3": {
+        "Id": "5099155433606470169988",
+        "carNumber": "29",
+        "drivers": {
+          "Marcos Carracedo": {
+            "badge": "none",
+            "nationality": "ES",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "TDS Racing",
+        "vehicle": "29_25_TDS_E049AA24"
+      },
+      "utid7": {
+        "Id": "9550699614410733414421",
+        "carNumber": "83",
+        "drivers": {
+          "Ivan Pegoraro": {
+            "badge": "none",
+            "nationality": "IT",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "SIMRACING CREW",
+        "vehicle": "397_25ELMS_ORECA07"
+      },
+      "utid8": {
+        "Id": "0256090660166859761637",
+        "carNumber": "46",
+        "drivers": {
+          "Manuel Ti": {
+            "badge": "none",
+            "nationality": "DE",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "ADESS Racing Team 2025",
+        "vehicle": "46_25_ADES51981969"
+      },
+      "utid9": {
+        "Id": "8169815423098412012589",
+        "carNumber": "11",
+        "drivers": {
+          "Demetrio Anastasio": {
+            "badge": "none",
+            "nationality": "IT",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "EuroInternational",
+        "vehicle": "11_25_EURO50DECB8E"
+      }
+    }
+  }
+}

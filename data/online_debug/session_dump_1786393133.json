@@ -1,0 +1,766 @@
+{
+  "/rest/profile/": {
+    "name": "Joana Silva",
+    "nick": "Joana Silva",
+    "steamID": "76561199474843283"
+  },
+  "/rest/profile/profileInfo/getProfileInfo": {
+    "language": "brazilian",
+    "name": "Joana Silva",
+    "nationality": "BR",
+    "nick": "Joana Silva",
+    "steamID": "76561199474843283"
+  },
+  "/rest/multiplayer/teams": {
+    "coherenceId": 115,
+    "drivers": {
+      "Alan Hateluk": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "AR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "4911513851868830053420",
+        "teamName": "DKR Engineering",
+        "uniqueTeamId": "utid26"
+      },
+      "Boisserie loan": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "FR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "6609830384746516115604",
+        "teamName": "WTM by Rinaldi Racing",
+        "uniqueTeamId": "utid30"
+      },
+      "Chris Cruz#1957": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "MX",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "5749624809534732118216",
+        "teamName": "AF Corse",
+        "uniqueTeamId": "utid7"
+      },
+      "Claudio Bagnaia": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "IT",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "6202412796028142007328",
+        "teamName": "Oreca 07 ELMS Custom Team 2025",
+        "uniqueTeamId": "utid24"
+      },
+      "Emmanuel Valadez": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "MX",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "6459167627298381020924",
+        "teamName": "IDEC Sport",
+        "uniqueTeamId": "utid6"
+      },
+      "Feliks Czef": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "PL",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "7074315716910875286409",
+        "teamName": "Iron Lynx - Proton",
+        "uniqueTeamId": "utid14"
+      },
+      "Florentin Muehlbacher": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "AT",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "9743115502206687727926",
+        "teamName": "Vector Sport",
+        "uniqueTeamId": "utid29"
+      },
+      "Gethin Jones": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "GB",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "1556984085189514393328",
+        "teamName": "Duqueine Team",
+        "uniqueTeamId": "utid28"
+      },
+      "Goia Cristian": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "RO",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "5985735767926025513452",
+        "teamName": "Inter Europol Competition",
+        "uniqueTeamId": "utid15"
+      },
+      "Guillermo Herranz": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "ES",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "3714885870043339100629",
+        "teamName": "DKR Engineering",
+        "uniqueTeamId": "utid23"
+      },
+      "Hat Kar": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "NL",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "2039475674886661527019",
+        "teamName": "WTM by Rinaldi Racing",
+        "uniqueTeamId": "utid8"
+      },
+      "Hugues Almorin": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "FR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "2712674435412995314145",
+        "teamName": "AO by TF",
+        "uniqueTeamId": "utid19"
+      },
+      "Jerome Paganelli": {
+        "isConnected": false,
+        "nationality": "FR",
+        "roles": null
+      },
+      "Joana Silva": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "BR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "2551880750827378140005",
+        "teamName": "DKR Engineering",
+        "uniqueTeamId": "utid31"
+      },
+      "Joao Whomask": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "BR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "7145592574569112345939",
+        "teamName": "CLX Motorsport",
+        "uniqueTeamId": "utid9"
+      },
+      "John booker": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "US",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "0407658485702545867256",
+        "teamName": "IDEC Sport",
+        "uniqueTeamId": "utid22"
+      },
+      "Juan Parrona": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "ES",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "9834259471785938692838",
+        "teamName": "Team Virage",
+        "uniqueTeamId": "utid13"
+      },
+      "Keegan Warner": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "CA",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "3753839551466256602393",
+        "teamName": "cumguzzlers",
+        "uniqueTeamId": "utid1"
+      },
+      "Laercio Bernardo Dias": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "BR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "9622884878907782769067",
+        "teamName": "Iron Lynx - Proton",
+        "uniqueTeamId": "utid21"
+      },
+      "Leo Zippel": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "DE",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "8813301142925447110188",
+        "teamName": "VDS Panis Racing",
+        "uniqueTeamId": "utid2"
+      },
+      "Mamoudou Doumbouya": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "GN",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "0166691893986019660691",
+        "teamName": "IDEC Sport",
+        "uniqueTeamId": "utid20"
+      },
+      "Marc Perez Ortega": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "ES",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "9175268622154978383994",
+        "teamName": "Inter Europol Competition",
+        "uniqueTeamId": "utid10"
+      },
+      "Marcos Carracedo": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "ES",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "1473237022645709903314",
+        "teamName": "TDS Racing",
+        "uniqueTeamId": "utid4"
+      },
+      "Markus Gund": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "DE",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "3459321307245737522548",
+        "teamName": "DKR Engineering",
+        "uniqueTeamId": "utid3"
+      },
+      "Mathew Starck": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "FR",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "9108265492425191509048",
+        "teamName": "IDEC Sport",
+        "uniqueTeamId": "utid25"
+      },
+      "Paul Koller": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "CH",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "5221391374821990844917",
+        "teamName": "AF Corse",
+        "uniqueTeamId": "utid12"
+      },
+      "Rene Jacobs": {
+        "isConnected": true,
+        "nationality": "NL",
+        "roles": null
+      },
+      "Sergio Toledo": {
+        "badge": "none",
+        "isConnected": true,
+        "nationality": "ES",
+        "roles": [
+          "Driver",
+          "Owner"
+        ],
+        "teamId": "9652656718350151463947",
+        "teamName": "DKR Engineering",
+        "uniqueTeamId": "utid16"
+      },
+      "admin": {
+        "isConnected": false,
+        "nationality": "",
+        "roles": [
+          "Admin"
+        ]
+      }
+    },
+    "teams": {
+      "utid1": {
+        "Id": "3753839551466256602393",
+        "carNumber": "60",
+        "drivers": {
+          "Keegan Warner": {
+            "badge": "none",
+            "nationality": "CA",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "cumguzzlers",
+        "vehicle": "397_25ELMS_ORECA07"
+      },
+      "utid10": {
+        "Id": "9175268622154978383994",
+        "carNumber": "34",
+        "drivers": {
+          "Marc Perez Ortega": {
+            "badge": "none",
+            "nationality": "ES",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Inter Europol Competition",
+        "vehicle": "34_25_INTE66B07525"
+      },
+      "utid12": {
+        "Id": "5221391374821990844917",
+        "carNumber": "83",
+        "drivers": {
+          "Paul Koller": {
+            "badge": "none",
+            "nationality": "CH",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "AF Corse",
+        "vehicle": "83_25_AFCODD58D0A5"
+      },
+      "utid13": {
+        "Id": "9834259471785938692838",
+        "carNumber": "8",
+        "drivers": {
+          "Juan Parrona": {
+            "badge": "none",
+            "nationality": "ES",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Team Virage",
+        "vehicle": "8_25_VIRAG12BC27D3"
+      },
+      "utid14": {
+        "Id": "7074315716910875286409",
+        "carNumber": "9",
+        "drivers": {
+          "Feliks Czef": {
+            "badge": "none",
+            "nationality": "PL",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Iron Lynx - Proton",
+        "vehicle": "9_25_IRONL246BF580"
+      },
+      "utid15": {
+        "Id": "5985735767926025513452",
+        "carNumber": "34",
+        "drivers": {
+          "Goia Cristian": {
+            "badge": "none",
+            "nationality": "RO",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Inter Europol Competition",
+        "vehicle": "34_25_INTE66B07525"
+      },
+      "utid16": {
+        "Id": "9652656718350151463947",
+        "carNumber": "4",
+        "drivers": {
+          "Sergio Toledo": {
+            "badge": "none",
+            "nationality": "ES",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "DKR Engineering",
+        "vehicle": "4_25_DKR_E8E7FBE8C"
+      },
+      "utid19": {
+        "Id": "2712674435412995314145",
+        "carNumber": "99",
+        "drivers": {
+          "Hugues Almorin": {
+            "badge": "none",
+            "nationality": "FR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "AO by TF",
+        "vehicle": "99_25_AO_E58B41E50"
+      },
+      "utid2": {
+        "Id": "8813301142925447110188",
+        "carNumber": "48",
+        "drivers": {
+          "Leo Zippel": {
+            "badge": "none",
+            "nationality": "DE",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "VDS Panis Racing",
+        "vehicle": "48_25_PANI8429A0A0"
+      },
+      "utid20": {
+        "Id": "0166691893986019660691",
+        "carNumber": "18",
+        "drivers": {
+          "Mamoudou Doumbouya": {
+            "badge": "none",
+            "nationality": "GN",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "IDEC Sport",
+        "vehicle": "18_25_IDECAC12FD00"
+      },
+      "utid21": {
+        "Id": "9622884878907782769067",
+        "carNumber": "9",
+        "drivers": {
+          "Laercio Bernardo Dias": {
+            "badge": "none",
+            "nationality": "BR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Iron Lynx - Proton",
+        "vehicle": "9_25_IRONL246BF580"
+      },
+      "utid22": {
+        "Id": "0407658485702545867256",
+        "carNumber": "28",
+        "drivers": {
+          "John booker": {
+            "badge": "none",
+            "nationality": "US",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "IDEC Sport",
+        "vehicle": "28_25_IDECF74BA723"
+      },
+      "utid23": {
+        "Id": "3714885870043339100629",
+        "carNumber": "3",
+        "drivers": {
+          "Guillermo Herranz": {
+            "badge": "none",
+            "nationality": "ES",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "DKR Engineering",
+        "vehicle": "3_25_DKR_EA051AD3A"
+      },
+      "utid24": {
+        "Id": "6202412796028142007328",
+        "carNumber": "397",
+        "drivers": {
+          "Claudio Bagnaia": {
+            "badge": "none",
+            "nationality": "IT",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Oreca 07 ELMS Custom Team 2025",
+        "vehicle": "397_25ELMS_ORECA07"
+      },
+      "utid25": {
+        "Id": "9108265492425191509048",
+        "carNumber": "28",
+        "drivers": {
+          "Mathew Starck": {
+            "badge": "none",
+            "nationality": "FR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "IDEC Sport",
+        "vehicle": "28_25_IDECF74BA723"
+      },
+      "utid26": {
+        "Id": "4911513851868830053420",
+        "carNumber": "4",
+        "drivers": {
+          "Alan Hateluk": {
+            "badge": "none",
+            "nationality": "AR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "DKR Engineering",
+        "vehicle": "4_25_DKR_E8E7FBE8C"
+      },
+      "utid28": {
+        "Id": "1556984085189514393328",
+        "carNumber": "30",
+        "drivers": {
+          "Gethin Jones": {
+            "badge": "none",
+            "nationality": "GB",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Duqueine Team",
+        "vehicle": "30_25_DUQUB0EF584B"
+      },
+      "utid29": {
+        "Id": "9743115502206687727926",
+        "carNumber": "10",
+        "drivers": {
+          "Florentin Muehlbacher": {
+            "badge": "none",
+            "nationality": "AT",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "Vector Sport",
+        "vehicle": "10_25_VECTEBE95FDC"
+      },
+      "utid3": {
+        "Id": "3459321307245737522548",
+        "carNumber": "4",
+        "drivers": {
+          "Markus Gund": {
+            "badge": "none",
+            "nationality": "DE",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "DKR Engineering",
+        "vehicle": "4_25_DKR_E8E7FBE8C"
+      },
+      "utid30": {
+        "Id": "6609830384746516115604",
+        "carNumber": "12",
+        "drivers": {
+          "Boisserie loan": {
+            "badge": "none",
+            "nationality": "FR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "WTM by Rinaldi Racing",
+        "vehicle": "12_25_WTM_7FC250D8"
+      },
+      "utid31": {
+        "Id": "2551880750827378140005",
+        "carNumber": "4",
+        "drivers": {
+          "Joana Silva": {
+            "badge": "none",
+            "nationality": "BR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "DKR Engineering",
+        "vehicle": "4_25_DKR_E8E7FBE8C"
+      },
+      "utid4": {
+        "Id": "1473237022645709903314",
+        "carNumber": "29",
+        "drivers": {
+          "Marcos Carracedo": {
+            "badge": "none",
+            "nationality": "ES",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "TDS Racing",
+        "vehicle": "29_25_TDS_E049AA24"
+      },
+      "utid6": {
+        "Id": "6459167627298381020924",
+        "carNumber": "28",
+        "drivers": {
+          "Emmanuel Valadez": {
+            "badge": "none",
+            "nationality": "MX",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "IDEC Sport",
+        "vehicle": "28_25_IDECDFE8696B"
+      },
+      "utid7": {
+        "Id": "5749624809534732118216",
+        "carNumber": "83",
+        "drivers": {
+          "Chris Cruz#1957": {
+            "badge": "none",
+            "nationality": "MX",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "AF Corse",
+        "vehicle": "83_25_AFCODD58D0A5"
+      },
+      "utid8": {
+        "Id": "2039475674886661527019",
+        "carNumber": "12",
+        "drivers": {
+          "Hat Kar": {
+            "badge": "none",
+            "nationality": "NL",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "WTM by Rinaldi Racing",
+        "vehicle": "12_25_WTM_7FC250D8"
+      },
+      "utid9": {
+        "Id": "7145592574569112345939",
+        "carNumber": "47",
+        "drivers": {
+          "Joao Whomask": {
+            "badge": "none",
+            "nationality": "BR",
+            "roles": [
+              "Driver",
+              "Owner"
+            ]
+          }
+        },
+        "name": "CLX Motorsport",
+        "vehicle": "47_25_CLX_44FB70E0"
+      }
+    }
+  }
+}
