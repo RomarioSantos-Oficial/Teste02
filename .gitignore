@@ -1,10 +1,11 @@
 ﻿.venv/
-app/
+app/*
+!app/README.md
 dist/
 build/work/
 
 # Configurações e dados locais do usuário
-run.py
+data/online_debug/session_dump_*.json
 
 # Backups locais nunca fazem parte do pacote distribuível
 *.bak

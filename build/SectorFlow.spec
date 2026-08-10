@@ -6,24 +6,30 @@
 # Para usar: pyinstaller SectorFlow.spec
 # Executar no Windows com Python 3.10+ e PySide6 instalado
 
+from pathlib import Path
+
 block_cipher = None
+PROJECT_ROOT = Path(SPECPATH).parent
 
 a = Analysis(
-    ['../src/tools/run_sector_flow_lmu.py'],
-    pathex=[],
+    [str(PROJECT_ROOT / 'run.py')],
+    pathex=[
+        str(PROJECT_ROOT),
+        str(PROJECT_ROOT / 'vendor/pyLMUSharedMemory'),
+    ],
     binaries=[],
     datas=[
         # Imagens (logos, badges, flags, tempo, logo principal)
-        ('../images', 'images'),
+        (str(PROJECT_ROOT / 'images'), 'images'),
         # Dados (flags, track_maps, vehicle_catalog, online_profiles)
-        ('../data/flags', 'data/flags'),
-        ('../data/track_maps', 'data/track_maps'),
-        ('../data/vehicle_catalog', 'data/vehicle_catalog'),
-        ('../data/online_profiles', 'data/online_profiles'),
+        (str(PROJECT_ROOT / 'data/flags'), 'data/flags'),
+        (str(PROJECT_ROOT / 'data/track_maps'), 'data/track_maps'),
+        (str(PROJECT_ROOT / 'data/vehicle_catalog'), 'data/vehicle_catalog'),
+        (str(PROJECT_ROOT / 'data/online_profiles'), 'data/online_profiles'),
         # Configuração principal
-        ('../src/config/widgets.json', 'src/config'),
+        (str(PROJECT_ROOT / 'src/config/*.json'), 'src/config'),
         # Bibliotecas LMU (vendor)
-        ('../vendor', 'vendor'),
+        (str(PROJECT_ROOT / 'vendor'), 'vendor'),
     ],
     hiddenimports=[
         # PySide6 essencial
@@ -72,11 +78,9 @@ a = Analysis(
         # Widgets individuais
         'src.widget.battery.battery_widget',
         'src.widget.battery.battery_editor',
-        'src.widget.battery.battery_logic',
         'src.widget.battery.battery_models',
         'src.widget.delta.delta_widget',
         'src.widget.delta.delta_editor',
-        'src.widget.delta.delta_logic',
         'src.widget.delta.delta_models',
         'src.widget.delta.delta_renderer',
         'src.widget.driver_panel.driver_panel_widget',
@@ -137,7 +141,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='../images/logo/Logo.png',
+    icon=str(PROJECT_ROOT / 'images/logo/Logo.ico'),
 )
 
 coll = COLLECT(

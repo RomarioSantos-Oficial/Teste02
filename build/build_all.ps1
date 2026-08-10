@@ -25,21 +25,24 @@ Write-Host "[1/6] Verificando Python..." -ForegroundColor Yellow
 $pythonVersion = python --version 2>&1
 Write-Host "  $pythonVersion" -ForegroundColor Green
 
-# 2. Instalar dependencias
-Write-Host "[2/6] Verificando/Instalando dependencias..." -ForegroundColor Yellow
-pip install PySide6 pyinstaller --quiet
+# 2. Usar o ambiente virtual do projeto
+Write-Host "[2/6] Verificando dependencias..." -ForegroundColor Yellow
+$PythonExe = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
+if (-not (Test-Path $PythonExe)) {
+    throw "Ambiente virtual nao encontrado: $PythonExe"
+}
+& $PythonExe -c "import PySide6, PyInstaller, websockets"
 Write-Host "  Dependencias OK" -ForegroundColor Green
 
 # 3. Limpar build anterior
 Write-Host "[3/6] Limpando builds anteriores..." -ForegroundColor Yellow
-if (Test-Path "build") { Remove-Item -Recurse -Force "build" }
-if (Test-Path "dist") { Remove-Item -Recurse -Force "dist" }
-New-Item -ItemType Directory -Force -Path "build" | Out-Null
+if (Test-Path "build\work") { Remove-Item -Recurse -Force "build\work" }
+if (Test-Path "dist\SectorFlow") { Remove-Item -Recurse -Force "dist\SectorFlow" }
 Write-Host "  Limpeza OK" -ForegroundColor Green
 
 # 4. Build com PyInstaller
 Write-Host "[4/6] Gerando executavel com PyInstaller..." -ForegroundColor Yellow
-pyinstaller --clean --noconfirm build\SectorFlow.spec
+& $PythonExe -m PyInstaller --clean --noconfirm --workpath build\work build\SectorFlow.spec
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERRO] PyInstaller falhou!" -ForegroundColor Red
@@ -72,10 +75,14 @@ Write-Host ""
 Write-Host "  Executavel:     $OutputDir\SectorFlow.exe" -ForegroundColor Green
 Write-Host "  Pasta completa: $OutputDir\" -ForegroundColor Green
 Write-Host ""
-Write-Host "  Para gerar o instalador (.exe setup):" -ForegroundColor Yellow
-Write-Host "  1. Instale Inno Setup 6+: https://jrsoftware.org/isinfo.php" -ForegroundColor Yellow
-Write-Host "  2. Execute: ISCC.exe build\sectorflow_installer.iss" -ForegroundColor Yellow
-Write-Host "  3. O instalador sera gerado em: app\SectorFlow_Setup_0.0.1.exe" -ForegroundColor Yellow
+$InnoCompiler = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+if (-not (Test-Path $InnoCompiler)) {
+    throw "Inno Setup 6 nao encontrado: $InnoCompiler"
+}
+Write-Host "  Gerando instalador com Inno Setup 6..." -ForegroundColor Yellow
+& $InnoCompiler "build\sectorflow_installer.iss"
+if ($LASTEXITCODE -ne 0) { throw "Inno Setup falhou." }
+Write-Host "  Instalador: app\SectorFlow_Setup_0.0.2.exe" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Para distribuir SEM instalador:" -ForegroundColor Yellow
 Write-Host "  Copie a pasta $OutputDir para outro PC e execute SectorFlow.exe" -ForegroundColor Yellow

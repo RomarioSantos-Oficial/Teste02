@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
+    QSystemTrayIcon,
     QVBoxLayout,
     QWidget,
 )
@@ -349,6 +350,18 @@ class MainMenuWindow(QMainWindow):
         self.activateWindow()
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        if bool(getattr(self, "tray_mode_enabled", False)):
+            event.ignore()
+            self.hide()
+            tray_icon = getattr(self, "tray_icon", None)
+            if tray_icon is not None:
+                tray_icon.showMessage(
+                    "SectorFlow ALFA",
+                    "O programa continua na bandeja do Windows.",
+                    QSystemTrayIcon.MessageIcon.Information,
+                    2500,
+                )
+            return
         event.accept()
         app = QApplication.instance()
         if app is not None:
