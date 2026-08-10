@@ -138,7 +138,7 @@ class FlagsTestWindow(QWidget):
         self.session = FakeSession(
             drivers=[
                 FakeDriver(
-                    driver_name="Romario Santos",
+                    driver_name="Player Test",
                     vehicle_class="LMGT3",
                     position=14,
                     position_in_class=7,

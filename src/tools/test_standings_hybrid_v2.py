@@ -55,7 +55,7 @@ class TestWindow(QWidget):
                 DriverData(slot_id=10, driver_name="Fernando Alonso", vehicle_name="Alpine A110 GT3 #10", vehicle_class="LMGT3", position=5, laps=10, best_lap_s=210.671, last_lap_s=212.279),
                 DriverData(slot_id=1, driver_name="Mariano filicionano", vehicle_name="McLaren 720S GT3 #1", vehicle_class="LMGT3", position=15, laps=9, best_lap_s=210.361, last_lap_s=210.361, gap_leader_s=4.7),
                 DriverData(slot_id=64, driver_name="Jonas Manuel", vehicle_name="Lexus RCF GT3 #64", vehicle_class="LMGT3", position=16, laps=9, best_lap_s=211.940, last_lap_s=211.999, gap_leader_s=5.2, penalties=1),
-                DriverData(slot_id=17, driver_name="Romario Santos", vehicle_name="BMW M4 GT3 #17", vehicle_class="LMGT3", position=17, laps=9, best_lap_s=208.112, last_lap_s=209.123, gap_leader_s=5.2, is_player=True),
+                DriverData(slot_id=17, driver_name="Player Test", vehicle_name="BMW M4 GT3 #17", vehicle_class="LMGT3", position=17, laps=9, best_lap_s=208.112, last_lap_s=209.123, gap_leader_s=5.2, is_player=True),
                 DriverData(slot_id=2, driver_name="Xun Lee", vehicle_name="Aston Martin Vantage GT3 #2", vehicle_class="LMGT3", position=18, laps=8, best_lap_s=210.121, last_lap_s=212.619, gap_leader_s=12.4),
                 DriverData(slot_id=19, driver_name="Atonio Solavares", vehicle_name="Lamborghini Huracan GT3 #19", vehicle_class="LMGT3", position=19, laps=8, best_lap_s=214.619, last_lap_s=215.926, gap_leader_s=17.4, in_pits=True),
             ],
@@ -68,7 +68,7 @@ class TestWindow(QWidget):
             DriverMetadata(driver_name="Fernando Alonso", country_code="ES", badge="Legend", energy_percent=54.6, damage_percent=1, manufacturer="Alpine"),
             DriverMetadata(driver_name="Mariano filicionano", country_code="BR", badge="", energy_percent=4.6, damage_percent=0, manufacturer="McLaren"),
             DriverMetadata(driver_name="Jonas Manuel", country_code="DE", badge="Probation", energy_percent=19.6, damage_percent=12, manufacturer="Lexus"),
-            DriverMetadata(driver_name="Romario Santos", country_code="BR", badge="Creator", energy_percent=30.7, damage_percent=15, manufacturer="BMW"),
+            DriverMetadata(driver_name="Player Test", country_code="BR", badge="Creator", energy_percent=30.7, damage_percent=15, manufacturer="BMW"),
             DriverMetadata(driver_name="Xun Lee", country_code="CN", badge="", energy_percent=0.1, damage_percent=0, manufacturer="Aston Martin"),
             DriverMetadata(driver_name="Atonio Solavares", country_code="IT", badge="", energy_percent=5.0, damage_percent=13, manufacturer="Lamborghini"),
         ]

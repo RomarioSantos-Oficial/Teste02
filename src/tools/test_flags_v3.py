@@ -151,7 +151,7 @@ class TestWindow(QWidget):
         )
 
         self.player = Driver(
-            driver_name="Romario Santos",
+            driver_name="Player Test",
             vehicle_class="LMGT3",
             position=14,
             position_in_class=7,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import os
+import shutil
 from pathlib import Path
 
 # =====================================================================
@@ -20,6 +21,21 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 APPLICATION_LOGO = PROJECT_ROOT / "images" / "logo" / "Logo.png"
+FACTORY_CONFIG = PROJECT_ROOT / "src" / "config" / "widgets.json"
+
+
+def user_config_path() -> Path:
+    """Return a writable per-user config, seeded from factory defaults."""
+    base = Path(
+        os.environ.get("LOCALAPPDATA")
+        or os.environ.get("APPDATA")
+        or (Path.home() / "AppData" / "Local")
+    )
+    destination = base / "SectorFlow" / "widgets.json"
+    if not destination.exists():
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(FACTORY_CONFIG, destination)
+    return destination
 
 # =====================================================================
 # IMPORTS DO PROJETO E BIBLIOTECAS (Agora seguros para carregar)
@@ -36,7 +52,7 @@ from src.ui.overlay_manager import OverlayManager
 
 class SectorFlowApplication:
     def __init__(self) -> None:
-        config_path = PROJECT_ROOT / "src" / "config" / "widgets.json"
+        config_path = user_config_path()
         self.overlay_manager = OverlayManager(config_path)
         self.menu = MainMenuWindow(self.overlay_manager, None)
         self.edit_manager = EditModeManager(self.menu)

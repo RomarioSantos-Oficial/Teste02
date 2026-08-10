@@ -78,7 +78,7 @@ class FakeRaceControlClient(LMUOnlineIdentityClient):
                 {
                     "name": "Alice Driver",
                     "username": "Alice Driver",
-                    "steamId": "76561198000000001",
+                    "steamId": "steam-test-001",
                     "nationality": "BR",
                     "badge": "Good Driver",
                     "driverRank": {
@@ -138,7 +138,7 @@ class RaceControlClientTests(unittest.TestCase):
                 "name": "Local Driver",
                 "nick": "Local Driver",
                 "nationality": "BR",
-                "steamID": "76561198000000002",
+                "steamID": "steam-test-002",
             },
             metadata,
             "/rest/profile/profileInfo/getProfileInfo",
@@ -146,7 +146,7 @@ class RaceControlClientTests(unittest.TestCase):
         self.assertEqual(metadata["localdriver"].country_code, "BR")
         self.assertEqual(
             metadata["localdriver"].steam_id,
-            "76561198000000002",
+            "steam-test-002",
         )
 
     def test_local_team_list_captures_embedded_badge_dr_and_sr(self) -> None:
@@ -238,7 +238,7 @@ class RaceControlClientTests(unittest.TestCase):
             drivers=[
                 SimpleNamespace(
                     driver_name="Alice Driver",
-                    steam_id="76561198000000001",
+                    steam_id="steam-test-001",
                 )
             ],
         )
@@ -246,7 +246,7 @@ class RaceControlClientTests(unittest.TestCase):
         snapshot = client.refresh_sync(session)
         identity = client.lookup(
             "Alice Driver",
-            steam_id="76561198000000001",
+            steam_id="steam-test-001",
         )
 
         self.assertTrue(snapshot.local_api_available)
