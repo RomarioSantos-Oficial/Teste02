@@ -8,6 +8,8 @@ from typing import Any
 
 from .lmu_rest_client import LMULocalRestClient
 from .lmu_rest_enrichment import apply_rest_snapshot
+from .lmu_penalty_log import LMUPenaltyLogReader
+from .lmu_live_standings import LMULiveStandingsClient
 from .models import DriverData, PlayerData, SessionData, WheelData
 
 
@@ -97,6 +99,14 @@ def positive_difference(total: float, previous: float) -> float:
     return result if result > 0 else 0.0
 
 
+_COMPOUND_NAMES = {
+    0: "Soft",
+    1: "Medium",
+    2: "Hard",
+    3: "Wet",
+}
+
+
 class LMUAdapter:
     def __init__(
         self,
@@ -113,6 +123,8 @@ class LMUAdapter:
             port=local_api_port,
             enabled=local_api_enabled,
         )
+        self.penalty_log = LMUPenaltyLogReader()
+        self.live_standings = LMULiveStandingsClient()
         self._validity_vehicle_id: int | None = None
         self._validity_lap: int | None = None
         self._current_lap_was_invalid = False
@@ -171,6 +183,23 @@ class LMUAdapter:
             telemetry = data.telemetry
             self._prepare_driver_lap_tracking(info)
 
+            # A API REST tem prioridade no enriquecimento posterior, mas a
+            # telemetria compartilhada e a fonte mais confiavel para pneus e
+            # danos dos carros que o LMU publica no quadro atual.
+            telemetry_by_slot: dict[int, Any] = {}
+            active_telemetry = max(
+                0,
+                min(
+                    safe_int(getattr(telemetry, "activeVehicles", 0)),
+                    int(lmu_data.LMUConstants.MAX_MAPPED_VEHICLES),
+                ),
+            )
+            for telemetry_index in range(active_telemetry):
+                raw_vehicle = telemetry.telemInfo[telemetry_index]
+                raw_slot = safe_int(getattr(raw_vehicle, "mID", -1), -1)
+                if raw_slot >= 0:
+                    telemetry_by_slot[raw_slot] = raw_vehicle
+
             drivers: list[DriverData] = []
             vehicle_count = max(
                 0,
@@ -221,6 +250,34 @@ class LMUAdapter:
                 score_ori = getattr(score, "mOri", None)
                 right = score_ori[0] if score_ori is not None else None
                 forward = score_ori[2] if score_ori is not None else None
+                raw_vehicle = telemetry_by_slot.get(slot_id)
+                tire_compounds: list[str] = []
+                damage_percent: float | None = None
+                if raw_vehicle is not None:
+                    raw_wheels = list(getattr(raw_vehicle, "mWheels", []) or [])
+                    tire_compounds = [
+                        _COMPOUND_NAMES.get(
+                            safe_int(getattr(wheel, "mCompoundType", -1), -1),
+                            "",
+                        )
+                        for wheel in raw_wheels[:4]
+                    ]
+                    # mDentSeverity possui oito regioes, normalmente 0..2.
+                    # O percentual e deliberadamente marcado como estimado.
+                    dent = list(getattr(raw_vehicle, "mDentSeverity", []) or [])
+                    if dent:
+                        severity = sum(
+                            max(0, min(2, safe_int(value)))
+                            for value in dent[:8]
+                        )
+                        detached = sum(
+                            1 for wheel in raw_wheels[:4]
+                            if bool(getattr(wheel, "mDetached", False))
+                        )
+                        damage_percent = min(
+                            100.0,
+                            severity / 16.0 * 100.0 + detached * 25.0,
+                        )
 
                 drivers.append(
                     DriverData(
@@ -249,10 +306,30 @@ class LMUAdapter:
                         last_sector3_s=positive_difference(last_lap, last_s12),
                         gap_ahead_s=safe_float(score.mTimeBehindNext),
                         gap_leader_s=safe_float(score.mTimeBehindLeader),
+                        laps_behind_ahead=safe_int(
+                            getattr(score, "mLapsBehindNext", 0)
+                        ),
+                        laps_behind_leader=safe_int(
+                            getattr(score, "mLapsBehindLeader", 0)
+                        ),
                         in_pits=bool(score.mInPits),
                         penalties=safe_int(score.mNumPenalties),
+                        track_limits_steps=(
+                            safe_int(getattr(raw_vehicle, "mTrackLimitsSteps", 0))
+                            if raw_vehicle is not None
+                            else None
+                        ),
+                        tire_compounds=tire_compounds,
+                        damage_percent=damage_percent,
+                        damage_is_estimated=damage_percent is not None,
                         flag=safe_int(score.mFlag),
                         lap_distance_m=safe_float(score.mLapDist),
+                        time_into_lap_s=safe_float(
+                            getattr(score, "mTimeIntoLap", 0.0)
+                        ),
+                        lap_start_event_time_s=safe_float(
+                            getattr(score, "mLapStartET", 0.0)
+                        ),
                         path_lateral_m=safe_float(
                             getattr(score, "mPathLateral", 0.0)
                         ),
@@ -434,10 +511,13 @@ class LMUAdapter:
                 player=player,
                 drivers=drivers,
             )
-            return apply_rest_snapshot(
+            session = apply_rest_snapshot(
                 session,
                 self.local_api.snapshot(),
             )
+            self.live_standings.enrich(session)
+            self.penalty_log.enrich(session)
+            return session
 
         except (
             AttributeError,
@@ -594,6 +674,9 @@ class LMUAdapter:
         return PlayerData(
             vehicle_name=decode_text(raw.mVehicleName),
             vehicle_model=decode_text(raw.mVehicleModel),
+            ignition_starter=safe_int(
+                getattr(raw, "mIgnitionStarter", 0)
+            ),
             speed_kmh=speed_ms * 3.6,
             rpm=safe_float(raw.mEngineRPM),
             max_rpm=safe_float(raw.mEngineMaxRPM),
@@ -612,6 +695,32 @@ class LMUAdapter:
             battery_fraction=safe_float(raw.mBatteryChargeFraction),
             state_of_charge=safe_float(raw.mStateOfCharge),
             virtual_energy=safe_float(raw.mVirtualEnergy),
+            body_damage=[
+                safe_int(value)
+                for value in list(
+                    getattr(raw, "mDentSeverity", ())
+                )[:8]
+            ],
+            body_detached=bool(
+                getattr(raw, "mDetached", False)
+            ),
+            last_impact_time_s=safe_float(
+                getattr(raw, "mLastImpactET", 0.0)
+            ),
+            vehicle_elapsed_time_s=safe_float(
+                getattr(raw, "mElapsedTime", 0.0)
+            ),
+            last_impact_magnitude=safe_float(
+                getattr(raw, "mLastImpactMagnitude", 0.0)
+            ),
+            last_impact_position=(
+                -safe_float(
+                    getattr(getattr(raw, "mLastImpactPos", None), "x", 0.0)
+                ),
+                safe_float(
+                    getattr(getattr(raw, "mLastImpactPos", None), "z", 0.0)
+                ),
+            ),
             current_lap_invalidated=current_invalid,
             last_lap_invalidated=last_invalid,
             regen_kw=safe_float(
@@ -729,6 +838,8 @@ class LMUAdapter:
 
     def close(self) -> None:
         self.local_api.close()
+        self.live_standings.close()
+        self.penalty_log.close()
         if self.memory is not None:
             try:
                 self.memory.close()

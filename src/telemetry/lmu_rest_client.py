@@ -50,30 +50,30 @@ class LMULocalRestClient:
         EndpointSpec(
             "game_state",
             "/rest/sessions/GetGameState",
-            0.50,
+            1.00,
             scope="always",
         ),
         EndpointSpec(
             "navigation_state",
             "/navigation/state",
-            0.75,
+            1.00,
             scope="always",
         ),
         EndpointSpec(
             "session_info",
             "/rest/watch/sessionInfo",
-            0.75,
+            1.00,
         ),
         EndpointSpec(
             "standings",
             "/rest/watch/standings",
-            0.75,
+            1.00,
             timeout_s=0.60,
         ),
         EndpointSpec(
             "tire_info",
             "/rest/garage/tireinfo",
-            0.75,
+            2.00,
             scope="vehicle",
         ),
         EndpointSpec(
@@ -137,6 +137,8 @@ class LMULocalRestClient:
         self._last_success_at = 0.0
         self._last_error = ""
         self._errors: dict[str, str] = {}
+        self._failure_counts: dict[str, int] = {}
+        self._circuit_open_until = 0.0
         self._session_available = False
         self._vehicle_available = False
         self._thread: threading.Thread | None = None
@@ -177,6 +179,12 @@ class LMULocalRestClient:
     def _worker(self) -> None:
         while not self._stop.is_set():
             now = time.monotonic()
+            if now < self._circuit_open_until:
+                self._wake.wait(
+                    timeout=min(0.5, self._circuit_open_until - now)
+                )
+                self._wake.clear()
+                continue
             due = [
                 spec
                 for spec in self.ENDPOINTS
@@ -238,18 +246,24 @@ class LMULocalRestClient:
             urllib.error.URLError,
         ) as exc:
             with self._lock:
+                failures = self._failure_counts.get(spec.name, 0) + 1
+                self._failure_counts[spec.name] = failures
                 self._errors[spec.name] = type(exc).__name__
                 self._last_error = "; ".join(
                     f"{name}: {error}"
                     for name, error in sorted(self._errors.items())
                 )
-                self._next_due[spec.name] = requested_at + max(
-                    spec.interval_s,
-                    2.0,
+                # Backoff por endpoint. Evita martelar o servidor HTTP
+                # embutido do LMU durante loading, garagem ou encerramento.
+                self._next_due[spec.name] = requested_at + min(
+                    30.0,
+                    max(spec.interval_s, 2.0) * (2 ** min(failures - 1, 4)),
                 )
-                if spec.scope == "always" and spec.name == "game_state":
-                    self._session_available = False
-                    self._vehicle_available = False
+                if failures >= 5:
+                    self._circuit_open_until = max(
+                        self._circuit_open_until,
+                        requested_at + 5.0,
+                    )
             return
 
         completed_at = time.monotonic()
@@ -258,6 +272,7 @@ class LMULocalRestClient:
             self._updated_at[spec.name] = completed_at
             self._last_success_at = completed_at
             self._errors.pop(spec.name, None)
+            self._failure_counts.pop(spec.name, None)
             self._last_error = "; ".join(
                 f"{name}: {error}"
                 for name, error in sorted(self._errors.items())

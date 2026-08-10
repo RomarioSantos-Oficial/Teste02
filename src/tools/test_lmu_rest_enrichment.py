@@ -10,11 +10,17 @@ from src.ui.overlay_manager import OverlayManager
 
 
 class LMURestEnrichmentTests(unittest.TestCase):
+    class OverlayProbe:
+        @staticmethod
+        def _log_overlay_decision(*_args, **_kwargs) -> None:
+            pass
+
     def make_session(self) -> SessionData:
         return SessionData(
             connected=True,
             session=1,
             in_realtime=True,
+            application_location=3,
             player_has_vehicle=True,
             game_phase=5,
             remaining_time_s=600.0,
@@ -65,6 +71,7 @@ class LMURestEnrichmentTests(unittest.TestCase):
                 "numberOfPlayers": 20,
                 "numberOfVehicles": 19,
                 "maxTime": 3600.0,
+                "maximumLaps": 4294967295,
                 "currentEventTime": 123.0,
                 "gamePhase": 5,
                 "inRealtime": True,
@@ -91,6 +98,13 @@ class LMURestEnrichmentTests(unittest.TestCase):
                     "lastLapTime": 89.3,
                     "timeBehindLeader": 4.5,
                     "timeBehindNext": 1.2,
+                    "lapsBehindLeader": 1,
+                    "lapsBehindNext": 0,
+                    "tireCompounds": ["Wet", "Wet", "Medium", "Medium"],
+                    "damagePercent": 18,
+                    "penalties": 1,
+                    "penaltyType": "DRIVE_THROUGH",
+                    "trackLimitsSteps": 12,
                     "countLapFlag": "COUNT_LAP_ONLY",
                     "veFraction": 0.72,
                     "fuelFraction": 0.55,
@@ -139,6 +153,7 @@ class LMURestEnrichmentTests(unittest.TestCase):
         self.assertAlmostEqual(session.ambient_temp_c, 27.5)
         self.assertAlmostEqual(session.track_temp_c, 38.25)
         self.assertAlmostEqual(session.remaining_time_s, 512.0)
+        self.assertEqual(session.max_laps, 0)
         self.assertEqual(session.server_name, "Test Server")
         self.assertEqual(session.track_name, "Test Circuit")
         self.assertEqual(session.max_players, 38)
@@ -163,6 +178,15 @@ class LMURestEnrichmentTests(unittest.TestCase):
         self.assertAlmostEqual(player_row.last_lap_s, 89.3)
         self.assertAlmostEqual(player_row.gap_leader_s, 4.5)
         self.assertAlmostEqual(player_row.gap_ahead_s, 1.2)
+        self.assertEqual(player_row.laps_behind_leader, 1)
+        self.assertEqual(
+            player_row.tire_compounds,
+            ["Wet", "Wet", "Medium", "Medium"],
+        )
+        self.assertEqual(player_row.damage_percent, 18.0)
+        self.assertFalse(player_row.damage_is_estimated)
+        self.assertEqual(player_row.penalty_type, "DRIVE_THROUGH")
+        self.assertEqual(player_row.track_limits_steps, 12)
         self.assertTrue(player_row.current_lap_invalidated)
         self.assertEqual(player_row.count_lap_flag_name, "COUNT_LAP_ONLY")
         self.assertAlmostEqual(player_row.virtual_energy_fraction or 0.0, 0.72)
@@ -181,17 +205,69 @@ class LMURestEnrichmentTests(unittest.TestCase):
         session.is_replay_active = False
         session.race_finished = False
         session.navigation_state = "NAV_EVENT"
-        self.assertTrue(OverlayManager._session_allows_overlays(session))
+        probe = self.OverlayProbe()
+        self.assertTrue(
+            OverlayManager._session_allows_overlays(probe, session)
+        )
 
         session.in_monitor = True
-        self.assertFalse(OverlayManager._session_allows_overlays(session))
+        session.in_control_of_vehicle = False
+        self.assertFalse(
+            OverlayManager._session_allows_overlays(probe, session)
+        )
 
     def test_stale_rest_state_keeps_shared_memory_fallback(self) -> None:
         session = self.make_session()
         session.local_api_available = True
         session.local_api_age_s = 20.0
         session.in_monitor = True
-        self.assertTrue(OverlayManager._session_allows_overlays(session))
+        self.assertTrue(
+            OverlayManager._session_allows_overlays(
+                self.OverlayProbe(),
+                session,
+            )
+        )
+
+        session.application_location = 2
+        self.assertFalse(
+            OverlayManager._session_allows_overlays(
+                self.OverlayProbe(),
+                session,
+            )
+        )
+
+    def test_fresh_api_hides_menu_loading_and_uncontrolled_car(self) -> None:
+        session = self.make_session()
+        session.local_api_available = True
+        session.local_api_age_s = 0.1
+        session.in_control_of_vehicle = False
+        session.player_vehicle_loaded = True
+        session.in_monitor = False
+        session.is_replay_active = False
+        session.navigation_state = "NAV_MAIN_MENU"
+        self.assertFalse(
+            OverlayManager._session_allows_overlays(
+                self.OverlayProbe(),
+                session,
+            )
+        )
+
+        session.navigation_state = "NAV_EVENT"
+        session.navigation_loading = True
+        self.assertFalse(
+            OverlayManager._session_allows_overlays(
+                self.OverlayProbe(),
+                session,
+            )
+        )
+
+        session.navigation_loading = False
+        self.assertFalse(
+            OverlayManager._session_allows_overlays(
+                self.OverlayProbe(),
+                session,
+            )
+        )
 
 
 if __name__ == "__main__":

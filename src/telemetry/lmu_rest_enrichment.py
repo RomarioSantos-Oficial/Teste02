@@ -200,6 +200,15 @@ def _apply_session_info(session: SessionData, payload: Any) -> None:
         payload.get("maxTime"),
         session.max_session_time_s,
     )
+    # O LMU usa UINT32_MAX para indicar uma sessao limitada por tempo.
+    # Zerar esse marcador permite estimar o total usando tempo/voltas.
+    api_maximum_laps = _positive_or_zero_integer(
+        payload.get("maximumLaps"),
+        session.max_laps,
+    )
+    session.max_laps = (
+        api_maximum_laps if 0 < api_maximum_laps <= 500 else 0
+    )
     session.start_event_time_s = _positive_or_zero(
         payload.get("startEventTime"),
         session.start_event_time_s,
@@ -341,6 +350,24 @@ def _merge_driver(driver: DriverData, record: dict[str, Any]) -> None:
         record.get("lapDistance"),
         driver.lap_distance_m,
     )
+    driver.time_into_lap_s = _finite(
+        record.get("timeIntoLap"),
+        driver.time_into_lap_s,
+    )
+    driver.lap_start_event_time_s = _positive_or_zero(
+        record.get("lapStartET"),
+        driver.lap_start_event_time_s,
+    )
+    car_velocity = record.get("carVelocity")
+    if isinstance(car_velocity, dict):
+        velocity_ms = _number(car_velocity.get("velocity"))
+        if velocity_ms is None:
+            velocity_ms = math.sqrt(
+                (_number(car_velocity.get("x")) or 0.0) ** 2
+                + (_number(car_velocity.get("y")) or 0.0) ** 2
+                + (_number(car_velocity.get("z")) or 0.0) ** 2
+            )
+        driver.speed_kmh = max(0.0, velocity_ms * 3.6)
     driver.best_lap_s = _positive(
         record.get("bestLapTime"),
         driver.best_lap_s,
@@ -356,6 +383,14 @@ def _merge_driver(driver: DriverData, record: dict[str, Any]) -> None:
     driver.gap_ahead_s = _positive_or_zero(
         record.get("timeBehindNext"),
         driver.gap_ahead_s,
+    )
+    driver.laps_behind_leader = _integer(
+        record.get("lapsBehindLeader"),
+        driver.laps_behind_leader,
+    )
+    driver.laps_behind_ahead = _integer(
+        record.get("lapsBehindNext"),
+        driver.laps_behind_ahead,
     )
     count_lap_flag = str(record.get("countLapFlag", "") or "").upper()
     if count_lap_flag:
@@ -375,6 +410,62 @@ def _merge_driver(driver: DriverData, record: dict[str, Any]) -> None:
         driver.qualification_position,
     )
     driver.penalties = _integer(record.get("penalties"), driver.penalties)
+    track_limit_steps = _first_present(
+        record,
+        "trackLimitsSteps",
+        "trackLimitSteps",
+        "trackLimitsStepCount",
+    )
+    if track_limit_steps is not None:
+        driver.track_limits_steps = _integer(
+            track_limit_steps,
+            driver.track_limits_steps or 0,
+        )
+    track_limit_points = _first_present(
+        record,
+        "trackLimitsPoints",
+        "trackLimitPoints",
+        "cutTrackPoints",
+    )
+    if track_limit_points is not None:
+        driver.track_limits_points = _finite(
+            track_limit_points,
+            driver.track_limits_points or 0.0,
+        )
+    penalty_type = _first_present(
+        record,
+        "penaltyType",
+        "penaltyName",
+        "penalty",
+        "pendingPenalty",
+    )
+    if penalty_type is not None and not isinstance(penalty_type, (dict, list)):
+        driver.penalty_type = str(penalty_type or "").strip()
+    driver.penalty_time_s = _finite(
+        _first_present(
+            record,
+            "penaltyTime",
+            "penaltySeconds",
+            "timePenalty",
+        ),
+        driver.penalty_time_s,
+    )
+    compounds = _driver_compounds(record)
+    if compounds:
+        # REST tem prioridade sobre a memoria compartilhada quando o endpoint
+        # publica explicitamente o composto ativo.
+        driver.tire_compounds = compounds
+    damage = _percent_value(
+        _first_present(record, "damagePercent", "vehicleDamage", "damage")
+    )
+    integrity = _number(
+        _first_present(record, "integrity", "vehicleIntegrity")
+    )
+    if damage is None and integrity is not None and 0.0 <= integrity <= 1.0:
+        damage = (1.0 - integrity) * 100.0
+    if damage is not None:
+        driver.damage_percent = damage
+        driver.damage_is_estimated = False
     driver.fuel_fraction = _fraction(record.get("fuelFraction"))
     driver.virtual_energy_fraction = _fraction(record.get("veFraction"))
     driver.finish_status_name = str(record.get("finishStatus", "") or "")
@@ -403,6 +494,56 @@ def _merge_driver(driver: DriverData, record: dict[str, Any]) -> None:
             attack.get("timeRemaining"),
             driver.attack_mode_time_remaining_s,
         )
+
+
+def _first_present(record: dict[str, Any], *keys: str) -> Any:
+    for key in keys:
+        if key in record and record[key] is not None:
+            return record[key]
+    return None
+
+
+def _driver_compounds(record: dict[str, Any]) -> list[str]:
+    raw = _first_present(
+        record,
+        "tireCompounds",
+        "tyreCompounds",
+        "compoundNames",
+    )
+    if isinstance(raw, (list, tuple)):
+        values = [str(value or "").strip() for value in raw[:4]]
+        return [value for value in values if value]
+    front = _first_present(
+        record,
+        "frontTireCompound",
+        "frontTyreCompound",
+    )
+    rear = _first_present(
+        record,
+        "rearTireCompound",
+        "rearTyreCompound",
+    )
+    if front is not None or rear is not None:
+        front_name = str(front or "").strip()
+        rear_name = str(rear or "").strip()
+        return [front_name, front_name, rear_name, rear_name]
+    compound = _first_present(
+        record,
+        "tireCompound",
+        "tyreCompound",
+        "compound",
+    )
+    name = str(compound or "").strip()
+    return [name] * 4 if name else []
+
+
+def _percent_value(value: Any) -> float | None:
+    number = _number(value)
+    if number is None or number < 0.0:
+        return None
+    if number <= 1.0:
+        number *= 100.0
+    return min(100.0, number)
 
 
 def _apply_player_condition(session: SessionData, payload: Any) -> None:

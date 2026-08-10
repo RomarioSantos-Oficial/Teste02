@@ -77,10 +77,20 @@ class DriverData:
 
     gap_ahead_s: float = 0.0
     gap_leader_s: float = 0.0
+    laps_behind_ahead: int = 0
+    laps_behind_leader: int = 0
     in_pits: bool = False
     penalties: int = 0
+    penalty_type: str = ""
+    penalty_time_s: float = 0.0
+    track_limits_steps: int | None = None
+    track_limits_points: float | None = None
     flag: int = 0
     lap_distance_m: float = 0.0
+    # Tempo decorrido desde a ultima passagem pela linha. A API REST publica
+    # timeIntoLap e a memoria compartilhada publica mTimeIntoLap.
+    time_into_lap_s: float = 0.0
+    lap_start_event_time_s: float = 0.0
     path_lateral_m: float = 0.0
     track_edge_m: float = 0.0
     speed_kmh: float = 0.0
@@ -100,6 +110,9 @@ class DriverData:
     server_scored: bool = True
     fuel_fraction: float | None = None
     virtual_energy_fraction: float | None = None
+    tire_compounds: list[str] = field(default_factory=list)
+    damage_percent: float | None = None
+    damage_is_estimated: bool = False
     attack_mode_remaining_count: int = 0
     attack_mode_total_count: int = 0
     attack_mode_time_remaining_s: float = 0.0
@@ -122,6 +135,7 @@ class DriverData:
 class PlayerData:
     vehicle_name: str = ""
     vehicle_model: str = ""
+    ignition_starter: int = 0
     speed_kmh: float = 0.0
     rpm: float = 0.0
     max_rpm: float = 0.0
@@ -142,6 +156,12 @@ class PlayerData:
     virtual_energy: float = 0.0
     fuel_fraction: float | None = None
     vehicle_damage: float = 0.0
+    body_damage: list[int] = field(default_factory=list)
+    body_detached: bool = False
+    last_impact_time_s: float = 0.0
+    vehicle_elapsed_time_s: float = 0.0
+    last_impact_magnitude: float = 0.0
+    last_impact_position: tuple[float, float] = (0.0, 0.0)
     brake_condition: list[float] = field(default_factory=list)
     suspension_damage: list[float] = field(default_factory=list)
     tire_condition: list[float] = field(default_factory=list)

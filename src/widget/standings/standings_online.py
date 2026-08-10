@@ -351,6 +351,7 @@ class LocalStandingsEnrichment:
                     "driver_rank": item.driver_rank,
                     "driver_rank_progress": item.driver_rank_progress,
                     "safety_rank": item.safety_rank,
+                    "safety_rank_progress": item.safety_rank_progress,
                     "estimated_driver_rank_gain": item.estimated_driver_rank_gain,
                     "tyre_compound": item.tyre_compound,
                     "energy_percent": item.energy_percent,
@@ -375,7 +376,13 @@ class LocalStandingsEnrichment:
             with self._lock:
                 config = dict(self.config)
             now = time.monotonic()
-            interval = max(0.5, float(config.get("local_poll_interval_seconds", 2.0)))
+            # Perfis, equipes e catalogo mudam raramente. O standings vivo e
+            # coletado pelo cliente REST compartilhado da telemetria; manter
+            # esta coleta lenta evita duas threads pressionando a API do LMU.
+            interval = max(
+                15.0,
+                float(config.get("local_poll_interval_seconds", 30.0)),
+            )
             with self._lock:
                 test_mode = self._test_mode
             if test_mode:
@@ -679,6 +686,20 @@ class LocalStandingsEnrichment:
             safety_rank = _rank(values, "safetyRank") or _rank(values, "safeRank")
             current.driver_rank = driver_rank or current.driver_rank
             current.safety_rank = safety_rank or current.safety_rank
+            safety_progress = _percent(
+                _first(
+                    values,
+                    "safetyRankProgress",
+                    "safety_rank_progress",
+                    "safetyRankPercentage",
+                    "safetyRankPercent",
+                    "safeRankProgress",
+                    "srProgress",
+                    default=None,
+                )
+            )
+            if safety_progress is not None:
+                current.safety_rank_progress = safety_progress
             progress = _percent(
                 _first(
                     values,

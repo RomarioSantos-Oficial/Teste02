@@ -1,16 +1,32 @@
 from __future__ import annotations
 
 import sys
+import os
 from pathlib import Path
 
+# =====================================================================
+# CONFIGURAÇÃO DE CAMINHOS (Deve vir antes de qualquer import do 'src')
+# =====================================================================
+# Suporte dinâmico para PyInstaller (sys._MEIPASS) vs Desenvolvimento
+if getattr(sys, 'frozen', False):
+    # Se estiver rodando no executável congelado pelo PyInstaller
+    PROJECT_ROOT = Path(sys._MEIPASS)
+else:
+    # Se estiver rodando como script Python normal
+    PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+# Adiciona a raiz do projeto no sys.path
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+APPLICATION_LOGO = PROJECT_ROOT / "images" / "logo" / "Logo.png"
+
+# =====================================================================
+# IMPORTS DO PROJETO E BIBLIOTECAS (Agora seguros para carregar)
+# =====================================================================
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-APPLICATION_LOGO = PROJECT_ROOT / "images" / "logo" / "Logo.png"
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.telemetry.lmu_adapter import LMUAdapter
 from src.ui.edit_mode_manager import EditModeManager

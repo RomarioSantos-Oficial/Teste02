@@ -480,6 +480,16 @@ class WheelGroup(QWidget):
         temp_c = logic.main_temperature_c(
             wheel
         )
+        compound_symbols = {
+            "soft": "S", "medium": "M", "hard": "H",
+            "wet": "W", "intermediate": "I",
+        }
+        compound_key = wheel.compound_name.casefold()
+        compound_symbol = next(
+            (symbol for name, symbol in compound_symbols.items() if name in compound_key),
+            wheel.compound_name[:1].upper() if wheel.compound_name else "?",
+        )
+        self.position_label.setText(f"{wheel.position}  {compound_symbol}")
         self.main_temp_label.setText(
             logic.temperature_text(
                 temp_c,
@@ -554,20 +564,11 @@ class WheelGroup(QWidget):
             bool(status)
         )
 
-        zone_temperatures = (
-            wheel.surface_left_c,
-            wheel.surface_center_c,
-            wheel.surface_right_c,
-        )
-        zone_colors = [
-            logic.temperature_color(
-                wheel,
-                zone_temp
-                if 1.0 < zone_temp < 300.0
-                else temp_c,
-            )
-            for zone_temp in zone_temperatures
-        ]
+        # O fundo representa o estado térmico geral calculado pelo LMU/doX.
+        # As temperaturas L/C/R continuam visíveis como números, mas não
+        # devem esconder que um pneu Wet inteiro está superaquecido.
+        main_thermal_color = logic.temperature_color(wheel, temp_c)
+        zone_colors = [main_thermal_color] * 3
         brake_color = logic.brake_color(
             wheel.brake_temp_c
         )
@@ -575,9 +576,16 @@ class WheelGroup(QWidget):
             "colors",
             {},
         )
-        border = colors.get(
-            "tyre_border",
-            "rgba(255,255,255,40)",
+        compound_borders = {
+            "S": "#F4F4F4",
+            "M": "#FFD32A",
+            "H": "#E53935",
+            "W": "#2196F3",
+            "I": "#43A047",
+        }
+        border = compound_borders.get(
+            compound_symbol,
+            colors.get("tyre_border", "#B9E83B"),
         )
         radius = max(
             3,
@@ -603,9 +611,13 @@ class WheelGroup(QWidget):
 
         left_color, center_color, right_color = zone_colors
 
-        self.tyre_frame.setStyleSheet(
-            f"""
-            QFrame#TyreFrame {{
+        # Quando as três amostras possuem o mesmo estado, usar cor sólida.
+        # Isso torna inequívoco o alerta de um Wet superaquecido; o gradiente
+        # do Qt podia parecer apenas uma faixa decorativa em widgets pequenos.
+        if len({left_color, center_color, right_color}) == 1:
+            tyre_background = f"background-color: {left_color};"
+        else:
+            tyre_background = f"""
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 0,
                     stop: 0 {left_color},
@@ -615,8 +627,14 @@ class WheelGroup(QWidget):
                     stop: 0.67 {right_color},
                     stop: 1 {right_color}
                 );
+            """
+
+        self.tyre_frame.setStyleSheet(
+            f"""
+            QFrame#TyreFrame {{
+                {tyre_background}
                 border-radius: {radius}px;
-                border: 1px solid {border};
+                border: {max(1, round(2 * self.scale))}px solid {border};
             }}
             """
         )

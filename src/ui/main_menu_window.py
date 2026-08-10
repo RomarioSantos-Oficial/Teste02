@@ -26,8 +26,12 @@ from src.widget.flags.flags_editor import FlagsEditor
 from src.widget.tyres.tyres_editor import TyresEditor
 from src.widget.weather.weather_editor import WeatherEditor
 from src.widget.battery.battery_editor import BatteryEditor
+from src.widget.damage.damage_editor import DamageEditor
+from src.widget.relative.relative_editor import RelativeEditor
 from src.widget.map.map_editor import MapEditor
 from src.widget.standings.standings_editor import StandingsEditor
+from src.widget.fuel_time.fuel_time_editor import FuelTimeEditor
+from src.widget.url.url_editor import UrlEditor
 
 
 class MainMenuWindow(QMainWindow):
@@ -169,6 +173,24 @@ class MainMenuWindow(QMainWindow):
                 deepcopy(
                     self.overlay_manager.config_data["widgets"][widget_id]
                 ),
+                None,
+            )
+        elif widget_id == "damage":
+            editor = DamageEditor(
+                deepcopy(self.overlay_manager.config_data["widgets"][widget_id]),
+                None,
+            )
+        elif widget_id == "fuel_time":
+            editor = FuelTimeEditor(
+                deepcopy(self.overlay_manager.config_data["widgets"][widget_id]), None
+            )
+        elif widget_id == "url":
+            editor = UrlEditor(
+                deepcopy(self.overlay_manager.config_data["widgets"][widget_id]), None
+            )
+        elif widget_id == "relative":
+            editor = RelativeEditor(
+                deepcopy(self.overlay_manager.config_data["widgets"][widget_id]),
                 None,
             )
         elif widget_id == "map":

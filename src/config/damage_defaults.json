@@ -1,0 +1,23 @@
+{
+  "enabled": false,
+  "monitor": 0,
+  "position": {"x": 0.88, "y": 0.58},
+  "size": {"width": 0.07, "height": 0.18},
+  "opacity": 0.96,
+  "always_on_top": true,
+  "click_through": true,
+  "show_integrity": true,
+  "show_suspension_links": true,
+  "show_last_impact": true,
+  "impact_duration_s": 5.0,
+  "susp_light_threshold": 0.005,
+  "susp_heavy_threshold": 0.4,
+  "susp_totaled_threshold": 0.8,
+  "colors": {
+    "background": "#0B1018E8", "border": "#384553", "outline": "#8C98A7",
+    "text": "#FFFFFF", "body_ok": "#2C3845", "body_light": "#FFD43B",
+    "body_heavy": "#FF7A22", "susp_ok": "#43E1B2", "susp_light": "#FFD43B",
+    "susp_heavy": "#FF7A22", "detached": "#F22D3D", "impact": "#FF8A00",
+    "edit_border": "#8B5CF6"
+  }
+}

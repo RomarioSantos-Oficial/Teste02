@@ -474,6 +474,19 @@ class LMUOnlineIdentityClient:
         )
         if progress is None and isinstance(driver_rank_raw, dict):
             progress = self._first_number(driver_rank_raw, ("progress", "rankProgress"))
+        safety_progress = self._first_number(
+            merged,
+            (
+                "safetyRankProgress", "safety_rank_progress",
+                "safetyRankPercentage", "safetyRankPercent",
+                "safeRankProgress", "srProgress",
+            ),
+        )
+        if safety_progress is None and isinstance(safety_rank_raw, dict):
+            safety_progress = self._first_number(
+                safety_rank_raw,
+                ("progress", "rankProgress", "percentage", "percent"),
+            )
 
         nationality = self._first_text(
             merged, ("nationality", "countryCode", "country_code", "country")
@@ -525,6 +538,7 @@ class LMUOnlineIdentityClient:
             driver_rank=driver_rank,
             driver_rank_progress=progress,
             safety_rank=safety_rank,
+            safety_rank_progress=safety_progress,
             nationality=nationality.upper() if len(nationality.strip()) <= 3 else nationality,
             badge=badge,
             incidents=incidents,
@@ -569,6 +583,7 @@ class LMUOnlineIdentityClient:
                 "driver_rank",
                 "driver_rank_progress",
                 "safety_rank",
+                "safety_rank_progress",
                 "nationality",
                 "badge",
                 "incidents",

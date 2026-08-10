@@ -44,6 +44,7 @@ class TyreWheelViewData:
     terrain_name: str = ""
     compound_type: int = 0
     compound_index: int = 0
+    compound_name: str = ""
     flat: bool = False
     detached: bool = False
 

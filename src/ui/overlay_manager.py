@@ -16,10 +16,14 @@ from src.widget.delta.delta_widget import DeltaWidget
 from src.widget.driver_panel.driver_panel_widget import DriverPanelWidget
 from src.widget.flags.flags_widget import FlagsWidget
 from src.widget.battery.battery_widget import BatteryWidget
+from src.widget.damage.damage_widget import DamageWidget
+from src.widget.relative.relative_widget import RelativeWidget
 from src.widget.tyres.tyres_widget import TyresWidget
 from src.widget.weather.weather_widget import WeatherWidget
 from src.widget.map.map_widget import TrackMapWidget
 from src.widget.standings.standings_widget import StandingsWidget
+from src.widget.fuel_time.fuel_time_widget import FuelTimeWidget
+from src.widget.url.url_server_widget import UrlServerWidget
 
 
 class OverlayManager(QObject):
@@ -34,6 +38,9 @@ class OverlayManager(QObject):
         "map": 0.05,
         "tires": 0.10,
         "battery": 0.10,
+        "damage": 0.10,
+        "fuel_time": 0.10,
+        "relative": 0.10,
         "flags": 0.10,
         "weather": 0.50,
     }
@@ -113,6 +120,42 @@ class OverlayManager(QObject):
         self._prepare_widget("battery", widget, config)
         return widget
 
+    def create_damage(self) -> DamageWidget:
+        existing = self.widgets.get("damage")
+        if isinstance(existing, DamageWidget):
+            return existing
+        config = deepcopy(self.config_data["widgets"]["damage"])
+        widget = DamageWidget("damage", config)
+        self._prepare_widget("damage", widget, config)
+        return widget
+
+    def create_fuel_time(self) -> FuelTimeWidget:
+        existing = self.widgets.get("fuel_time")
+        if isinstance(existing, FuelTimeWidget): return existing
+        config = deepcopy(self.config_data["widgets"]["fuel_time"])
+        widget = FuelTimeWidget("fuel_time", config)
+        self._prepare_widget("fuel_time", widget, config)
+        return widget
+
+    def create_url(self) -> UrlServerWidget:
+        existing = self.widgets.get("url")
+        if isinstance(existing, UrlServerWidget): return existing
+        config = deepcopy(self.config_data["widgets"]["url"])
+        widget = UrlServerWidget("url", config)
+        self._prepare_widget("url", widget, config)
+        self._configure_url_sources()
+        widget.set_output_active(self.session_active or self.edit_mode)
+        return widget
+
+    def create_relative(self) -> RelativeWidget:
+        existing = self.widgets.get("relative")
+        if isinstance(existing, RelativeWidget):
+            return existing
+        config = deepcopy(self.config_data["widgets"]["relative"])
+        widget = RelativeWidget("relative", config)
+        self._prepare_widget("relative", widget, config)
+        return widget
+
     def create_map(self) -> TrackMapWidget:
         existing = self.widgets.get("map")
         if isinstance(existing, TrackMapWidget):
@@ -139,6 +182,10 @@ class OverlayManager(QObject):
             "delta": self.create_delta,
             "flags": self.create_flags,
             "battery": self.create_battery,
+            "damage": self.create_damage,
+            "fuel_time": self.create_fuel_time,
+            "url": self.create_url,
+            "relative": self.create_relative,
             "tires": self.create_tires,
             "weather": self.create_weather,
             "map": self.create_map,
@@ -151,7 +198,7 @@ class OverlayManager(QObject):
 
     def create_enabled_widgets(self) -> None:
         for widget_id, config in self.config_data.get("widgets", {}).items():
-            if bool(config.get("enabled", False)) and widget_id in {"driver_panel", "delta", "flags", "weather", "tires", "battery", "map", "standings"}:
+            if bool(config.get("enabled", False)) and widget_id in {"driver_panel", "delta", "flags", "weather", "tires", "battery", "damage", "fuel_time", "relative", "map", "standings", "url"}:
                 self.create_widget(widget_id)
 
     def _prepare_widget(
@@ -204,6 +251,16 @@ class OverlayManager(QObject):
         self.show_widget(widget_id) if enabled else self.hide_widget(widget_id)
 
     def update_widget_config(self, widget_id: str, config: dict[str, Any]) -> None:
+        previous = self.config_data.get("widgets", {}).get(widget_id, {})
+        if "column_width_reference_total" not in config:
+            reference = previous.get("column_width_reference_total")
+            widget_for_reference = self.widgets.get(widget_id)
+            if reference is None and widget_for_reference is not None and hasattr(
+                widget_for_reference, "column_width_total"
+            ):
+                reference = float(widget_for_reference.column_width_total())
+            if reference is not None:
+                config["column_width_reference_total"] = float(reference)
         self.config_data["widgets"][widget_id] = deepcopy(config)
         widget = self.widgets.get(widget_id)
 
@@ -214,6 +271,9 @@ class OverlayManager(QObject):
             screen = widget.screen()
             if screen is not None and hasattr(widget, "apply_normalized_geometry"):
                 widget.apply_normalized_geometry(screen.geometry())
+
+        if widget_id == "url":
+            self._configure_url_sources()
 
         self.save_config()
 
@@ -231,6 +291,9 @@ class OverlayManager(QObject):
         tires = self.widgets.get("tires")
         if tires is not None and tires.isVisible():
             tires.update_telemetry(player_data)
+        damage = self.widgets.get("damage")
+        if damage is not None and damage.isVisible():
+            damage.update_telemetry(player_data)
     def update_session_data(self, session: Any) -> None:
         self.set_session_active(self._session_allows_overlays(session))
         if not self.session_active:
@@ -255,6 +318,27 @@ class OverlayManager(QObject):
             and self._update_due("tires", now)
         ):
             tires.update_telemetry(session.player)
+
+        damage = self.widgets.get("damage")
+        if (
+            damage is not None
+            and damage.isVisible()
+            and getattr(session, "player", None) is not None
+            and self._update_due("damage", now)
+        ):
+            damage.update_telemetry(session.player)
+
+        fuel_time = self.widgets.get("fuel_time")
+        if fuel_time is not None and fuel_time.isVisible() and self._update_due("fuel_time", now):
+            fuel_time.update_from_session(session)
+
+        relative = self.widgets.get("relative")
+        if (
+            relative is not None
+            and relative.isVisible()
+            and self._update_due("relative", now)
+        ):
+            relative.update_from_session(session)
 
         battery = self.widgets.get("battery")
         battery_config = self.config_data.get("widgets", {}).get(
@@ -313,6 +397,37 @@ class OverlayManager(QObject):
             standings_config.get("enabled", False)
         ):
             standings.update_from_session(session)
+        self._update_url_sources(session)
+
+    def _configure_url_sources(self) -> None:
+        controller = self.widgets.get("url")
+        if not isinstance(controller, UrlServerWidget): return
+        selected = list(self.config_data.get("widgets", {}).get("url", {}).get("published_widgets", []))
+        sources: dict[str, QWidget] = {}
+        for widget_id in selected:
+            if widget_id == "url": continue
+            try:
+                source = self.widgets.get(widget_id) or self.create_widget(widget_id)
+            except (KeyError, TypeError):
+                continue
+            sources[widget_id] = source
+            if not bool(self.config_data.get("widgets", {}).get(widget_id, {}).get("enabled", False)):
+                source.hide()
+        controller.set_sources(sources)
+
+    def _update_url_sources(self, session: Any) -> None:
+        controller = self.widgets.get("url")
+        if not isinstance(controller, UrlServerWidget) or not bool(
+            self.config_data.get("widgets", {}).get("url", {}).get("enabled", False)
+        ): return
+        for widget_id, widget in list(controller.sources.items()):
+            if widget_id in {"driver_panel", "tires", "damage"}:
+                player = getattr(session, "player", None)
+                if player is not None and hasattr(widget, "update_telemetry"):
+                    widget.update_telemetry(player)
+            elif hasattr(widget, "update_from_session"):
+                widget.update_from_session(session)
+        controller.capture_frames()
     def set_edit_mode(self, enabled: bool) -> None:
         self.edit_mode = bool(enabled)
         for widget_id, widget in self.widgets.items():
@@ -327,6 +442,9 @@ class OverlayManager(QObject):
                 widget.show()
             else:
                 widget.hide()
+        url_widget = self.widgets.get("url")
+        if isinstance(url_widget, UrlServerWidget):
+            url_widget.set_output_active(self.session_active or self.edit_mode)
 
     def set_session_active(self, active: bool) -> None:
         active = bool(active)
@@ -341,6 +459,9 @@ class OverlayManager(QObject):
                 widget.show()
             else:
                 widget.hide()
+        url_widget = self.widgets.get("url")
+        if isinstance(url_widget, UrlServerWidget):
+            url_widget.set_output_active(self.session_active or self.edit_mode)
 
     def _update_due(self, widget_id: str, now: float) -> bool:
         interval = self.UPDATE_INTERVALS.get(widget_id, 0.05)
@@ -381,6 +502,79 @@ class OverlayManager(QObject):
             for value in (in_control, in_monitor, vehicle_loaded)
         )
 
+        # API em primeiro lugar: menu, loading, monitor e replay nunca devem
+        # exibir os widgets. Quando o estado REST esta completo, exigimos que
+        # o jogador esteja realmente no controle do veiculo carregado.
+        navigation_state = str(
+            getattr(session, "navigation_state", "") or ""
+        )
+        navigation_loading = bool(
+            getattr(session, "navigation_loading", False)
+        )
+        if api_available:
+            if (
+                navigation_state in {
+                    "NAV_MAIN_MENU",
+                    "NAV_OPTIONS",
+                    "NAV_LOADING",
+                }
+                or navigation_loading
+                or bool(replay_active)
+                or bool(in_monitor)
+            ):
+                self._log_overlay_decision(
+                    session,
+                    False,
+                    "rest_not_driving",
+                )
+                return False
+            if rest_state_complete and not (
+                bool(in_control) and bool(vehicle_loaded)
+            ):
+                self._log_overlay_decision(
+                    session,
+                    False,
+                    "rest_no_vehicle_control",
+                )
+                return False
+
+        # Fallback igual ao TinyPedal: jogador/veiculo sincronizado e estado
+        # realtime (ou ignicao ligada). mOptionsLocation reforca que somente
+        # o estado 3, na pista, pode mostrar o overlay.
+        if not rest_state_complete:
+            location = int(
+                getattr(session, "application_location", 0) or 0
+            )
+            player_data = getattr(session, "player", None)
+            ignition = int(
+                getattr(player_data, "ignition_starter", 0) or 0
+            )
+            if location in {0, 1, 2}:
+                self._log_overlay_decision(
+                    session,
+                    False,
+                    "memory_not_on_track",
+                    {"application_location": location},
+                )
+                return False
+            if not bool(getattr(session, "player_has_vehicle", False)):
+                self._log_overlay_decision(
+                    session,
+                    False,
+                    "memory_no_player_vehicle",
+                )
+                return False
+            if not (
+                bool(getattr(session, "in_realtime", False))
+                or ignition > 0
+            ):
+                self._log_overlay_decision(
+                    session,
+                    False,
+                    "memory_not_realtime",
+                )
+                return False
+
         # Pré-calcula presença/atividade do jogador para uso em ambas
         # as ramificações (REST disponível ou não).
         drivers = list(getattr(session, "drivers", []) or [])
@@ -408,9 +602,6 @@ class OverlayManager(QObject):
 
         player_active = _player_active_on_track_fallback_local(player_driver, getattr(session, "player", None))
 
-        navigation_state = str(
-            getattr(session, "navigation_state", "") or ""
-        )
         if api_available and navigation_state in {
             "NAV_MAIN_MENU",
             "NAV_OPTIONS",
@@ -447,6 +638,16 @@ class OverlayManager(QObject):
                 return False
 
             player_active = _player_active_on_track()
+
+            # Segue o comportamento do TinyPedal: com REST fresco, monitor e
+            # garagem sem controle do carro pausam/ocultam os overlays.
+            if bool(in_monitor) and not bool(in_control):
+                self._log_overlay_decision(
+                    session,
+                    False,
+                    "rest_monitor",
+                )
+                return False
 
             # Regras de ocultação:
             # - ocultar se replay ativo
@@ -544,7 +745,37 @@ class OverlayManager(QObject):
         if not self.config_path.exists():
             raise FileNotFoundError(f"Configuração não encontrada: {self.config_path}")
         try:
-            return json.loads(self.config_path.read_text(encoding="utf-8"))
+            data = json.loads(self.config_path.read_text(encoding="utf-8"))
+            defaults_path = self.config_path.with_name("damage_defaults.json")
+            if defaults_path.exists():
+                damage_default = json.loads(defaults_path.read_text(encoding="utf-8"))
+                data.setdefault("widgets", {}).setdefault("damage", deepcopy(damage_default))
+                data.setdefault("defaults", {}).setdefault("damage", deepcopy(damage_default))
+            fuel_defaults_path = self.config_path.with_name("fuel_time_defaults.json")
+            if fuel_defaults_path.exists():
+                fuel_default = json.loads(fuel_defaults_path.read_text(encoding="utf-8"))
+                data.setdefault("widgets", {}).setdefault("fuel_time", deepcopy(fuel_default))
+                data.setdefault("defaults", {}).setdefault("fuel_time", deepcopy(fuel_default))
+            url_defaults_path = self.config_path.with_name("url_defaults.json")
+            if url_defaults_path.exists():
+                url_default = json.loads(url_defaults_path.read_text(encoding="utf-8"))
+                data.setdefault("widgets", {}).setdefault("url", deepcopy(url_default))
+                data.setdefault("defaults", {}).setdefault("url", deepcopy(url_default))
+            standings_defaults_path = self.config_path.with_name("standings_defaults.json")
+            relative_defaults_path = self.config_path.with_name("relative_defaults.json")
+            if standings_defaults_path.exists() and relative_defaults_path.exists():
+                relative_default = json.loads(standings_defaults_path.read_text(encoding="utf-8"))
+                relative_override = json.loads(relative_defaults_path.read_text(encoding="utf-8"))
+                def merge(target: dict[str, Any], source: dict[str, Any]) -> None:
+                    for key, value in source.items():
+                        if isinstance(value, dict) and isinstance(target.get(key), dict):
+                            merge(target[key], value)
+                        else:
+                            target[key] = deepcopy(value)
+                merge(relative_default, relative_override)
+                data.setdefault("widgets", {}).setdefault("relative", deepcopy(relative_default))
+                data.setdefault("defaults", {}).setdefault("relative", deepcopy(relative_default))
+            return data
         except json.JSONDecodeError as exc:
             raise ValueError(
                 f"JSON inválido em {self.config_path}: linha {exc.lineno}, coluna {exc.colno}"
@@ -566,6 +797,12 @@ class OverlayManager(QObject):
         config["size"]["width"] = max(0.05, min(1.0, width))
         config["size"]["height"] = max(0.05, min(1.0, height))
         config["scale"] = 1.0
+        widget = self.widgets.get(widget_id)
+        if widget is not None and hasattr(widget, "column_width_total"):
+            reference_total = float(widget.column_width_total())
+            config["column_width_reference_total"] = reference_total
+            if hasattr(widget, "config"):
+                widget.config["column_width_reference_total"] = reference_total
         self.save_config()
 
     def _apply_window_flags(self, widget: QWidget, config: dict[str, Any]) -> None:

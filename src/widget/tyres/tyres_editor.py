@@ -193,7 +193,11 @@ class TyresEditor(QDialog):
 
         source = QComboBox()
         source.addItem(
-            "Jogo/MFD — camada interna média",
+            "Jogo/MFD - carcaça + camada interna",
+            "lmu_weighted",
+        )
+        source.addItem(
+            "Camada interna — média",
             "inner_average",
         )
         source.addItem(
@@ -215,7 +219,7 @@ class TyresEditor(QDialog):
         index = source.findData(
             self.config.get(
                 "temperature_source",
-                "inner_average",
+                "lmu_weighted",
             )
         )
         source.setCurrentIndex(

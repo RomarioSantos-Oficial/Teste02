@@ -1,0 +1,1 @@
+{"enabled":true,"bind_host":"0.0.0.0","port":8765,"fps":10,"published_widgets":["standings","relative","delta","map","driver_panel","battery","fuel_time","tires","damage","weather","flags"]}

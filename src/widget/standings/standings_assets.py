@@ -55,6 +55,11 @@ BRANDS = {
     "oreca": "Oreca", "ligier": "Ligier", "ginetta": "Ginetta",
     "gr010": "Toyota", "9x8": "Peugeot", "a424": "Alpine",
     "v-series": "Cadillac", "007": "Glickenhaus", "isotta": "Isotta",
+    "gmr001": "Genesis", "genesis": "Genesis",
+    "ad25": "Adess", "adess": "Adess", "d09": "Duqueine",
+    "jsp325": "Ligier", "g61": "Ginetta",
+    "vandervell": "Vanwall", "vanwall": "Vanwall",
+    "sgc_007": "Glickenhaus", "chevrolet": "Corvette",
 }
 
 BADGE_IMAGE_ALIASES = {
@@ -314,7 +319,7 @@ class CountryFlagStore(QObject):
         scaled = source.scaled(
             width,
             height,
-            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.AspectRatioMode.KeepAspectRatioByExpanding,
             Qt.TransformationMode.SmoothTransformation,
         )
         if scaled.isNull():
@@ -449,6 +454,7 @@ def detect_manufacturer(vehicle_name: str, vehicle_filename: str = "", supplied:
         "Ferrari", "Porsche", "BMW", "Toyota", "Peugeot", "Alpine", "Cadillac",
         "Lamborghini", "Aston Martin", "Corvette", "Ford", "McLaren", "Lexus",
         "Mercedes", "Audi", "Oreca", "Ligier", "Ginetta", "Duqueine",
+        "Genesis", "Adess", "Glickenhaus", "Isotta", "Vanwall",
     ):
         if brand.casefold() in text:
             return brand

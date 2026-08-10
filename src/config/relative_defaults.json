@@ -1,0 +1,15 @@
+{
+  "enabled": false,
+  "relative_mode": true,
+  "position": {"x": 0.02, "y": 0.25},
+  "size": {"width": 0.58, "height": 0.50},
+  "show_global_header": false,
+  "show_column_legend": false,
+  "relative_cars_ahead": 5,
+  "relative_cars_behind": 5,
+  "show_laps": false,
+  "show_best_lap": false,
+  "show_last_lap": false,
+  "show_gap": true,
+  "show_driver_rank_progress": false
+}

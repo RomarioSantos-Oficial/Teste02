@@ -27,6 +27,27 @@ from PySide6.QtWidgets import (
 class StandingsEditor(QDialog):
     config_changed = Signal(dict)
     restore_requested = Signal()
+    COLUMN_WIDTHS = (
+        ("position", "Posição", 46.0),
+        ("change", "Mudança de posição", 60.0),
+        ("flag", "Bandeira", 62.5),
+        ("badge", "Badge", 60.0),
+        ("driver", "Nome do piloto", 180.0),
+        ("brand", "Marca", 72.0),
+        ("dr", "Driver Rank (DR)", 110.0),
+        ("sr", "Safety Rank (SR)", 88.0),
+        ("number", "Número do carro", 58.0),
+        ("laps", "Voltas", 70.0),
+        ("pit", "Tempo do pit", 90.0),
+        ("best", "Melhor volta", 140.0),
+        ("last", "Última volta", 140.0),
+        ("gap", "Gap/intervalo", 100.0),
+        ("tyre", "Pneus", 76.0),
+        ("energy", "Energia", 105.0),
+        ("damage", "Danos", 80.0),
+        ("track_limits", "Limites de pista", 88.0),
+        ("penalty", "Punição", 90.0),
+    )
 
     def __init__(self, config: dict[str, Any], parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -60,12 +81,38 @@ class StandingsEditor(QDialog):
         group = QGroupBox("Categorias e regras fixas")
         form = QFormLayout(group)
         text = QLabel(
-            "1 categoria: até 10 carros, top 3 + jogador e carros ao redor.\n"
-            "2 ou 3 categorias: top 3 das outras categorias e até 8 carros da categoria do jogador.\n"
-            "A categoria do jogador aparece por último. Máximo de 3 categorias."
+            "Escolha quantas categorias e linhas deseja ver. A categoria "
+            "do jogador aparece por último."
         )
         text.setWordWrap(True)
         form.addRow(text)
+        maximum_categories = QSpinBox()
+        maximum_categories.setRange(1, 5)
+        maximum_categories.setValue(
+            int(self.config.get("maximum_categories", 3))
+        )
+        maximum_categories.valueChanged.connect(
+            lambda value: self._set("maximum_categories", value)
+        )
+        player_rows = QSpinBox()
+        player_rows.setRange(1, 10)
+        player_rows.setValue(
+            int(self.config.get("player_category_rows", 8))
+        )
+        player_rows.valueChanged.connect(
+            lambda value: self._set("player_category_rows", value)
+        )
+        other_rows = QSpinBox()
+        other_rows.setRange(1, 5)
+        other_rows.setValue(
+            int(self.config.get("other_category_rows", 3))
+        )
+        other_rows.valueChanged.connect(
+            lambda value: self._set("other_category_rows", value)
+        )
+        form.addRow("Categorias visíveis:", maximum_categories)
+        form.addRow("Linhas da categoria do jogador:", player_rows)
+        form.addRow("Linhas das outras categorias:", other_rows)
         for key, label, default in (
             ("show_global_header", "Cabeçalho global:", True),
             ("show_column_legend", "Legenda das colunas:", False),
@@ -99,6 +146,7 @@ class StandingsEditor(QDialog):
         group = QGroupBox("Colunas")
         form = QFormLayout(group)
         options = (
+            ("show_position_change", "Mudança de posição:", True),
             ("show_country_flag", "Bandeira do piloto:", True),
             ("use_flag_images", "Usar imagem da bandeira:", True),
             ("show_badge", "Badge do piloto:", True),
@@ -112,9 +160,15 @@ class StandingsEditor(QDialog):
                 False,
             ),
             ("show_brand_logo", "Logo da marca:", True),
+            ("show_car_number", "Número do carro:", True),
+            ("show_laps", "Voltas:", True),
+            ("show_best_lap", "Melhor volta (BEST):", True),
+            ("show_last_lap", "Última volta (LAST):", True),
+            ("show_gap", "Gap/intervalo:", True),
             ("show_tyre", "Pneu:", True),
             ("show_invalid_lap_status", "Volta inválida:", True),
             ("show_pit_status", "Tempo/status do pit:", True),
+            ("show_track_limits_column", "Coluna de limites de pista:", True),
             ("show_penalty_column", "Coluna de punição automática:", True),
             ("show_energy", "Bateria/Energia:", True),
             ("show_damage", "Dano:", True),
@@ -124,6 +178,27 @@ class StandingsEditor(QDialog):
             check.setChecked(bool(self.config.get(key, default)))
             check.toggled.connect(lambda value, current=key: self._set(current, value))
             form.addRow(label, check)
+        width_title = QLabel("Largura individual das colunas")
+        width_title.setStyleSheet("font-weight: 700; margin-top: 10px;")
+        form.addRow(width_title)
+        width_note = QLabel(
+            "As outras colunas acompanham automaticamente o texto e a altura da linha."
+        )
+        width_note.setWordWrap(True)
+        form.addRow(width_note)
+        widths = self.config.setdefault("column_widths", {})
+        for key, label, default_width in self.COLUMN_WIDTHS:
+            if key not in {"driver", "flag", "tyre", "badge", "brand"}:
+                continue
+            control = QDoubleSpinBox()
+            control.setRange(24.0, 600.0)
+            control.setSingleStep(2.0)
+            control.setSuffix(" px")
+            control.setValue(float(widths.get(key, default_width)))
+            control.valueChanged.connect(
+                lambda value, current=key: self._set_column_width(current, value)
+            )
+            form.addRow(label + ":", control)
         self.layout_content.addWidget(group)
 
     def _build_dimensions(self) -> None:
@@ -138,13 +213,21 @@ class StandingsEditor(QDialog):
         size.setValue(int(self.config.get("font_size", 26)))
         size.valueChanged.connect(lambda value: self._set("font_size", value))
         row_height = QDoubleSpinBox()
-        row_height.setRange(36.0, 80.0)
+        row_height.setRange(24.0, 120.0)
         row_height.setValue(float(self.config.get("row_height", 54.0)))
         row_height.valueChanged.connect(lambda value: self._set("row_height", value))
         header_height = QDoubleSpinBox()
-        header_height.setRange(40.0, 90.0)
+        header_height.setRange(20.0, 120.0)
         header_height.setValue(float(self.config.get("global_header_height", 58.0)))
         header_height.valueChanged.connect(lambda value: self._set("global_header_height", value))
+        category_height = QDoubleSpinBox()
+        category_height.setRange(20.0, 120.0)
+        category_height.setValue(
+            float(self.config.get("category_header_height", 50.0))
+        )
+        category_height.valueChanged.connect(
+            lambda value: self._set("category_header_height", value)
+        )
         scale = QDoubleSpinBox()
         scale.setRange(0.40, 2.00)
         scale.setSingleStep(0.05)
@@ -197,7 +280,8 @@ class StandingsEditor(QDialog):
         form.addRow("Fonte:", font)
         form.addRow("Tamanho base:", size)
         form.addRow("Altura da linha:", row_height)
-        form.addRow("Altura do cabeçalho:", header_height)
+        form.addRow("Altura do cabeçalho principal:", header_height)
+        form.addRow("Altura da faixa Categoria/Volta/SOF:", category_height)
         form.addRow("Escala interna:", scale)
         form.addRow("Tamanho do desenho do pneu:", tyre_scale)
         form.addRow("Destaque de nova melhor volta:", lap_highlight)
@@ -289,6 +373,10 @@ class StandingsEditor(QDialog):
 
     def _set(self, key: str, value: Any) -> None:
         self.config[key] = value
+        self._emit()
+
+    def _set_column_width(self, key: str, value: float) -> None:
+        self.config.setdefault("column_widths", {})[key] = float(value)
         self._emit()
 
     def _emit(self) -> None:

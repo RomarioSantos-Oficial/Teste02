@@ -100,6 +100,11 @@ class StandingsLogic:
             )
             for driver in drivers
         ]
+        if (
+            bool(self.config.get("show_estimated_driver_rank_gain", False))
+            and 10 <= int(getattr(session, "session", 0) or 0) <= 13
+        ):
+            self._estimate_driver_rank_gains(rows)
         self._apply_lap_states(rows, now)
         self._last_current_time = float(
             getattr(session, "current_time_s", 0.0) or 0.0
@@ -108,7 +113,11 @@ class StandingsLogic:
         class_leaders = self._class_leaders(rows)
         for row in rows:
             row.gap_text = self._gap_text(row, player, class_leaders.get(row.class_key), session)
-        categories = self._category_blocks(rows, player, session)
+        categories = (
+            self._relative_block(rows, player, session)
+            if bool(self.config.get("relative_mode", False))
+            else self._category_blocks(rows, player, session)
+        )
         return StandingsView(
             connected=bool(getattr(session, "connected", False)),
             session_type=self._session_type(int(getattr(session, "session", 0) or 0)),
@@ -121,6 +130,76 @@ class StandingsLogic:
             track_name=str(getattr(session, "track_name", "") or ""),
             categories=categories,
         )
+
+    def _relative_block(
+        self,
+        rows: list[StandingRow],
+        player: StandingRow | None,
+        session: Any,
+    ) -> list[CategoryBlock]:
+        if player is None:
+            return []
+        track_length = float(getattr(session, "track_length_m", 0.0) or 0.0)
+        if track_length <= 1.0:
+            return []
+        reference_lap = player.best_lap_s
+        if reference_lap <= 20.0:
+            valid = [row.best_lap_s for row in rows if row.best_lap_s > 20.0]
+            reference_lap = min(valid) if valid else 90.0
+
+        relative_ahead: list[tuple[float, StandingRow]] = []
+        relative_behind: list[tuple[float, StandingRow]] = []
+        for row in rows:
+            if row.is_player:
+                row.gap_text = "0.000"
+                continue
+            distance = row.lap_distance_m - player.lap_distance_m
+            if distance > track_length / 2.0:
+                distance -= track_length
+            elif distance < -track_length / 2.0:
+                distance += track_length
+            distance_seconds = distance / track_length * reference_lap
+            # Mesmo metodo do TinyPedal/module_relative.py: para cada carro
+            # cria um gap circular positivo (frente) e negativo (atras).
+            # O modulo mantem os valores continuos quando timeIntoLap zera.
+            row_time = float(row.time_into_lap_s or 0.0)
+            player_time = float(player.time_into_lap_s or 0.0)
+            if row_time >= 0.0 and player_time >= 0.0 and (
+                row_time > 0.0 or player_time > 0.0
+            ):
+                raw_seconds = row_time - player_time
+                ahead_seconds = raw_seconds % reference_lap
+                behind_seconds = ahead_seconds - reference_lap if ahead_seconds > 0 else 0.0
+            else:
+                ahead_seconds = distance_seconds % reference_lap
+                behind_seconds = ahead_seconds - reference_lap if ahead_seconds > 0 else 0.0
+            relative_ahead.append((ahead_seconds, row))
+            relative_behind.append((behind_seconds, row))
+
+        ahead_count = max(1, min(20, int(self.config.get("relative_cars_ahead", 5))))
+        behind_count = max(1, min(20, int(self.config.get("relative_cars_behind", 5))))
+        ahead = sorted((item for item in relative_ahead if item[0] > 0), key=lambda item: item[0])[:ahead_count]
+        ahead_ids = {item[1].slot_id for item in ahead}
+        behind = sorted(
+            (item for item in relative_behind if item[0] < 0 and item[1].slot_id not in ahead_ids),
+            key=lambda item: item[0], reverse=True,
+        )[:behind_count]
+        for seconds, row in ahead + behind:
+            row.gap_text = f"{seconds:+.3f}"
+        selected = list(reversed(ahead)) + [(0.0, player)] + behind
+        player_color = str(
+            self.config.get("class_colors", {}).get(player.class_key, "#175C9C")
+        )
+        return [
+            CategoryBlock(
+                class_name="RELATIVE",
+                class_key=player.class_key,
+                color=player_color,
+                started=len(rows),
+                total=len(rows),
+                rows=[row for _, row in selected],
+            )
+        ]
 
     def _row_from_driver(
         self,
@@ -279,6 +358,7 @@ class StandingsLogic:
             or str(catalog_entry.get("manufacturer", "") or ""),
         )
         damage_percent = extra.damage_percent
+        damage_is_estimated = False
         if damage_percent is None and is_player:
             raw_damage = _optional_float(
                 getattr(getattr(session, "player", None), "vehicle_damage", None)
@@ -287,6 +367,20 @@ class StandingsLogic:
                 damage_percent = (
                     raw_damage * 100.0 if raw_damage <= 1.0 else raw_damage
                 )
+        if damage_percent is None:
+            damage_percent = _optional_float(
+                getattr(driver, "damage_percent", None)
+            )
+            damage_is_estimated = bool(
+                getattr(driver, "damage_is_estimated", False)
+            )
+        tyre_compounds = tuple(
+            str(value or "").strip()
+            for value in (getattr(driver, "tire_compounds", []) or [])[:4]
+            if str(value or "").strip()
+        )
+        if not tyre_compounds and extra.tyre_compound:
+            tyre_compounds = (extra.tyre_compound,) * 4
         return StandingRow(
             slot_id=slot_id,
             overall_position=overall,
@@ -309,19 +403,41 @@ class StandingsLogic:
             driver_rank=extra.driver_rank,
             driver_rank_progress=extra.driver_rank_progress,
             safety_rank=extra.safety_rank,
+            safety_rank_progress=extra.safety_rank_progress,
             estimated_driver_rank_gain=extra.estimated_driver_rank_gain,
             laps=completed_laps,
             lap_distance_m=float(getattr(driver, "lap_distance_m", 0.0) or 0.0),
+            time_into_lap_s=float(getattr(driver, "time_into_lap_s", 0.0) or 0.0),
+            lap_start_event_time_s=float(
+                getattr(driver, "lap_start_event_time_s", 0.0) or 0.0
+            ),
             best_lap_s=float(getattr(driver, "best_lap_s", 0.0) or 0.0),
             last_lap_s=float(getattr(driver, "last_lap_s", 0.0) or 0.0),
             current_lap_invalidated=current_lap_invalidated,
             last_lap_invalidated=last_lap_invalidated,
             gap_leader_s=float(getattr(driver, "gap_leader_s", 0.0) or 0.0),
             interval_s=float(getattr(driver, "gap_ahead_s", 0.0) or 0.0),
-            tyre_compound=extra.tyre_compound,
+            tyre_compound=(
+                extra.tyre_compound
+                or self._compound_label(
+                    getattr(driver, "tire_compounds", [])
+                )
+            ),
+            tyre_compounds=tyre_compounds,
             energy_percent=energy,
             damage_percent=damage_percent,
+            damage_is_estimated=damage_is_estimated,
             penalties=int(getattr(driver, "penalties", 0) or 0),
+            track_limits_text=self._driver_track_limits_text(
+                driver, session, is_player
+            ),
+            penalty_text=self._penalty_text(driver, session, is_player),
+            laps_behind_leader=int(
+                getattr(driver, "laps_behind_leader", 0) or 0
+            ),
+            laps_behind_ahead=int(
+                getattr(driver, "laps_behind_ahead", 0) or 0
+            ),
             finish_state=(
                 extra.finish_state
                 or str(getattr(driver, "finish_status_name", "") or "")
@@ -337,12 +453,82 @@ class StandingsLogic:
             ),
             in_pits=in_pits,
             in_garage=bool(getattr(driver, "in_garage", False)),
-            under_yellow=bool(getattr(driver, "under_yellow", False)),
+            under_yellow=(
+                bool(getattr(driver, "under_yellow", False))
+                or int(getattr(driver, "flag", 0) or 0) in {1, 2}
+                # Mesmo fallback usado pelo TinyPedal: um carro muito lento
+                # fora do pit/garagem e tratado como causador de amarela.
+                or (
+                    float(getattr(driver, "speed_kmh", 0.0) or 0.0) < 28.8
+                    and not in_pits
+                    and not bool(getattr(driver, "in_garage", False))
+                    and int(getattr(session, "game_phase", 0) or 0) >= 5
+                    and int(getattr(driver, "finish_status", 0) or 0) == 0
+                )
+            ),
             flag=int(getattr(driver, "flag", 0) or 0),
             is_player=is_player,
             pit_time_s=self._pit_elapsed.get(slot_id, 0.0),
             pit_status_visible=pit_status_visible,
         )
+
+    @staticmethod
+    def _compound_label(values: Any) -> str:
+        compounds = [str(value or "").strip() for value in (values or [])]
+        compounds = [value for value in compounds if value]
+        if not compounds:
+            return ""
+        if len(set(compounds)) == 1:
+            return compounds[0]
+        if len(compounds) >= 4:
+            front = compounds[0] if compounds[0] == compounds[1] else "/".join(compounds[:2])
+            rear = compounds[2] if compounds[2] == compounds[3] else "/".join(compounds[2:4])
+            return front if front == rear else f"{front}/{rear}"
+        return "/".join(dict.fromkeys(compounds))
+
+    @staticmethod
+    def _penalty_text(driver: Any, session: Any, is_player: bool) -> str:
+        finish = int(getattr(driver, "finish_status", 0) or 0)
+        finish_name = str(getattr(driver, "finish_status_name", "") or "").upper()
+        if finish == 3 or finish_name in {"DQ", "FSTAT_DQ", "DISQUALIFIED"}:
+            return "DQ"
+        raw_type = str(getattr(driver, "penalty_type", "") or "").strip().upper()
+        seconds = float(getattr(driver, "penalty_time_s", 0.0) or 0.0)
+        if raw_type:
+            if "DRIVE" in raw_type or raw_type in {"DT", "DRIVETHROUGH"}:
+                return "DT"
+            if "STOP" in raw_type or raw_type.startswith("SG"):
+                return f"SG{seconds:.0f}" if seconds > 0.0 else "SG"
+            if "TIME" in raw_type and seconds > 0.0:
+                return f"+{seconds:.0f}"
+            if "DISQUAL" in raw_type or raw_type == "DQ":
+                return "DQ"
+            return raw_type[:5]
+        if seconds > 0.0:
+            return f"+{seconds:.0f}"
+        count = max(0, int(getattr(driver, "penalties", 0) or 0))
+        if count > 0:
+            # REST e shared memory informam a quantidade, nao o tipo. Evita
+            # apresentar P1 como se fosse o nome de uma punicao.
+            return "PEN"
+        return "--"
+
+    @staticmethod
+    def _driver_track_limits_text(driver: Any, session: Any, is_player: bool) -> str:
+        points = getattr(driver, "track_limits_points", None)
+        steps = getattr(driver, "track_limits_steps", None)
+        if points is None and steps is not None:
+            steps_per_point = max(
+                1,
+                int(getattr(session, "track_limits_steps_per_point", 0) or 0),
+            )
+            points = float(steps) / steps_per_point
+        if points is None and is_player:
+            points = float(getattr(session, "track_limits_current", 0.0) or 0.0)
+        if points is None:
+            return "--"
+        limit = float(getattr(session, "track_limits_limit", 0.0) or 0.0)
+        return f"{points:g}/{limit:g}" if limit > 0.0 else f"{points:g}"
 
     def _apply_lap_states(
         self,
@@ -409,7 +595,10 @@ class StandingsLogic:
             if player_item is not None:
                 ordered.remove(player_item)
                 ordered.append(player_item)
-        maximum_classes = max(1, min(3, int(self.config.get("maximum_categories", 3))))
+        maximum_classes = max(
+            1,
+            min(5, int(self.config.get("maximum_categories", 3))),
+        )
         if len(ordered) > maximum_classes:
             selected = ordered[:maximum_classes]
             if player is not None and all(key != player.class_key for key, _ in selected):
@@ -419,22 +608,49 @@ class StandingsLogic:
             ordered = selected
         num_classes = len(ordered)
         blocks: list[CategoryBlock] = []
+        player_row_limit = max(
+            1,
+            min(10, int(self.config.get("player_category_rows", 8))),
+        )
+        other_row_limit = max(
+            1,
+            min(5, int(self.config.get("other_category_rows", 3))),
+        )
         for class_key, class_rows in ordered:
             class_rows.sort(key=lambda row: row.class_position or 9999)
             is_player_class = player is not None and class_key == player.class_key
-            if num_classes == 1:
-                selected_rows = self._select_player_class(class_rows, 10, 1)
-            elif is_player_class:
-                selected_rows = self._select_player_class(class_rows, 8, num_classes)
+            if is_player_class:
+                selected_rows = self._select_player_class(
+                    class_rows,
+                    player_row_limit,
+                    num_classes,
+                )
             else:
-                selected_rows = class_rows[:3]
+                selected_rows = self._select_priority_rows(
+                    class_rows, other_row_limit
+                )
             class_name = class_rows[0].class_name if class_rows else class_key
             _, _, color = canonical_class(class_key, self.config)
-            reference = player if is_player_class else (class_rows[0] if class_rows else None)
+            leader_reference = class_rows[0] if class_rows else None
+            reference = (
+                leader_reference
+                if is_race
+                else (player if is_player_class else leader_reference)
+            )
             current_lap = (reference.laps + 1) if reference is not None else 0
-            total_text, total_calc = self._total_laps_info(reference, session, class_rows)
+            if is_race:
+                total_text, total_calc = self._total_laps_info(
+                    leader_reference,
+                    session,
+                    class_rows,
+                )
+            else:
+                total_text, total_calc = "--", "session_not_race"
             active_count = sum(
                 1 for row in class_rows if self._is_active_race_car(row)
+            )
+            sof_rank, sof_progress, sof_drivers = self._driver_rank_sof(
+                class_rows
             )
             blocks.append(CategoryBlock(
                 class_name=class_name,
@@ -450,9 +666,105 @@ class StandingsLogic:
                 total_laps_text=total_text,
                 total_laps_calc=total_calc,
                 show_count=is_race,
+                dr_sof_rank=sof_rank,
+                dr_sof_progress=sof_progress,
+                dr_sof_drivers=sof_drivers,
                 rows=selected_rows,
             ))
         return blocks
+
+    @staticmethod
+    def _driver_rank_sof(
+        rows: list[StandingRow],
+    ) -> tuple[str, float | None, int]:
+        tier_base = {
+            "bronze": 0,
+            "silver": 3,
+            "gold": 6,
+            "platinum": 9,
+        }
+        values: list[float] = []
+        for row in rows:
+            match = re.search(
+                r"(bronze|silver|gold|platinum)\s*([1-3])?",
+                str(row.driver_rank or ""),
+                re.IGNORECASE,
+            )
+            if match is None:
+                continue
+            progress = _optional_float(row.driver_rank_progress)
+            if progress is None:
+                progress = 0.0
+            if 0.0 <= progress <= 1.0:
+                progress *= 100.0
+            values.append(
+                tier_base[match.group(1).casefold()]
+                + max(0, int(match.group(2) or 1) - 1)
+                + max(0.0, min(100.0, progress)) / 100.0
+            )
+        if not values:
+            return "", None, 0
+        average = max(0.0, min(11.999, sum(values) / len(values)))
+        whole = int(average)
+        tier_index = whole // 3
+        tier = ("B", "S", "G", "P")[tier_index]
+        subrank = whole % 3 + 1
+        progress = (average - whole) * 100.0
+        return f"{tier}{subrank}", progress, len(values)
+
+    @classmethod
+    def _estimate_driver_rank_gains(cls, rows: list[StandingRow]) -> None:
+        """Preenche um delta local quando RaceControl nao publica a previsao.
+
+        E uma estimativa Elo relativa ao grid da propria classe. Valores que
+        vierem da API sao sempre preservados e continuam tendo prioridade.
+        """
+        grouped: dict[str, list[tuple[StandingRow, float]]] = {}
+        for row in rows:
+            value = cls._driver_rank_value(row)
+            if value is not None:
+                grouped.setdefault(row.class_key, []).append((row, value))
+        for class_rows in grouped.values():
+            if len(class_rows) < 2:
+                continue
+            for row, rating in class_rows:
+                if row.estimated_driver_rank_gain is not None:
+                    continue
+                actual_total = expected_total = 0.0
+                comparisons = 0
+                for opponent, opponent_rating in class_rows:
+                    if opponent.slot_id == row.slot_id:
+                        continue
+                    actual = (
+                        1.0 if row.class_position < opponent.class_position
+                        else 0.0 if row.class_position > opponent.class_position
+                        else 0.5
+                    )
+                    expected = 1.0 / (1.0 + 10.0 ** ((opponent_rating - rating) / 4.0))
+                    actual_total += actual; expected_total += expected; comparisons += 1
+                if comparisons:
+                    # Limite de seis pontos percentuais reduz os saltos com
+                    # grids pequenos; o valor final e identificado como
+                    # estimativa pelo sinal junto ao progresso do DR.
+                    delta = 6.0 * (
+                        actual_total / comparisons - expected_total / comparisons
+                    )
+                    row.estimated_driver_rank_gain = max(-6.0, min(6.0, delta))
+
+    @staticmethod
+    def _driver_rank_value(row: StandingRow) -> float | None:
+        match = re.search(
+            r"(bronze|silver|gold|platinum)\s*([1-3])?",
+            str(row.driver_rank or ""), re.IGNORECASE,
+        )
+        if match is None:
+            return None
+        base = {"bronze": 0, "silver": 3, "gold": 6, "platinum": 9}
+        progress = _optional_float(row.driver_rank_progress) or 0.0
+        if 0.0 <= progress <= 1.0:
+            progress *= 100.0
+        subrank = max(1, min(3, int(match.group(2) or 1)))
+        return base[match.group(1).casefold()] + subrank - 1 + max(0.0, min(100.0, progress)) / 100.0
 
     @staticmethod
     def _is_active_race_car(row: StandingRow) -> bool:
@@ -474,43 +786,68 @@ class StandingsLogic:
 
     @staticmethod
     def _select_player_class(rows: list[StandingRow], limit: int, number_classes: int) -> list[StandingRow]:
-        indices: set[int] = set()
         player_index = next((index for index, row in enumerate(rows) if row.is_player), -1)
-        if number_classes == 1:
-            if player_index != -1:
-                indices.add(player_index)
-            indices.update(range(min(3, len(rows))))
-            if player_index >= 3:
-                for offset in range(-3, 4):
-                    index = player_index + offset
-                    if 0 <= index < len(rows):
-                        indices.add(index)
-                        if len(indices) >= limit:
-                            break
-        else:
-            if rows:
-                indices.add(0)
-            if player_index != -1:
-                indices.add(player_index)
-            if player_index > 0:
-                remaining = max(0, limit - 2)
-                before = remaining // 2
-                after = remaining - before
-                for offset in range(1, before + 2):
-                    index = player_index - offset
-                    if index > 0:
-                        indices.add(index)
-                for offset in range(1, after + 2):
-                    index = player_index + offset
-                    if index < len(rows):
-                        indices.add(index)
+        limit = max(1, min(limit, len(rows))) if rows else 0
+        if player_index < 0:
+            return rows[:limit]
+        if limit == 1:
+            return [rows[player_index]]
+        indices: set[int] = {player_index}
+        priority = sorted([
+            index for index, row in enumerate(rows)
+            if StandingsLogic._is_priority_row(row)
+        ], key=lambda index: StandingsLogic._priority_key(rows[index]))
+        for index in priority:
+            if len(indices) >= limit:
+                break
+            indices.add(index)
         if len(indices) < limit:
-            start = 1 if number_classes > 1 else 0
-            for index in range(start, len(rows)):
-                indices.add(index)
-                if len(indices) >= limit:
-                    break
+            indices.add(0)
+        distance = 1
+        while len(indices) < limit and distance < len(rows):
+            before = player_index - distance
+            after = player_index + distance
+            if before >= 0:
+                indices.add(before)
+            if len(indices) < limit and after < len(rows):
+                indices.add(after)
+            distance += 1
+        for index in range(len(rows)):
+            if len(indices) >= limit:
+                break
+            indices.add(index)
         return [rows[index] for index in sorted(indices)[:limit]]
+
+    @staticmethod
+    def _is_priority_row(row: StandingRow) -> bool:
+        return (
+            row.under_yellow
+            or row.flag in {1, 2}
+            or row.penalties > 0
+            or row.penalty_text not in {"", "--"}
+        )
+
+    @staticmethod
+    def _priority_key(row: StandingRow) -> tuple[int, int]:
+        yellow = row.under_yellow or row.flag in {1, 2}
+        return (0 if yellow else 1, row.class_position or 9999)
+
+    @staticmethod
+    def _select_priority_rows(rows: list[StandingRow], limit: int) -> list[StandingRow]:
+        limit = max(1, min(limit, len(rows))) if rows else 0
+        priority = sorted(
+            (row for row in rows if StandingsLogic._is_priority_row(row)),
+            key=StandingsLogic._priority_key,
+        )
+        selected = priority[:limit]
+        selected_ids = {row.slot_id for row in selected}
+        for row in rows:
+            if len(selected) >= limit:
+                break
+            if row.slot_id not in selected_ids:
+                selected.append(row)
+                selected_ids.add(row.slot_id)
+        return sorted(selected, key=lambda row: row.class_position or 9999)
 
     @staticmethod
     def _class_positions(drivers: list[Any]) -> dict[int, int]:
@@ -550,8 +887,13 @@ class StandingsLogic:
         if reference is None:
             return "--"
         if row.slot_id == reference.slot_id:
-            return "PLAYER" if row.is_player else "P1"
+            # O jogador e a origem dos gaps da propria categoria.
+            return "0.000" if row.is_player else "P1"
+        lap_gap = row.laps_behind_leader - reference.laps_behind_leader
+        if lap_gap:
+            return f"{lap_gap:+d}L"
         track_length = float(getattr(session, "track_length_m", 0.0) or 0.0)
+        lap_diff = 0.0
         if track_length > 0:
             row_progress = row.laps + max(0.0, row.lap_distance_m) / track_length
             ref_progress = reference.laps + max(0.0, reference.lap_distance_m) / track_length
@@ -559,6 +901,14 @@ class StandingsLogic:
             if abs(lap_diff) >= 0.85:
                 return f"{lap_diff:+.0f}L"
         gap = row.gap_leader_s - reference.gap_leader_s
+        if abs(gap) < 0.05 and abs(lap_diff) >= 0.001:
+            reference_lap = (
+                reference.last_lap_s
+                if reference.last_lap_s > 0.0
+                else reference.best_lap_s
+            )
+            if reference_lap > 0.0:
+                gap = -lap_diff * reference_lap
         if abs(gap) < 0.05:
             return "0.0"
         return f"{gap:+.1f}"
@@ -597,8 +947,17 @@ class StandingsLogic:
             # Rejeitar voltas de referência impossivelmente curtas (dados corrompidos)
             if lap_time < 3.0:
                 return "--", f"lap_time_too_small:{lap_time:.3f}s"
-            progress = reference.laps + 1
-            # Estimativa de quantas voltas cabem no tempo restante usando a volta de referência
+            track_length = float(
+                getattr(session, "track_length_m", 0.0) or 0.0
+            )
+            lap_fraction = (
+                max(0.0, min(0.999, reference.lap_distance_m / track_length))
+                if track_length > 0.0
+                else 0.0
+            )
+            progress = reference.laps + lap_fraction
+            # Estimativa fracionaria usando o progresso dentro da volta e o
+            # tempo restante fornecido diretamente pela API do jogo.
             estimate = progress + remaining / lap_time
             # Limites razoáveis para evitar overflow/valores absurdos
             if estimate < 0 or estimate > progress + 500:

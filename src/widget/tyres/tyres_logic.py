@@ -21,6 +21,13 @@ from .tyres_models import (
 
 
 WHEEL_NAMES = ("FL", "FR", "RL", "RR")
+COMPOUND_NAMES = {
+    0: "Soft",
+    1: "Medium",
+    2: "Hard",
+    3: "Wet",
+    4: "Intermediate",
+}
 
 
 class TyresLogic:
@@ -65,25 +72,26 @@ class TyresLogic:
                 )
             )
 
+        front_fallback = str(
+            getattr(player, "front_tire_compound", "") or ""
+        )
+        rear_fallback = str(
+            getattr(player, "rear_tire_compound", "") or ""
+        )
         return TyresViewData(
-            front_compound=str(
-                getattr(
-                    player,
-                    "front_tire_compound",
-                    "",
-                )
-                or ""
-            ),
-            rear_compound=str(
-                getattr(
-                    player,
-                    "rear_tire_compound",
-                    "",
-                )
-                or ""
-            ),
+            front_compound=self._axle_compound(wheels[:2], front_fallback),
+            rear_compound=self._axle_compound(wheels[2:], rear_fallback),
             wheels=wheels,
         )
+
+    @staticmethod
+    def _axle_compound(
+        wheels: list[TyreWheelViewData], fallback: str
+    ) -> str:
+        names = [wheel.compound_name for wheel in wheels if wheel.compound_name]
+        if not names:
+            return fallback
+        return names[0] if len(set(names)) == 1 else "/".join(names)
 
     def preview(self) -> TyresViewData:
         preview_wheels = [
@@ -130,11 +138,38 @@ class TyresLogic:
         source = str(
             self.config.get(
                 "temperature_source",
-                "inner_average",
+                "lmu_weighted",
             )
         ).lower()
 
+        # O valor usado pelo MFD/doX combina a carcaça com as três
+        # amostras da camada interna. Em alguns GT3 elas ficam muito
+        # próximas; nos protótipos a diferença pode ultrapassar 10 °C.
+        inner_values = (
+            wheel.inner_left_c,
+            wheel.inner_center_c,
+            wheel.inner_right_c,
+        )
+        weighted_values_valid = (
+            1.0 < wheel.carcass_temp_c < 300.0
+            and all(1.0 < value < 300.0 for value in inner_values)
+        )
+        lmu_weighted = (
+            wheel.carcass_temp_c * 0.34
+            + inner_values[0] * 0.22
+            + inner_values[1] * 0.22
+            + inner_values[2] * 0.22
+            if weighted_values_valid
+            else 0.0
+        )
+
         candidates = {
+            "lmu_weighted": (
+                lmu_weighted,
+                wheel.carcass_temp_c,
+                wheel.inner_average_c,
+                wheel.surface_average_c,
+            ),
             "inner_average": (
                 wheel.inner_average_c,
                 wheel.carcass_temp_c,
@@ -164,7 +199,7 @@ class TyresLogic:
 
         values = candidates.get(
             source,
-            candidates["inner_average"],
+            candidates["lmu_weighted"],
         )
 
         for value in values:
@@ -194,23 +229,8 @@ class TyresLogic:
             mode == "optimal"
             and 20.0 <= optimal <= 180.0
         ):
-            cold_delta = float(
-                self.config.get(
-                    "optimal_cold_delta_c",
-                    15.0,
-                )
-            )
-            hot_delta = float(
-                self.config.get(
-                    "optimal_hot_delta_c",
-                    15.0,
-                )
-            )
-            critical_delta = float(
-                self.config.get(
-                    "optimal_critical_delta_c",
-                    30.0,
-                )
+            cold_delta, hot_delta, critical_delta = self._thermal_deltas(
+                wheel
             )
 
             if temp_c < optimal - cold_delta:
@@ -270,6 +290,29 @@ class TyresLogic:
         return colors.get(
             "tyre_hot",
             "#C62828",
+        )
+
+    def _thermal_deltas(
+        self, wheel: TyreWheelViewData
+    ) -> tuple[float, float, float]:
+        """Janela relativa ao ótimo publicado pelo LMU para cada roda."""
+        name = wheel.compound_name.casefold()
+        if "wet" in name or "rain" in name or wheel.compound_type == 3:
+            return (
+                float(self.config.get("wet_cold_delta_c", 8.0)),
+                float(self.config.get("wet_hot_delta_c", 5.0)),
+                float(self.config.get("wet_critical_delta_c", 12.0)),
+            )
+        if "inter" in name or wheel.compound_type == 4:
+            return (
+                float(self.config.get("inter_cold_delta_c", 10.0)),
+                float(self.config.get("inter_hot_delta_c", 7.0)),
+                float(self.config.get("inter_critical_delta_c", 16.0)),
+            )
+        return (
+            float(self.config.get("optimal_cold_delta_c", 15.0)),
+            float(self.config.get("optimal_hot_delta_c", 10.0)),
+            float(self.config.get("optimal_critical_delta_c", 22.0)),
         )
 
     def brake_color(
@@ -634,6 +677,10 @@ class TyresLogic:
             compound_index=self._int(
                 raw,
                 "compound_index",
+            ),
+            compound_name=COMPOUND_NAMES.get(
+                self._int(raw, "compound_type"),
+                f"C{self._int(raw, 'compound_index')}",
             ),
             flat=bool(
                 getattr(
