@@ -4,6 +4,7 @@ dist/
 build/work/
 
 # Configurações e dados locais do usuário
+run.py
 
 # Backups locais nunca fazem parte do pacote distribuível
 *.bak
