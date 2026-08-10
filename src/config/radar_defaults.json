@@ -1,0 +1,28 @@
+{
+  "enabled": false,
+  "always_on_top": true,
+  "click_through": true,
+  "opacity": 1.0,
+  "monitor": 0,
+  "scale": 1.0,
+  "position": {"x": 0.72, "y": 0.39},
+  "size": {"width": 0.12, "height": 0.21},
+  "snap_to_edges": true,
+  "radar_radius_m": 15.0,
+  "ahead_multiplier": 1.5,
+  "behind_multiplier": 1.25,
+  "vehicle_width_m": 2.0,
+  "vehicle_length_m": 5.0,
+  "nearby_side_distance_m": 4.0,
+  "critical_side_distance_m": 2.2,
+  "auto_hide_when_clear": true,
+  "show_background": false,
+  "show_marks": true,
+  "colors": {
+    "background": "#080D15E6", "border": "#344155", "marks": "#58677A80",
+    "player": "#FFFFFF", "same_lap": "#23A8FF", "laps_ahead": "#9B5CFF",
+    "laps_behind": "#687384", "in_pit": "#59616D", "yellow": "#FFC400",
+    "vehicle_outline": "#050505", "nearby": "#FFC400", "critical": "#FF2638",
+    "edit_border": "#8B5CF6"
+  }
+}

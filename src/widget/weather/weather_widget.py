@@ -1179,6 +1179,13 @@ class WeatherWidget(QWidget):
         self.edit_mode = bool(
             enabled
         )
+        # Painéis, ícones e textos cobrem toda a área do Weather. Durante a
+        # edição, encaminhamos o mouse para a janela que move/redimensiona.
+        for child in self.findChildren(QWidget):
+            child.setAttribute(
+                Qt.WidgetAttribute.WA_TransparentForMouseEvents,
+                self.edit_mode,
+            )
         self.setCursor(
             Qt.CursorShape.SizeAllCursor
             if self.edit_mode
@@ -1297,11 +1304,19 @@ class WeatherWidget(QWidget):
                 event.globalPosition().toPoint()
                 - self._resize_start_global
             )
+            start_height = max(1, self.height())
+            width_from_x = self._resize_start_width + delta.x()
+            width_from_y = self._resize_start_width + delta.y() * (
+                self._resize_start_width / start_height
+            )
             self.resize(
                 max(
                     self.minimumWidth(),
-                    self._resize_start_width
-                    + delta.x(),
+                    round(
+                        width_from_x
+                        if abs(delta.x()) >= abs(delta.y())
+                        else width_from_y
+                    ),
                 ),
                 self.height(),
             )
@@ -1380,7 +1395,7 @@ class WeatherWidget(QWidget):
         self,
     ) -> QRectF:
         size = max(
-            8,
+            18,
             round(
                 12
                 * self._responsive_scale

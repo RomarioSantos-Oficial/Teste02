@@ -153,6 +153,8 @@ class StandingsLogic:
             if row.is_player:
                 row.gap_text = "0.000"
                 continue
+            if not self._is_relative_car_visible(row):
+                continue
             distance = row.lap_distance_m - player.lap_distance_m
             if distance > track_length / 2.0:
                 distance -= track_length
@@ -200,6 +202,19 @@ class StandingsLogic:
                 rows=[row for _, row in selected],
             )
         ]
+
+    @staticmethod
+    def _is_relative_car_visible(row: StandingRow) -> bool:
+        """Relative contém somente carros ainda ativos fora da garagem."""
+        finish = str(row.finish_state or "").strip().casefold()
+        return not (
+            row.in_garage
+            or row.finish_status in {2, 3}
+            or finish in {
+                "dnf", "didnotfinish", "did not finish", "fstat_dnf", "2",
+                "dq", "disqualified", "fstat_dq", "3",
+            }
+        )
 
     def _row_from_driver(
         self,
@@ -793,14 +808,8 @@ class StandingsLogic:
         if limit == 1:
             return [rows[player_index]]
         indices: set[int] = {player_index}
-        priority = sorted([
-            index for index, row in enumerate(rows)
-            if StandingsLogic._is_priority_row(row)
-        ], key=lambda index: StandingsLogic._priority_key(rows[index]))
-        for index in priority:
-            if len(indices) >= limit:
-                break
-            indices.add(index)
+        # O líder permanece visível, mas punição/amarela nunca puxa para o
+        # painel um carro distante do recorte escolhido pelo usuário.
         if len(indices) < limit:
             indices.add(0)
         distance = 1
@@ -835,19 +844,7 @@ class StandingsLogic:
     @staticmethod
     def _select_priority_rows(rows: list[StandingRow], limit: int) -> list[StandingRow]:
         limit = max(1, min(limit, len(rows))) if rows else 0
-        priority = sorted(
-            (row for row in rows if StandingsLogic._is_priority_row(row)),
-            key=StandingsLogic._priority_key,
-        )
-        selected = priority[:limit]
-        selected_ids = {row.slot_id for row in selected}
-        for row in rows:
-            if len(selected) >= limit:
-                break
-            if row.slot_id not in selected_ids:
-                selected.append(row)
-                selected_ids.add(row.slot_id)
-        return sorted(selected, key=lambda row: row.class_position or 9999)
+        return rows[:limit]
 
     @staticmethod
     def _class_positions(drivers: list[Any]) -> dict[int, int]:
@@ -889,17 +886,21 @@ class StandingsLogic:
         if row.slot_id == reference.slot_id:
             # O jogador e a origem dos gaps da propria categoria.
             return "0.000" if row.is_player else "P1"
-        lap_gap = row.laps_behind_leader - reference.laps_behind_leader
-        if lap_gap:
-            return f"{lap_gap:+d}L"
         track_length = float(getattr(session, "track_length_m", 0.0) or 0.0)
         lap_diff = 0.0
         if track_length > 0:
             row_progress = row.laps + max(0.0, row.lap_distance_m) / track_length
             ref_progress = reference.laps + max(0.0, reference.lap_distance_m) / track_length
             lap_diff = row_progress - ref_progress
+            # Ao cruzar a linha, lapsBehindLeader pode oscilar por um tick.
+            # O progresso total mantém os dois carros próximos e impede o
+            # falso -1L/+1L. Só há volta real com diferença próxima de 1.
             if abs(lap_diff) >= 0.85:
                 return f"{lap_diff:+.0f}L"
+        elif abs(row.laps - reference.laps) >= 1:
+            return f"{row.laps - reference.laps:+d}L"
+        # API REST em primeiro lugar: timeBehindLeader de cada carro, relativo
+        # ao jogador/referência da categoria.
         gap = row.gap_leader_s - reference.gap_leader_s
         if abs(gap) < 0.05 and abs(lap_diff) >= 0.001:
             reference_lap = (

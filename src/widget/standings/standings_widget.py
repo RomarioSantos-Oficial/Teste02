@@ -29,6 +29,7 @@ from .standings_assets import (
     badge_text,
     brand_short,
     flag_emoji,
+    publish_driver_country,
 )
 from .lmu_online_client import LMUOnlineIdentityClient
 from .standings_logic import StandingsLogic
@@ -55,7 +56,7 @@ class StandingsWidget(QWidget):
         ("change", 60.0),
         ("flag", 62.5),
         ("badge", 60.0),
-        ("driver", 180.0),
+        ("driver", 105.0),
         ("brand", 72.0),
         ("dr", 110.0),
         ("sr", 88.0),
@@ -378,6 +379,12 @@ class StandingsWidget(QWidget):
                 )
             current.source = identity.source or current.source
             metadata[key] = current
+        for current in metadata.values():
+            publish_driver_country(
+                current.driver_name,
+                current.nationality,
+                current.country_code,
+            )
         return metadata
 
     def _update_scale(self) -> None:
@@ -396,21 +403,13 @@ class StandingsWidget(QWidget):
         )
         height = 2.0 * margin + 2.0
         if self._header_items():
-            height += max(
-                18.0,
-                float(self.config.get("global_header_height", 58.0))
-                * self._scale,
-            )
+            height += self._global_header_height()
             height += max(2.0, 4.0 * self._scale)
         if not self.view.categories:
             return max(self.minimumHeight(), round(max(100.0, height)))
         if bool(self.config.get("show_column_legend", False)):
-            height += max(12.0, 30.0 * self._scale)
-        category_height = max(
-            14.0,
-            float(self.config.get("category_header_height", 50.0))
-            * self._scale,
-        )
+            height += self._legend_height()
+        category_height = self._category_header_height()
         row_height = max(
             14.0,
             float(self.config.get("row_height", 54.0)) * self._scale,
@@ -466,7 +465,7 @@ class StandingsWidget(QWidget):
         content = outer.adjusted(margin, margin, -margin, -margin)
         y = content.top()
         if self._header_items():
-            header_height = max(18.0, float(self.config.get("global_header_height", 58.0)) * self._scale)
+            header_height = self._global_header_height()
             self._draw_global_header(painter, QRectF(content.left(), y, content.width(), header_height))
             y += header_height + max(2.0, 4.0 * self._scale)
         used = self._draw_categories(painter, QRectF(content.left(), y, content.width(), content.bottom() - y))
@@ -511,7 +510,7 @@ class StandingsWidget(QWidget):
                 0.30,
                 min(1.0, cell.width() / target_width),
             )
-            painter.setFont(self._font(0.88 if index == 0 else 0.75, True))
+            painter.setFont(self._section_font("global_header_font_size", 20.0, rect, 1.0 if index == 0 else 0.86))
             painter.setPen(QColor(colors.get("text", "#FFFFFF")))
             label = f"{icon}  {text}".strip()
             target = cell.adjusted(4 * self._scale, 0, -3 * self._scale, 0)
@@ -531,8 +530,8 @@ class StandingsWidget(QWidget):
     def _draw_categories(self, painter: QPainter, rect: QRectF) -> float:
         y = rect.top()
         row_height = max(14.0, float(self.config.get("row_height", 54.0)) * self._scale)
-        category_height = max(14.0, float(self.config.get("category_header_height", 50.0)) * self._scale)
-        legend_height = max(12.0, 30.0 * self._scale)
+        category_height = self._category_header_height()
+        legend_height = self._legend_height()
         for category_index, category in enumerate(self.view.categories):
             if y + category_height > rect.bottom():
                 break
@@ -592,28 +591,29 @@ class StandingsWidget(QWidget):
             )
         )
         x += lap_width + gap
+        sof_box = None
         if category.dr_sof_rank and category.dr_sof_progress is not None:
-            boxes.append(
-                (
-                    QRectF(
-                        x,
-                        rect.top(),
-                        sof_width,
-                        rect.height() - 3 * self._scale,
-                    ),
-                    (
-                        f"SOF DR  {category.dr_sof_rank} "
-                        f"{category.dr_sof_progress:.0f}%"
-                    ),
-                )
+            sof_box = QRectF(
+                x,
+                rect.top(),
+                sof_width,
+                rect.height() - 3 * self._scale,
             )
-        painter.setFont(self._font(0.78, True))
+        painter.setFont(self._section_font("category_header_font_size", 18.0, rect))
         for box, text in boxes:
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(color)
             painter.drawRect(box)
             painter.setPen(QColor("#FFFFFF"))
             painter.drawText(box.adjusted(8 * self._scale, 0, -8 * self._scale, 0), Qt.AlignmentFlag.AlignCenter, text)
+        if sof_box is not None:
+            self._draw_rank(
+                painter,
+                sof_box,
+                category.dr_sof_rank,
+                category.dr_sof_progress,
+                prefix="SOF DR",
+            )
         painter.setPen(QPen(color, max(1.0, 3.0 * self._scale)))
         painter.drawLine(rect.bottomLeft(), rect.bottomRight())
         self._column_content_scale = previous_content_scale
@@ -677,7 +677,7 @@ class StandingsWidget(QWidget):
             )
             painter.save()
             painter.setClipRect(cell)
-            painter.setFont(self._font(0.48, True))
+            painter.setFont(self._section_font("column_legend_font_size", 12.0, rect))
             painter.setPen(QColor(colors.get("muted", "#A7AFBA")))
             label = labels.get(key, key.upper())
             label = painter.fontMetrics().elidedText(label, Qt.TextElideMode.ElideRight, max(1, int(cell.width()-2)))
@@ -1108,8 +1108,9 @@ class StandingsWidget(QWidget):
 
         # Layout compacto inspirado no TinyPedal: DR | S1 | 43% | -5%.
         # Somente o bloco do nivel recebe a cor do rank; nao ha barra inferior.
+        prefix_weight = 0.38 if prefix == "SOF DR" else 0.23
         parts: list[tuple[str, float, QColor, QColor]] = [
-            (prefix, 0.23, dark, muted),
+            (prefix, prefix_weight, dark, muted),
             (label, 0.27, rank_color, QColor("#101010")),
             (progress_text, 0.30, dark, QColor("#FFFFFF")),
         ]
@@ -1346,6 +1347,40 @@ class StandingsWidget(QWidget):
         )
         font.setPixelSize(max(3, round(min(requested, row_height * .68))))
         return font
+
+    def _section_font(self, config_key: str, default_size: float, rect: QRectF, multiplier: float = 1.0) -> QFont:
+        """Fonte independente para cada faixa do cabeçalho."""
+        font = QFont(str(self.config.get("font_name", "Bahnschrift Condensed")))
+        font.setBold(True)
+        requested = (
+            float(self.config.get(config_key, default_size))
+            * multiplier
+            * self._scale
+            * getattr(self, "_column_content_scale", 1.0)
+        )
+        font.setPixelSize(max(3, round(min(requested, max(3.0, rect.height() * .78)))))
+        return font
+
+    def _global_header_height(self) -> float:
+        return max(
+            18.0,
+            float(self.config.get("global_header_height", 58.0)) * self._scale,
+            float(self.config.get("global_header_font_size", 20.0)) * self._scale * 1.35,
+        )
+
+    def _category_header_height(self) -> float:
+        return max(
+            14.0,
+            float(self.config.get("category_header_height", 50.0)) * self._scale,
+            float(self.config.get("category_header_font_size", 18.0)) * self._scale * 1.35,
+        )
+
+    def _legend_height(self) -> float:
+        return max(
+            12.0,
+            30.0 * self._scale,
+            float(self.config.get("column_legend_font_size", 12.0)) * self._scale * 1.45,
+        )
 
     def _resize_handle_rect(self) -> QRectF:
         size = max(10.0, 15.0 * self._scale)

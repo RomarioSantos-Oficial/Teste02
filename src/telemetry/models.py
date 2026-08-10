@@ -56,6 +56,8 @@ class DriverData:
     pit_group: str = ""
     car_number: str = ""
     team_name: str = ""
+    nationality: str = ""
+    country_code: str = ""
 
     vehicle_class: str = ""
     position: int = 0
@@ -128,6 +130,7 @@ class DriverData:
     forward_z: float = 0.0
     relative_rotated_x_m: float = 0.0
     relative_rotated_y_m: float = 0.0
+    api_spatial_position: bool = False
     is_player: bool = False
 
 

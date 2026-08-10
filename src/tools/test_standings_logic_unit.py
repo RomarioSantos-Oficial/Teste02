@@ -184,7 +184,7 @@ class StandingsLogicUnitTests(unittest.TestCase):
         self.assertEqual(len(player_category.rows), 4)
         self.assertEqual(len(other_category.rows), 2)
 
-    def test_yellow_and_penalty_rows_have_selection_priority(self) -> None:
+    def test_distant_yellow_and_penalty_do_not_override_selected_rows(self) -> None:
         drivers = [
             DriverData(
                 slot_id=index,
@@ -203,8 +203,49 @@ class StandingsLogicUnitTests(unittest.TestCase):
             {"maximum_categories": 1, "other_category_rows": 2}
         ).build(session, {}, "MEM").categories[0]
 
-        self.assertEqual([row.slot_id for row in category.rows], [4, 5])
-        self.assertEqual(category.rows[0].penalty_text, "+10")
+        self.assertEqual([row.slot_id for row in category.rows], [1, 2])
+
+    def test_finish_line_crossing_does_not_create_false_lap_gap(self) -> None:
+        session = SessionData(
+            connected=True,
+            session=10,
+            track_length_m=5000.0,
+            drivers=[
+                DriverData(
+                    slot_id=1, driver_name="Ahead", vehicle_class="LMGT3",
+                    position=1, laps=10, lap_distance_m=10.0,
+                    gap_leader_s=29.0, laps_behind_leader=-1,
+                ),
+                DriverData(
+                    slot_id=2, driver_name="Player", vehicle_class="LMGT3",
+                    position=2, laps=9, lap_distance_m=4990.0,
+                    gap_leader_s=30.0, laps_behind_leader=0, is_player=True,
+                ),
+            ],
+        )
+        rows = StandingsLogic(
+            {"maximum_categories": 1, "player_category_rows": 2}
+        ).build(session, {}, "API").categories[0].rows
+        by_name = {row.driver_name: row for row in rows}
+        self.assertEqual(by_name["Ahead"].gap_text, "-1.0")
+
+    def test_relative_excludes_dnf_dq_and_garage(self) -> None:
+        session = SessionData(
+            connected=True,
+            session=10,
+            track_length_m=5000.0,
+            drivers=[
+                DriverData(slot_id=1, driver_name="Player", vehicle_class="LMGT3", position=1, lap_distance_m=1000.0, best_lap_s=100.0, is_player=True),
+                DriverData(slot_id=2, driver_name="Active", vehicle_class="LMGT3", position=2, lap_distance_m=1020.0, best_lap_s=100.0),
+                DriverData(slot_id=3, driver_name="DNF", vehicle_class="LMGT3", position=3, lap_distance_m=1010.0, best_lap_s=100.0, finish_status=2, finish_status_name="DNF"),
+                DriverData(slot_id=4, driver_name="DQ", vehicle_class="LMGT3", position=4, lap_distance_m=990.0, best_lap_s=100.0, finish_status=3, finish_status_name="DQ"),
+                DriverData(slot_id=5, driver_name="Garage", vehicle_class="LMGT3", position=5, lap_distance_m=1005.0, best_lap_s=100.0, in_garage=True),
+            ],
+        )
+        rows = StandingsLogic(
+            {"relative_mode": True, "relative_cars_ahead": 5, "relative_cars_behind": 5}
+        ).build(session, {}, "API").categories[0].rows
+        self.assertEqual({row.driver_name for row in rows}, {"Player", "Active"})
 
     def test_opponent_track_limits_use_per_vehicle_steps(self) -> None:
         session = SessionData(

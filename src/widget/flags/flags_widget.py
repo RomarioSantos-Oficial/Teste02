@@ -1346,6 +1346,14 @@ class FlagsWidget(QWidget):
     ) -> None:
         self.edit_mode = bool(enabled)
 
+        # Os QFrames/QLabels ocupam toda a janela. Em edição eles não devem
+        # interceptar o mouse: o arrasto pertence ao widget principal.
+        for child in self.findChildren(QWidget):
+            child.setAttribute(
+                Qt.WidgetAttribute.WA_TransparentForMouseEvents,
+                self.edit_mode,
+            )
+
         if self.edit_mode:
             # Exibe uma bandeira amarela de exemplo para facilitar o
             # posicionamento e o redimensionamento durante a edição.
@@ -1615,7 +1623,7 @@ class FlagsWidget(QWidget):
         self,
     ) -> QRectF:
         size = max(
-            8,
+            18,
             round(
                 12
                 * self._responsive_scale

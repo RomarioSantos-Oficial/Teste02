@@ -24,12 +24,21 @@ from .delta_models import (
     SECTOR_SESSION_BEST,
     SECTOR_WORSE,
 )
+from src.widget.standings.standings_assets import CountryFlagStore, flag_emoji
 
 
 class DeltaRenderer:
     def __init__(self, logo_manager: DeltaLogoManager) -> None:
         self.logo_manager = logo_manager
         self.layout_engine = DeltaLayoutEngine()
+        self.flag_store = CountryFlagStore(
+            logo_manager.project_root,
+            {
+                "use_flag_images": True,
+                "flag_cache_directory": "data/flags",
+                "flag_provider_url": CountryFlagStore.DEFAULT_URL,
+            },
+        )
 
     def preferred_height(
         self,
@@ -328,19 +337,9 @@ class DeltaRenderer:
             -max(8.0, 24.0 * scale),
             -max(8.0, 14.0 * scale),
         )
-        label_height = max(
-            12.0,
-            inner.height() * 0.16,
-        )
-        labels_rect = QRectF(
-            inner.left(),
-            inner.top(),
-            inner.width(),
-            label_height,
-        )
         bar = QRectF(
             inner.left(),
-            labels_rect.bottom(),
+            inner.top() + inner.height() * 0.08,
             inner.width(),
             inner.height() * 0.32,
         )
@@ -349,37 +348,6 @@ class DeltaRenderer:
             bar.bottom(),
             inner.width(),
             inner.bottom() - bar.bottom(),
-        )
-
-        label_font = self._font(
-            config,
-            max(7.0, 11.0 * scale),
-            True,
-        )
-        painter.setFont(label_font)
-        painter.setPen(muted)
-        painter.drawText(
-            QRectF(
-                labels_rect.left(),
-                labels_rect.top(),
-                labels_rect.width() / 2,
-                labels_rect.height(),
-            ),
-            Qt.AlignmentFlag.AlignLeft
-            | Qt.AlignmentFlag.AlignVCenter,
-            "PERDENDO",
-        )
-        painter.setPen(gain)
-        painter.drawText(
-            QRectF(
-                labels_rect.center().x(),
-                labels_rect.top(),
-                labels_rect.width() / 2,
-                labels_rect.height(),
-            ),
-            Qt.AlignmentFlag.AlignRight
-            | Qt.AlignmentFlag.AlignVCenter,
-            "GANHANDO",
         )
 
         painter.setPen(Qt.PenStyle.NoPen)
@@ -709,11 +677,13 @@ class DeltaRenderer:
             )
             else 0.0
         )
-        position_width = inner.width() * 0.15
-        lap_width = inner.width() * 0.23
+        flag_width = inner.height() * 0.72
+        position_width = inner.width() * 0.18
+        lap_width = inner.width() * 0.26
         driver_width = (
             inner.width()
             - logo_width
+            - flag_width
             - position_width
             - lap_width
         )
@@ -730,8 +700,14 @@ class DeltaRenderer:
             driver_width,
             inner.height(),
         )
-        lap_rect = QRectF(
+        flag_rect = QRectF(
             driver_rect.right(),
+            inner.top(),
+            flag_width,
+            inner.height(),
+        )
+        lap_rect = QRectF(
+            flag_rect.right(),
             inner.top(),
             lap_width,
             inner.height(),
@@ -834,6 +810,27 @@ class DeltaRenderer:
             | Qt.AlignmentFlag.AlignVCenter,
             driver_name,
         )
+
+        flag_target = flag_rect.adjusted(
+            3 * scale,
+            flag_rect.height() * .28,
+            -3 * scale,
+            -flag_rect.height() * .28,
+        )
+        flag = self.flag_store.pixmap(
+            fastest.nationality,
+            fastest.country_code,
+            max(1, round(flag_target.width())),
+            max(1, round(flag_target.height())),
+        )
+        if flag is not None:
+            painter.drawPixmap(flag_target.toRect(), flag)
+        else:
+            emoji = flag_emoji(fastest.nationality, fastest.country_code)
+            if emoji:
+                painter.setFont(self._fit_font(config, flag_rect, emoji, flag_rect.height()*.34, 8, False))
+                painter.setPen(text)
+                painter.drawText(flag_rect, Qt.AlignmentFlag.AlignCenter, emoji)
 
         lap_text = self._format_lap(
             fastest.lap_time_s

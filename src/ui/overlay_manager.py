@@ -24,6 +24,7 @@ from src.widget.map.map_widget import TrackMapWidget
 from src.widget.standings.standings_widget import StandingsWidget
 from src.widget.fuel_time.fuel_time_widget import FuelTimeWidget
 from src.widget.url.url_server_widget import UrlServerWidget
+from src.widget.radar.radar_widget import RadarWidget
 
 
 class OverlayManager(QObject):
@@ -41,6 +42,7 @@ class OverlayManager(QObject):
         "damage": 0.10,
         "fuel_time": 0.10,
         "relative": 0.10,
+        "radar": 0.05,
         "flags": 0.10,
         "weather": 0.50,
     }
@@ -156,6 +158,15 @@ class OverlayManager(QObject):
         self._prepare_widget("relative", widget, config)
         return widget
 
+    def create_radar(self) -> RadarWidget:
+        existing = self.widgets.get("radar")
+        if isinstance(existing, RadarWidget):
+            return existing
+        config = deepcopy(self.config_data["widgets"]["radar"])
+        widget = RadarWidget("radar", config)
+        self._prepare_widget("radar", widget, config)
+        return widget
+
     def create_map(self) -> TrackMapWidget:
         existing = self.widgets.get("map")
         if isinstance(existing, TrackMapWidget):
@@ -186,6 +197,7 @@ class OverlayManager(QObject):
             "fuel_time": self.create_fuel_time,
             "url": self.create_url,
             "relative": self.create_relative,
+            "radar": self.create_radar,
             "tires": self.create_tires,
             "weather": self.create_weather,
             "map": self.create_map,
@@ -198,7 +210,7 @@ class OverlayManager(QObject):
 
     def create_enabled_widgets(self) -> None:
         for widget_id, config in self.config_data.get("widgets", {}).items():
-            if bool(config.get("enabled", False)) and widget_id in {"driver_panel", "delta", "flags", "weather", "tires", "battery", "damage", "fuel_time", "relative", "map", "standings", "url"}:
+            if bool(config.get("enabled", False)) and widget_id in {"driver_panel", "delta", "flags", "weather", "tires", "battery", "damage", "fuel_time", "relative", "radar", "map", "standings", "url"}:
                 self.create_widget(widget_id)
 
     def _prepare_widget(
@@ -339,6 +351,10 @@ class OverlayManager(QObject):
             and self._update_due("relative", now)
         ):
             relative.update_from_session(session)
+
+        radar = self.widgets.get("radar")
+        if radar is not None and radar.isVisible() and self._update_due("radar", now):
+            radar.update_from_session(session)
 
         battery = self.widgets.get("battery")
         battery_config = self.config_data.get("widgets", {}).get(
@@ -761,6 +777,11 @@ class OverlayManager(QObject):
                 url_default = json.loads(url_defaults_path.read_text(encoding="utf-8"))
                 data.setdefault("widgets", {}).setdefault("url", deepcopy(url_default))
                 data.setdefault("defaults", {}).setdefault("url", deepcopy(url_default))
+            radar_defaults_path = self.config_path.with_name("radar_defaults.json")
+            if radar_defaults_path.exists():
+                radar_default = json.loads(radar_defaults_path.read_text(encoding="utf-8"))
+                data.setdefault("widgets", {}).setdefault("radar", deepcopy(radar_default))
+                data.setdefault("defaults", {}).setdefault("radar", deepcopy(radar_default))
             standings_defaults_path = self.config_path.with_name("standings_defaults.json")
             relative_defaults_path = self.config_path.with_name("relative_defaults.json")
             if standings_defaults_path.exists() and relative_defaults_path.exists():

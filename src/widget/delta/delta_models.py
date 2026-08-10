@@ -21,6 +21,8 @@ class DeltaSectorData:
 @dataclass(slots=True)
 class FastestLapData:
     driver_name: str = ""
+    nationality: str = ""
+    country_code: str = ""
     vehicle_name: str = ""
     vehicle_class: str = ""
     manufacturer: str = ""

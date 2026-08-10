@@ -325,6 +325,16 @@ def _merge_driver(driver: DriverData, record: dict[str, Any]) -> None:
         driver.steam_id = str(steam_id)
     driver.car_number = str(record.get("carNumber", driver.car_number) or "")
     driver.team_name = str(record.get("fullTeamName", driver.team_name) or "")
+    api_nationality = _first_present(record, "nationality", "country", "countryName")
+    if api_nationality is not None:
+        driver.nationality = str(api_nationality or "").strip()
+    api_country_code = _first_present(
+        record, "countryCode", "country_code", "nationalityCode", "isoCountry"
+    )
+    if api_country_code is not None:
+        driver.country_code = str(api_country_code or "").strip().upper()
+    elif len(driver.nationality) in (2, 3):
+        driver.country_code = driver.nationality.upper()
     driver.vehicle_filename = str(
         record.get("vehicleFilename", driver.vehicle_filename) or ""
     )
@@ -346,10 +356,18 @@ def _merge_driver(driver: DriverData, record: dict[str, Any]) -> None:
     sector_name = str(record.get("sector", "") or "").upper()
     if sector_name in _SECTOR_CODES:
         driver.current_sector = _SECTOR_CODES[sector_name]
-    driver.lap_distance_m = _positive_or_zero(
-        record.get("lapDistance"),
-        driver.lap_distance_m,
+    api_lap_distance = _number(record.get("lapDistance"))
+    if api_lap_distance is not None and api_lap_distance >= 0.0:
+        driver.lap_distance_m = api_lap_distance
+        driver.api_spatial_position = True
+    api_path_lateral = _number(
+        _first_present(record, "pathLateral", "pathLateralMeters", "lateralPosition")
     )
+    if api_path_lateral is not None:
+        driver.path_lateral_m = api_path_lateral
+    api_track_edge = _number(_first_present(record, "trackEdge", "trackEdgeMeters"))
+    if api_track_edge is not None:
+        driver.track_edge_m = api_track_edge
     driver.time_into_lap_s = _finite(
         record.get("timeIntoLap"),
         driver.time_into_lap_s,

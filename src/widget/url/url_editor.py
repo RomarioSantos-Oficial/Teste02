@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 
 AVAILABLE = (
     "standings", "relative", "delta", "map", "driver_panel", "battery",
-    "fuel_time", "tires", "damage", "weather", "flags",
+    "fuel_time", "tires", "damage", "weather", "flags", "radar",
 )
 
 

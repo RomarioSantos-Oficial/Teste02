@@ -99,7 +99,9 @@ class DeltaWidget(QWidget):
         self._fitting_content = False
         self._last_tick = time.monotonic()
 
-        self.setMinimumSize(420, 130)
+        # 420 px era exatamente a largura salva em telas 1920 px. Por isso o
+        # usuário conseguia aumentar, mas nunca diminuir o Delta.
+        self.setMinimumSize(180, 70)
         self.setAttribute(
             Qt.WidgetAttribute.WA_TranslucentBackground,
             True,
@@ -443,6 +445,13 @@ class DeltaWidget(QWidget):
         enabled: bool,
     ) -> None:
         self.edit_mode = bool(enabled)
+        # Mantém o redimensionamento acessível mesmo se novos controles
+        # filhos forem adicionados ao Delta no futuro.
+        for child in self.findChildren(QWidget):
+            child.setAttribute(
+                Qt.WidgetAttribute.WA_TransparentForMouseEvents,
+                self.edit_mode,
+            )
         self.setCursor(
             Qt.CursorShape.SizeAllCursor
             if enabled
@@ -500,9 +509,7 @@ class DeltaWidget(QWidget):
 
         self.selected.emit(self.widget_id)
 
-        if self._resize_handle_rect().contains(
-            event.position()
-        ):
+        if self._is_resize_zone(event.position()):
             self._resizing = True
             self._resize_start_global = (
                 event.globalPosition().toPoint()
@@ -542,10 +549,13 @@ class DeltaWidget(QWidget):
                 event.globalPosition().toPoint()
                 - self._resize_start_global
             )
+            start_w = self._resize_start_size.width()
+            start_h = max(1, self._resize_start_size.height())
+            width_from_x = start_w + delta.x()
+            width_from_y = start_w + delta.y() * (start_w / start_h)
             width = max(
                 self.minimumWidth(),
-                self._resize_start_size.width()
-                + delta.x(),
+                round(width_from_x if abs(delta.x()) >= abs(delta.y()) else width_from_y),
             )
 
             if bool(
@@ -582,9 +592,7 @@ class DeltaWidget(QWidget):
 
         self.setCursor(
             Qt.CursorShape.SizeFDiagCursor
-            if self._resize_handle_rect().contains(
-                event.position()
-            )
+            if self._is_resize_zone(event.position())
             else Qt.CursorShape.SizeAllCursor
         )
 
@@ -719,7 +727,7 @@ class DeltaWidget(QWidget):
         self,
     ) -> QRectF:
         size = max(
-            10,
+            18,
             int(
                 min(
                     self.width(),
@@ -734,6 +742,14 @@ class DeltaWidget(QWidget):
             self.height() - size - 3,
             size,
             size,
+        )
+
+    def _is_resize_zone(self, position) -> bool:
+        """Área maior que o desenho para facilitar pegar a borda do Delta."""
+        edge = max(28.0, min(self.width(), self.height()) * 0.10)
+        return (
+            position.x() >= self.width() - edge
+            or position.y() >= self.height() - edge
         )
 
     def _emit_normalized_geometry(

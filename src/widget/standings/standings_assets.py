@@ -44,6 +44,23 @@ COUNTRY_NAMES = {
     "usa": "US", "uruguay": "UY",
 }
 
+# Países resolvidos pelo Standings durante a sessão. O Delta consulta apenas
+# este pequeno índice para reutilizar exatamente a mesma identificação e a
+# mesma bandeira, sem depender de o cache em disco já ter sido atualizado.
+_LIVE_DRIVER_COUNTRIES: dict[str, tuple[str, str]] = {}
+
+
+def publish_driver_country(driver_name: str, nationality: str, code: str) -> None:
+    key = _asset_key(driver_name)
+    nationality = str(nationality or "").strip()
+    code = str(code or "").strip().upper()
+    if key and (nationality or code):
+        _LIVE_DRIVER_COUNTRIES[key] = (nationality, code)
+
+
+def live_driver_country(driver_name: str) -> tuple[str, str]:
+    return _LIVE_DRIVER_COUNTRIES.get(_asset_key(driver_name), ("", ""))
+
 BRANDS = {
     "296": "Ferrari", "488": "Ferrari", "499": "Ferrari",
     "911": "Porsche", "963": "Porsche", "992": "Porsche",

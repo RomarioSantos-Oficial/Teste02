@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
+from pathlib import Path
 from typing import Any
 
 from .delta_logo_manager import DeltaLogoManager
 from .delta_models import FastestLapData
+from src.widget.standings.standings_assets import live_driver_country
 
 
 @dataclass(slots=True)
@@ -26,6 +29,8 @@ class DeltaSessionTracker:
         self._current_by_class: dict[str, FastestLapData] = {}
         self._observed_session_once = False
         self._last_current_time = 0.0
+        self._country_cache_mtime = -1.0
+        self._country_cache: dict[str, tuple[str, str]] = {}
 
     def reset(self) -> None:
         self.__init__(self.logo_manager)
@@ -199,8 +204,16 @@ class DeltaSessionTracker:
         overall_position = int(
             getattr(best_row, "position", 0) or 0
         )
+        nationality = str(getattr(best_row, "nationality", "") or "")
+        country_code = str(getattr(best_row, "country_code", "") or "")
+        if not nationality and not country_code:
+            nationality, country_code = self._standings_country(
+                str(getattr(best_row, "driver_name", "") or "")
+            )
         return FastestLapData(
             driver_name=str(getattr(best_row, "driver_name", "") or ""),
+            nationality=nationality,
+            country_code=country_code,
             vehicle_name=vehicle_name,
             vehicle_class=vehicle_class,
             manufacturer=logo.manufacturer,
@@ -210,6 +223,36 @@ class DeltaSessionTracker:
             class_position=class_position,
             overall_position=overall_position,
         )
+
+    def _standings_country(self, driver_name: str) -> tuple[str, str]:
+        """Usa o mesmo perfil local que alimenta as bandeiras do Standings."""
+        live = live_driver_country(driver_name)
+        if any(live):
+            return live
+        path = self.logo_manager.project_root / "data" / "online_profiles" / "standings_hybrid_local.json"
+        try:
+            mtime = path.stat().st_mtime
+            if mtime != self._country_cache_mtime:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                cache: dict[str, tuple[str, str]] = {}
+                for item in payload.get("drivers", []):
+                    if not isinstance(item, dict):
+                        continue
+                    key = self._identity(item.get("driver_name", ""))
+                    if key:
+                        cache[key] = (
+                            str(item.get("nationality", "") or ""),
+                            str(item.get("country_code", "") or "").upper(),
+                        )
+                self._country_cache = cache
+                self._country_cache_mtime = mtime
+        except (OSError, ValueError, TypeError):
+            pass
+        return self._country_cache.get(self._identity(driver_name), ("", ""))
+
+    @staticmethod
+    def _identity(value: Any) -> str:
+        return "".join(ch for ch in str(value or "").casefold() if ch.isalnum())
 
     @staticmethod
     def _class_key(value: str) -> str:
