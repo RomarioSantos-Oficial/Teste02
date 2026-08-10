@@ -152,22 +152,160 @@ Use **Configurações > Aplicativos > Aplicativos instalados > SectorFlow ALFA >
 
 A configuração pessoal pode permanecer em `%LOCALAPPDATA%\SectorFlow` para permitir uma reinstalação sem perder o layout.
 
-## Desenvolvimento e build
+## Usar uma versão pelo Git
 
-Requisitos: Python 3.10+, `.venv`, `requirements.txt` e Inno Setup 6.
+Esta seção é para quem deseja executar o programa diretamente pelo código-fonte. Quem usa `SectorFlow_Setup_0.0.2.exe` não precisa instalar Git, Python nem criar `.venv`.
 
-Preparar o ambiente:
+### 1. Instalar as ferramentas
+
+Instale:
+
+- [Git para Windows](https://git-scm.com/download/win);
+- Python 3.10 ou superior, com a opção **Add Python to PATH** marcada.
+
+Confirme pelo CMD:
+
+```bat
+git --version
+python --version
+```
+
+### 2. Clonar o repositório
+
+No CMD, escolha uma pasta e execute:
+
+```bat
+git clone https://github.com/RomarioSantos-Oficial/Teste02.git
+cd Teste02
+```
+
+### 3. Escolher a versão
+
+Usar a versão mais recente da branch principal:
+
+```bat
+git switch main
+git pull --ff-only origin main
+```
+
+Listar tags disponíveis:
+
+```bat
+git tag --list
+```
+
+Usar uma tag específica, quando o projeto possuir tags:
+
+```bat
+git switch --detach NOME_DA_TAG
+```
+
+Usar um commit específico:
+
+```bat
+git switch --detach CODIGO_DO_COMMIT
+```
+
+Exemplo com o commit da versão documentada:
+
+```bat
+git switch --detach 5ff1cd5
+```
+
+O modo `detached HEAD` é normal quando se escolhe uma tag ou commit somente para uso. Para editar o código a partir dele, crie uma branch:
+
+```bat
+git switch -c minha-versao
+```
+
+### 4. Criar o ambiente virtual
+
+Dentro da raiz do repositório:
 
 ```bat
 python -m venv .venv
-.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-Executar pelo código-fonte:
+Ativar no **CMD**:
+
+```bat
+.venv\Scripts\activate.bat
+```
+
+Ativar no **PowerShell**:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Quando estiver ativo, normalmente aparece `(.venv)` no começo da linha do terminal.
+
+Se o PowerShell bloquear a ativação, use o CMD ou libere apenas a sessão atual:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+```
+
+### 5. Instalar os requisitos
+
+Com o `.venv` ativado:
+
+```bat
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+As bibliotecas são instaladas somente dentro de `.venv`, sem alterar o Python global do computador.
+
+### 6. Executar pelo código-fonte
+
+```bat
+python run.py
+```
+
+Também é possível executar sem ativar o ambiente:
 
 ```bat
 .venv\Scripts\python.exe run.py
 ```
+
+Para encerrar o ambiente virtual depois de fechar o programa:
+
+```bat
+deactivate
+```
+
+### 7. Atualizar o código clonado
+
+Se estiver usando a `main`:
+
+```bat
+git switch main
+git pull --ff-only origin main
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+Execute novamente porque uma atualização pode modificar `requirements.txt`.
+
+Para trocar para outra tag ou commit:
+
+```bat
+git fetch --all --tags --prune
+git switch --detach NOME_DA_TAG_OU_COMMIT
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+### 8. Voltar para a versão mais recente
+
+```bat
+git switch main
+git pull --ff-only origin main
+```
+
+## Gerar o executável e o instalador
+
+Além do ambiente descrito acima, o build do instalador exige o Inno Setup 6.
 
 Build completo:
 
