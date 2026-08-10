@@ -32,7 +32,7 @@ from .standings_assets import (
     publish_driver_country,
 )
 from .lmu_online_client import LMUOnlineIdentityClient
-from .standings_logic import StandingsLogic
+from .standings_logic import StandingsLogic, canonical_class
 from .standings_models import (
     CategoryBlock,
     DriverMetadata,
@@ -566,7 +566,25 @@ class StandingsWidget(QWidget):
         class_width = min(rect.width() * 0.20, 190.0 * self._scale)
         count_width = min(rect.width() * 0.18, 180.0 * self._scale)
         lap_width = min(rect.width() * 0.20, 190.0 * self._scale)
-        sof_width = min(rect.width() * 0.25, 280.0 * self._scale)
+        # O SOF tem apenas três blocos curtos. Limitar a largura evita uma
+        # faixa vazia excessiva e preserva espaço para o restante do header.
+        dr_base_width = dict(self.BASE_COLUMNS).get("dr", 110.0)
+        dr_configured_width = float(
+            self.config.get("column_widths", {}).get("dr", dr_base_width)
+        )
+        dr_effective_width = self._effective_column_width(
+            "dr", dr_configured_width
+        )
+        # Usa a largura REAL que o DR recebe depois que todas as colunas são
+        # distribuídas no painel. Assim o SOF acompanha continuamente o
+        # arrasto de redimensionamento do Standings.
+        distributed_columns = self._column_rects(
+            QRectF(0.0, 0.0, rect.width(), rect.height())
+        )
+        sof_width = next(
+            (cell.width() for key, cell in distributed_columns if key == "dr"),
+            dr_effective_width * self._scale,
+        )
         x = rect.left()
         boxes = [
             (
@@ -607,6 +625,16 @@ class StandingsWidget(QWidget):
             painter.setPen(QColor("#FFFFFF"))
             painter.drawText(box.adjusted(8 * self._scale, 0, -8 * self._scale, 0), Qt.AlignmentFlag.AlignCenter, text)
         if sof_box is not None:
+            header_content_scale = self._column_content_scale
+            # Replica também o fator de conteúdo usado na célula DR: ao
+            # aumentar/diminuir o STR, caixa e letras mudam juntas.
+            self._column_content_scale = max(
+                0.20,
+                min(
+                    3.0,
+                    sof_width / max(1.0, dr_effective_width * self._scale),
+                ),
+            )
             self._draw_rank(
                 painter,
                 sof_box,
@@ -614,6 +642,7 @@ class StandingsWidget(QWidget):
                 category.dr_sof_progress,
                 prefix="SOF DR",
             )
+            self._column_content_scale = header_content_scale
         painter.setPen(QPen(color, max(1.0, 3.0 * self._scale)))
         painter.drawLine(rect.bottomLeft(), rect.bottomRight())
         self._column_content_scale = previous_content_scale
@@ -720,7 +749,8 @@ class StandingsWidget(QWidget):
             self._draw_cell(painter, key, cell, row, category)
             painter.restore()
         self._column_content_scale = 1.0
-        painter.setPen(QPen(QColor(category.color), max(1.0, 1.2 * self._scale)))
+        row_color = self._row_class_color(row, category)
+        painter.setPen(QPen(row_color, max(1.0, 1.2 * self._scale)))
         penalty_cell = next((cell for key, cell in cells if key == "penalty"), None)
         if penalty_cell is None:
             painter.drawLine(rect.bottomLeft(), rect.bottomRight())
@@ -728,11 +758,19 @@ class StandingsWidget(QWidget):
             painter.drawLine(rect.bottomLeft(), penalty_cell.bottomLeft())
             painter.drawLine(penalty_cell.bottomRight(), rect.bottomRight())
 
+    def _row_class_color(self, row: StandingRow, category: CategoryBlock) -> QColor:
+        """Return the car's own class color, including in the mixed-class Relative."""
+        if row.class_key:
+            _, _, color = canonical_class(row.class_key, self.config)
+            return QColor(color)
+        return QColor(category.color)
+
     def _draw_cell(self, painter: QPainter, key: str, rect: QRectF, row: StandingRow, category: CategoryBlock) -> None:
         colors = self.config.get("colors", {})
+        row_color = self._row_class_color(row, category)
         if key == "position":
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor(category.color))
+            painter.setBrush(row_color)
             painter.drawRect(rect.adjusted(0, 2 * self._scale, -2 * self._scale, -2 * self._scale))
             # Mostrar apenas a posição — a bandeira de chegada ficará na coluna 'brand'.
             self._text(painter, rect, f"{row.class_position}", 0.76, True)
@@ -878,7 +916,7 @@ class StandingsWidget(QWidget):
                 self._text(painter, rect, brand_short(row.manufacturer), 0.48, True, QColor(colors.get("brand_text", "#D8E1EA")))
         elif key == "number":
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor(category.color))
+            painter.setBrush(row_color)
             painter.drawRect(rect.adjusted(3 * self._scale, 2 * self._scale, -3 * self._scale, -2 * self._scale))
             self._text(painter, rect, row.car_number or "--", 0.68, True)
         elif key == "laps":
@@ -1087,8 +1125,17 @@ class StandingsWidget(QWidget):
         rank_color = QColor(self._rank_color(rank))
         dark = QColor(colors.get("rank_cell_background", "#10141C"))
         muted = QColor(colors.get("muted", "#A7AFBA"))
-        padding = max(1.0, 2.0 * self._scale)
-        cell = rect.adjusted(padding, 5 * self._scale, -padding, -5 * self._scale)
+        if prefix == "SOF DR":
+            # No cabeçalho, o SOF deve preencher integralmente a célula.
+            cell = QRectF(rect)
+        else:
+            padding = max(1.0, 2.0 * self._scale)
+            cell = rect.adjusted(
+                padding,
+                5 * self._scale,
+                -padding,
+                -5 * self._scale,
+            )
 
         progress_text = "--"
         if progress is not None:
@@ -1108,11 +1155,11 @@ class StandingsWidget(QWidget):
 
         # Layout compacto inspirado no TinyPedal: DR | S1 | 43% | -5%.
         # Somente o bloco do nivel recebe a cor do rank; nao ha barra inferior.
-        prefix_weight = 0.38 if prefix == "SOF DR" else 0.23
+        prefix_weight = 0.42 if prefix == "SOF DR" else 0.23
         parts: list[tuple[str, float, QColor, QColor]] = [
             (prefix, prefix_weight, dark, muted),
-            (label, 0.27, rank_color, QColor("#101010")),
-            (progress_text, 0.30, dark, QColor("#FFFFFF")),
+            (label, 0.25, rank_color, QColor("#101010")),
+            (progress_text, 0.29, dark, QColor("#FFFFFF")),
         ]
         if gain_text:
             gain = float(estimated_gain or 0.0)
@@ -1159,13 +1206,17 @@ class StandingsWidget(QWidget):
         return match.group(1)[0].upper() + (match.group(2) or "")
 
     def _rank_color(self, rank: str) -> str:
-        text = str(rank or "").casefold()
+        text = str(rank or "").strip().casefold()
         colors = self.config.get("colors", {})
-        if "platinum" in text:
+        # SOF já chega no formato compacto (B1/S1/G1/P1), enquanto as
+        # células dos pilotos normalmente recebem Bronze/Silver/Gold/etc.
+        compact = re.match(r"^(?:dr\s*)?([bsgp])\s*[1-3]?\b", text)
+        tier = compact.group(1) if compact else ""
+        if "platinum" in text or tier == "p":
             return str(colors.get("rank_platinum", "#76D7EA"))
-        if "gold" in text:
+        if "gold" in text or tier == "g":
             return str(colors.get("rank_gold", "#F2C94C"))
-        if "silver" in text:
+        if "silver" in text or tier == "s":
             return str(colors.get("rank_silver", "#C5CED8"))
         return str(colors.get("rank_bronze", "#C47A44"))
 

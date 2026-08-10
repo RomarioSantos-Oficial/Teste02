@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QGridLayout,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QMainWindow,
     QMessageBox,
@@ -56,6 +57,7 @@ class MainMenuWindow(QMainWindow):
         root.addWidget(self._build_widget_grid(), 1)
         root.addWidget(self._build_footer())
         self._apply_style()
+        self.overlay_manager.profile_changed.connect(self._profile_applied)
 
     def _build_header(self) -> QWidget:
         box = QFrame()
@@ -75,8 +77,19 @@ class MainMenuWindow(QMainWindow):
         layout = QHBoxLayout(box)
         layout.addWidget(QLabel("Perfil:"))
         self.profile_combo = QComboBox()
-        self.profile_combo.addItems(["Padrão", "GT3", "Hypercar", "Endurance", "Streaming"])
+        self._reload_profiles()
+        self.profile_combo.currentIndexChanged.connect(self._switch_profile)
         layout.addWidget(self.profile_combo)
+        add_profile = QPushButton("Novo perfil")
+        add_profile.clicked.connect(self._create_profile)
+        layout.addWidget(add_profile)
+        self.rename_profile_button = QPushButton("Renomear")
+        self.rename_profile_button.clicked.connect(self._rename_profile)
+        layout.addWidget(self.rename_profile_button)
+        self.delete_profile_button = QPushButton("Excluir")
+        self.delete_profile_button.clicked.connect(self._delete_profile)
+        layout.addWidget(self.delete_profile_button)
+        self._update_profile_buttons()
         self.edit_mode_button = QPushButton("Modo edição: DESLIGADO")
         self.edit_mode_button.setCheckable(True)
         self.edit_mode_button.toggled.connect(self._set_edit_mode)
@@ -86,6 +99,96 @@ class MainMenuWindow(QMainWindow):
         layout.addWidget(save)
         layout.addStretch()
         return box
+
+    def _reload_profiles(self, selected_id: str | None = None) -> None:
+        if not hasattr(self, "profile_combo"):
+            return
+        selected_id = selected_id or self.overlay_manager.active_profile_id
+        self.profile_combo.blockSignals(True)
+        self.profile_combo.clear()
+        selected_index = 0
+        for index, (profile_id, name) in enumerate(
+            self.overlay_manager.profile_items()
+        ):
+            self.profile_combo.addItem(name, profile_id)
+            if profile_id == selected_id:
+                selected_index = index
+        self.profile_combo.setCurrentIndex(selected_index)
+        self.profile_combo.blockSignals(False)
+
+    def _switch_profile(self, index: int) -> None:
+        profile_id = self.profile_combo.itemData(index)
+        if profile_id:
+            self.overlay_manager.switch_profile(str(profile_id))
+        self._update_profile_buttons()
+
+    def _create_profile(self) -> None:
+        name, accepted = QInputDialog.getText(
+            self, "Novo perfil", "Nome do perfil personalizado:"
+        )
+        if not accepted or not name.strip():
+            return
+        try:
+            profile_id = self.overlay_manager.create_profile(name)
+            self._reload_profiles(profile_id)
+            self.overlay_manager.switch_profile(profile_id)
+        except Exception as exc:
+            QMessageBox.critical(self, "Erro ao criar perfil", str(exc))
+
+    def _rename_profile(self) -> None:
+        profile_id = str(self.profile_combo.currentData() or "")
+        if profile_id in {"standard", "engineer"}:
+            return
+        current_name = self.profile_combo.currentText()
+        name, accepted = QInputDialog.getText(
+            self,
+            "Renomear perfil",
+            "Novo nome do perfil:",
+            text=current_name,
+        )
+        if not accepted or not name.strip():
+            return
+        try:
+            self.overlay_manager.rename_profile(profile_id, name)
+        except Exception as exc:
+            QMessageBox.critical(self, "Erro ao renomear perfil", str(exc))
+
+    def _delete_profile(self) -> None:
+        profile_id = str(self.profile_combo.currentData() or "")
+        if profile_id in {"standard", "engineer"}:
+            return
+        name = self.profile_combo.currentText()
+        answer = QMessageBox.question(
+            self,
+            "Excluir perfil",
+            f"Excluir permanentemente o perfil '{name}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            self.overlay_manager.delete_profile(profile_id)
+        except Exception as exc:
+            QMessageBox.critical(self, "Erro ao excluir perfil", str(exc))
+
+    def _update_profile_buttons(self) -> None:
+        if not hasattr(self, "delete_profile_button"):
+            return
+        custom = str(self.profile_combo.currentData() or "") not in {
+            "standard", "engineer", ""
+        }
+        self.rename_profile_button.setEnabled(custom)
+        self.delete_profile_button.setEnabled(custom)
+
+    def _profile_applied(self, profile_id: str) -> None:
+        self._reload_profiles(profile_id)
+        self._update_profile_buttons()
+        configs = self.overlay_manager.config_data.get("widgets", {})
+        for widget_id, row in self.rows.items():
+            row.set_enabled_state(
+                bool(configs.get(widget_id, {}).get("enabled", False))
+            )
 
     def _build_widget_grid(self) -> QWidget:
         scroll = QScrollArea()

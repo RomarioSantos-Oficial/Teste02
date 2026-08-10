@@ -228,7 +228,10 @@ class DeltaLogoManager:
         if not normalized:
             return ""
 
-        priorities = ["lmgt3", "gte", "lmp2", "lmp3", "hypercar"]
+        priorities = [
+            "lmgt3", "gt4", "gte", "porsche_cup",
+            "lmp2", "lmp3", "hypercar",
+        ]
         categories = self.catalog.get("categories", {})
 
         for category in priorities:

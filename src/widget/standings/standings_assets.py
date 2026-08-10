@@ -457,7 +457,23 @@ def badge_asset_key(value: str) -> str:
     clean = _asset_key(value)
     if not clean or clean in {"none", "null", "undefined"}:
         return ""
-    return BADGE_IMAGE_ALIASES.get(clean, clean)
+    direct = BADGE_IMAGE_ALIASES.get(clean)
+    if direct:
+        return direct
+    # A API já variou entre o nome puro e rótulos como "Creator Badge".
+    # Pontuação é removida por _asset_key; aqui removemos apenas prefixos e
+    # sufixos descritivos conhecidos, sem fazer correspondência aproximada.
+    candidates = {clean}
+    for affix in ("badge", "icon", "status"):
+        if clean.startswith(affix) and len(clean) > len(affix):
+            candidates.add(clean[len(affix):])
+        if clean.endswith(affix) and len(clean) > len(affix):
+            candidates.add(clean[:-len(affix)])
+    for candidate in candidates:
+        mapped = BADGE_IMAGE_ALIASES.get(candidate)
+        if mapped:
+            return mapped
+    return clean
 
 
 def detect_manufacturer(vehicle_name: str, vehicle_filename: str = "", supplied: str = "") -> str:

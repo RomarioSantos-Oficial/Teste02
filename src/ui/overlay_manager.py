@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ctypes
 import json
+import re
 import sys
 import time
 from copy import deepcopy
@@ -30,6 +31,7 @@ from src.widget.radar.radar_widget import RadarWidget
 class OverlayManager(QObject):
     config_saved = Signal(Path)
     widget_created = Signal(str, QWidget)
+    profile_changed = Signal(str)
 
     # Intervalos independentes evitam redesenhar informações lentas na mesma
     # frequência da telemetria de direção (20 Hz).
@@ -51,6 +53,7 @@ class OverlayManager(QObject):
         super().__init__(parent)
         self.config_path = Path(config_path)
         self.config_data = self._load_config()
+        self._ensure_profiles()
         self.widgets: dict[str, QWidget] = {}
         self.session_active = False
         self.edit_mode = False
@@ -61,6 +64,104 @@ class OverlayManager(QObject):
         except Exception:
             project_root = Path.cwd()
         self._overlay_check_log = project_root / "data" / "online_debug" / "overlay_checks.log"
+
+    @property
+    def active_profile_id(self) -> str:
+        return str(self.config_data.get("active_profile", "standard"))
+
+    def profile_items(self) -> list[tuple[str, str]]:
+        profiles = self.config_data.get("profiles", {})
+        return [
+            (profile_id, str(profile.get("name", profile_id)))
+            for profile_id, profile in profiles.items()
+            if isinstance(profile, dict)
+        ]
+
+    def active_profile_mode(self) -> str:
+        profile = self.config_data.get("profiles", {}).get(
+            self.active_profile_id, {}
+        )
+        return str(profile.get("mode", "standard"))
+
+    def create_profile(self, name: str, mode: str = "standard") -> str:
+        cleaned = " ".join(str(name or "").split()).strip()
+        if not cleaned:
+            raise ValueError("Informe um nome para o perfil.")
+        base = re.sub(r"[^a-z0-9]+", "_", cleaned.casefold()).strip("_") or "perfil"
+        profile_id = base
+        suffix = 2
+        profiles = self.config_data.setdefault("profiles", {})
+        while profile_id in profiles:
+            profile_id = f"{base}_{suffix}"
+            suffix += 1
+        self._sync_active_profile()
+        profiles[profile_id] = {
+            "name": cleaned,
+            "mode": "engineer" if mode == "engineer" else "standard",
+            "widgets": deepcopy(self.config_data.get("widgets", {})),
+        }
+        self.save_config()
+        return profile_id
+
+    def rename_profile(self, profile_id: str, name: str) -> None:
+        profiles = self.config_data.get("profiles", {})
+        profile = profiles.get(profile_id)
+        if not isinstance(profile, dict):
+            raise KeyError("Perfil não encontrado.")
+        cleaned = " ".join(str(name or "").split()).strip()
+        if not cleaned:
+            raise ValueError("Informe um nome para o perfil.")
+        profile["name"] = cleaned
+        self.save_config()
+        self.profile_changed.emit(self.active_profile_id)
+
+    def delete_profile(self, profile_id: str) -> None:
+        if profile_id in {"standard", "engineer"}:
+            raise ValueError("Os perfis Padrão e Engenheiro não podem ser excluídos.")
+        profiles = self.config_data.get("profiles", {})
+        if profile_id not in profiles:
+            raise KeyError("Perfil não encontrado.")
+        was_active = profile_id == self.active_profile_id
+        if was_active:
+            self.switch_profile("standard")
+            profiles = self.config_data.get("profiles", {})
+        profiles.pop(profile_id, None)
+        self.save_config()
+        self.profile_changed.emit(self.active_profile_id)
+
+    def switch_profile(self, profile_id: str) -> None:
+        profiles = self.config_data.get("profiles", {})
+        if profile_id not in profiles or profile_id == self.active_profile_id:
+            return
+        self._sync_active_profile()
+        self.close_all()
+        self.config_data["active_profile"] = profile_id
+        self.config_data["widgets"] = deepcopy(profiles[profile_id]["widgets"])
+        self._last_widget_update.clear()
+        self.create_enabled_widgets()
+        self.save_config()
+        self.profile_changed.emit(profile_id)
+
+    def _ensure_profiles(self) -> None:
+        widgets = deepcopy(self.config_data.setdefault("widgets", {}))
+        profiles = self.config_data.setdefault("profiles", {})
+        profiles.setdefault("standard", {
+            "name": "Padrão", "mode": "standard", "widgets": deepcopy(widgets)
+        })
+        profiles.setdefault("engineer", {
+            "name": "Engenheiro", "mode": "engineer", "widgets": deepcopy(widgets)
+        })
+        active = str(self.config_data.get("active_profile", "standard"))
+        if active not in profiles:
+            active = "standard"
+        self.config_data["active_profile"] = active
+        self.config_data["widgets"] = deepcopy(profiles[active].get("widgets", widgets))
+
+    def _sync_active_profile(self) -> None:
+        profiles = self.config_data.setdefault("profiles", {})
+        profile = profiles.get(self.active_profile_id)
+        if isinstance(profile, dict):
+            profile["widgets"] = deepcopy(self.config_data.get("widgets", {}))
 
     def create_driver_panel(self) -> DriverPanelWidget:
         existing = self.widgets.get("driver_panel")
@@ -492,6 +593,8 @@ class OverlayManager(QObject):
         return True
 
     def _session_allows_overlays(self, session: Any) -> bool:
+        if self.active_profile_mode() == "engineer":
+            return self._engineer_session_allows_overlays(session)
         if not bool(getattr(session, "connected", True)):
             self._log_overlay_decision(session, False, "not_connected")
             return False
@@ -719,6 +822,30 @@ class OverlayManager(QObject):
         self._log_overlay_decision(session, True, "allowed")
         return True
 
+    def _engineer_session_allows_overlays(self, session: Any) -> bool:
+        """Keep session widgets available in monitor/driver-swap mode."""
+        if not bool(getattr(session, "connected", True)):
+            self._log_overlay_decision(session, False, "engineer_not_connected")
+            return False
+        navigation_state = str(getattr(session, "navigation_state", "") or "")
+        if navigation_state in {"NAV_MAIN_MENU", "NAV_OPTIONS", "NAV_LOADING"}:
+            self._log_overlay_decision(session, False, "engineer_navigation")
+            return False
+        if bool(getattr(session, "navigation_loading", False)) or bool(
+            getattr(session, "is_replay_active", False)
+        ):
+            self._log_overlay_decision(session, False, "engineer_loading_or_replay")
+            return False
+        try:
+            session_type = int(getattr(session, "session", -1))
+        except (TypeError, ValueError):
+            return False
+        allowed = 1 <= session_type <= 8 or 10 <= session_type <= 13
+        self._log_overlay_decision(
+            session, allowed, "engineer_session" if allowed else "engineer_invalid_session"
+        )
+        return allowed
+
     def _log_overlay_decision(self, session: Any, allowed: bool, reason: str, extra: dict | None = None) -> None:
         try:
             self._overlay_check_log.parent.mkdir(parents=True, exist_ok=True)
@@ -745,6 +872,7 @@ class OverlayManager(QObject):
             pass
 
     def save_config(self) -> None:
+        self._sync_active_profile()
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
         self.config_path.write_text(
             json.dumps(self.config_data, ensure_ascii=False, indent=2),
@@ -813,12 +941,20 @@ class OverlayManager(QObject):
         config = self.config_data["widgets"][widget_id]
         config.setdefault("position", {})
         config.setdefault("size", {})
+        # A bateria pode operar no modo compacto (somente o medidor), cuja
+        # largura legítima é bem menor que os 5% usados pelos painéis comuns.
+        minimum_width = 0.01 if widget_id == "battery" else 0.05
+        minimum_height = 0.02 if widget_id == "battery" else 0.05
         config["position"]["x"] = max(0.0, min(1.0, x))
         config["position"]["y"] = max(0.0, min(1.0, y))
-        config["size"]["width"] = max(0.05, min(1.0, width))
-        config["size"]["height"] = max(0.05, min(1.0, height))
+        config["size"]["width"] = max(minimum_width, min(1.0, width))
+        config["size"]["height"] = max(minimum_height, min(1.0, height))
         config["scale"] = 1.0
         widget = self.widgets.get(widget_id)
+        if widget is not None and hasattr(widget, "config"):
+            widget.config.setdefault("position", {}).update(config["position"])
+            widget.config.setdefault("size", {}).update(config["size"])
+            widget.config["scale"] = 1.0
         if widget is not None and hasattr(widget, "column_width_total"):
             reference_total = float(widget.column_width_total())
             config["column_width_reference_total"] = reference_total

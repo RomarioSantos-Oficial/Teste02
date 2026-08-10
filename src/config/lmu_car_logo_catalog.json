@@ -410,6 +410,50 @@
           ]
         }
       ]
+    },
+    "gt4": {
+      "class_aliases": [
+        "gt4",
+        "g challenge",
+        "gchallenge"
+      ],
+      "cars": [
+        {
+          "manufacturer": "mclaren",
+          "models": [
+            "mclaren 720s g challenge",
+            "mclaren 720sgchallenge",
+            "720s g challenge",
+            "720sgchallenge"
+          ],
+          "logo_files": [
+            "McLaren",
+            "mclaren"
+          ]
+        }
+      ]
+    },
+    "porsche_cup": {
+      "class_aliases": [
+        "porsche cup",
+        "porsche carrera cup",
+        "992 cup",
+        "992s pc"
+      ],
+      "cars": [
+        {
+          "manufacturer": "porsche",
+          "models": [
+            "992s pc 2023",
+            "992s_pc_2023",
+            "porsche 992 cup",
+            "porsche 911 gt3 cup"
+          ],
+          "logo_files": [
+            "Porsche"
+          ]
+        }
+      ]
     }
   }
 }
