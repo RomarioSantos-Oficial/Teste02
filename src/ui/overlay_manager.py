@@ -344,8 +344,10 @@ class OverlayManager(QObject):
         self.widget_created.emit(widget_id, widget)
 
     def show_widget(self, widget_id: str) -> None:
-        widget = self.widgets.get(widget_id) or self.create_widget(widget_id)
         self.config_data["widgets"][widget_id]["enabled"] = True
+        widget = self.widgets.get(widget_id) or self.create_widget(widget_id)
+        if hasattr(widget, "update_config"):
+            widget.update_config(deepcopy(self.config_data["widgets"][widget_id]))
         if self.session_active or self.edit_mode:
             widget.show()
         else:
@@ -353,11 +355,16 @@ class OverlayManager(QObject):
         self.save_config()
 
     def hide_widget(self, widget_id: str) -> None:
+        if widget_id in self.config_data.get("widgets", {}):
+            # Atualize primeiro: controladores invisíveis (URL) consultam a
+            # configuração dentro de hide() para encerrar seus recursos.
+            self.config_data["widgets"][widget_id]["enabled"] = False
         widget = self.widgets.get(widget_id)
         if widget is not None:
+            if hasattr(widget, "update_config"):
+                widget.update_config(deepcopy(self.config_data["widgets"][widget_id]))
             widget.hide()
         if widget_id in self.config_data.get("widgets", {}):
-            self.config_data["widgets"][widget_id]["enabled"] = False
             self.save_config()
 
     def set_widget_enabled(self, widget_id: str, enabled: bool) -> None:
@@ -593,10 +600,17 @@ class OverlayManager(QObject):
         return True
 
     def _session_allows_overlays(self, session: Any) -> bool:
-        if self.active_profile_mode() == "engineer":
+        profile_mode = getattr(self, "active_profile_mode", lambda: "standard")()
+        if profile_mode == "engineer":
             return self._engineer_session_allows_overlays(session)
         if not bool(getattr(session, "connected", True)):
             self._log_overlay_decision(session, False, "not_connected")
+            return False
+        if bool(getattr(session, "telemetry_paused", False)):
+            self._log_overlay_decision(session, False, "telemetry_paused")
+            return False
+        if not bool(getattr(session, "player_synced", False)):
+            self._log_overlay_decision(session, False, "player_not_synced")
             return False
 
         # A API local distingue monitor, replay, carregamento e controle do
@@ -808,13 +822,8 @@ class OverlayManager(QObject):
                 # 0 = antes da sessao; 8 = sessao encerrada; 9 = pausado.
                 gp = int(game_phase)
                 if not 1 <= gp <= 7:
-                    # Permitir overlays se a sessão já acabou (8/9) mas o
-                    # jogador ainda está presente/ativo na pista.
-                    if gp in (8, 9) and (player_present or player_active):
-                        pass
-                    else:
-                        self._log_overlay_decision(session, False, "game_phase_out_of_range", {"game_phase": game_phase, "player_present": player_present, "player_active": player_active})
-                        return False
+                    self._log_overlay_decision(session, False, "game_phase_out_of_range", {"game_phase": game_phase, "player_present": player_present, "player_active": player_active})
+                    return False
             except (TypeError, ValueError):
                 self._log_overlay_decision(session, False, "game_phase_invalid", {"game_phase": game_phase})
                 return False

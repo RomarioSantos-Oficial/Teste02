@@ -458,6 +458,7 @@ class LMUAdapter:
                 player_has_vehicle=bool(
                     getattr(telemetry, "playerHasVehicle", False)
                 ),
+                player_synced=bool(player_row is not None and player is not None),
                 game_phase=safe_int(info.mGamePhase),
                 yellow_flag_state=yellow_state,
                 raining=safe_float(info.mRaining),

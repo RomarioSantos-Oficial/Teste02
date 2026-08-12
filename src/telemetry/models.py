@@ -206,6 +206,10 @@ class SessionData:
     # 0=menu principal, 1=carregando, 2=monitor, 3=na pista.
     application_location: int = 0
     player_has_vehicle: bool = False
+    # Estado sincronizado do jogador e relógio da memória compartilhada.
+    # Estes campos permitem pausar consumidores antes de usar quadros antigos.
+    player_synced: bool = False
+    telemetry_paused: bool = False
     game_phase: int = 0
     yellow_flag_state: int = 0
     raining: float = 0.0

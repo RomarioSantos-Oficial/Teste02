@@ -48,6 +48,7 @@ from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from src.telemetry.lmu_adapter import LMUAdapter
+from src.telemetry.session_state import SessionActivityTracker
 from src.ui.edit_mode_manager import EditModeManager
 from src.ui.main_menu_window import MainMenuWindow
 from src.ui.overlay_manager import OverlayManager
@@ -126,6 +127,7 @@ class SectorFlowApplication:
         self._create_tray()
 
         self.adapter = LMUAdapter(copy_access=True)
+        self.session_tracker = SessionActivityTracker()
         self.timer = QTimer(self.menu)
         self.timer.timeout.connect(self.update_lmu)
         self.timer.start(50)
@@ -201,9 +203,17 @@ class SectorFlowApplication:
             self.menu.set_lmu_status(False, f"erro: {exc}")
             return
 
+        self.session_tracker.update(session)
+        self.timer.setInterval(500 if session.telemetry_paused else 50)
+
         if not session.connected:
             self.overlay_manager.set_session_active(False)
             self.menu.set_lmu_status(False, session.error or "abra o jogo e entre na pista")
+            return
+
+        if session.telemetry_paused:
+            self.overlay_manager.set_session_active(False)
+            self.menu.set_lmu_status(False, "telemetria pausada")
             return
 
         if not self.overlay_manager._session_allows_overlays(session):

@@ -22,6 +22,7 @@ class LMURestEnrichmentTests(unittest.TestCase):
             in_realtime=True,
             application_location=3,
             player_has_vehicle=True,
+            player_synced=True,
             game_phase=5,
             remaining_time_s=600.0,
             player=PlayerData(

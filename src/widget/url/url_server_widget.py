@@ -45,11 +45,18 @@ class UrlServerWidget(QWidget):
         old = (self.config.get("bind_host"), self.config.get("port")) if self.config else None
         self.config = config
         fps = max(1, min(30, int(config.get("fps", 10))))
-        self._timer.start(max(33, round(1000 / fps)))
+        interval = max(33, round(1000 / fps))
         new = (config.get("bind_host"), config.get("port"))
         if self._server is not None and old != new: self.stop_server()
-        if bool(config.get("enabled", False)): self.start_server()
-        else: self.stop_server()
+        if bool(config.get("enabled", False)):
+            self._timer.start(interval)
+            self.start_server()
+        else:
+            self._timer.stop()
+            self.output_active = False
+            with self._lock:
+                self.frames.clear()
+            self.stop_server()
 
     def set_sources(self, sources: dict[str, QWidget]) -> None:
         self.sources = dict(sources); self.capture_frames()
@@ -75,7 +82,7 @@ class UrlServerWidget(QWidget):
         with self._lock: self.frames.update(rendered)
 
     def start_server(self) -> None:
-        if self._server is not None: return
+        if self._server is not None or not bool(self.config.get("enabled", False)): return
         host = str(self.config.get("bind_host", "0.0.0.0")); port = int(self.config.get("port", 8765)); owner = self
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self):
@@ -98,9 +105,13 @@ class UrlServerWidget(QWidget):
             self.last_error = str(exc); self._server = None
 
     def stop_server(self) -> None:
+        self._timer.stop()
         server, self._server = self._server, None
-        if server is not None: server.shutdown(); server.server_close()
-        self._thread = None
+        thread, self._thread = self._thread, None
+        if server is not None:
+            server.shutdown(); server.server_close()
+        if thread is not None and thread is not threading.current_thread():
+            thread.join(timeout=2.0)
 
     def closeEvent(self, event) -> None: self.stop_server(); event.accept()
 
