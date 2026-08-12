@@ -49,7 +49,7 @@ class MainMenuWindow(QMainWindow):
         self.rows: dict[str, MenuRow] = {}
         self.editors: dict[str, QWidget] = {}
 
-        self.setWindowTitle("Sector Flow Drive")
+        self.setWindowTitle("SectorFlow Overley")
         self.resize(920, 720)
 
         central = QWidget()
@@ -69,7 +69,7 @@ class MainMenuWindow(QMainWindow):
         box.setObjectName("headerBox")
         layout = QHBoxLayout(box)
         identity = QVBoxLayout()
-        title = QLabel("Sector Flow Drive")
+        title = QLabel("SectorFlow Overley")
         title.setObjectName("mainTitle")
         subtitle = QLabel("Ative, desative e personalize os overlays.")
         subtitle.setObjectName("subtitle")
@@ -112,7 +112,7 @@ class MainMenuWindow(QMainWindow):
     @staticmethod
     def _load_header_config() -> dict[str, str]:
         defaults = {
-            "version": "0.0.2",
+            "version": "0.0.3",
             "update_note": "Novidades e correções da versão atual.",
             "donation_label": "Apoie o desenvolvimento",
             "donation_url": "",
@@ -137,7 +137,7 @@ class MainMenuWindow(QMainWindow):
         dialog.setMinimumWidth(380)
         layout = QVBoxLayout(dialog)
 
-        title = QLabel("Apoie o desenvolvimento do Sector Flow Drive")
+        title = QLabel("Apoie o desenvolvimento do SectorFlow Overley")
         title.setObjectName("donationDialogTitle")
         title.setWordWrap(True)
         layout.addWidget(title)
@@ -196,7 +196,7 @@ class MainMenuWindow(QMainWindow):
         dialog.setMinimumSize(480, 300)
         layout = QVBoxLayout(dialog)
 
-        version = QLabel(f"Sector Flow Drive — versão {config['version']}")
+        version = QLabel(f"SectorFlow Overley — versão {config['version']}")
         version.setObjectName("updateDialogTitle")
         layout.addWidget(version)
 
@@ -502,7 +502,7 @@ class MainMenuWindow(QMainWindow):
             tray_icon = getattr(self, "tray_icon", None)
             if tray_icon is not None:
                 tray_icon.showMessage(
-                    "SectorFlow ALFA",
+                    "SectorFlow Overley",
                     "O programa continua na bandeja do Windows.",
                     QSystemTrayIcon.MessageIcon.Information,
                     2500,

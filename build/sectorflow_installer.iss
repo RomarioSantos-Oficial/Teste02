@@ -1,5 +1,5 @@
 ; ============================================================
-;   Inno Setup Script - SectorFlow ALFA Installer
+;   Inno Setup Script - SectorFlow Overley Installer
 ; ============================================================
 ;   Este script gera um instalador .exe profissional para Windows.
 ;   Requisitos:
@@ -7,8 +7,8 @@
 ;     - Primeiro execute build_sectorflow.bat para gerar o EXE
 ; ============================================================
 
-#define MyAppName "SectorFlow ALFA"
-#define MyAppVersion "0.0.2"
+#define MyAppName "SectorFlow Overley"
+#define MyAppVersion "0.0.3"
 #define MyAppPublisher "Sector Flow"
 #define MyAppURL "https://github.com/RomarioSantos-Oficial/Teste02"
 #define MyAppExeName "SectorFlow.exe"
@@ -17,6 +17,7 @@
 AppId={{A1B2C3D4-E5F6-7890-1234-56789ABCDEF0}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+AppVerName={#MyAppName} {#MyAppVersion}
 AppMutex=SectorFlow_ALFA_single_instance_v1
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
@@ -27,6 +28,7 @@ DefaultGroupName={#MyAppName}
 UsePreviousAppDir=yes
 UsePreviousGroup=yes
 UsePreviousTasks=yes
+UsePreviousLanguage=yes
 AllowNoIcons=yes
 LicenseFile=
 OutputDir=..\app
@@ -39,6 +41,10 @@ ArchitecturesInstallIn64BitMode=x64
 SetupIconFile=..\images\logo\Logo.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 AppComments=Overlay de telemetria para Le Mans Ultimate (LMU)
+VersionInfoVersion={#MyAppVersion}.0
+VersionInfoProductName={#MyAppName}
+VersionInfoProductVersion={#MyAppVersion}
+VersionInfoDescription={#MyAppName} - Overlay de telemetria para LMU
 ; Requerimentos
 MinVersion=10.0
 PrivilegesRequired=lowest

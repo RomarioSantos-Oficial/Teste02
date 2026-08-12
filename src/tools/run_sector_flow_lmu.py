@@ -143,7 +143,7 @@ class SectorFlowApplication:
             return
         icon = QIcon(str(APPLICATION_LOGO)) if APPLICATION_LOGO.is_file() else QIcon()
         self.tray = QSystemTrayIcon(icon, self.menu)
-        self.tray.setToolTip("SectorFlow ALFA - overlays ativados")
+        self.tray.setToolTip("SectorFlow Overley - overlays ativados")
 
         tray_menu = QMenu()
         open_action = tray_menu.addAction("Abrir SectorFlow")
@@ -207,9 +207,9 @@ class SectorFlowApplication:
             )
         if self.tray is not None:
             state = "ativados" if self.overlays_enabled else "desativados"
-            self.tray.setToolTip(f"SectorFlow ALFA - overlays {state}")
+            self.tray.setToolTip(f"SectorFlow Overley - overlays {state}")
             self.tray.showMessage(
-                "SectorFlow ALFA",
+                "SectorFlow Overley",
                 f"Overlays {state}.",
                 QSystemTrayIcon.MessageIcon.Information,
                 2000,

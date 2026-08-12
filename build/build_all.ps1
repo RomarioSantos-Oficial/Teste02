@@ -1,5 +1,5 @@
 # ============================================================
-#   Build Completo - SectorFlow ALFA
+#   Build Completo - SectorFlow Overley
 #   Gera EXE + Instalador para Windows
 # ============================================================
 # Uso: .\build_all.ps1 [-SignWithCert "C:\cert\cert.pfx" -CertPassword "senha"]
@@ -16,7 +16,7 @@ Set-Location $ProjectRoot
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  SectorFlow ALFA - Build Completo" -ForegroundColor Cyan
+Write-Host "  SectorFlow Overley 0.0.3 - Build Completo" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -82,7 +82,7 @@ if (-not (Test-Path $InnoCompiler)) {
 Write-Host "  Gerando instalador com Inno Setup 6..." -ForegroundColor Yellow
 & $InnoCompiler "build\sectorflow_installer.iss"
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup falhou." }
-Write-Host "  Instalador: app\SectorFlow_Setup_0.0.2.exe" -ForegroundColor Green
+Write-Host "  Instalador: app\SectorFlow_Setup_0.0.3.exe" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Para distribuir SEM instalador:" -ForegroundColor Yellow
 Write-Host "  Copie a pasta $OutputDir para outro PC e execute SectorFlow.exe" -ForegroundColor Yellow
