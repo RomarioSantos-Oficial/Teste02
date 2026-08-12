@@ -74,13 +74,23 @@ class StandingsWidget(QWidget):
         ("penalty", 90.0),
     )
 
-    def __init__(self, widget_id: str, config: dict[str, Any], parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        widget_id: str,
+        config: dict[str, Any],
+        parent: QWidget | None = None,
+        *,
+        shared_enrichment: LocalStandingsEnrichment | None = None,
+        shared_online_client: LMUOnlineIdentityClient | None = None,
+    ) -> None:
         super().__init__(parent)
         self.widget_id = widget_id
         self.config = config
         self.logic = StandingsLogic(config)
-        self.enrichment = LocalStandingsEnrichment(PROJECT_ROOT, config)
-        self.online_client = LMUOnlineIdentityClient(PROJECT_ROOT, config)
+        self._owns_enrichment = shared_enrichment is None
+        self._owns_online_client = shared_online_client is None
+        self.enrichment = shared_enrichment or LocalStandingsEnrichment(PROJECT_ROOT, config)
+        self.online_client = shared_online_client or LMUOnlineIdentityClient(PROJECT_ROOT, config)
         self.logos = BrandLogoStore(PROJECT_ROOT, config)
         self.badge_images = BadgeImageStore(PROJECT_ROOT, config)
         self.flags = CountryFlagStore(PROJECT_ROOT, config, self)
@@ -241,7 +251,7 @@ class StandingsWidget(QWidget):
             "best": ("9:59.999", .68),
             "last": ("INV 9:59.999", .56),
             "gap": ("+999.999", .68),
-            "energy": ("100.0%", .68),
+            "energy": ("~100.0 L", .68),
             "damage": ("100%", .68),
             "track_limits": ("99x/99x", .58),
             "penalty": ("+999", .62),
@@ -286,13 +296,15 @@ class StandingsWidget(QWidget):
     def reset_session_state(self) -> None:
         self.session = None
         self.logic.reset()
-        self.online_client.reset()
+        if self._owns_online_client:
+            self.online_client.reset()
         self.view = StandingsView()
         self.update()
 
     def closeEvent(self, event) -> None:
         self.timer.stop()
-        self.enrichment.stop()
+        if self._owns_enrichment:
+            self.enrichment.stop()
         self.flags.stop()
         event.accept()
 
@@ -331,6 +343,14 @@ class StandingsWidget(QWidget):
             source,
             self.enrichment.vehicle_catalog(vehicle_names),
         )
+        self.view.split_label = (
+            snapshot.split_label
+            or str(getattr(self.session, "split_label", "") or "")
+        )
+        if self.session is not None and snapshot.split_label:
+            # Compartilha a descoberta online com Delta e demais overlays
+            # que recebem o mesmo quadro de sessao.
+            setattr(self.session, "split_label", snapshot.split_label)
         self._update_scale()
         self._fit_height_to_content()
         self.update()
@@ -438,18 +458,29 @@ class StandingsWidget(QWidget):
             return []
         definitions = (
             ("show_header_session_type", self.view.session_type, 0.085, ""),
-            ("show_header_session_time", self.view.session_time, 0.155, "⏱"),
-            ("show_header_server_time", self.view.server_time, 0.155, "◷"),
-            ("show_header_local_time", self.view.local_time, 0.145, "▣"),
-            ("show_header_grip", self.view.grip_text, 0.145, "♨"),
+            ("show_header_session_time", self.view.session_time, 0.155, "cronometro.png"),
+            ("show_header_server_time", self.view.server_time, 0.155, "relogio.png"),
+            ("show_header_local_time", self.view.local_time, 0.145, "relogio.png"),
+            ("show_header_grip", self.view.grip_text, 0.145, "pista.png"),
             ("show_header_track_limits", self.view.track_limits_text, 0.20, "⚠"),
+            ("show_header_split", self._split_text(), 0.13, ""),
             ("show_header_source", self.view.source_text, 0.115, ""),
         )
         return [
             (str(text), fraction, icon)
             for key, text, fraction, icon in definitions
-            if bool(self.config.get(key, True))
+            if bool(self.config.get(key, True)) and str(text).strip()
         ]
+
+    def _split_text(self) -> str:
+        value = str(self.view.split_label or "").strip()
+        if not value:
+            return ""
+        return (
+            value
+            if "split" in value.casefold() or value.casefold().startswith("s ")
+            else f"SPLIT {value}"
+        )
 
     def paintEvent(self, event: QPaintEvent) -> None:
         del event
@@ -510,10 +541,26 @@ class StandingsWidget(QWidget):
                 0.30,
                 min(1.0, cell.width() / target_width),
             )
-            painter.setFont(self._section_font("global_header_font_size", 20.0, rect, 1.0 if index == 0 else 0.86))
+            painter.setFont(self._section_font("global_header_font_size", 20.0, cell, 1.0 if index == 0 else 0.86))
             painter.setPen(QColor(colors.get("text", "#FFFFFF")))
-            label = f"{icon}  {text}".strip()
             target = cell.adjusted(4 * self._scale, 0, -3 * self._scale, 0)
+            icon_path = PROJECT_ROOT / "images" / "incos01" / icon
+            if icon and icon_path.is_file():
+                icon_size = min(target.height() * 0.70, target.width() * 0.24)
+                pixmap = QPixmap(str(icon_path)).scaled(
+                    max(1, int(icon_size)), max(1, int(icon_size)),
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+                painter.drawPixmap(int(target.left()), int(target.center().y() - pixmap.height() / 2), pixmap)
+                target.setLeft(target.left() + icon_size + 4 * self._scale)
+                label = text
+            else:
+                label = f"{icon}  {text}".strip()
+            font = painter.font()
+            while font.pixelSize() > 7 and QFontMetrics(font).horizontalAdvance(label) > max(1.0, target.width()):
+                font.setPixelSize(font.pixelSize() - 1)
+            painter.setFont(font)
             label = painter.fontMetrics().elidedText(
                 label,
                 Qt.TextElideMode.ElideRight,
@@ -597,7 +644,7 @@ class StandingsWidget(QWidget):
             boxes.append(
                 (
                     QRectF(x, rect.top(), count_width, rect.height() - 3 * self._scale),
-                    f"🏎  {category.started}/{category.total}",
+                    f"{category.started}/{category.total}",
                 )
             )
             x += count_width + gap
@@ -623,7 +670,15 @@ class StandingsWidget(QWidget):
             painter.setBrush(color)
             painter.drawRect(box)
             painter.setPen(QColor("#FFFFFF"))
-            painter.drawText(box.adjusted(8 * self._scale, 0, -8 * self._scale, 0), Qt.AlignmentFlag.AlignCenter, text)
+            target = box.adjusted(8 * self._scale, 0, -8 * self._scale, 0)
+            if category.show_count and text == f"{category.started}/{category.total}":
+                pixmap = QPixmap(str(PROJECT_ROOT / "images" / "incos01" / "piloto.png"))
+                if not pixmap.isNull():
+                    size = min(target.height() * .68, target.width() * .26)
+                    pixmap = pixmap.scaled(max(1, int(size)), max(1, int(size)), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                    painter.drawPixmap(int(target.left()), int(target.center().y() - pixmap.height() / 2), pixmap)
+                    target.setLeft(target.left() + size + 3 * self._scale)
+            painter.drawText(target, Qt.AlignmentFlag.AlignCenter, text)
         if sof_box is not None:
             header_content_scale = self._column_content_scale
             # Replica também o fator de conteúdo usado na célula DR: ao
@@ -688,7 +743,7 @@ class StandingsWidget(QWidget):
             "driver": "PILOTO", "brand": "MAR", "number": "#", "laps": "VLT",
             "pit": "PIT", "best": "BEST", "last": "LAST", "gap": "GAP", "track_limits": "LIM", "penalty": "PEN",
             "tyre": "TYR",
-            "energy": "BAT", "damage": "DMG",
+            "energy": "VE/FUEL", "damage": "DMG",
         }
         for key, cell in self._column_rects(rect):
             base_width = dict(self.BASE_COLUMNS).get(key, cell.width())
@@ -1044,7 +1099,20 @@ class StandingsWidget(QWidget):
             )
             self._draw_tyre(painter, rect, compounds)
         elif key == "energy":
-            self._draw_percent(painter, rect, row.energy_percent, "energy")
+            if row.fuel_liters is not None:
+                prefix = "~" if row.fuel_is_estimated else ""
+                value = max(0.0, float(row.fuel_liters))
+                color_value = row.fuel_percent
+                colors = self.config.get("colors", {})
+                if color_value is not None and color_value < 15.0:
+                    color = QColor(colors.get("energy_low", "#E5222B"))
+                elif color_value is not None and color_value < 35.0:
+                    color = QColor(colors.get("energy_mid", "#E49127"))
+                else:
+                    color = QColor(colors.get("energy_high", "#FFFFFF"))
+                self._text(painter, rect, f"{prefix}{value:.1f} L", 0.62, True, color)
+            else:
+                self._draw_percent(painter, rect, row.energy_percent, "energy")
         elif key == "damage":
             self._draw_percent(painter, rect, row.damage_percent, "damage")
 

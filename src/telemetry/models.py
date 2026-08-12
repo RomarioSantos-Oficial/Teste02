@@ -65,6 +65,7 @@ class DriverData:
     current_sector: int = 0
 
     best_lap_s: float = 0.0
+    estimated_lap_s: float = 0.0
     last_lap_s: float = 0.0
     current_lap_invalidated: bool = False
     last_lap_invalidated: bool = False
@@ -256,6 +257,7 @@ class SessionData:
     pit_entry_distance_m: float = 0.0
     yellow_flag_state_name: str = ""
     server_name: str = ""
+    split_label: str = ""
     game_mode_name: str = ""
     max_players: int = 0
     number_of_players: int = 0
@@ -268,6 +270,10 @@ class SessionData:
     scheduled_sessions: dict | list = field(default_factory=dict)
     pitstop_estimate: dict = field(default_factory=dict)
     strategy_usage: dict = field(default_factory=dict)
+    session_settings: dict = field(default_factory=dict)
+    # Valor real publicado por /rest/sessions (SESSSET_Fuel_Usage). Nao ha
+    # limite artificial: servidores podem usar valores fracionarios ou altos.
+    fuel_usage_multiplier: float | None = None
     incidents: dict | list = field(default_factory=list)
     loading_screen: dict = field(default_factory=dict)
 

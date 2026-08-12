@@ -3,11 +3,82 @@ from __future__ import annotations
 import unittest
 
 from src.telemetry.models import DriverData, PlayerData, SessionData
-from src.widget.standings.standings_logic import StandingsLogic
+from src.widget.standings.standings_logic import StandingsLogic, canonical_class
 from src.widget.standings.standings_models import DriverMetadata
 
 
 class StandingsLogicUnitTests(unittest.TestCase):
+    def test_non_energy_classes_show_fuel_in_liters(self) -> None:
+        session = SessionData(
+            connected=True,
+            session=10,
+            player=PlayerData(fuel_liters=15.0, fuel_capacity_liters=75.0),
+            drivers=[
+                DriverData(
+                    slot_id=1,
+                    driver_name="Player",
+                    vehicle_class="LMP2_ELMS",
+                    position=1,
+                    is_player=True,
+                    fuel_fraction=0.20,
+                    virtual_energy_fraction=0.0,
+                ),
+                DriverData(
+                    slot_id=2,
+                    driver_name="Opponent",
+                    vehicle_class="LMP2_ELMS",
+                    position=2,
+                    fuel_fraction=0.50,
+                    virtual_energy_fraction=0.0,
+                ),
+            ],
+        )
+        rows = StandingsLogic({}).build(session, {}, "API").categories[0].rows
+        by_name = {row.driver_name: row for row in rows}
+        self.assertEqual(by_name["Player"].fuel_liters, 15.0)
+        self.assertFalse(by_name["Player"].fuel_is_estimated)
+        self.assertEqual(by_name["Opponent"].fuel_liters, 37.5)
+        self.assertTrue(by_name["Opponent"].fuel_is_estimated)
+        self.assertIsNone(by_name["Opponent"].energy_percent)
+
+    def test_lmp3_and_gte_capacities_are_configurable(self) -> None:
+        session = SessionData(
+            connected=True,
+            session=10,
+            drivers=[
+                DriverData(slot_id=1, driver_name="LMP3", vehicle_class="LMP3", position=1, fuel_fraction=0.5),
+                DriverData(slot_id=2, driver_name="GTE", vehicle_class="LMGTE", position=2, fuel_fraction=0.5),
+            ],
+        )
+        config = {"fuel_capacity_defaults_l": {"LMP3": 72.0, "GTE": 96.0}}
+        view = StandingsLogic(config).build(session, {}, "API")
+        rows = {row.driver_name: row for category in view.categories for row in category.rows}
+        self.assertEqual(rows["LMP3"].fuel_liters, 36.0)
+        self.assertEqual(rows["GTE"].fuel_liters, 48.0)
+
+    def test_confirmed_default_tank_capacities(self) -> None:
+        drivers = [
+            DriverData(slot_id=1, driver_name="LMP3", vehicle_class="LMP3", position=1, fuel_fraction=0.5),
+            DriverData(slot_id=2, driver_name="WEC", vehicle_class="LMP2", vehicle_name="Oreca 07 WEC", position=2, fuel_fraction=0.5),
+            DriverData(slot_id=3, driver_name="Aston", vehicle_class="LMGTE", vehicle_name="Aston Martin Vantage AMR", position=3, fuel_fraction=0.5),
+            DriverData(slot_id=4, driver_name="Corvette", vehicle_class="LMGTE", vehicle_name="Corvette C8.R", position=4, fuel_fraction=0.5),
+            DriverData(slot_id=5, driver_name="Ferrari", vehicle_class="LMGTE", vehicle_name="Ferrari 488 GTE Evo", position=5, fuel_fraction=0.5),
+            DriverData(slot_id=6, driver_name="Porsche", vehicle_class="LMGTE", vehicle_name="Porsche 911 RSR-19", position=6, fuel_fraction=0.5),
+        ]
+        view = StandingsLogic({"maximum_categories": 3, "other_category_rows": 10}).build(
+            SessionData(connected=True, session=10, drivers=drivers), {}, "API"
+        )
+        rows = {row.driver_name: row for category in view.categories for row in category.rows}
+        self.assertEqual(rows["LMP3"].fuel_liters, 50.0)
+        self.assertEqual(rows["WEC"].fuel_liters, 31.5)
+        self.assertEqual(rows["Aston"].fuel_liters, 47.5)
+        self.assertEqual(rows["Corvette"].fuel_liters, 45.5)
+        self.assertEqual(rows["Ferrari"].fuel_liters, 42.0)
+        self.assertEqual(rows["Porsche"].fuel_liters, 49.0)
+
+    def test_gte_default_class_color_is_orange(self) -> None:
+        self.assertEqual(canonical_class("LMGTE", {})[2], "#F58220")
+
     def test_slow_car_outside_pits_is_marked_yellow_like_tinypedal(self) -> None:
         session = SessionData(
             connected=True,
@@ -127,6 +198,22 @@ class StandingsLogicUnitTests(unittest.TestCase):
         category = StandingsLogic({}).build(session, {}, "MEM").categories[0]
         self.assertEqual(category.current_lap, 4)
         self.assertEqual(category.total_laps_text, "--")
+        self.assertTrue(category.show_count)
+        self.assertEqual(category.started, 2)
+        self.assertEqual(category.total, 2)
+
+    def test_qualifying_shows_driver_count(self) -> None:
+        session = SessionData(
+            connected=True,
+            session=5,
+            drivers=[
+                DriverData(slot_id=index, driver_name=f"Driver {index}", vehicle_class="LMP3", position=index)
+                for index in range(1, 4)
+            ],
+        )
+        category = StandingsLogic({}).build(session, {}, "MEM").categories[0]
+        self.assertTrue(category.show_count)
+        self.assertEqual((category.started, category.total), (3, 3))
 
     def test_category_and_row_limits_are_configurable(self) -> None:
         drivers = [
@@ -246,6 +333,56 @@ class StandingsLogicUnitTests(unittest.TestCase):
             {"relative_mode": True, "relative_cars_ahead": 5, "relative_cars_behind": 5}
         ).build(session, {}, "API").categories[0].rows
         self.assertEqual({row.driver_name for row in rows}, {"Player", "Active"})
+
+    def test_relative_matches_lmu_circular_lists_before_start(self) -> None:
+        session = SessionData(
+            connected=True,
+            session=10,
+            track_length_m=5000.0,
+            drivers=[
+                DriverData(
+                    slot_id=1, driver_name="Player", vehicle_class="LMP3",
+                    position=1, estimated_lap_s=100.0, is_player=True,
+                    time_into_lap_s=-2.0, lap_start_event_time_s=1000.0,
+                ),
+                DriverData(
+                    slot_id=2, driver_name="Opponent", vehicle_class="LMP3",
+                    position=2, estimated_lap_s=100.0,
+                    time_into_lap_s=1.5, lap_start_event_time_s=1003.5,
+                ),
+            ],
+        )
+        rows = StandingsLogic(
+            {"relative_mode": True, "relative_cars_ahead": 5, "relative_cars_behind": 5}
+        ).build(session, {}, "API").categories[0].rows
+        self.assertEqual([row.driver_name for row in rows], ["Opponent", "Player", "Opponent"])
+        self.assertEqual(rows[0].gap_text, "-3.500")
+        self.assertEqual(rows[2].gap_text, "+96.500")
+
+    def test_relative_uses_player_estimate_in_multiclass_session(self) -> None:
+        session = SessionData(
+            connected=True,
+            session=10,
+            track_length_m=5000.0,
+            drivers=[
+                DriverData(
+                    slot_id=1, driver_name="Player", vehicle_class="Hypercar",
+                    position=1, estimated_lap_s=120.0, is_player=True,
+                    time_into_lap_s=0.0, lap_start_event_time_s=1000.0,
+                ),
+                DriverData(
+                    slot_id=2, driver_name="GT3", vehicle_class="LMGT3",
+                    position=2, best_lap_s=90.0,
+                    time_into_lap_s=100.0, lap_start_event_time_s=1100.0,
+                ),
+            ],
+        )
+        rows = StandingsLogic(
+            {"relative_mode": True, "relative_cars_ahead": 5, "relative_cars_behind": 5}
+        ).build(session, {}, "API").categories[0].rows
+        self.assertEqual([row.driver_name for row in rows], ["GT3", "Player", "GT3"])
+        self.assertEqual(rows[0].gap_text, "-100.000")
+        self.assertEqual(rows[2].gap_text, "+20.000")
 
     def test_opponent_track_limits_use_per_vehicle_steps(self) -> None:
         session = SessionData(

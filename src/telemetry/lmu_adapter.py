@@ -296,6 +296,9 @@ class LMUAdapter:
                         laps=completed_laps,
                         current_sector=safe_int(getattr(score, "mSector", 0)),
                         best_lap_s=best_lap,
+                        estimated_lap_s=safe_float(
+                            getattr(score, "mEstimatedLapTime", 0.0)
+                        ),
                         last_lap_s=last_lap,
                         last_lap_invalidated=last_lap_invalidated,
                         best_sector1_s=best_s1,
@@ -516,8 +519,12 @@ class LMUAdapter:
                 session,
                 self.local_api.snapshot(),
             )
-            self.live_standings.enrich(session)
-            self.penalty_log.enrich(session)
+            # Fora do carro a thread REST mantem somente o probe leve. Nao
+            # consulta nem aplica fontes auxiliares ate duas confirmacoes de
+            # que o jogador voltou ao cockpit.
+            if self.local_api.data_flow_active:
+                self.live_standings.enrich(session)
+                self.penalty_log.enrich(session)
             return session
 
         except (

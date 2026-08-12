@@ -47,6 +47,9 @@ class LMUOnlineIdentityClient:
         self._last_refresh = 0.0
         self._session_signature = ""
         self._generation = 0
+        # A divisao e imutavel dentro do mesmo evento. Depois da primeira
+        # resposta valida, reutiliza o valor sem consultar RaceOS novamente.
+        self._split_by_event_id: dict[str, str] = {}
         self._ssl_context = ssl.create_default_context()
         # Python 3.13 ativa X509_STRICT por padrao. Algumas cadeias aceitas
         # pelo Windows e pelo cliente oficial do LMU nao marcam Basic
@@ -260,6 +263,7 @@ class LMUOnlineIdentityClient:
         ) or self._payload_looks_online(payloads)
 
         cloud_identities: list[OnlineDriverIdentity] = []
+        cloud_split_label = ""
         cloud_error = ""
         cloud_available = False
         if (
@@ -267,9 +271,10 @@ class LMUOnlineIdentityClient:
             and session_driver_names
         ):
             try:
-                cloud_identities = self._fetch_cloud_identities(
+                cloud_identities, cloud_split_label = self._fetch_cloud_identities(
                     local_base=local_base,
                     driver_names=session_driver_names,
+                    event_id=event_id,
                     timeout=timeout,
                 )
                 cloud_available = bool(cloud_identities)
@@ -277,6 +282,7 @@ class LMUOnlineIdentityClient:
                 cloud_error = self._short_error(exc)
 
         identities = self._merge_identities(local_identities, cloud_identities)
+        split_label = cloud_split_label or split_label
         if cloud_available:
             source_message = "LMU REST + perfis online"
         elif local_available:
@@ -307,8 +313,9 @@ class LMUOnlineIdentityClient:
         *,
         local_base: str,
         driver_names: list[str],
+        event_id: str,
         timeout: float,
-    ) -> list[OnlineDriverIdentity]:
+    ) -> tuple[list[OnlineDriverIdentity], str]:
         ticket_payload = self._request_json(
             local_base + "/rest/profile/getAuthSessionTicket",
             timeout=timeout,
@@ -375,10 +382,46 @@ class LMUOnlineIdentityClient:
                     timeout=timeout,
                 )
             )
-        return self._identities_from_payloads(
+        split_label = ""
+        if event_id:
+            with self._lock:
+                split_label = self._split_by_event_id.get(event_id, "")
+            event_type = str(
+                self.config.get("online_event_type", "daily") or "daily"
+            ).strip().casefold()
+            if event_type not in {"daily", "weekly"}:
+                event_type = "daily"
+            if not split_label:
+                split_url = (
+                    f"{cloud_base}/api/v1/event/my-split/"
+                    f"{event_type}/{event_id}"
+                )
+                for attempt in range(5):
+                    try:
+                        split_payload = self._request_json(
+                            split_url,
+                            headers=headers,
+                            timeout=timeout,
+                        )
+                        split_label = self._split_label_from_payload(split_payload)
+                    except Exception:
+                        split_label = ""
+                    if split_label:
+                        break
+                    if attempt < 4:
+                        time.sleep(1.0)
+                # Depois de cinco tentativas, 1/1 significa servidor sem
+                # divisao publicada. Ambos os resultados sao definitivos para
+                # este eventId e nao geram novas consultas durante o evento.
+                split_label = split_label or "S 1/1"
+                with self._lock:
+                    self._split_by_event_id[event_id] = split_label
+
+        identities = self._identities_from_payloads(
             profile_payloads,
             source="LMU RaceOS",
         )
+        return identities, split_label
 
     def _request_json(
         self,
@@ -779,6 +822,33 @@ class LMUOnlineIdentityClient:
             for key, value in record.items():
                 if str(key).casefold() in normalized_keys and value not in (None, ""):
                     return str(cls._decode_jsonish(value)).strip()
+        return ""
+
+    @classmethod
+    def _split_label_from_payload(cls, payload: Any) -> str:
+        explicit = cls._find_first_string_by_keys(
+            payload,
+            {"splitlabel", "splitname", "divisionlabel", "divisionname"},
+        )
+        if explicit:
+            match = re.search(r"(\d+)\s*/\s*(\d+)", explicit)
+            return f"S {match.group(1)}/{match.group(2)}" if match else ""
+        current = cls._find_first_string_by_keys(
+            payload,
+            {"split", "splitno", "splitnumber", "currentsplit", "division", "divisionno"},
+        )
+        total = cls._find_first_string_by_keys(
+            payload,
+            {
+                "totalsplits", "splitcount", "numberofsplits", "totaldivisions",
+                "divisioncount", "maxsplit", "maxsplits", "lastsplit",
+                "numsplit", "numsplits", "splittotal", "divisiontotal",
+            },
+        )
+        if current and total:
+            return f"S {current}/{total}"
+        # Um numero isolado nao basta: mantem as tentativas de 1 segundo e
+        # nunca grava um cabecalho incompleto como "S 6".
         return ""
 
     @classmethod

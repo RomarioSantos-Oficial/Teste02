@@ -70,6 +70,10 @@ def apply_rest_snapshot(
         session,
         snapshot.value("session_info", max_age_s=2.5, now=now),
     )
+    _apply_session_settings(
+        session,
+        snapshot.value("session_settings", max_age_s=45.0, now=now),
+    )
     _apply_standings(
         session,
         snapshot.value("standings", max_age_s=2.5, now=now),
@@ -115,6 +119,20 @@ def apply_rest_snapshot(
         session.loading_screen = loading
 
     return session
+
+
+def _apply_session_settings(session: SessionData, payload: Any) -> None:
+    if not isinstance(payload, dict):
+        return
+    session.session_settings = dict(payload)
+    fuel_usage = payload.get("SESSSET_Fuel_Usage")
+    if not isinstance(fuel_usage, dict):
+        return
+    multiplier = _number(fuel_usage.get("currentValue"))
+    # Aceita o valor publicado pelo servidor sem teto arbitrario. Apenas
+    # numeros negativos/invalidos sao rejeitados.
+    if multiplier is not None and multiplier >= 0.0:
+        session.fuel_usage_multiplier = multiplier
 
 
 def _apply_game_state(session: SessionData, payload: Any) -> None:
@@ -177,6 +195,11 @@ def _apply_session_info(session: SessionData, payload: Any) -> None:
     session.session_name = str(payload.get("session", "") or "")
     session.session = _SESSION_NUMBERS.get(session.session_name, session.session)
     session.server_name = str(payload.get("serverName", "") or "")
+    for key in ("splitLabel", "splitName", "serverSplit", "split"):
+        value = payload.get(key)
+        if value not in (None, ""):
+            session.split_label = str(value).strip()
+            break
     session.game_mode_name = str(payload.get("gameMode", "") or "")
     session.player_name = str(
         payload.get("playerName", "") or session.player_name
@@ -389,6 +412,10 @@ def _merge_driver(driver: DriverData, record: dict[str, Any]) -> None:
     driver.best_lap_s = _positive(
         record.get("bestLapTime"),
         driver.best_lap_s,
+    )
+    driver.estimated_lap_s = _positive(
+        record.get("estimatedLapTime"),
+        driver.estimated_lap_s,
     )
     driver.last_lap_s = _positive(
         record.get("lastLapTime"),

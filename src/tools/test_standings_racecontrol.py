@@ -89,10 +89,43 @@ class FakeRaceControlClient(LMUOnlineIdentityClient):
                     "safetyRank": {"rank": "Silver", "tier": 3},
                 }
             ]
+        if "/api/v1/event/my-split/" in url:
+            return {"splitNo": 6, "totalSplits": 8}
         return {}
 
 
 class RaceControlClientTests(unittest.TestCase):
+    def test_formats_raceos_division_as_split_label(self) -> None:
+        self.assertEqual(
+            LMUOnlineIdentityClient._split_label_from_payload(
+                {"splitNo": 6, "totalSplits": 8}
+            ),
+            "S 6/8",
+        )
+        self.assertEqual(
+            LMUOnlineIdentityClient._split_label_from_payload({"splitNo": 6}),
+            "",
+        )
+        self.assertEqual(
+            LMUOnlineIdentityClient._split_label_from_payload(
+                {"division": 5, "maxSplit": 50}
+            ),
+            "S 5/50",
+        )
+
+    def test_split_is_requested_only_once_after_valid_response(self) -> None:
+        client = FakeRaceControlClient()
+        session = SimpleNamespace(drivers=[])
+        first = client.refresh_sync(session)
+        second = client.refresh_sync(session)
+        split_requests = [
+            request for request in client.requests
+            if "/api/v1/event/my-split/" in request[0]
+        ]
+        self.assertEqual(first.split_label, "S 6/8")
+        self.assertEqual(second.split_label, "S 6/8")
+        self.assertEqual(len(split_requests), 1)
+
     def test_official_badge_codes_map_to_local_images(self) -> None:
         expected = {
             "sr-noob": "rookie",

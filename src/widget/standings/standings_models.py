@@ -77,6 +77,7 @@ class StandingRow:
     time_into_lap_s: float = 0.0
     lap_start_event_time_s: float = 0.0
     best_lap_s: float = 0.0
+    estimated_lap_s: float = 0.0
     last_lap_s: float = 0.0
     is_session_fastest: bool = False
     personal_best_highlight: bool = False
@@ -90,6 +91,9 @@ class StandingRow:
     tyre_compound: str = ""
     tyre_compounds: tuple[str, ...] = ()
     energy_percent: float | None = None
+    fuel_liters: float | None = None
+    fuel_percent: float | None = None
+    fuel_is_estimated: bool = False
     damage_percent: float | None = None
     damage_is_estimated: bool = False
     penalties: int = 0
@@ -134,6 +138,7 @@ class StandingsView:
     grip_text: str = "--"
     track_limits_text: str = "-- / --"
     source_text: str = "MEM"
+    split_label: str = ""
     track_name: str = ""
     categories: list[CategoryBlock] = field(default_factory=list)
 

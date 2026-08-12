@@ -42,6 +42,7 @@
   "show_header_local_time": true,
   "show_header_grip": true,
   "show_header_track_limits": true,
+  "show_header_split": true,
   "show_header_source": true,
   "show_column_legend": false,
   "show_position_change": true,
@@ -89,8 +90,19 @@
     "HYPERCAR": "#D81736",
     "LMP2": "#1265A8",
     "LMP3": "#8548F6",
+    "GTE": "#F58220",
     "LMGT3": "#058B12",
     "LMGT4": "#D98200"
+  },
+  "fuel_capacity_defaults_l": {
+    "LMP2": 75.0,
+    "LMP2_WEC": 63.0,
+    "LMP3": 100.0,
+    "GTE": 90.0,
+    "GTE_ASTON_MARTIN": 95.0,
+    "GTE_CORVETTE": 91.0,
+    "GTE_FERRARI": 84.0,
+    "GTE_PORSCHE": 98.0
   },
   "colors": {
     "background": "#030711",

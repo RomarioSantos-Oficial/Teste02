@@ -275,6 +275,13 @@ class DeltaWidget(QWidget):
         if session is None:
             return
 
+        # A sessao so existe nesta atualizacao de telemetria. Guardar o valor
+        # aqui evita que o timer de animacao tente acessar uma variavel local
+        # inexistente entre dois quadros.
+        self.view_data.split_label = str(
+            getattr(session, "split_label", "") or ""
+        ).strip()
+
         player = getattr(
             session,
             "player",

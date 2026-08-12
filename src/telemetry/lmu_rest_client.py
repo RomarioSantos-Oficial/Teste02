@@ -50,19 +50,25 @@ class LMULocalRestClient:
         EndpointSpec(
             "game_state",
             "/rest/sessions/GetGameState",
-            1.00,
+            0.50,
             scope="always",
         ),
         EndpointSpec(
             "navigation_state",
             "/navigation/state",
             1.00,
-            scope="always",
+            scope="session",
         ),
         EndpointSpec(
             "session_info",
             "/rest/watch/sessionInfo",
             1.00,
+        ),
+        EndpointSpec(
+            "session_settings",
+            "/rest/sessions",
+            30.00,
+            timeout_s=0.60,
         ),
         EndpointSpec(
             "standings",
@@ -141,6 +147,13 @@ class LMULocalRestClient:
         self._circuit_open_until = 0.0
         self._session_available = False
         self._vehicle_available = False
+        # Trava de seguranca: fora do carro apenas GetGameState continua
+        # ativo. A saida precisa persistir por 1 s e a volta exige duas
+        # confirmacoes consecutivas do probe de 500 ms.
+        self._data_flow_active = True
+        self._outside_since: float | None = None
+        self._inside_confirmations = 0
+        self._session_identity: tuple[str, str, str] | None = None
         self._thread: threading.Thread | None = None
         if self.enabled:
             self._thread = threading.Thread(
@@ -175,6 +188,56 @@ class LMULocalRestClient:
 
     def trigger(self) -> None:
         self._wake.set()
+
+    @property
+    def data_flow_active(self) -> bool:
+        with self._lock:
+            return self._data_flow_active
+
+    def _set_data_flow_active(self, active: bool, now: float) -> None:
+        if active == self._data_flow_active:
+            return
+        self._data_flow_active = active
+        self._session_available = active
+        self._vehicle_available = active
+        if active:
+            # Nao aguarda os intervalos antigos ao voltar para o carro.
+            for spec in self.ENDPOINTS:
+                if spec.scope != "always":
+                    self._next_due[spec.name] = 0.0
+        else:
+            # Impede que dados da garagem/carro anterior sejam reaplicados.
+            retained = {"game_state"}
+            self._payloads = {
+                name: value for name, value in self._payloads.items()
+                if name in retained
+            }
+            self._updated_at = {
+                name: value for name, value in self._updated_at.items()
+                if name in retained
+            }
+            for spec in self.ENDPOINTS:
+                if spec.scope != "always":
+                    self._next_due[spec.name] = now + spec.interval_s
+
+    def _update_vehicle_presence(self, payload: dict[str, Any], now: float) -> None:
+        inside = bool(payload.get("playerVehicleLoaded", False)) and bool(
+            payload.get("inControlOfVehicle", False)
+        ) and not bool(payload.get("inMonitor", False)) and not bool(
+            payload.get("isReplayActive", False)
+        )
+        if inside:
+            self._outside_since = None
+            self._inside_confirmations += 1
+            if self._inside_confirmations >= 2:
+                self._set_data_flow_active(True, now)
+            return
+
+        self._inside_confirmations = 0
+        if self._outside_since is None:
+            self._outside_since = now
+        if now - self._outside_since >= 1.0:
+            self._set_data_flow_active(False, now)
 
     def _worker(self) -> None:
         while not self._stop.is_set():
@@ -278,17 +341,26 @@ class LMULocalRestClient:
                 for name, error in sorted(self._errors.items())
             )
             self._next_due[spec.name] = completed_at + spec.interval_s
+            if spec.name == "session_info" and isinstance(payload, dict):
+                identity = (
+                    str(payload.get("session", "") or ""),
+                    str(payload.get("trackName", "") or ""),
+                    str(payload.get("startEventTime", "") or ""),
+                )
+                if identity != self._session_identity:
+                    self._session_identity = identity
+                    # Descarta o multiplicador anterior e solicita novamente
+                    # imediatamente ao entrar em cada nova sessao.
+                    self._payloads.pop("session_settings", None)
+                    self._updated_at.pop("session_settings", None)
+                    self._next_due["session_settings"] = 0.0
             if spec.name == "game_state" and isinstance(payload, dict):
-                self._vehicle_available = bool(
-                    payload.get("playerVehicleLoaded", False)
-                )
-                self._session_available = bool(
-                    self._vehicle_available
-                    or payload.get("inMonitor", False)
-                    or payload.get("inControlOfVehicle", False)
-                    or str(payload.get("gamePhase", ""))
-                    not in {"", "GPHASE_BEFORE_SESSION"}
-                )
+                self._update_vehicle_presence(payload, completed_at)
+                if self._data_flow_active:
+                    self._vehicle_available = bool(
+                        payload.get("playerVehicleLoaded", False)
+                    ) and not bool(payload.get("inMonitor", False))
+                    self._session_available = True
             elif spec.name == "navigation_state" and isinstance(payload, dict):
                 state = payload.get("state")
                 navigation = (

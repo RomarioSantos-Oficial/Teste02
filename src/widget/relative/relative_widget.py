@@ -11,13 +11,13 @@ class RelativeWidget(StandingsWidget):
         if item[0] not in {"laps", "best", "last"}
     )
 
-    def __init__(self, widget_id: str, config: dict[str, Any], parent=None) -> None:
+    def __init__(self, widget_id: str, config: dict[str, Any], parent=None, **shared) -> None:
         config["relative_mode"] = True
         config["show_laps"] = False
         config["show_best_lap"] = False
         config["show_last_lap"] = False
         config["show_driver_rank_progress"] = False
-        super().__init__(widget_id, config, parent)
+        super().__init__(widget_id, config, parent, **shared)
         self.setWindowTitle("Sector Flow Drive - Relative")
 
     def update_config(self, config: dict[str, Any]) -> None:

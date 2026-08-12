@@ -132,6 +132,7 @@ class StandingsEditor(QDialog):
             ("show_header_local_time", "Horário do computador:"),
             ("show_header_grip", "Estado da pista:"),
             ("show_header_track_limits", "Limites de pista:"),
+            ("show_header_split", "Split da sessão:"),
             ("show_header_source", "Fonte dos dados:"),
         ):
             check = QCheckBox()

@@ -49,6 +49,10 @@
       "enabled": true,
       "locked": false
     },
+    "split": {
+      "enabled": true,
+      "locked": false
+    },
     "penalties": {
       "enabled": true,
       "locked": false

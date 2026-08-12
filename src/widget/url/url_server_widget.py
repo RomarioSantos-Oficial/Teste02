@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import html
 import socket
+import sys
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import unquote, urlparse
@@ -16,6 +18,15 @@ class _Server(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
+    def handle_error(self, request, client_address) -> None:
+        # OBS cancela requisicoes antigas quando troca rapidamente o src da
+        # imagem. WinError 10053/10054 e BrokenPipe sao desconexoes normais do
+        # cliente e nao uma falha do servidor.
+        error = sys.exc_info()[1]
+        if isinstance(error, (BrokenPipeError, ConnectionAbortedError, ConnectionResetError)):
+            return
+        super().handle_error(request, client_address)
+
 
 class UrlServerWidget(QWidget):
     """Controlador invisivel que publica renderizacoes Qt para Browser Source."""
@@ -23,6 +34,8 @@ class UrlServerWidget(QWidget):
     def __init__(self, widget_id: str, config: dict[str, Any], parent=None) -> None:
         super().__init__(parent); self.widget_id = widget_id; self.config = config
         self.sources: dict[str, QWidget] = {}; self.frames: dict[str, bytes] = {}
+        self._client_seen_at: dict[str, float] = {}
+        self._output_requested = False
         self.output_active = False
         self._lock = threading.RLock(); self._server: _Server | None = None; self._thread: threading.Thread | None = None
         self.last_error = ""; self.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen, True)
@@ -51,6 +64,10 @@ class UrlServerWidget(QWidget):
         if bool(config.get("enabled", False)):
             self._timer.start(interval)
             self.start_server()
+            # Ao religar o servidor, restaura o estado solicitado pelo
+            # OverlayManager e publica um quadro sem esperar o proximo tick.
+            self.output_active = self._output_requested
+            self.capture_frames()
         else:
             self._timer.stop()
             self.output_active = False
@@ -59,10 +76,32 @@ class UrlServerWidget(QWidget):
             self.stop_server()
 
     def set_sources(self, sources: dict[str, QWidget]) -> None:
-        self.sources = dict(sources); self.capture_frames()
+        selected = dict(sources)
+        with self._lock:
+            self.sources = selected
+            allowed = set(selected)
+            self.frames = {key: value for key, value in self.frames.items() if key in allowed}
+            self._client_seen_at = {
+                key: value for key, value in self._client_seen_at.items()
+                if key in allowed
+            }
+        self.capture_frames()
+
+    def _mark_client_active(self, widget_id: str) -> bool:
+        with self._lock:
+            if widget_id not in self.sources:
+                return False
+            self._client_seen_at[widget_id] = time.monotonic()
+        return True
+
+    def is_client_active(self, widget_id: str, max_age_s: float = 2.0) -> bool:
+        with self._lock:
+            last_seen = self._client_seen_at.get(widget_id, 0.0)
+        return time.monotonic() - last_seen <= max(0.1, float(max_age_s))
 
     def set_output_active(self, active: bool) -> None:
-        active = bool(active)
+        self._output_requested = bool(active)
+        active = self._output_requested and bool(self.config.get("enabled", False))
         if active == self.output_active: return
         self.output_active = active
         self.capture_frames()
@@ -71,6 +110,8 @@ class UrlServerWidget(QWidget):
         if self._server is None: return
         rendered: dict[str, bytes] = {}
         for widget_id, widget in list(self.sources.items()):
+            if not self.is_client_active(widget_id):
+                continue
             if widget.width() <= 1 or widget.height() <= 1: continue
             image = QImage(widget.size(), QImage.Format.Format_ARGB32_Premultiplied)
             image.fill(QColor(0, 0, 0, 0))
@@ -88,11 +129,23 @@ class UrlServerWidget(QWidget):
             def do_GET(self):
                 path = unquote(urlparse(self.path).path)
                 if path == "/" or path == "/index.html": self._send_html(owner._index_html())
-                elif path.startswith("/widget/"): self._send_html(owner._widget_html(path.split("/", 2)[2]))
+                elif path.startswith("/widget/"):
+                    key = path.split("/", 2)[2]
+                    if not owner._mark_client_active(key):
+                        self.send_error(404); return
+                    self._send_html(owner._widget_html(key))
                 elif path.startswith("/frame/") and path.endswith(".png"):
                     key = path[len("/frame/"):-4]
+                    if not owner._mark_client_active(key):
+                        self.send_error(404); return
                     with owner._lock: payload = owner.frames.get(key)
-                    if payload is None: self.send_error(404); return
+                    if payload is None:
+                        # Widget publicado e cliente reconhecido, mas o
+                        # primeiro frame ainda aguarda o timer da interface.
+                        self.send_response(204)
+                        self.send_header("Cache-Control", "no-store, no-cache")
+                        self.end_headers()
+                        return
                     self.send_response(200); self.send_header("Content-Type", "image/png"); self.send_header("Cache-Control", "no-store, no-cache"); self.send_header("Content-Length", str(len(payload))); self.end_headers(); self.wfile.write(payload)
                 else: self.send_error(404)
             def _send_html(self, text: str):

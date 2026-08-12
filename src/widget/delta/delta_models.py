@@ -44,6 +44,7 @@ class DeltaViewData:
     session_time_text: str = "--:--:--"
     session_name: str = "Waiting"
     track_state: str = "Unknown"
+    split_label: str = ""
 
     # Penalidades pendentes do carro.
     penalties: int = 0

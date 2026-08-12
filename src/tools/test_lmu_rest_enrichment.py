@@ -65,6 +65,7 @@ class LMURestEnrichmentTests(unittest.TestCase):
             "session_info": {
                 "session": "PRACTICE1",
                 "serverName": "Test Server",
+                "splitLabel": "18/30",
                 "gameMode": "RACE",
                 "playerName": "Alice Driver",
                 "trackName": "Test Circuit",
@@ -83,6 +84,12 @@ class LMURestEnrichmentTests(unittest.TestCase):
                 "timeRemainingInGamePhase": 512.0,
                 "sectorFlag": ["GREEN", "YELLOW", "GREEN"],
                 "windSpeed": {"velocity": 2.0, "x": 2.0, "y": 0.0, "z": 0.0},
+            },
+            "session_settings": {
+                "SESSSET_Fuel_Usage": {
+                    "currentValue": 250.75,
+                    "stringValue": "250.75x",
+                }
             },
             "standings": [
                 {
@@ -156,10 +163,13 @@ class LMURestEnrichmentTests(unittest.TestCase):
         self.assertAlmostEqual(session.remaining_time_s, 512.0)
         self.assertEqual(session.max_laps, 0)
         self.assertEqual(session.server_name, "Test Server")
+        self.assertEqual(session.split_label, "18/30")
         self.assertEqual(session.track_name, "Test Circuit")
         self.assertEqual(session.max_players, 38)
         self.assertEqual(session.number_of_players, 20)
         self.assertEqual(session.number_of_vehicles, 19)
+        self.assertAlmostEqual(session.fuel_usage_multiplier or 0.0, 250.75)
+        self.assertIn("SESSSET_Fuel_Usage", session.session_settings)
         self.assertAlmostEqual(session.current_event_time_s, 123.0)
         self.assertEqual(session.navigation_state, "NAV_EVENT")
         self.assertTrue(session.in_control_of_vehicle)
@@ -270,6 +280,49 @@ class LMURestEnrichmentTests(unittest.TestCase):
             )
         )
 
+    def test_overlay_stays_visible_after_leader_finishes_while_player_drives(self) -> None:
+        session = self.make_session()
+        session.local_api_available = True
+        session.local_api_age_s = 0.1
+        session.in_control_of_vehicle = True
+        session.player_vehicle_loaded = True
+        session.in_monitor = False
+        session.is_replay_active = False
+        session.navigation_state = "NAV_EVENT"
+        session.race_finished = True
+        session.remaining_time_s = 0.0
+        session.game_phase = 8
+        self.assertTrue(
+            OverlayManager._session_allows_overlays(self.OverlayProbe(), session)
+        )
+
+    def test_quick_lap_transient_phase_stays_visible_while_in_control(self) -> None:
+        session = self.make_session()
+        session.local_api_available = True
+        session.local_api_age_s = 0.1
+        session.in_control_of_vehicle = True
+        session.player_vehicle_loaded = True
+        session.in_monitor = False
+        session.is_replay_active = False
+        session.navigation_state = "NAV_EVENT"
+        session.game_phase = 9
+        self.assertTrue(
+            OverlayManager._session_allows_overlays(self.OverlayProbe(), session)
+        )
+
+    def test_finished_phase_hides_after_player_loses_control(self) -> None:
+        session = self.make_session()
+        session.local_api_available = True
+        session.local_api_age_s = 0.1
+        session.in_control_of_vehicle = False
+        session.player_vehicle_loaded = True
+        session.in_monitor = False
+        session.is_replay_active = False
+        session.navigation_state = "NAV_EVENT"
+        session.game_phase = 8
+        self.assertFalse(
+            OverlayManager._session_allows_overlays(self.OverlayProbe(), session)
+        )
 
 if __name__ == "__main__":
     unittest.main()

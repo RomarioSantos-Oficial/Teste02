@@ -15,6 +15,7 @@ from __future__ import annotations
 import math
 import re
 import time
+from dataclasses import replace
 from datetime import datetime
 from typing import Any
 
@@ -32,6 +33,7 @@ CLASS_RULES = (
     ("HYPERCAR", ("hyper", "lmh", "lmdh"), "#D81736"),
     ("LMP2", ("lmp2",), "#1265A8"),
     ("LMP3", ("lmp3",), "#8548F6"),
+    ("GTE", ("gte",), "#F58220"),
     ("LMGT3", ("lmgt3", "gt3"), "#058B12"),
     ("LMGT4", ("lmgt4", "gt4"), "#D98200"),
 )
@@ -142,10 +144,33 @@ class StandingsLogic:
         track_length = float(getattr(session, "track_length_m", 0.0) or 0.0)
         if track_length <= 1.0:
             return []
-        reference_lap = player.best_lap_s
+        # O Relative oficial/TinyPedal usa a volta estimada publicada para a
+        # sessao. Em multicategoria nao podemos escolher a menor best lap do
+        # grid: isso faria um Hypercar/GT3 mudar o gap do jogador apenas por
+        # pertencer a uma classe mais rapida ou mais lenta.
+        reference_lap = player.estimated_lap_s
         if reference_lap <= 20.0:
-            valid = [row.best_lap_s for row in rows if row.best_lap_s > 20.0]
-            reference_lap = min(valid) if valid else 90.0
+            reference_lap = player.best_lap_s
+        if reference_lap <= 20.0:
+            reference_lap = player.last_lap_s
+        if reference_lap <= 20.0:
+            estimates = [
+                row.estimated_lap_s
+                for row in rows
+                if row.estimated_lap_s > 20.0
+            ]
+            same_class_laps = [
+                row.best_lap_s
+                for row in rows
+                if row.class_key == player.class_key and row.best_lap_s > 20.0
+            ]
+            any_class_laps = [row.best_lap_s for row in rows if row.best_lap_s > 20.0]
+            reference_lap = (
+                min(estimates) if estimates
+                else min(same_class_laps) if same_class_laps
+                else min(any_class_laps) if any_class_laps
+                else 90.0
+            )
 
         relative_ahead: list[tuple[float, StandingRow]] = []
         relative_behind: list[tuple[float, StandingRow]] = []
@@ -166,9 +191,15 @@ class StandingsLogic:
             # O modulo mantem os valores continuos quando timeIntoLap zera.
             row_time = float(row.time_into_lap_s or 0.0)
             player_time = float(player.time_into_lap_s or 0.0)
-            if row_time >= 0.0 and player_time >= 0.0 and (
-                row_time > 0.0 or player_time > 0.0
-            ):
+            # O LMU publica valores negativos validos antes da largada
+            # (tempo ate cruzar a linha). TinyPedal usa mTimeIntoLap sem
+            # descartar o sinal, portanto fazemos o mesmo quando o relogio
+            # de inicio da volta confirma que o dado existe.
+            timing_available = (
+                row.lap_start_event_time_s > 0.0
+                and player.lap_start_event_time_s > 0.0
+            ) or row_time != 0.0 or player_time != 0.0
+            if timing_available:
                 raw_seconds = row_time - player_time
                 ahead_seconds = raw_seconds % reference_lap
                 behind_seconds = ahead_seconds - reference_lap if ahead_seconds > 0 else 0.0
@@ -181,14 +212,19 @@ class StandingsLogic:
         ahead_count = max(1, min(20, int(self.config.get("relative_cars_ahead", 5))))
         behind_count = max(1, min(20, int(self.config.get("relative_cars_behind", 5))))
         ahead = sorted((item for item in relative_ahead if item[0] > 0), key=lambda item: item[0])[:ahead_count]
-        ahead_ids = {item[1].slot_id for item in ahead}
         behind = sorted(
-            (item for item in relative_behind if item[0] < 0 and item[1].slot_id not in ahead_ids),
+            (item for item in relative_behind if item[0] < 0),
             key=lambda item: item[0], reverse=True,
         )[:behind_count]
-        for seconds, row in ahead + behind:
-            row.gap_text = f"{seconds:+.3f}"
-        selected = list(reversed(ahead)) + [(0.0, player)] + behind
+        # Um mesmo carro pode aparecer nas duas direcoes do circuito. Cada
+        # ocorrencia precisa de uma linha independente para que o gap de tras
+        # nao sobrescreva o gap mostrado na frente.
+        selected: list[tuple[float, StandingRow]] = []
+        for seconds, row in list(reversed(ahead)):
+            selected.append((seconds, replace(row, gap_text=f"{-seconds:+.3f}")))
+        selected.append((0.0, player))
+        for seconds, row in behind:
+            selected.append((seconds, replace(row, gap_text=f"{-seconds:+.3f}")))
         player_color = str(
             self.config.get("class_colors", {}).get(player.class_key, "#175C9C")
         )
@@ -215,6 +251,67 @@ class StandingsLogic:
                 "dq", "disqualified", "fstat_dq", "3",
             }
         )
+
+    def _fuel_display(
+        self,
+        driver: Any,
+        session: Any,
+        class_key: str,
+        raw_class_name: str,
+        is_player: bool,
+        vehicle_identity: str = "",
+    ) -> tuple[float | None, float | None, bool]:
+        """Return fuel for non-energy classes, using exact player data when possible."""
+        if class_key not in {"GTE", "LMP2", "LMP3"}:
+            return None, None, False
+
+        fraction = _optional_float(getattr(driver, "fuel_fraction", None))
+        if fraction is not None and not 0.0 <= fraction <= 1.0:
+            fraction = None
+        player_data = getattr(session, "player", None)
+        if is_player and player_data is not None:
+            liters = _optional_float(getattr(player_data, "fuel_liters", None))
+            capacity = _optional_float(
+                getattr(player_data, "fuel_capacity_liters", None)
+            )
+            if liters is not None and capacity is not None and capacity > 0.0:
+                percent = max(0.0, min(100.0, liters / capacity * 100.0))
+                return max(0.0, liters), percent, False
+
+        if fraction is None:
+            return None, None, False
+        capacities = self.config.get("fuel_capacity_defaults_l", {})
+        if not isinstance(capacities, dict):
+            capacities = {}
+        raw = str(raw_class_name or "").casefold()
+        if class_key == "LMP2":
+            capacity_key = (
+                "LMP2_WEC"
+                if "wec" in raw or "wec" in str(vehicle_identity).casefold()
+                else "LMP2"
+            )
+            fallback = 63.0 if capacity_key == "LMP2_WEC" else 75.0
+        elif class_key == "LMP3":
+            capacity_key, fallback = "LMP3", 100.0
+        else:
+            vehicle = str(vehicle_identity or "").casefold()
+            gte_capacities = (
+                ("GTE_ASTON_MARTIN", ("aston", "vantage"), 95.0),
+                ("GTE_CORVETTE", ("corvette", "c8.r", "c8r"), 91.0),
+                ("GTE_FERRARI", ("ferrari", "488"), 84.0),
+                ("GTE_PORSCHE", ("porsche", "rsr"), 98.0),
+            )
+            matched = next(
+                (
+                    (key, default)
+                    for key, aliases, default in gte_capacities
+                    if any(alias in vehicle for alias in aliases)
+                ),
+                None,
+            )
+            capacity_key, fallback = matched or ("GTE", 90.0)
+        capacity = _optional_float(capacities.get(capacity_key)) or fallback
+        return fraction * capacity, fraction * 100.0, True
 
     def _row_from_driver(
         self,
@@ -322,6 +419,26 @@ class StandingsLogic:
                         if 0.0 <= energy <= 100.0:
                             break
                         energy = None
+        fuel_liters, fuel_percent, fuel_is_estimated = self._fuel_display(
+            driver,
+            session,
+            class_key,
+            class_name,
+            is_player,
+            " ".join(
+                (
+                    vehicle_name,
+                    vehicle_filename,
+                    extra.vehicle_model,
+                    str(catalog_entry.get("manufacturer", "") or ""),
+                )
+            ),
+        )
+        # As classes sem sistema de energia virtual usam esta mesma coluna
+        # para combustivel. Um zero de VE vindo da API nao deve esconder os
+        # litros disponiveis.
+        if fuel_liters is not None:
+            energy = None
         in_pits = bool(getattr(driver, "in_pits", False)) or bool(
             getattr(driver, "pitting", False)
         )
@@ -427,6 +544,9 @@ class StandingsLogic:
                 getattr(driver, "lap_start_event_time_s", 0.0) or 0.0
             ),
             best_lap_s=float(getattr(driver, "best_lap_s", 0.0) or 0.0),
+            estimated_lap_s=float(
+                getattr(driver, "estimated_lap_s", 0.0) or 0.0
+            ),
             last_lap_s=float(getattr(driver, "last_lap_s", 0.0) or 0.0),
             current_lap_invalidated=current_lap_invalidated,
             last_lap_invalidated=last_lap_invalidated,
@@ -440,6 +560,9 @@ class StandingsLogic:
             ),
             tyre_compounds=tyre_compounds,
             energy_percent=energy,
+            fuel_liters=fuel_liters,
+            fuel_percent=fuel_percent,
+            fuel_is_estimated=fuel_is_estimated,
             damage_percent=damage_percent,
             damage_is_estimated=damage_is_estimated,
             penalties=int(getattr(driver, "penalties", 0) or 0),
@@ -680,7 +803,10 @@ class StandingsLogic:
                 current_lap=current_lap,
                 total_laps_text=total_text,
                 total_laps_calc=total_calc,
-                show_count=is_race,
+                # A quantidade de pilotos tambem e util em treino e quali.
+                # Na corrida o primeiro numero representa somente ativos;
+                # nas demais sessoes representa todos os inscritos da classe.
+                show_count=bool(class_rows),
                 dr_sof_rank=sof_rank,
                 dr_sof_progress=sof_progress,
                 dr_sof_drivers=sof_drivers,

@@ -23,6 +23,8 @@ from src.widget.tyres.tyres_widget import TyresWidget
 from src.widget.weather.weather_widget import WeatherWidget
 from src.widget.map.map_widget import TrackMapWidget
 from src.widget.standings.standings_widget import StandingsWidget
+from src.widget.standings.lmu_online_client import LMUOnlineIdentityClient
+from src.widget.standings.standings_online import LocalStandingsEnrichment
 from src.widget.fuel_time.fuel_time_widget import FuelTimeWidget
 from src.widget.url.url_server_widget import UrlServerWidget
 from src.widget.radar.radar_widget import RadarWidget
@@ -47,6 +49,7 @@ class OverlayManager(QObject):
         "radar": 0.05,
         "flags": 0.10,
         "weather": 0.50,
+        "standings": 0.10,
     }
 
     def __init__(self, config_path: str | Path, parent: QObject | None = None) -> None:
@@ -58,6 +61,10 @@ class OverlayManager(QObject):
         self.session_active = False
         self.edit_mode = False
         self._last_widget_update: dict[str, float] = {}
+        self._shared_standings_enrichment: LocalStandingsEnrichment | None = None
+        self._shared_online_client: LMUOnlineIdentityClient | None = None
+        self._split_session_key: tuple[str, str] | None = None
+        self._last_split_label = ""
         # caminho de log para debug de decisões de overlay
         try:
             project_root = Path(self.config_path).resolve().parents[2]
@@ -255,7 +262,13 @@ class OverlayManager(QObject):
         if isinstance(existing, RelativeWidget):
             return existing
         config = deepcopy(self.config_data["widgets"]["relative"])
-        widget = RelativeWidget("relative", config)
+        enrichment, online = self._standings_services(config)
+        widget = RelativeWidget(
+            "relative",
+            config,
+            shared_enrichment=enrichment,
+            shared_online_client=online,
+        )
         self._prepare_widget("relative", widget, config)
         return widget
 
@@ -284,7 +297,13 @@ class OverlayManager(QObject):
         if isinstance(existing, StandingsWidget):
             return existing
         config = deepcopy(self.config_data["widgets"]["standings"])
-        widget = StandingsWidget("standings", config)
+        enrichment, online = self._standings_services(config)
+        widget = StandingsWidget(
+            "standings",
+            config,
+            shared_enrichment=enrichment,
+            shared_online_client=online,
+        )
         self._prepare_widget("standings", widget, config)
         return widget
 
@@ -420,6 +439,7 @@ class OverlayManager(QObject):
             return
 
         now = time.monotonic()
+        self._hydrate_split_label(session)
 
         driver_panel = self.widgets.get("driver_panel")
         if (
@@ -519,9 +539,36 @@ class OverlayManager(QObject):
         )
         if standings is not None and bool(
             standings_config.get("enabled", False)
-        ):
+        ) and self._update_due("standings", now):
             standings.update_from_session(session)
-        self._update_url_sources(session)
+        self._update_url_sources(session, now)
+
+    def _hydrate_split_label(self, session: Any) -> None:
+        """Mantem o split disponivel antes de qualquer widget ser atualizado."""
+        key = (
+            str(getattr(session, "track_name", "") or ""),
+            str(
+                getattr(session, "session_name", "")
+                or getattr(session, "game_session_name", "")
+                or getattr(session, "session", "")
+            ),
+        )
+        if key != self._split_session_key:
+            self._split_session_key = key
+            self._last_split_label = ""
+
+        label = str(getattr(session, "split_label", "") or "").strip()
+        if self._shared_online_client is not None:
+            online_label = str(
+                self._shared_online_client.snapshot().split_label or ""
+            ).strip()
+            if online_label:
+                label = online_label
+        if label:
+            self._last_split_label = label
+        elif self._last_split_label:
+            label = self._last_split_label
+        setattr(session, "split_label", label)
 
     def _configure_url_sources(self) -> None:
         controller = self.widgets.get("url")
@@ -539,19 +586,25 @@ class OverlayManager(QObject):
                 source.hide()
         controller.set_sources(sources)
 
-    def _update_url_sources(self, session: Any) -> None:
+    def _update_url_sources(self, session: Any, now: float) -> None:
         controller = self.widgets.get("url")
         if not isinstance(controller, UrlServerWidget) or not bool(
             self.config_data.get("widgets", {}).get("url", {}).get("enabled", False)
         ): return
         for widget_id, widget in list(controller.sources.items()):
+            # Uma fonte sem OBS/navegador ativo nao recebe trabalho. O mesmo
+            # limitador usado pelo widget local impede atualizar duas vezes no
+            # mesmo ciclo quando a fonte tambem esta visivel na tela.
+            if not controller.is_client_active(widget_id):
+                continue
+            if not self._update_due(widget_id, now):
+                continue
             if widget_id in {"driver_panel", "tires", "damage"}:
                 player = getattr(session, "player", None)
                 if player is not None and hasattr(widget, "update_telemetry"):
                     widget.update_telemetry(player)
             elif hasattr(widget, "update_from_session"):
                 widget.update_from_session(session)
-        controller.capture_frames()
     def set_edit_mode(self, enabled: bool) -> None:
         self.edit_mode = bool(enabled)
         for widget_id, widget in self.widgets.items():
@@ -822,8 +875,20 @@ class OverlayManager(QObject):
                 # 0 = antes da sessao; 8 = sessao encerrada; 9 = pausado.
                 gp = int(game_phase)
                 if not 1 <= gp <= 7:
-                    self._log_overlay_decision(session, False, "game_phase_out_of_range", {"game_phase": game_phase, "player_present": player_present, "player_active": player_active})
-                    return False
+                    # O LMU muda para 8 quando o líder termina ou o relógio
+                    # zera, mesmo que o jogador ainda esteja completando sua
+                    # volta. Algumas sessões de volta rápida também publicam
+                    # 9 transitoriamente. Nesses dois estados, presença
+                    # histórica (voltas/velocidade) não basta: exigimos uma
+                    # confirmação atual de controle/realtime/ignição.
+                    player_obj = getattr(session, "player", None)
+                    currently_driving = bool(in_control) if rest_state_complete else (
+                        bool(getattr(session, "in_realtime", False))
+                        or int(getattr(player_obj, "ignition_starter", 0) or 0) > 0
+                    )
+                    if gp not in (8, 9) or not currently_driving:
+                        self._log_overlay_decision(session, False, "game_phase_out_of_range", {"game_phase": game_phase, "player_present": player_present, "player_active": player_active, "currently_driving": currently_driving})
+                        return False
             except (TypeError, ValueError):
                 self._log_overlay_decision(session, False, "game_phase_invalid", {"game_phase": game_phase})
                 return False
@@ -893,6 +958,31 @@ class OverlayManager(QObject):
         for widget in self.widgets.values():
             widget.close()
         self.widgets.clear()
+        if self._shared_standings_enrichment is not None:
+            self._shared_standings_enrichment.stop()
+            self._shared_standings_enrichment = None
+        if self._shared_online_client is not None:
+            self._shared_online_client.reset()
+            self._shared_online_client = None
+
+    def _standings_services(
+        self, config: dict[str, Any]
+    ) -> tuple[LocalStandingsEnrichment, LMUOnlineIdentityClient]:
+        """One REST/cache pipeline shared by Standings and Relative."""
+        project_root = Path(__file__).resolve().parents[2]
+        if self._shared_standings_enrichment is None:
+            self._shared_standings_enrichment = LocalStandingsEnrichment(
+                project_root, config
+            )
+        else:
+            self._shared_standings_enrichment.update_config(config)
+        if self._shared_online_client is None:
+            self._shared_online_client = LMUOnlineIdentityClient(
+                project_root, config
+            )
+        else:
+            self._shared_online_client.update_config(config)
+        return self._shared_standings_enrichment, self._shared_online_client
 
     def _load_config(self) -> dict[str, Any]:
         if not self.config_path.exists():

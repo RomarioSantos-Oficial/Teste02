@@ -94,6 +94,7 @@ class DeltaEditor(QDialog):
             "session_time": "Tempo restante da sessão",
             "session_type": "Tipo da sessão",
             "track_state": "Estado da pista",
+            "split": "Split da sessão",
             "penalties": "Limite de pista / punições",
             "history": "Histórico do Delta",
             "fastest_lap": "Anúncio de melhor volta da categoria",

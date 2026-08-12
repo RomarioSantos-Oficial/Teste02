@@ -246,6 +246,12 @@ class DeltaRenderer:
                 (data.track_state.upper(), text)
             )
 
+        if self._enabled(elements, "split") and data.split_label:
+            split = data.split_label.strip()
+            if "split" not in split.casefold() and not split.casefold().startswith("s "):
+                split = f"SPLIT {split}"
+            items.append((split.upper(), text))
+
         if self._enabled(elements, "penalties"):
             current = max(0.0, data.penalties_current)
             limit = max(0.0, data.penalties_limit)
@@ -602,6 +608,7 @@ class DeltaRenderer:
                 rect.width(),
                 row_height,
             )
+
             self._draw_fastest_lap(
                 painter,
                 row,
