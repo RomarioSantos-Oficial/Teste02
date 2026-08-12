@@ -39,6 +39,14 @@ CLASS_RULES = (
 )
 
 
+def _truncate_tenth(value: float) -> float:
+    """Limita a uma casa decimal sem arredondar para cima."""
+    numeric = float(value)
+    # Tolera o pequeno erro binario de operacoes como 15.7 - 10.0.
+    epsilon = math.copysign(1e-9, numeric) if numeric else 0.0
+    return math.trunc((numeric + epsilon) * 10.0) / 10.0
+
+
 class StandingsLogic:
     def __init__(self, config: dict[str, Any]) -> None:
         self.config = config
@@ -115,6 +123,9 @@ class StandingsLogic:
         class_leaders = self._class_leaders(rows)
         for row in rows:
             row.gap_text = self._gap_text(row, player, class_leaders.get(row.class_key), session)
+        session_number = int(getattr(session, "session", 0) or 0)
+        if 10 <= session_number <= 13:
+            self._apply_class_intervals(rows)
         categories = (
             self._relative_block(rows, player, session)
             if bool(self.config.get("relative_mode", False))
@@ -122,7 +133,7 @@ class StandingsLogic:
         )
         return StandingsView(
             connected=bool(getattr(session, "connected", False)),
-            session_type=self._session_type(int(getattr(session, "session", 0) or 0)),
+            session_type=self._session_type(session_number),
             session_time=self._format_duration(float(getattr(session, "remaining_time_s", 0.0) or 0.0)),
             server_time=self._server_time(float(getattr(session, "time_of_day", 0.0) or 0.0)),
             local_time=datetime.now().strftime("%H:%M"),
@@ -132,6 +143,45 @@ class StandingsLogic:
             track_name=str(getattr(session, "track_name", "") or ""),
             categories=categories,
         )
+
+    @staticmethod
+    def _apply_class_intervals(rows: list[StandingRow]) -> None:
+        """Preenche INT somente contra o carro anterior da mesma classe."""
+        overall = sorted(rows, key=lambda row: row.overall_position or 9999)
+        overall_previous = {
+            id(row): (overall[index - 1] if index else None)
+            for index, row in enumerate(overall)
+        }
+        by_class: dict[str, list[StandingRow]] = {}
+        for row in rows:
+            by_class.setdefault(row.class_key, []).append(row)
+
+        for class_rows in by_class.values():
+            class_rows.sort(key=lambda row: row.class_position or 9999)
+            for index, row in enumerate(class_rows):
+                row.interval_text = "--"
+                if index == 0:
+                    continue
+                previous = class_rows[index - 1]
+
+                # A API fornece timeBehindNext/lapsBehindNext para a ordem
+                # geral. Eles so servem ao INT de classe quando o carro geral
+                # imediatamente anterior e o mesmo anterior desta categoria.
+                if overall_previous.get(id(row)) is previous:
+                    if row.laps_behind_ahead > 0:
+                        row.interval_text = f"+{row.laps_behind_ahead}L"
+                        continue
+                    if row.interval_s > 0:
+                        row.interval_text = f"+{_truncate_tenth(row.interval_s):.1f}"
+                        continue
+
+                lap_delta = row.laps_behind_leader - previous.laps_behind_leader
+                if lap_delta > 0:
+                    row.interval_text = f"+{lap_delta}L"
+                    continue
+                interval = row.gap_leader_s - previous.gap_leader_s
+                if interval >= 0 and (row.gap_leader_s > 0 or previous.gap_leader_s > 0):
+                    row.interval_text = f"+{_truncate_tenth(interval):.1f}"
 
     def _relative_block(
         self,
@@ -176,7 +226,7 @@ class StandingsLogic:
         relative_behind: list[tuple[float, StandingRow]] = []
         for row in rows:
             if row.is_player:
-                row.gap_text = "0.000"
+                row.gap_text = "0.0"
                 continue
             if not self._is_relative_car_visible(row):
                 continue
@@ -221,10 +271,12 @@ class StandingsLogic:
         # nao sobrescreva o gap mostrado na frente.
         selected: list[tuple[float, StandingRow]] = []
         for seconds, row in list(reversed(ahead)):
-            selected.append((seconds, replace(row, gap_text=f"{-seconds:+.3f}")))
+            relative = _truncate_tenth(-seconds)
+            selected.append((seconds, replace(row, gap_text=f"{relative:+.1f}")))
         selected.append((0.0, player))
         for seconds, row in behind:
-            selected.append((seconds, replace(row, gap_text=f"{-seconds:+.3f}")))
+            relative = _truncate_tenth(-seconds)
+            selected.append((seconds, replace(row, gap_text=f"{relative:+.1f}")))
         player_color = str(
             self.config.get("class_colors", {}).get(player.class_key, "#175C9C")
         )

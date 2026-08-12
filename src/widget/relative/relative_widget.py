@@ -30,7 +30,7 @@ class RelativeWidget(StandingsWidget):
 
     def _enabled_columns(self) -> dict[str, bool]:
         enabled = super()._enabled_columns()
-        enabled.update({"laps": False, "best": False, "last": False, "gap": True})
+        enabled.update({"laps": False, "best": False, "last": False, "interval": False, "gap": True})
         return enabled
 
     def _desired_content_height(self) -> int:

@@ -45,6 +45,9 @@ class LMUOnlineIdentityClient:
         self._index: dict[str, OnlineDriverIdentity] = {}
         self._thread: threading.Thread | None = None
         self._last_refresh = 0.0
+        self._last_event_probe = 0.0
+        self._observed_event_id = ""
+        self._split_session_signature = ""
         self._session_signature = ""
         self._generation = 0
         # A divisao e imutavel dentro do mesmo evento. Depois da primeira
@@ -67,6 +70,10 @@ class LMUOnlineIdentityClient:
             self._snapshot = OnlineSnapshot()
             self._index = {}
             self._last_refresh = 0.0
+            self._last_event_probe = 0.0
+            self._observed_event_id = ""
+            self._split_session_signature = ""
+            self._split_by_event_id.clear()
             self._session_signature = ""
             self._generation += 1
 
@@ -90,6 +97,29 @@ class LMUOnlineIdentityClient:
             self._snapshot = snapshot
             self._index = self._build_index(snapshot.identities)
 
+    def hide_split(self) -> None:
+        """Oculta o valor sem descartar ranks e paises ja recebidos."""
+        with self._lock:
+            self._snapshot.split_label = ""
+
+    def request_split_recheck(self, session: Any | None = None) -> None:
+        """Forca uma nova consulta no proximo quadro de coleta valido."""
+        current_event_id = self._find_event_id_in_logs()
+        with self._lock:
+            event_id = current_event_id
+            if event_id:
+                self._split_by_event_id.pop(event_id, None)
+            self._observed_event_id = current_event_id
+            if not current_event_id:
+                self._snapshot.event_id = ""
+            self._snapshot.split_label = ""
+            self._split_session_signature = self._make_split_session_signature(
+                session
+            )
+            self._last_refresh = 0.0
+            # Invalida uma resposta antiga que ainda esteja em andamento.
+            self._generation += 1
+
     def trigger_refresh(self, session: Any | None = None, force: bool = False) -> None:
         # A leitura REST local normal e feita por LocalStandingsEnrichment.
         # Este cliente usa o mesmo fluxo RaceOS do cliente oficial do LMU.
@@ -104,12 +134,57 @@ class LMUOnlineIdentityClient:
             float(self.config.get("online_refresh_seconds", 900.0)),
         )
         signature = self._make_session_signature(session)
+        split_session_signature = self._make_split_session_signature(session)
+
+        # A entrada no servidor pode acontecer sem mudar imediatamente pista,
+        # sessao ou lista de pilotos. Nesse caso a assinatura acima permanece
+        # igual e o intervalo normal de 15 minutos conservaria o split antigo.
+        # Uma sondagem leve e limitada detecta somente a troca do eventId.
+        event_changed = False
+        current_event_id = ""
+        if now - self._last_event_probe >= 2.0:
+            self._last_event_probe = now
+            current_event_id = self._find_event_id_in_logs()
+            with self._lock:
+                event_changed = bool(
+                    current_event_id
+                    and current_event_id != self._observed_event_id
+                )
+                if current_event_id:
+                    # Marca imediatamente o evento observado. A consulta
+                    # RaceOS pode levar mais que os dois segundos da sonda;
+                    # comparar com o snapshot ainda vazio cancelava cada
+                    # worker antes que DR/SR/pais/split fossem publicados.
+                    self._observed_event_id = current_event_id
 
         with self._lock:
-            if signature and signature != self._session_signature:
+            split_session_changed = bool(
+                split_session_signature
+                and split_session_signature != self._split_session_signature
+            )
+            if split_session_changed:
+                self._split_session_signature = split_session_signature
+                event_for_split = current_event_id or self._observed_event_id
+                if event_for_split:
+                    self._split_by_event_id.pop(event_for_split, None)
+                # Mantem DR/SR/paises, mas remove o split antigo ate a
+                # verificacao unica da nova sessao terminar.
+                self._snapshot.split_label = ""
+                self._last_refresh = 0.0
+            signature_changed = bool(
+                signature and signature != self._session_signature
+            )
+            if event_changed:
                 self._session_signature = signature
                 self._snapshot = OnlineSnapshot()
                 self._index = {}
+                self._last_refresh = 0.0
+                self._generation += 1
+            elif signature_changed:
+                # Practice, Quali e Race do mesmo evento usam os mesmos
+                # perfis RaceOS. Preserva DR/SR/SOF durante a transicao e
+                # apenas agenda uma atualizacao em segundo plano.
+                self._session_signature = signature
                 self._last_refresh = 0.0
                 self._generation += 1
             if self._thread is not None and self._thread.is_alive():
@@ -410,12 +485,11 @@ class LMUOnlineIdentityClient:
                         break
                     if attempt < 4:
                         time.sleep(1.0)
-                # Depois de cinco tentativas, 1/1 significa servidor sem
-                # divisao publicada. Ambos os resultados sao definitivos para
-                # este eventId e nao geram novas consultas durante o evento.
-                split_label = split_label or "S 1/1"
-                with self._lock:
-                    self._split_by_event_id[event_id] = split_label
+                # Ausencia de resposta nao prova que existe somente um split.
+                # Mantemos vazio para uma tentativa futura, sem fabricar 1/1.
+                if split_label:
+                    with self._lock:
+                        self._split_by_event_id[event_id] = split_label
 
         identities = self._identities_from_payloads(
             profile_payloads,
@@ -423,6 +497,20 @@ class LMUOnlineIdentityClient:
         )
         return identities, split_label
 
+    @staticmethod
+    def _make_split_session_signature(session: Any | None) -> str:
+        if session is None or not bool(getattr(session, "connected", True)):
+            return ""
+        number = int(getattr(session, "session", 0) or 0)
+        drivers = list(getattr(session, "drivers", []) or [])
+        if not (1 <= number <= 13) or not drivers:
+            return ""
+        return "|".join(
+            (
+                str(getattr(session, "track_name", "") or ""),
+                str(number),
+            )
+        )
     def _request_json(
         self,
         url: str,
@@ -674,9 +762,12 @@ class LMUOnlineIdentityClient:
                     ],
                     key=lambda path: path.stat().st_mtime,
                     reverse=True,
-                )[:20]
+                )[:1]
             except OSError:
                 continue
+            # Cada inicializacao do LMU cria um trace novo. Consultar traces
+            # anteriores fazia uma sessao offline herdar o eventId/split da
+            # execucao anterior do jogo.
             for path in paths:
                 try:
                     size = path.stat().st_size
@@ -842,7 +933,8 @@ class LMUOnlineIdentityClient:
             {
                 "totalsplits", "splitcount", "numberofsplits", "totaldivisions",
                 "divisioncount", "maxsplit", "maxsplits", "lastsplit",
-                "numsplit", "numsplits", "splittotal", "divisiontotal",
+                "numsplit", "numsplits", "numofsplits", "splittotal",
+                "divisiontotal",
             },
         )
         if current and total:

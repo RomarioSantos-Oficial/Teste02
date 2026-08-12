@@ -35,7 +35,7 @@ class MenuRow(QFrame):
         self.title_label = QLabel(title)
         self.title_label.setObjectName("rowTitle")
 
-        self.status_label = QLabel("Disponível" if implemented else "Em desenvolvimento")
+        self.status_label = QLabel()
         self.status_label.setObjectName("rowStatus")
 
         self.toggle = QCheckBox()
@@ -58,13 +58,20 @@ class MenuRow(QFrame):
         layout.addWidget(self.edit_button)
 
         self._apply_implemented_state(implemented)
+        self._apply_enabled_status(enabled)
 
     def set_enabled_state(self, enabled: bool) -> None:
         self.toggle.blockSignals(True)
         self.toggle.setChecked(enabled)
         self.toggle.blockSignals(False)
+        self._apply_enabled_status(enabled)
+
+    def _apply_enabled_status(self, enabled: bool) -> None:
+        self.status_label.setText("Ativo" if enabled else "Desativado")
+        self.status_label.setProperty("active", bool(enabled))
+        self.status_label.style().unpolish(self.status_label)
+        self.status_label.style().polish(self.status_label)
 
     def _apply_implemented_state(self, implemented: bool) -> None:
         if not implemented:
             self.toggle.setEnabled(False)
-            self.status_label.setProperty("pending", True)

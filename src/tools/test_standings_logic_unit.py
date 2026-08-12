@@ -4,10 +4,31 @@ import unittest
 
 from src.telemetry.models import DriverData, PlayerData, SessionData
 from src.widget.standings.standings_logic import StandingsLogic, canonical_class
-from src.widget.standings.standings_models import DriverMetadata
+from src.widget.standings.standings_models import DriverMetadata, StandingRow
 
 
 class StandingsLogicUnitTests(unittest.TestCase):
+    def test_interval_is_limited_to_previous_car_in_same_class(self) -> None:
+        rows = [
+            StandingRow(overall_position=1, class_position=1, class_key="HYPERCAR"),
+            StandingRow(overall_position=2, class_position=1, class_key="GTE", gap_leader_s=10.0),
+            StandingRow(overall_position=3, class_position=2, class_key="HYPERCAR", gap_leader_s=12.4),
+            StandingRow(overall_position=4, class_position=2, class_key="GTE", gap_leader_s=15.7),
+        ]
+        StandingsLogic._apply_class_intervals(rows)
+        self.assertEqual(rows[0].interval_text, "--")
+        self.assertEqual(rows[1].interval_text, "--")
+        self.assertEqual(rows[2].interval_text, "+12.4")
+        self.assertEqual(rows[3].interval_text, "+5.7")
+
+    def test_interval_prefers_official_next_car_value_in_same_class(self) -> None:
+        rows = [
+            StandingRow(overall_position=1, class_position=1, class_key="LMP2"),
+            StandingRow(overall_position=2, class_position=2, class_key="LMP2", interval_s=1.563),
+        ]
+        StandingsLogic._apply_class_intervals(rows)
+        self.assertEqual(rows[1].interval_text, "+1.5")
+
     def test_non_energy_classes_show_fuel_in_liters(self) -> None:
         session = SessionData(
             connected=True,
@@ -356,8 +377,8 @@ class StandingsLogicUnitTests(unittest.TestCase):
             {"relative_mode": True, "relative_cars_ahead": 5, "relative_cars_behind": 5}
         ).build(session, {}, "API").categories[0].rows
         self.assertEqual([row.driver_name for row in rows], ["Opponent", "Player", "Opponent"])
-        self.assertEqual(rows[0].gap_text, "-3.500")
-        self.assertEqual(rows[2].gap_text, "+96.500")
+        self.assertEqual(rows[0].gap_text, "-3.5")
+        self.assertEqual(rows[2].gap_text, "+96.5")
 
     def test_relative_uses_player_estimate_in_multiclass_session(self) -> None:
         session = SessionData(
@@ -381,8 +402,8 @@ class StandingsLogicUnitTests(unittest.TestCase):
             {"relative_mode": True, "relative_cars_ahead": 5, "relative_cars_behind": 5}
         ).build(session, {}, "API").categories[0].rows
         self.assertEqual([row.driver_name for row in rows], ["GT3", "Player", "GT3"])
-        self.assertEqual(rows[0].gap_text, "-100.000")
-        self.assertEqual(rows[2].gap_text, "+20.000")
+        self.assertEqual(rows[0].gap_text, "-100.0")
+        self.assertEqual(rows[2].gap_text, "+20.0")
 
     def test_opponent_track_limits_use_per_vehicle_steps(self) -> None:
         session = SessionData(

@@ -66,6 +66,7 @@ class StandingsWidget(QWidget):
         ("pit", 90.0),
         ("best", 140.0),
         ("last", 140.0),
+        ("interval", 100.0),
         ("gap", 100.0),
         ("tyre", 76.0),
         ("energy", 105.0),
@@ -522,10 +523,28 @@ class StandingsWidget(QWidget):
         painter.setBrush(QColor(colors.get("header_background", "#000000")))
         painter.drawRect(rect)
         items = self._header_items()
-        total_fraction = sum(fraction for _, fraction, _ in items) or 1.0
+        # As fracoes antigas deixavam, por exemplo, 20% do painel reservado
+        # para "0x/4x". Em telas estreitas isso criava grandes vazios. Mede o
+        # conteudo real e distribui toda a largura de forma proporcional.
+        measure_font = self._section_font(
+            "global_header_font_size", 20.0, rect, 0.86
+        )
+        metrics = QFontMetrics(measure_font)
+        preferred_widths: list[float] = []
+        for text, _fraction, icon in items:
+            icon_width = rect.height() * 0.70 + 4 * self._scale if icon else 0.0
+            preferred_widths.append(
+                max(
+                    38.0 * self._scale,
+                    metrics.horizontalAdvance(str(text))
+                    + icon_width
+                    + 14.0 * self._scale,
+                )
+            )
+        preferred_total = sum(preferred_widths) or 1.0
         x = rect.left()
         for index, (text, fraction, icon) in enumerate(items):
-            width = rect.width() * fraction / total_fraction
+            width = rect.width() * preferred_widths[index] / preferred_total
             if index == len(items) - 1:
                 width = rect.right() - x
             cell = QRectF(x, rect.top(), width, rect.height())
@@ -535,7 +554,8 @@ class StandingsWidget(QWidget):
                 painter.drawLine(cell.topLeft(), cell.bottomLeft())
             target_width = max(
                 1.0,
-                self.DESIGN_WIDTH * fraction / total_fraction * self._scale,
+                self.DESIGN_WIDTH * preferred_widths[index]
+                / preferred_total * self._scale,
             )
             self._column_content_scale = max(
                 0.30,
@@ -552,9 +572,20 @@ class StandingsWidget(QWidget):
                     Qt.AspectRatioMode.KeepAspectRatio,
                     Qt.TransformationMode.SmoothTransformation,
                 )
-                painter.drawPixmap(int(target.left()), int(target.center().y() - pixmap.height() / 2), pixmap)
-                target.setLeft(target.left() + icon_size + 4 * self._scale)
                 label = text
+                text_width = QFontMetrics(painter.font()).horizontalAdvance(label)
+                group_width = min(
+                    target.width(),
+                    pixmap.width() + 4 * self._scale + text_width,
+                )
+                group_left = target.center().x() - group_width / 2.0
+                painter.drawPixmap(
+                    int(group_left),
+                    int(target.center().y() - pixmap.height() / 2),
+                    pixmap,
+                )
+                target.setLeft(group_left + pixmap.width() + 4 * self._scale)
+                target.setRight(min(cell.right() - 3 * self._scale, target.left() + text_width))
             else:
                 label = f"{icon}  {text}".strip()
             font = painter.font()
@@ -568,7 +599,12 @@ class StandingsWidget(QWidget):
             )
             painter.save()
             painter.setClipRect(cell)
-            painter.drawText(target, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, label)
+            alignment = Qt.AlignmentFlag.AlignVCenter | (
+                Qt.AlignmentFlag.AlignLeft
+                if icon and icon_path.is_file()
+                else Qt.AlignmentFlag.AlignHCenter
+            )
+            painter.drawText(target, alignment, label)
             painter.restore()
         self._column_content_scale = 1.0
         painter.setPen(QPen(QColor(colors.get("header_line", "#175C9C")), max(1.0, 2.0 * self._scale)))
@@ -741,7 +777,7 @@ class StandingsWidget(QWidget):
             "position": "P", "change": "+/-", "flag": "PAÍS", "badge": "BADGE",
             "dr": "DR", "sr": "SR", "gain_dr": "ΔDR",
             "driver": "PILOTO", "brand": "MAR", "number": "#", "laps": "VLT",
-            "pit": "PIT", "best": "BEST", "last": "LAST", "gap": "GAP", "track_limits": "LIM", "penalty": "PEN",
+            "pit": "PIT", "best": "BEST", "last": "LAST", "interval": "INT", "gap": "GAP", "track_limits": "LIM", "penalty": "PEN",
             "tyre": "TYR",
             "energy": "VE/FUEL", "damage": "DMG",
         }
@@ -1027,6 +1063,8 @@ class StandingsWidget(QWidget):
             else:
                 color = QColor(colors.get("last_lap", "#FFFFFF"))
             self._text(painter, rect, format_lap(row.last_lap_s), 0.68, True, color)
+        elif key == "interval":
+            self._text(painter, rect, row.interval_text, 0.68, True)
         elif key == "gap":
             self._text(painter, rect, row.gap_text, 0.68, True)
         elif key == "penalty":
@@ -1406,6 +1444,11 @@ class StandingsWidget(QWidget):
             "pit": bool(self.config.get("show_pit_status", True)),
             "best": bool(self.config.get("show_best_lap", True)),
             "last": bool(self.config.get("show_last_lap", True)),
+            "interval": (
+                bool(self.config.get("show_interval", True))
+                and not bool(self.config.get("relative_mode", False))
+                and self.view.session_type == "Race"
+            ),
             "gap": bool(self.config.get("show_gap", True)),
             "penalty": bool(self.config.get("show_penalty_column", True)),
             "track_limits": bool(

@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import json
+from pathlib import Path
 
-from PySide6.QtGui import QCloseEvent
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QCloseEvent, QDesktopServices, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
+    QDialog,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -63,14 +67,155 @@ class MainMenuWindow(QMainWindow):
     def _build_header(self) -> QWidget:
         box = QFrame()
         box.setObjectName("headerBox")
-        layout = QVBoxLayout(box)
+        layout = QHBoxLayout(box)
+        identity = QVBoxLayout()
         title = QLabel("Sector Flow Drive")
         title.setObjectName("mainTitle")
         subtitle = QLabel("Ative, desative e personalize os overlays.")
         subtitle.setObjectName("subtitle")
-        layout.addWidget(title)
-        layout.addWidget(subtitle)
+        identity.addWidget(title)
+        identity.addWidget(subtitle)
+        layout.addLayout(identity, 1)
+
+        header_config = self._load_header_config()
+        update_box = QFrame()
+        update_box.setObjectName("headerInfoBox")
+        update_layout = QVBoxLayout(update_box)
+        update_layout.setContentsMargins(12, 8, 12, 8)
+        version = QLabel(f"Versão {header_config['version']}")
+        version.setObjectName("versionLabel")
+        notes_button = QPushButton("Notas da versão")
+        notes_button.setObjectName("updateNotesButton")
+        notes_button.clicked.connect(
+            lambda: self._open_update_notes(header_config)
+        )
+        update_layout.addWidget(version)
+        update_layout.addWidget(notes_button)
+        layout.addWidget(update_box, 1)
+
+        donation_box = QFrame()
+        donation_box.setObjectName("headerInfoBox")
+        donation_layout = QVBoxLayout(donation_box)
+        donation_layout.setContentsMargins(12, 8, 12, 8)
+        donation_title = QLabel(header_config["donation_label"])
+        donation_title.setObjectName("donationLabel")
+        donation_button = QPushButton("Doações")
+        donation_button.setObjectName("donationButton")
+        donation_button.clicked.connect(
+            lambda: self._open_donation(header_config)
+        )
+        donation_layout.addWidget(donation_title)
+        donation_layout.addWidget(donation_button)
+        layout.addWidget(donation_box)
         return box
+
+    @staticmethod
+    def _load_header_config() -> dict[str, str]:
+        defaults = {
+            "version": "0.0.2",
+            "update_note": "Novidades e correções da versão atual.",
+            "donation_label": "Apoie o desenvolvimento",
+            "donation_url": "",
+            "pix_key": "",
+            "pix_qr_image": "images/pix/qrcode-pix.png",
+        }
+        path = Path(__file__).resolve().parents[1] / "config" / "menu_header.json"
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            return defaults
+        return {
+            key: str(data.get(key, value) or value)
+            for key, value in defaults.items()
+        }
+
+    def _open_donation(self, config: dict[str, str]) -> None:
+        pix_key = config.get("pix_key", "").strip()
+        donation_url = config.get("donation_url", "").strip()
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Doações")
+        dialog.setMinimumWidth(380)
+        layout = QVBoxLayout(dialog)
+
+        title = QLabel("Apoie o desenvolvimento do Sector Flow Drive")
+        title.setObjectName("donationDialogTitle")
+        title.setWordWrap(True)
+        layout.addWidget(title)
+
+        qr_relative = config.get("pix_qr_image", "").strip()
+        qr_path = Path(__file__).resolve().parents[2] / qr_relative
+        if qr_relative and qr_path.is_file():
+            pixmap = QPixmap(str(qr_path))
+            if not pixmap.isNull():
+                qr_label = QLabel()
+                qr_label.setObjectName("pixQrCode")
+                qr_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                qr_label.setPixmap(
+                    pixmap.scaled(
+                        260,
+                        260,
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation,
+                    )
+                )
+                layout.addWidget(qr_label)
+
+        if pix_key:
+            key_label = QLabel(f"Chave PIX: {pix_key}")
+            key_label.setObjectName("pixKeyLabel")
+            key_label.setTextInteractionFlags(
+                Qt.TextInteractionFlag.TextSelectableByMouse
+            )
+            key_label.setWordWrap(True)
+            layout.addWidget(key_label)
+            copy_pix = QPushButton("Copiar chave PIX")
+            copy_pix.clicked.connect(
+                lambda: self._copy_pix_key(pix_key, copy_pix)
+            )
+            layout.addWidget(copy_pix)
+
+        if donation_url:
+            paypal = QPushButton("Doar com PayPal")
+            paypal.setObjectName("paypalButton")
+            paypal.clicked.connect(
+                lambda: QDesktopServices.openUrl(QUrl(donation_url))
+            )
+            layout.addWidget(paypal)
+
+        if not pix_key and not donation_url:
+            layout.addWidget(QLabel("Destino de doação ainda não configurado."))
+
+        close = QPushButton("Fechar")
+        close.clicked.connect(dialog.accept)
+        layout.addWidget(close)
+        dialog.exec()
+
+    def _open_update_notes(self, config: dict[str, str]) -> None:
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Notas da versão")
+        dialog.setMinimumSize(480, 300)
+        layout = QVBoxLayout(dialog)
+
+        version = QLabel(f"Sector Flow Drive — versão {config['version']}")
+        version.setObjectName("updateDialogTitle")
+        layout.addWidget(version)
+
+        note = QLabel(config.get("update_note", "").strip() or "Nenhuma nota cadastrada.")
+        note.setObjectName("updateDialogNote")
+        note.setWordWrap(True)
+        note.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        note.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        layout.addWidget(note, 1)
+
+        close = QPushButton("Fechar")
+        close.clicked.connect(dialog.accept)
+        layout.addWidget(close)
+        dialog.exec()
+
+    @staticmethod
+    def _copy_pix_key(pix_key: str, button: QPushButton) -> None:
+        QApplication.clipboard().setText(pix_key)
+        button.setText("Chave PIX copiada!")
 
     def _build_toolbar(self) -> QWidget:
         box = QFrame()
@@ -248,6 +393,7 @@ class MainMenuWindow(QMainWindow):
     def _toggle_widget(self, widget_id: str, enabled: bool) -> None:
         try:
             self.overlay_manager.set_widget_enabled(widget_id, enabled)
+            self.rows[widget_id].set_enabled_state(enabled)
         except Exception as exc:
             QMessageBox.critical(self, "Erro ao controlar widget", str(exc))
             self.rows[widget_id].set_enabled_state(False)
@@ -380,13 +526,24 @@ class MainMenuWindow(QMainWindow):
             """
             QMainWindow, QWidget { background: #090D15; color: #F4F7FB; font-family: Arial; font-size: 14px; }
             QFrame#headerBox, QFrame#toolbarBox, QFrame#footerBox { background: #151B26; border: 1px solid #2A3444; border-radius: 12px; }
+            QFrame#headerInfoBox { background: #101722; border: 1px solid #2A3444; border-radius: 8px; }
             QLabel#mainTitle { font-size: 30px; font-weight: 700; }
             QLabel#subtitle { color: #9BA8BA; }
+            QLabel#versionLabel { color: #67E8F9; font-weight: 700; }
+            QPushButton#updateNotesButton { background: #1265A8; border-color: #2784CA; }
+            QLabel#updateDialogTitle { color: #67E8F9; font-size: 20px; font-weight: 700; }
+            QLabel#updateDialogNote { color: #D7DEE9; font-size: 14px; padding: 10px; }
+            QLabel#donationLabel { color: #F1B84B; font-size: 12px; font-weight: 700; }
+            QPushButton#donationButton { background: #7C3AED; border-color: #9B6AF3; }
+            QLabel#donationDialogTitle { font-size: 18px; font-weight: 700; color: #F1B84B; }
+            QLabel#pixQrCode { background: #202938; border: 2px solid #67E8F9; border-radius: 10px; padding: 14px; }
+            QLabel#pixKeyLabel { color: #D7DEE9; font-family: Consolas; font-size: 12px; }
+            QPushButton#paypalButton { background: #0070BA; border-color: #169BD7; }
             QFrame#menuRow { background: #171E2A; border: 1px solid #2B3546; border-radius: 9px; }
             QFrame#menuRow:hover { border: 1px solid #506078; }
             QLabel#rowTitle { font-size: 17px; font-weight: 650; }
-            QLabel#rowStatus { color: #4BD59A; font-size: 11px; }
-            QLabel#rowStatus[pending="true"] { color: #F1B84B; }
+            QLabel#rowStatus { color: #EF5350; font-size: 11px; font-weight: 700; }
+            QLabel#rowStatus[active="true"] { color: #4BD59A; }
             QPushButton { background: #29364A; border: 1px solid #40516C; border-radius: 7px; padding: 7px 12px; }
             QPushButton:hover { background: #34445C; }
             QPushButton:disabled { background: #1C2330; color: #606B7A; border-color: #2B3340; }

@@ -88,6 +88,7 @@ class StandingRow:
     laps_behind_leader: int = 0
     laps_behind_ahead: int = 0
     gap_text: str = "--"
+    interval_text: str = "--"
     tyre_compound: str = ""
     tyre_compounds: tuple[str, ...] = ()
     energy_percent: float | None = None

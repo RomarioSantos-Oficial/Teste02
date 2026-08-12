@@ -22,10 +22,8 @@ WIDGET_DEFINITIONS: list[WidgetDefinition] = [
     WidgetDefinition("fuel_time", "Fuel Time", "Estratégia", True, True),
     WidgetDefinition("tires", "Tyres", "Carro", True, True),
     WidgetDefinition("damage", "Damage", "Carro", True, True),
-    WidgetDefinition("replay", "Replay", "Sistema", True, False),
     WidgetDefinition("url", "URL", "Sistema", True, True),
     WidgetDefinition("weather", "Weather", "Estratégia", True, True),
     WidgetDefinition("flags", "Flags", "Corrida", True, True),
     WidgetDefinition("radar", "Radar", "Corrida", True, True),
-    WidgetDefinition("race_control", "Race Control", "Corrida", True, False),
 ]

@@ -1,0 +1,8 @@
+{
+  "version": "0.0.2",
+  "update_note": "• Nova coluna INT por categoria no Standings.\n• Relative limitado a uma casa decimal.\n• Estados Ativo e Desativado no menu principal.\n• Área de doações com PIX, QR Code e PayPal.",
+  "donation_label": "Apoie o desenvolvimento",
+  "donation_url": "https://www.paypal.com/donate/?business=T9V8BDQ9RGMYJ&no_recurring=0&currency_code=BRL",
+  "pix_key": "dfd7e167-fb4d-4be8-b7f9-9d171ade71ca",
+  "pix_qr_image": "images/pix/qrcode-pix.png"
+}

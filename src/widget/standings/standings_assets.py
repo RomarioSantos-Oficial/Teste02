@@ -414,7 +414,16 @@ class CountryFlagStore(QObject):
             temporary = destination.with_suffix(".tmp")
             temporary.write_bytes(content)
             temporary.replace(destination)
+            pixmap = QPixmap()
+            if pixmap.loadFromData(content, "PNG") and not pixmap.isNull():
+                self._originals[iso] = pixmap
+                for cache_key in tuple(self._pixmaps):
+                    if cache_key[0] == iso:
+                        self._pixmaps.pop(cache_key, None)
             self._failed_until.pop(iso, None)
+            parent = self.parent()
+            if parent is not None and hasattr(parent, "update"):
+                parent.update()
         except OSError:
             self._mark_failed(iso)
         finally:

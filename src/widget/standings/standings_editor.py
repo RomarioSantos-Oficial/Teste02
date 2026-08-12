@@ -41,6 +41,7 @@ class StandingsEditor(QDialog):
         ("pit", "Tempo do pit", 90.0),
         ("best", "Melhor volta", 140.0),
         ("last", "Última volta", 140.0),
+        ("interval", "Intervalo da categoria", 100.0),
         ("gap", "Gap/intervalo", 100.0),
         ("tyre", "Pneus", 76.0),
         ("energy", "Energia", 105.0),
@@ -165,6 +166,7 @@ class StandingsEditor(QDialog):
             ("show_laps", "Voltas:", True),
             ("show_best_lap", "Melhor volta (BEST):", True),
             ("show_last_lap", "Última volta (LAST):", True),
+            ("show_interval", "Intervalo da categoria (INT):", True),
             ("show_gap", "Gap/intervalo:", True),
             ("show_tyre", "Pneu:", True),
             ("show_invalid_lap_status", "Volta inválida:", True),
@@ -189,7 +191,9 @@ class StandingsEditor(QDialog):
         form.addRow(width_note)
         widths = self.config.setdefault("column_widths", {})
         for key, label, default_width in self.COLUMN_WIDTHS:
-            if key not in {"driver", "flag", "tyre", "badge", "brand"}:
+            if key not in {
+                "driver", "flag", "tyre", "badge", "brand", "interval"
+            }:
                 continue
             control = QDoubleSpinBox()
             control.setRange(24.0, 600.0)

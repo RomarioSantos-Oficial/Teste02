@@ -65,6 +65,7 @@ class OverlayManager(QObject):
         self._shared_online_client: LMUOnlineIdentityClient | None = None
         self._split_session_key: tuple[str, str] | None = None
         self._last_split_label = ""
+        self._split_server_active = False
         # caminho de log para debug de decisões de overlay
         try:
             project_root = Path(self.config_path).resolve().parents[2]
@@ -434,7 +435,24 @@ class OverlayManager(QObject):
         if damage is not None and damage.isVisible():
             damage.update_telemetry(player_data)
     def update_session_data(self, session: Any) -> None:
-        self.set_session_active(self._session_allows_overlays(session))
+        self._update_split_server_lifecycle(session)
+        was_active = self.session_active
+        allowed = self._session_allows_overlays(session)
+        if allowed and not was_active:
+            # Toda retomada de coleta (entrada inicial, retorno do monitor,
+            # box/garagem ou volta ao carro) exige uma leitura nova.
+            self._last_split_label = ""
+            setattr(session, "split_label", "")
+            if self._shared_online_client is not None:
+                self._shared_online_client.request_split_recheck(session)
+        elif not allowed:
+            # Fora da coleta valida, nenhum valor anterior pode permanecer
+            # visivel. DR/SR/paises continuam em cache para a retomada.
+            self._last_split_label = ""
+            setattr(session, "split_label", "")
+            if self._shared_online_client is not None:
+                self._shared_online_client.hide_split()
+        self.set_session_active(allowed)
         if not self.session_active:
             return
 
@@ -542,6 +560,31 @@ class OverlayManager(QObject):
         ) and self._update_due("standings", now):
             standings.update_from_session(session)
         self._update_url_sources(session, now)
+
+    def _update_split_server_lifecycle(self, session: Any) -> None:
+        """Reseta dados online somente ao realmente voltar ao menu."""
+        connected = bool(getattr(session, "connected", False))
+        location = int(getattr(session, "application_location", 0) or 0)
+        session_number = int(getattr(session, "session", 0) or 0)
+        drivers = list(getattr(session, "drivers", []) or [])
+        if hasattr(session, "application_location"):
+            # O estado oficial do LMU e autoritativo: 0=menu, 1=carregando,
+            # 2=monitor, 3=pista. Dados de sessao/pilotos podem ficar antigos
+            # por alguns quadros depois de voltar ao menu.
+            in_server = connected and location in {1, 2, 3}
+        else:
+            in_server = connected and (session_number > 0 or bool(drivers))
+        if in_server:
+            self._split_server_active = True
+            return
+        if not self._split_server_active:
+            return
+        self._split_server_active = False
+        self._split_session_key = None
+        self._last_split_label = ""
+        setattr(session, "split_label", "")
+        if self._shared_online_client is not None:
+            self._shared_online_client.reset()
 
     def _hydrate_split_label(self, session: Any) -> None:
         """Mantem o split disponivel antes de qualquer widget ser atualizado."""

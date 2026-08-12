@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import threading
+import tempfile
+import os
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -95,6 +97,109 @@ class FakeRaceControlClient(LMUOnlineIdentityClient):
 
 
 class RaceControlClientTests(unittest.TestCase):
+    def test_event_id_is_never_reused_from_an_older_lmu_trace(self) -> None:
+        client = LMUOnlineIdentityClient(Path.cwd(), {})
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            old = directory / "trace_old.txt"
+            current = directory / "trace_current.txt"
+            old.write_text(
+                'Joining race server for online event '
+                'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+                encoding="utf-8",
+            )
+            current.write_text("current offline practice", encoding="utf-8")
+            os.utime(old, (1, 1))
+            os.utime(current, (2, 2))
+            client._log_directories = lambda: [directory]
+            self.assertEqual(client._find_event_id_in_logs(), "")
+            current.write_text(
+                'Joining race server for online event '
+                '11111111-2222-3333-4444-555555555555',
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                client._find_event_id_in_logs(),
+                "11111111-2222-3333-4444-555555555555",
+            )
+
+    def test_split_session_signature_changes_only_between_sessions(self) -> None:
+        practice = SimpleNamespace(
+            connected=True, track_name="Track", session=1,
+            drivers=[SimpleNamespace(driver_name="A")],
+        )
+        practice_roster_changed = SimpleNamespace(
+            connected=True, track_name="Track", session=1,
+            drivers=[SimpleNamespace(driver_name="A"), SimpleNamespace(driver_name="B")],
+        )
+        qualify = SimpleNamespace(
+            connected=True, track_name="Track", session=5,
+            drivers=[SimpleNamespace(driver_name="A")],
+        )
+        self.assertEqual(
+            LMUOnlineIdentityClient._make_split_session_signature(practice),
+            LMUOnlineIdentityClient._make_split_session_signature(
+                practice_roster_changed
+            ),
+        )
+        self.assertNotEqual(
+            LMUOnlineIdentityClient._make_split_session_signature(practice),
+            LMUOnlineIdentityClient._make_split_session_signature(qualify),
+        )
+
+    def test_reset_clears_event_and_split_session_cache(self) -> None:
+        client = FakeRaceControlClient()
+        client._observed_event_id = client.EVENT_ID
+        client._split_session_signature = "Track|5"
+        client._split_by_event_id[client.EVENT_ID] = "S 6/9"
+        client.reset()
+        self.assertEqual(client._observed_event_id, "")
+        self.assertEqual(client._split_session_signature, "")
+        self.assertEqual(client._split_by_event_id, {})
+
+    def test_collection_restart_hides_and_rechecks_split(self) -> None:
+        client = FakeRaceControlClient()
+        session = SimpleNamespace(
+            connected=True, track_name="Track", session=5,
+            drivers=[SimpleNamespace(driver_name="Alice Driver")],
+        )
+        first = client.refresh_sync(session)
+        self.assertEqual(first.split_label, "S 6/8")
+        client.hide_split()
+        self.assertEqual(client.snapshot().split_label, "")
+        client.request_split_recheck(session)
+        second = client.refresh_sync(session)
+        self.assertEqual(second.split_label, "S 6/8")
+        split_requests = [
+            request for request in client.requests
+            if "/api/v1/event/my-split/" in request[0]
+        ]
+        self.assertEqual(len(split_requests), 2)
+
+    def test_event_probe_does_not_cancel_slow_raceos_refresh(self) -> None:
+        client = FakeRaceControlClient()
+        started = threading.Event()
+        release = threading.Event()
+
+        def slow_worker(session, generation):
+            del session, generation
+            started.set()
+            release.wait(1.0)
+
+        client._refresh_worker = slow_worker
+        session = SimpleNamespace(
+            track_name="Track", session=5, max_laps=0, drivers=[]
+        )
+        client.trigger_refresh(session)
+        self.assertTrue(started.wait(1.0))
+        generation = client._generation
+        client._last_event_probe = 0.0
+        client.trigger_refresh(session)
+        self.assertEqual(client._generation, generation)
+        self.assertEqual(client._observed_event_id, client.EVENT_ID)
+        release.set()
+        client._thread.join(1.0)
+
     def test_formats_raceos_division_as_split_label(self) -> None:
         self.assertEqual(
             LMUOnlineIdentityClient._split_label_from_payload(
@@ -112,6 +217,12 @@ class RaceControlClientTests(unittest.TestCase):
             ),
             "S 5/50",
         )
+        self.assertEqual(
+            LMUOnlineIdentityClient._split_label_from_payload(
+                {"splitNo": "6", "numOfSplits": "9"}
+            ),
+            "S 6/9",
+        )
 
     def test_split_is_requested_only_once_after_valid_response(self) -> None:
         client = FakeRaceControlClient()
@@ -125,6 +236,31 @@ class RaceControlClientTests(unittest.TestCase):
         self.assertEqual(first.split_label, "S 6/8")
         self.assertEqual(second.split_label, "S 6/8")
         self.assertEqual(len(split_requests), 1)
+
+    def test_split_is_checked_once_at_start_of_each_session(self) -> None:
+        client = FakeRaceControlClient()
+        driver = SimpleNamespace(driver_name="Alice Driver", steam_id="")
+        practice = SimpleNamespace(
+            connected=True, track_name="Track", session=1,
+            max_laps=0, drivers=[driver],
+        )
+        qualify = SimpleNamespace(
+            connected=True, track_name="Track", session=5,
+            max_laps=0, drivers=[driver],
+        )
+        client.trigger_refresh(practice)
+        client._thread.join(2.0)
+        client.trigger_refresh(practice)
+        if client._thread is not None:
+            client._thread.join(2.0)
+        client.trigger_refresh(qualify)
+        client._thread.join(2.0)
+        split_requests = [
+            request for request in client.requests
+            if "/api/v1/event/my-split/" in request[0]
+        ]
+        self.assertEqual(len(split_requests), 2)
+        self.assertEqual(client.snapshot().split_label, "S 6/8")
 
     def test_official_badge_codes_map_to_local_images(self) -> None:
         expected = {

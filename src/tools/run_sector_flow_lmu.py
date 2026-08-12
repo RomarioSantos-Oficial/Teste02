@@ -124,6 +124,9 @@ class SectorFlowApplication:
         self.overlays_enabled = True
         self.tray: QSystemTrayIcon | None = None
         self.tray_toggle_action: QAction | None = None
+        self.tray_quit_action: QAction | None = None
+        self._quit_requested = False
+        self._closed = False
         self._create_tray()
 
         self.adapter = LMUAdapter(copy_access=True)
@@ -148,8 +151,8 @@ class SectorFlowApplication:
         self.tray_toggle_action = tray_menu.addAction("Desativar overlays")
         self.tray_toggle_action.triggered.connect(self.toggle_overlays)
         tray_menu.addSeparator()
-        quit_action = tray_menu.addAction("Sair")
-        quit_action.triggered.connect(QApplication.quit)
+        self.tray_quit_action = tray_menu.addAction("Sair")
+        self.tray_quit_action.triggered.connect(self.request_quit)
 
         self.tray.setContextMenu(tray_menu)
         self.tray.activated.connect(self._tray_activated)
@@ -171,6 +174,27 @@ class SectorFlowApplication:
 
     def toggle_overlays(self) -> None:
         self.set_overlays_enabled(not self.overlays_enabled)
+
+    def request_quit(self) -> None:
+        """Encerra toda a aplicacao com um unico clique na bandeja."""
+        if self._quit_requested:
+            return
+        self._quit_requested = True
+
+        if self.tray_quit_action is not None:
+            self.tray_quit_action.setEnabled(False)
+        if self.tray is not None:
+            self.tray.hide()
+
+        # A janela normalmente ignora closeEvent para permanecer na bandeja.
+        # Ao sair de verdade, desative esse comportamento antes de fecha-la.
+        self.menu.tray_mode_enabled = False
+        self.timer.stop()
+        self.menu.hide()
+
+        app = QApplication.instance()
+        if app is not None:
+            QTimer.singleShot(0, app.quit)
 
     def set_overlays_enabled(self, enabled: bool) -> None:
         self.overlays_enabled = bool(enabled)
@@ -251,9 +275,14 @@ class SectorFlowApplication:
         self.overlay_manager.update_session_data(session)
 
     def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
         self.timer.stop()
         self.adapter.close()
         self.overlay_manager.close_all()
+        self.menu.tray_mode_enabled = False
+        self.menu.close()
         if self.tray is not None:
             self.tray.hide()
 

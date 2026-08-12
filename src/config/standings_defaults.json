@@ -64,6 +64,7 @@
   "show_laps": true,
   "show_best_lap": true,
   "show_last_lap": true,
+  "show_interval": true,
   "show_gap": true,
   "show_tyre": true,
   "tyre_icon_scale": 1.25,
