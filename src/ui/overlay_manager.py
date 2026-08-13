@@ -1073,7 +1073,26 @@ class OverlayManager(QObject):
             raise FileNotFoundError(f"Configuração não encontrada: {self.config_path}")
         try:
             data = json.loads(self.config_path.read_text(encoding="utf-8"))
+            # Configuracoes instaladas vivem em LOCALAPPDATA e nao possuem os
+            # arquivos *_defaults.json ao lado. Mescla qualquer widget novo a
+            # partir do catalogo de fabrica empacotado, preservando integralmente
+            # as escolhas e geometrias que o usuario ja salvou.
+            factory_path = Path(__file__).resolve().parents[1] / "config" / "widgets.json"
+            if factory_path.resolve() != self.config_path.resolve() and factory_path.exists():
+                factory = json.loads(factory_path.read_text(encoding="utf-8"))
+                widgets = data.setdefault("widgets", {})
+                defaults = data.setdefault("defaults", {})
+                for widget_id, widget_config in factory.get("widgets", {}).items():
+                    widgets.setdefault(widget_id, deepcopy(widget_config))
+                for widget_id, widget_config in factory.get("defaults", {}).items():
+                    defaults.setdefault(widget_id, deepcopy(widget_config))
             driver_defaults_path = self.config_path.with_name("driver_panel_defaults.json")
+            if not driver_defaults_path.exists():
+                driver_defaults_path = (
+                    Path(__file__).resolve().parents[1]
+                    / "config"
+                    / "driver_panel_defaults.json"
+                )
             if driver_defaults_path.exists():
                 driver_default = json.loads(driver_defaults_path.read_text(encoding="utf-8"))
                 data.setdefault("widgets", {}).setdefault("driver_panel", deepcopy(driver_default))
