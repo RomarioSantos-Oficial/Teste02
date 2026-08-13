@@ -237,6 +237,27 @@ class RaceControlClientTests(unittest.TestCase):
         self.assertEqual(second.split_label, "S 6/8")
         self.assertEqual(len(split_requests), 1)
 
+    def test_stale_local_split_is_not_reused_when_current_raceos_has_none(self) -> None:
+        class NoCurrentSplitClient(FakeRaceControlClient):
+            def _request_json(self, url, **kwargs):
+                if url.endswith("/rest/profile/"):
+                    return {"splitLabel": "S 3/5"}
+                return super()._request_json(url, **kwargs)
+
+            def _fetch_cloud_identities(self, **kwargs):
+                del kwargs
+                return [], ""
+
+        client = NoCurrentSplitClient()
+        session = SimpleNamespace(
+            connected=True,
+            track_name="Track",
+            session=5,
+            drivers=[SimpleNamespace(driver_name="Alice Driver")],
+        )
+        snapshot = client.refresh_sync(session)
+        self.assertEqual(snapshot.split_label, "")
+
     def test_split_is_checked_once_at_start_of_each_session(self) -> None:
         client = FakeRaceControlClient()
         driver = SimpleNamespace(driver_name="Alice Driver", steam_id="")

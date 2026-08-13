@@ -122,6 +122,16 @@ class BatteryLapTracker:
             )
             or ""
         )
+        if not self._supports_hybrid_battery(class_name):
+            # O LMU pode preencher bateria/energia virtual com valores
+            # genericos tambem em GT3, LMP2 e LMP3. Esses campos, isolados,
+            # nao significam que o carro possui sistema hibrido. A classe e
+            # autoritativa para este widget.
+            if self._ever_available or self._last_lap is not None:
+                self.reset()
+                self._session_key = session_key
+                self._last_session_time = session_time
+            return BatteryViewData()
         charge_pct, source_name = (
             self._charge_percent(
                 player,
@@ -678,6 +688,14 @@ class BatteryLapTracker:
         return max(
             0.0,
             min(100.0, value),
+        )
+
+    @staticmethod
+    def _supports_hybrid_battery(class_name: str) -> bool:
+        value = str(class_name or "").strip().upper()
+        return value in {"HY", "HYPER"} or any(
+            token in value
+            for token in ("HYPERCAR", "LMDH", "LMH")
         )
 
     @staticmethod

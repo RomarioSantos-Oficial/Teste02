@@ -691,7 +691,11 @@ class LMUAdapter:
             gear=safe_int(raw.mGear),
             throttle=safe_float(raw.mFilteredThrottle),
             brake=safe_float(raw.mFilteredBrake),
-            steering=safe_float(raw.mFilteredSteering),
+            # Comando direto do volante, sem o atraso do filtro interno do
+            # jogo. O fallback preserva compatibilidade com mapas antigos.
+            steering=safe_float(
+                getattr(raw, "mUnfilteredSteering", raw.mFilteredSteering)
+            ),
             clutch=safe_float(raw.mFilteredClutch),
             fuel_liters=safe_float(raw.mFuel),
             fuel_capacity_liters=safe_float(raw.mFuelCapacity),

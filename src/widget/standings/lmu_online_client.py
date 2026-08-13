@@ -357,7 +357,13 @@ class LMUOnlineIdentityClient:
                 cloud_error = self._short_error(exc)
 
         identities = self._merge_identities(local_identities, cloud_identities)
-        split_label = cloud_split_label or split_label
+        # Quando a consulta RaceOS esta habilitada, somente a resposta nova
+        # de `my-split` pode autorizar a exibicao. O REST local frequentemente
+        # conserva `splitLabel` da sala anterior durante a transicao; usar o
+        # fallback `cloud_split_label or split_label` ressuscitava exatamente
+        # esse valor obsoleto quando a sessao atual nao possuia divisao.
+        if bool(self.config.get("use_cloud_profiles", False)):
+            split_label = cloud_split_label
         if cloud_available:
             source_message = "LMU REST + perfis online"
         elif local_available:

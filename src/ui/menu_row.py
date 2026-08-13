@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QCheckBox,
 )
+from src.i18n import tr
 
 
 class MenuRow(QFrame):
@@ -45,6 +46,8 @@ class MenuRow(QFrame):
             lambda value: self.toggled.emit(self.widget_id, value)
         )
 
+        # Sempre guarde o texto-base. O tradutor de runtime aplica o idioma
+        # quando a linha aparece e consegue retornar ao português depois.
         self.edit_button = QPushButton("Editar")
         self.edit_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.edit_button.setEnabled(editable and implemented)
@@ -67,7 +70,7 @@ class MenuRow(QFrame):
         self._apply_enabled_status(enabled)
 
     def _apply_enabled_status(self, enabled: bool) -> None:
-        self.status_label.setText("Ativo" if enabled else "Desativado")
+        self.status_label.setText(tr("Ativo") if enabled else tr("Desativado"))
         self.status_label.setProperty("active", bool(enabled))
         self.status_label.style().unpolish(self.status_label)
         self.status_label.style().polish(self.status_label)

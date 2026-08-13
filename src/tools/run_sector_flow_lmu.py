@@ -49,6 +49,7 @@ from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from src.telemetry.lmu_adapter import LMUAdapter
 from src.telemetry.session_state import SessionActivityTracker
+from src.i18n import install_translator, tr
 from src.ui.edit_mode_manager import EditModeManager
 from src.ui.main_menu_window import MainMenuWindow
 from src.ui.overlay_manager import OverlayManager
@@ -123,17 +124,25 @@ class SectorFlowApplication:
         self.overlay_manager.create_enabled_widgets()
         self.overlays_enabled = True
         self.tray: QSystemTrayIcon | None = None
+        self.tray_open_action: QAction | None = None
         self.tray_toggle_action: QAction | None = None
         self.tray_quit_action: QAction | None = None
         self._quit_requested = False
         self._closed = False
         self._create_tray()
+        app = QApplication.instance()
+        if app is not None:
+            install_translator(app).language_changed.connect(
+                self._refresh_tray_translations
+            )
 
         self.adapter = LMUAdapter(copy_access=True)
         self.session_tracker = SessionActivityTracker()
         self.timer = QTimer(self.menu)
         self.timer.timeout.connect(self.update_lmu)
-        self.timer.start(50)
+        # Memoria compartilhada e leve. Os widgets pesados conservam seus
+        # limitadores individuais; o tick rapido beneficia Telemetry/volante.
+        self.timer.start(16)
 
     def show(self) -> None:
         self.menu.show()
@@ -143,15 +152,15 @@ class SectorFlowApplication:
             return
         icon = QIcon(str(APPLICATION_LOGO)) if APPLICATION_LOGO.is_file() else QIcon()
         self.tray = QSystemTrayIcon(icon, self.menu)
-        self.tray.setToolTip("SectorFlow Overley - overlays ativados")
+        self.tray.setToolTip(f"SectorFlow Overley - {tr('overlays ativados')}")
 
         tray_menu = QMenu()
-        open_action = tray_menu.addAction("Abrir SectorFlow")
-        open_action.triggered.connect(self.show_menu)
-        self.tray_toggle_action = tray_menu.addAction("Desativar overlays")
+        self.tray_open_action = tray_menu.addAction(tr("Abrir SectorFlow"))
+        self.tray_open_action.triggered.connect(self.show_menu)
+        self.tray_toggle_action = tray_menu.addAction(tr("Desativar overlays"))
         self.tray_toggle_action.triggered.connect(self.toggle_overlays)
         tray_menu.addSeparator()
-        self.tray_quit_action = tray_menu.addAction("Sair")
+        self.tray_quit_action = tray_menu.addAction(tr("Sair"))
         self.tray_quit_action.triggered.connect(self.request_quit)
 
         self.tray.setContextMenu(tray_menu)
@@ -174,6 +183,25 @@ class SectorFlowApplication:
 
     def toggle_overlays(self) -> None:
         self.set_overlays_enabled(not self.overlays_enabled)
+
+    def _refresh_tray_translations(self, _language: str = "") -> None:
+        if self.tray_open_action is not None:
+            self.tray_open_action.setText(tr("Abrir SectorFlow"))
+        if self.tray_toggle_action is not None:
+            self.tray_toggle_action.setText(
+                tr("Desativar overlays")
+                if self.overlays_enabled
+                else tr("Ativar overlays")
+            )
+        if self.tray_quit_action is not None:
+            self.tray_quit_action.setText(tr("Sair"))
+        if self.tray is not None:
+            state = (
+                tr("overlays ativados")
+                if self.overlays_enabled
+                else tr("overlays desativados")
+            )
+            self.tray.setToolTip(f"SectorFlow Overley - {state}")
 
     def request_quit(self) -> None:
         """Encerra toda a aplicacao com um unico clique na bandeja."""
@@ -203,11 +231,11 @@ class SectorFlowApplication:
             self.overlay_manager.set_session_active(False)
         if self.tray_toggle_action is not None:
             self.tray_toggle_action.setText(
-                "Desativar overlays" if self.overlays_enabled else "Ativar overlays"
+                tr("Desativar overlays") if self.overlays_enabled else tr("Ativar overlays")
             )
         if self.tray is not None:
-            state = "ativados" if self.overlays_enabled else "desativados"
-            self.tray.setToolTip(f"SectorFlow Overley - overlays {state}")
+            state = tr("overlays ativados") if self.overlays_enabled else tr("overlays desativados")
+            self.tray.setToolTip(f"SectorFlow Overley - {state}")
             self.tray.showMessage(
                 "SectorFlow Overley",
                 f"Overlays {state}.",
@@ -224,11 +252,11 @@ class SectorFlowApplication:
             session = self.adapter.read()
         except Exception as exc:
             self.overlay_manager.set_session_active(False)
-            self.menu.set_lmu_status(False, f"erro: {exc}")
+            self.menu.set_lmu_status(False, f"{tr('erro')}: {exc}")
             return
 
         self.session_tracker.update(session)
-        self.timer.setInterval(500 if session.telemetry_paused else 50)
+        self.timer.setInterval(500 if session.telemetry_paused else 16)
 
         if not session.connected:
             self.overlay_manager.set_session_active(False)
@@ -289,6 +317,7 @@ class SectorFlowApplication:
 
 def main() -> None:
     app = QApplication(sys.argv)
+    install_translator(app)
     app.setQuitOnLastWindowClosed(False)
     instance_guard = SingleInstanceGuard()
     if not instance_guard.is_primary:

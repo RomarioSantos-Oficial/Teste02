@@ -28,6 +28,7 @@ a = Analysis(
         (str(PROJECT_ROOT / 'data/online_profiles'), 'data/online_profiles'),
         # Configuração principal
         (str(PROJECT_ROOT / 'src/config/*.json'), 'src/config'),
+        (str(PROJECT_ROOT / 'src/i18n/locales/*.json'), 'src/i18n/locales'),
         # Bibliotecas LMU (vendor)
         (str(PROJECT_ROOT / 'vendor'), 'vendor'),
     ],
@@ -65,6 +66,8 @@ a = Analysis(
         'src.tools',
         'src.tools.run_sector_flow_lmu',
         'src.config',
+        'src.i18n',
+        'src.i18n.translator',
         'src.widget',
         'src.widget.base',
         'src.widget.battery',

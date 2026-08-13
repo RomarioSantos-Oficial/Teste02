@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 
 from src.ui.menu_row import MenuRow
 from src.ui.widget_registry import WIDGET_DEFINITIONS
+from src.i18n import LANGUAGES, app_language, set_app_language, tr
 from src.widget.delta.delta_editor import DeltaEditor
 from src.widget.driver_panel.driver_panel_editor import DriverPanelEditor
 from src.widget.flags.flags_editor import FlagsEditor
@@ -48,6 +49,8 @@ class MainMenuWindow(QMainWindow):
         self.edit_mode_manager = edit_mode_manager
         self.rows: dict[str, MenuRow] = {}
         self.editors: dict[str, QWidget] = {}
+        self._lmu_connected = False
+        self._lmu_status_text = "conexão"
 
         self.setWindowTitle("SectorFlow Overley")
         self.resize(920, 720)
@@ -82,14 +85,15 @@ class MainMenuWindow(QMainWindow):
         update_box.setObjectName("headerInfoBox")
         update_layout = QVBoxLayout(update_box)
         update_layout.setContentsMargins(12, 8, 12, 8)
-        version = QLabel(f"Versão {header_config['version']}")
-        version.setObjectName("versionLabel")
+        self.version_label = QLabel(f"{tr('Versão')} {header_config['version']}")
+        self.version_label.setProperty("sectorflowVersion", header_config["version"])
+        self.version_label.setObjectName("versionLabel")
         notes_button = QPushButton("Notas da versão")
         notes_button.setObjectName("updateNotesButton")
         notes_button.clicked.connect(
             lambda: self._open_update_notes(header_config)
         )
-        update_layout.addWidget(version)
+        update_layout.addWidget(self.version_label)
         update_layout.addWidget(notes_button)
         layout.addWidget(update_box, 1)
 
@@ -161,7 +165,7 @@ class MainMenuWindow(QMainWindow):
                 layout.addWidget(qr_label)
 
         if pix_key:
-            key_label = QLabel(f"Chave PIX: {pix_key}")
+            key_label = QLabel(f"{tr('Chave PIX:')} {pix_key}")
             key_label.setObjectName("pixKeyLabel")
             key_label.setTextInteractionFlags(
                 Qt.TextInteractionFlag.TextSelectableByMouse
@@ -196,11 +200,12 @@ class MainMenuWindow(QMainWindow):
         dialog.setMinimumSize(480, 300)
         layout = QVBoxLayout(dialog)
 
-        version = QLabel(f"SectorFlow Overley — versão {config['version']}")
+        version = QLabel(f"SectorFlow Overley — {tr('versão')} {config['version']}")
         version.setObjectName("updateDialogTitle")
         layout.addWidget(version)
 
-        note = QLabel(config.get("update_note", "").strip() or "Nenhuma nota cadastrada.")
+        source_note = config.get("update_note", "").strip() or "Nenhuma nota cadastrada."
+        note = QLabel(tr(source_note))
         note.setObjectName("updateDialogNote")
         note.setWordWrap(True)
         note.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
@@ -215,7 +220,7 @@ class MainMenuWindow(QMainWindow):
     @staticmethod
     def _copy_pix_key(pix_key: str, button: QPushButton) -> None:
         QApplication.clipboard().setText(pix_key)
-        button.setText("Chave PIX copiada!")
+        button.setText(tr("Chave PIX copiada!"))
 
     def _build_toolbar(self) -> QWidget:
         box = QFrame()
@@ -243,8 +248,39 @@ class MainMenuWindow(QMainWindow):
         save = QPushButton("Salvar layout")
         save.clicked.connect(self.overlay_manager.save_config)
         layout.addWidget(save)
+        layout.addWidget(QLabel("Idioma:"))
+        self.language_combo = QComboBox()
+        for code, label in LANGUAGES.items():
+            self.language_combo.addItem(label, code)
+        current = self.language_combo.findData(app_language())
+        self.language_combo.setCurrentIndex(max(0, current))
+        self.language_combo.setToolTip("Idioma da interface")
+        self.language_combo.currentIndexChanged.connect(self._change_language)
+        layout.addWidget(self.language_combo)
         layout.addStretch()
         return box
+
+    def _change_language(self, index: int) -> None:
+        language = str(self.language_combo.itemData(index) or "pt_BR")
+        set_app_language(language)
+        self._refresh_dynamic_translations()
+
+    def _refresh_dynamic_translations(self) -> None:
+        """Reaplica textos que mudam depois que a janela foi traduzida."""
+        version = str(self.version_label.property("sectorflowVersion") or "0.0.3")
+        self.version_label.setText(f"{tr('Versão')} {version}")
+        self._reload_profiles()
+        self.edit_mode_button.setText(
+            tr("Modo edição: LIGADO")
+            if self.edit_mode_button.isChecked()
+            else tr("Modo edição: DESLIGADO")
+        )
+        for row in self.rows.values():
+            source_title = str(row.property("sectorflowTitle") or "")
+            if source_title:
+                row.title_label.setText(tr(source_title))
+            row._apply_enabled_status(row.toggle.isChecked())
+        self.set_lmu_status(self._lmu_connected, self._lmu_status_text)
 
     def _reload_profiles(self, selected_id: str | None = None) -> None:
         if not hasattr(self, "profile_combo"):
@@ -256,7 +292,10 @@ class MainMenuWindow(QMainWindow):
         for index, (profile_id, name) in enumerate(
             self.overlay_manager.profile_items()
         ):
-            self.profile_combo.addItem(name, profile_id)
+            # Nomes criados pelo usuário não são traduzidos. Somente os dois
+            # perfis internos possuem nomes localizáveis.
+            display_name = tr(name) if profile_id in {"standard", "engineer"} else name
+            self.profile_combo.addItem(display_name, profile_id)
             if profile_id == selected_id:
                 selected_index = index
         self.profile_combo.setCurrentIndex(selected_index)
@@ -269,8 +308,8 @@ class MainMenuWindow(QMainWindow):
         self._update_profile_buttons()
 
     def _create_profile(self) -> None:
-        name, accepted = QInputDialog.getText(
-            self, "Novo perfil", "Nome do perfil personalizado:"
+        name, accepted = self._translated_text_dialog(
+            "Novo perfil", "Nome do perfil personalizado:"
         )
         if not accepted or not name.strip():
             return
@@ -279,44 +318,64 @@ class MainMenuWindow(QMainWindow):
             self._reload_profiles(profile_id)
             self.overlay_manager.switch_profile(profile_id)
         except Exception as exc:
-            QMessageBox.critical(self, "Erro ao criar perfil", str(exc))
+            QMessageBox.critical(self, tr("Erro ao criar perfil"), str(exc))
 
     def _rename_profile(self) -> None:
         profile_id = str(self.profile_combo.currentData() or "")
         if profile_id in {"standard", "engineer"}:
             return
         current_name = self.profile_combo.currentText()
-        name, accepted = QInputDialog.getText(
-            self,
+        name, accepted = self._translated_text_dialog(
             "Renomear perfil",
             "Novo nome do perfil:",
-            text=current_name,
+            current_name,
         )
         if not accepted or not name.strip():
             return
         try:
             self.overlay_manager.rename_profile(profile_id, name)
         except Exception as exc:
-            QMessageBox.critical(self, "Erro ao renomear perfil", str(exc))
+            QMessageBox.critical(self, tr("Erro ao renomear perfil"), str(exc))
+
+    def _translated_text_dialog(
+        self, title: str, label: str, value: str = ""
+    ) -> tuple[str, bool]:
+        dialog = QInputDialog(self)
+        dialog.setInputMode(QInputDialog.InputMode.TextInput)
+        dialog.setWindowTitle(tr(title))
+        dialog.setLabelText(tr(label))
+        dialog.setTextValue(value)
+        dialog.setOkButtonText(tr("OK"))
+        dialog.setCancelButtonText(tr("Cancelar"))
+        accepted = dialog.exec() == QDialog.DialogCode.Accepted
+        return dialog.textValue(), accepted
 
     def _delete_profile(self) -> None:
         profile_id = str(self.profile_combo.currentData() or "")
         if profile_id in {"standard", "engineer"}:
             return
         name = self.profile_combo.currentText()
-        answer = QMessageBox.question(
-            self,
-            "Excluir perfil",
-            f"Excluir permanentemente o perfil '{name}'?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
+        message = QMessageBox(self)
+        message.setIcon(QMessageBox.Icon.Question)
+        message.setWindowTitle(tr("Excluir perfil"))
+        message.setText(tr("Excluir permanentemente o perfil '{name}'?").format(name=name))
+        message.setStandardButtons(
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
+        message.setDefaultButton(QMessageBox.StandardButton.No)
+        yes_button = message.button(QMessageBox.StandardButton.Yes)
+        no_button = message.button(QMessageBox.StandardButton.No)
+        if yes_button is not None:
+            yes_button.setText(tr("Sim"))
+        if no_button is not None:
+            no_button.setText(tr("Não"))
+        answer = QMessageBox.StandardButton(message.exec())
         if answer != QMessageBox.StandardButton.Yes:
             return
         try:
             self.overlay_manager.delete_profile(profile_id)
         except Exception as exc:
-            QMessageBox.critical(self, "Erro ao excluir perfil", str(exc))
+            QMessageBox.critical(self, tr("Erro ao excluir perfil"), str(exc))
 
     def _update_profile_buttons(self) -> None:
         if not hasattr(self, "delete_profile_button"):
@@ -355,6 +414,7 @@ class MainMenuWindow(QMainWindow):
                 definition.editable,
                 definition.implemented,
             )
+            row.setProperty("sectorflowTitle", definition.title)
             row.toggled.connect(self._toggle_widget)
             row.edit_requested.connect(self._open_editor)
             grid.addWidget(row, index // 2, index % 2)
@@ -375,9 +435,11 @@ class MainMenuWindow(QMainWindow):
         return box
 
     def set_lmu_status(self, connected: bool, text: str = "") -> None:
+        self._lmu_connected = bool(connected)
+        self._lmu_status_text = text
         message = (
-            ("LMU: conectado " if connected else "LMU: aguardando ")
-            + text
+            (tr("LMU: conectado ") if connected else tr("LMU: aguardando "))
+            + tr(text)
         )
         if self.connection_label.text() != message:
             self.connection_label.setText(message)
@@ -395,7 +457,7 @@ class MainMenuWindow(QMainWindow):
             self.overlay_manager.set_widget_enabled(widget_id, enabled)
             self.rows[widget_id].set_enabled_state(enabled)
         except Exception as exc:
-            QMessageBox.critical(self, "Erro ao controlar widget", str(exc))
+            QMessageBox.critical(self, tr("Erro ao controlar widget"), str(exc))
             self.rows[widget_id].set_enabled_state(False)
 
     def _open_editor(self, widget_id: str) -> None:
@@ -465,8 +527,10 @@ class MainMenuWindow(QMainWindow):
         else:
             QMessageBox.information(
                 self,
-                "Editor ainda não criado",
-                f"O editor de '{widget_id}' ainda não foi implementado.",
+                tr("Editor ainda não criado"),
+                tr("O editor de '{widget_id}' ainda não foi implementado.").format(
+                    widget_id=widget_id
+                ),
             )
             return
 
@@ -518,7 +582,7 @@ class MainMenuWindow(QMainWindow):
             self.edit_mode_manager.set_enabled(enabled)
         self.overlay_manager.set_edit_mode(enabled)
         self.edit_mode_button.setText(
-            "Modo edição: LIGADO" if enabled else "Modo edição: DESLIGADO"
+            tr("Modo edição: LIGADO") if enabled else tr("Modo edição: DESLIGADO")
         )
 
     def _apply_style(self) -> None:

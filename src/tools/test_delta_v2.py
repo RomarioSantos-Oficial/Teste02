@@ -34,9 +34,9 @@ class FakeDriver:
     driver_name: str
     vehicle_name: str
     vehicle_class: str
+    position: int
     vehicle_filename: str = ""
     pit_group: str = ""
-    position: int
     best_lap_s: float = 0.0
     penalties: int = 0
     is_player: bool = False

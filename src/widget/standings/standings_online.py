@@ -976,13 +976,23 @@ class LocalStandingsEnrichment:
     def _load_profile_cache(self) -> dict[str, DriverMetadata]:
         result: dict[str, DriverMetadata] = {}
         candidates: list[Path] = []
-        for directory in (
-            self.project_root / "data" / "online_profiles",
-            self.project_root / "data" / "online_debug",
-        ):
-            if directory.exists():
-                candidates.extend(directory.glob("*.json"))
-        candidates = sorted(candidates, key=lambda path: path.stat().st_mtime, reverse=True)[:12]
+        # `online_debug` contem dumps de sessao e cresce indefinidamente. Ele
+        # nao e cache de perfis e sua varredura bloqueava a inicializacao em
+        # algumas maquinas. Apenas arquivos deliberadamente salvos em
+        # `online_profiles` participam da carga inicial.
+        directory = self.project_root / "data" / "online_profiles"
+        try:
+            candidates = [
+                path for path in directory.iterdir()
+                if path.is_file() and path.suffix.casefold() == ".json"
+            ]
+            candidates.sort(
+                key=lambda path: path.stat().st_mtime,
+                reverse=True,
+            )
+            candidates = candidates[:12]
+        except OSError:
+            candidates = []
         for path in candidates:
             try:
                 payload = json.loads(path.read_text(encoding="utf-8"))

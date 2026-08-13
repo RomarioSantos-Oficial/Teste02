@@ -38,7 +38,7 @@ class OverlayManager(QObject):
     # Intervalos independentes evitam redesenhar informações lentas na mesma
     # frequência da telemetria de direção (20 Hz).
     UPDATE_INTERVALS = {
-        "driver_panel": 0.05,
+        "driver_panel": 1.0 / 60.0,
         "delta": 0.05,
         "map": 0.05,
         "tires": 0.10,
@@ -66,6 +66,7 @@ class OverlayManager(QObject):
         self._split_session_key: tuple[str, str] | None = None
         self._last_split_label = ""
         self._split_server_active = False
+        self._split_recheck_authoritative = False
         # caminho de log para debug de decisões de overlay
         try:
             project_root = Path(self.config_path).resolve().parents[2]
@@ -159,6 +160,15 @@ class OverlayManager(QObject):
         profiles.setdefault("engineer", {
             "name": "Engenheiro", "mode": "engineer", "widgets": deepcopy(widgets)
         })
+        # Migra perfis antigos quando um novo widget padrão é adicionado.
+        # Sem isso, o perfil salvo substitui `widgets` e perde a configuração
+        # recém-injetada (como ocorreu com Telemetry/Driver Panel).
+        for profile in profiles.values():
+            if not isinstance(profile, dict):
+                continue
+            profile_widgets = profile.setdefault("widgets", {})
+            for widget_id, config in widgets.items():
+                profile_widgets.setdefault(widget_id, deepcopy(config))
         active = str(self.config_data.get("active_profile", "standard"))
         if active not in profiles:
             active = "standard"
@@ -444,6 +454,7 @@ class OverlayManager(QObject):
             self._last_split_label = ""
             setattr(session, "split_label", "")
             if self._shared_online_client is not None:
+                self._split_recheck_authoritative = self._online_split_enabled()
                 self._shared_online_client.request_split_recheck(session)
         elif not allowed:
             # Fora da coleta valida, nenhum valor anterior pode permanecer
@@ -499,7 +510,16 @@ class OverlayManager(QObject):
             relative.update_from_session(session)
 
         radar = self.widgets.get("radar")
-        if radar is not None and radar.isVisible() and self._update_due("radar", now):
+        radar_config = self.config_data.get("widgets", {}).get("radar", {})
+        # O radar se oculta quando nao ha adversarios proximos. Mesmo oculto,
+        # precisa continuar recebendo telemetria para detectar o proximo carro
+        # e reaparecer; condicionar a isVisible() o deixava desligado para
+        # sempre depois da primeira pista livre.
+        if (
+            radar is not None
+            and bool(radar_config.get("enabled", False))
+            and self._update_due("radar", now)
+        ):
             radar.update_from_session(session)
 
         battery = self.widgets.get("battery")
@@ -582,6 +602,7 @@ class OverlayManager(QObject):
         self._split_server_active = False
         self._split_session_key = None
         self._last_split_label = ""
+        self._split_recheck_authoritative = False
         setattr(session, "split_label", "")
         if self._shared_online_client is not None:
             self._shared_online_client.reset()
@@ -599,8 +620,19 @@ class OverlayManager(QObject):
         if key != self._split_session_key:
             self._split_session_key = key
             self._last_split_label = ""
+            setattr(session, "split_label", "")
+            if self._shared_online_client is not None:
+                self._split_recheck_authoritative = self._online_split_enabled()
+                self._shared_online_client.request_split_recheck(session)
 
-        label = str(getattr(session, "split_label", "") or "").strip()
+        # Durante uma coleta RaceOS, a resposta online e autoritativa. O REST
+        # local pode conservar o split da sessao anterior por alguns quadros;
+        # aceitar esse campo aqui fazia o valor antigo reaparecer enquanto a
+        # verificacao nova ainda estava em andamento (ou mesmo quando ela
+        # terminava sem informar divisao).
+        label = "" if self._split_recheck_authoritative else str(
+            getattr(session, "split_label", "") or ""
+        ).strip()
         if self._shared_online_client is not None:
             online_label = str(
                 self._shared_online_client.snapshot().split_label or ""
@@ -612,6 +644,15 @@ class OverlayManager(QObject):
         elif self._last_split_label:
             label = self._last_split_label
         setattr(session, "split_label", label)
+
+    def _online_split_enabled(self) -> bool:
+        client = self._shared_online_client
+        if client is None:
+            return False
+        config = getattr(client, "config", {}) or {}
+        return bool(config.get("online_enrichment", False)) and bool(
+            config.get("use_cloud_profiles", False)
+        )
 
     def _configure_url_sources(self) -> None:
         controller = self.widgets.get("url")
@@ -1032,6 +1073,11 @@ class OverlayManager(QObject):
             raise FileNotFoundError(f"Configuração não encontrada: {self.config_path}")
         try:
             data = json.loads(self.config_path.read_text(encoding="utf-8"))
+            driver_defaults_path = self.config_path.with_name("driver_panel_defaults.json")
+            if driver_defaults_path.exists():
+                driver_default = json.loads(driver_defaults_path.read_text(encoding="utf-8"))
+                data.setdefault("widgets", {}).setdefault("driver_panel", deepcopy(driver_default))
+                data.setdefault("defaults", {}).setdefault("driver_panel", deepcopy(driver_default))
             defaults_path = self.config_path.with_name("damage_defaults.json")
             if defaults_path.exists():
                 damage_default = json.loads(defaults_path.read_text(encoding="utf-8"))
