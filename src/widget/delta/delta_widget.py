@@ -78,6 +78,8 @@ class DeltaWidget(QWidget):
         self._fastest_fade = TimedFade()
         self._fastest_data: list[FastestLapData] = []
         self._last_fastest_count = 0
+        self._sector_visible_until = 0.0
+        self._sector_was_visible = False
         self._delta_history: deque[float] = deque(
             maxlen=max(
                 20,
@@ -227,6 +229,7 @@ class DeltaWidget(QWidget):
                 width,
                 self.config,
                 self._fastest_count(),
+                self.view_data.sector_visible,
             )
             if bool(
                 self.config.get(
@@ -431,12 +434,15 @@ class DeltaWidget(QWidget):
         self.view_data.penalties = outstanding
         self.view_data.penalties_current = current
         self.view_data.penalties_limit = limit
-        self.view_data.sectors = (
-            self.sector_tracker.update(
-                session,
-                result.session_key,
+        sector_values = self.sector_tracker.update(session, result.session_key)
+        changed_index = self.sector_tracker.last_changed_index
+        if changed_index is not None:
+            self.view_data.sectors = [sector_values[changed_index]]
+            self._sector_visible_until = time.monotonic() + max(
+                0.5, float(self.config.get("sector_show_seconds", 5.0))
             )
-        )
+            self.view_data.sector_visible = True
+            self._fit_content_if_enabled()
 
         self.update()
 
@@ -576,6 +582,7 @@ class DeltaWidget(QWidget):
                         width,
                         self.config,
                         self._fastest_count(),
+                        self.view_data.sector_visible,
                     )
                 )
             else:
@@ -661,6 +668,13 @@ class DeltaWidget(QWidget):
         )
         self.view_data.fastest_laps = list(self._fastest_data)
         self.view_data.fastest_alpha = alpha
+        self.view_data.sector_visible = now < self._sector_visible_until
+        if not self.view_data.sector_visible:
+            self.view_data.sectors = []
+
+        if self.view_data.sector_visible != self._sector_was_visible:
+            self._sector_was_visible = self.view_data.sector_visible
+            self._fit_content_if_enabled()
 
         visible_count = self._fastest_count()
 
@@ -700,6 +714,7 @@ class DeltaWidget(QWidget):
                 self.width(),
                 self.config,
                 self._fastest_count(),
+                self.view_data.sector_visible,
             )
         )
         preferred = max(

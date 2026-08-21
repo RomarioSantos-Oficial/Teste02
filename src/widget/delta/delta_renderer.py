@@ -45,10 +45,12 @@ class DeltaRenderer:
         width: int,
         config: dict[str, Any],
         fastest_count: int,
+        sectors_visible: bool = False,
     ) -> int:
+        layout_config = self._sector_layout_config(config, sectors_visible)
         return self.layout_engine.preferred_height(
             width,
-            config,
+            layout_config,
             fastest_count,
         )
 
@@ -85,7 +87,7 @@ class DeltaRenderer:
         )
         layout = self.layout_engine.build(
             bounds,
-            config,
+            self._sector_layout_config(config, data.sector_visible),
             fastest_count,
         )
         scale = max(
@@ -463,18 +465,19 @@ class DeltaRenderer:
         loss = QColor(colors.get("loss", "#FF2828"))
         muted = QColor(colors.get("muted", "#AAB2BD"))
 
-        painter.setPen(
-            QPen(
-                grid.lighter(130),
-                max(0.8, scale),
+        if bool(config.get("section_backgrounds", True)):
+            painter.setPen(
+                QPen(
+                    grid.lighter(130),
+                    max(0.8, scale),
+                )
             )
-        )
-        painter.setBrush(panel)
-        painter.drawRoundedRect(
-            rect,
-            max(3.0, 7.0 * scale),
-            max(3.0, 7.0 * scale),
-        )
+            painter.setBrush(panel)
+            painter.drawRoundedRect(
+                rect,
+                max(3.0, 7.0 * scale),
+                max(3.0, 7.0 * scale),
+            )
 
         graph = rect.adjusted(
             10 * scale,
@@ -651,18 +654,19 @@ class DeltaRenderer:
             )
         )
 
-        painter.setPen(
-            QPen(
-                purple.darker(140),
-                max(1.0, 1.5 * scale),
+        if bool(config.get("section_backgrounds", True)):
+            painter.setPen(
+                QPen(
+                    purple.darker(140),
+                    max(1.0, 1.5 * scale),
+                )
             )
-        )
-        painter.setBrush(panel)
-        painter.drawRoundedRect(
-            rect,
-            max(4.0, 8.0 * scale),
-            max(4.0, 8.0 * scale),
-        )
+            painter.setBrush(panel)
+            painter.drawRoundedRect(
+                rect,
+                max(4.0, 8.0 * scale),
+                max(4.0, 8.0 * scale),
+            )
 
         padding = max(
             5.0,
@@ -923,13 +927,8 @@ class DeltaRenderer:
             )
         )
 
-        gap = max(
-            4.0,
-            8.0 * scale,
-        )
-        width = (
-            rect.width() - gap * 2
-        ) / 3
+        if not sectors:
+            return
 
         color_by_status = {
             SECTOR_BETTER: better,
@@ -937,68 +936,61 @@ class DeltaRenderer:
             SECTOR_SESSION_BEST: session_best,
         }
 
-        for index in range(3):
-            sector = (
-                sectors[index]
-                if index < len(sectors)
-                else DeltaSectorData(
-                    f"S{index + 1}"
-                )
-            )
-            box = QRectF(
-                rect.left()
-                + index * (width + gap),
-                rect.top(),
-                width,
-                rect.height(),
-            )
+        sector = sectors[0]
+        box = rect
 
-            color = color_by_status.get(
-                sector.status,
-                neutral,
-            )
+        color = color_by_status.get(sector.status, neutral)
 
-            if sector.delta_s is not None:
-                label = (
-                    f"{sector.label}  "
-                    f"{sector.delta_s:+.3f}"
-                )
-            elif sector.time_s is not None:
-                label = (
-                    f"{sector.label}  "
-                    f"{sector.time_s:.3f}"
-                )
-            else:
-                label = sector.label
-
-            painter.setPen(
-                QPen(
-                    color.darker(135),
-                    max(1.0, scale),
-                )
+        background = QColor(colors.get("fastest", "#8B4DFF"))
+        background.setAlphaF(
+            max(
+                0.0,
+                min(
+                    1.0,
+                    float(config.get("sector_background_opacity", 0.72)),
+                ),
             )
-            painter.setBrush(color)
+        )
+        if bool(config.get("section_backgrounds", True)):
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(background)
             painter.drawRoundedRect(
-                box,
-                max(3.0, 6.0 * scale),
-                max(3.0, 6.0 * scale),
+                box.adjusted(scale, scale, -scale, -scale),
+                max(3.0, 7.0 * scale),
+                max(3.0, 7.0 * scale),
             )
-            painter.setFont(
-                self._fit_font(
-                    config,
-                    box,
-                    label,
-                    box.height() * 0.35,
-                    7,
-                    True,
-                )
-            )
-            painter.setPen(text)
-            painter.drawText(
-                box,
-                Qt.AlignmentFlag.AlignCenter,
-                label,
-            )
+
+        if sector.delta_s is not None:
+            label = f"{sector.label}  {sector.delta_s:+.3f}"
+        elif sector.time_s is not None:
+            label = f"{sector.label}  {sector.time_s:.3f}"
+        else:
+            label = sector.label
+
+        font = self._fit_font(config, box, label, box.height() * 0.52, 8, True)
+        font.setWeight(QFont.Weight.Black)
+        painter.setFont(font)
+        # No melhor setor a cor do texto e do fundo seria a mesma roxa.
+        # Usa branco nesse caso para preservar contraste e legibilidade.
+        painter.setPen(text if sector.status == SECTOR_SESSION_BEST else color)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawText(box, Qt.AlignmentFlag.AlignCenter, label)
+
+    @staticmethod
+    def _sector_layout_config(config: dict[str, Any], visible: bool) -> dict[str, Any]:
+        if visible:
+            return config
+        result = dict(config)
+        elements = dict(config.get("elements", {}))
+        sector = elements.get("sectors", {})
+        if isinstance(sector, dict):
+            sector = dict(sector)
+            sector["enabled"] = False
+        else:
+            sector = False
+        elements["sectors"] = sector
+        result["elements"] = elements
+        return result
 
     @staticmethod
     def _enabled(

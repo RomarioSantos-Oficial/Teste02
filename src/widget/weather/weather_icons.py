@@ -14,7 +14,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QBitmap, QPixmap, QRegion
 
 
 class WeatherIconManager:
@@ -49,6 +49,14 @@ class WeatherIconManager:
             "chuva.png",
             "rain.png",
         ),
+        "Gotas": (
+            "gotas.png",
+            "Gotas.png",
+        ),
+        "Pista molhada": (
+            "Pista_molhada.png",
+            "pista_molhada.png",
+        ),
     }
 
     FALLBACK_TEXT = {
@@ -58,6 +66,8 @@ class WeatherIconManager:
         "nublado": "CLOUD",
         "noite_nublada": "CLOUD",
         "Chuva": "RAIN",
+        "Gotas": "%",
+        "Pista molhada": "%",
     }
 
     def __init__(
@@ -128,7 +138,19 @@ class WeatherIconManager:
             )
 
             if not pixmap.isNull():
-                self._originals[state] = pixmap
+                self._originals[state] = self._trim_transparent_margin(pixmap)
+
+    @staticmethod
+    def _trim_transparent_margin(pixmap: QPixmap) -> QPixmap:
+        """Remove margem alfa dos PNGs para o desenho ocupar a caixa toda."""
+        image = pixmap.toImage()
+        if not image.hasAlphaChannel():
+            return pixmap
+        mask = QBitmap.fromImage(image.createAlphaMask())
+        bounds = QRegion(mask).boundingRect()
+        if bounds.isEmpty() or bounds == pixmap.rect():
+            return pixmap
+        return pixmap.copy(bounds)
 
     def pixmap(
         self,

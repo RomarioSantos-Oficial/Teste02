@@ -77,6 +77,8 @@ class DriverData:
     last_sector1_s: float = 0.0
     last_sector2_s: float = 0.0
     last_sector3_s: float = 0.0
+    current_sector1_s: float = 0.0
+    current_sector2_s: float = 0.0
 
     gap_ahead_s: float = 0.0
     gap_leader_s: float = 0.0

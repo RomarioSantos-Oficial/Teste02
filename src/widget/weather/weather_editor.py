@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDoubleSpinBox,
+    QFileDialog,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -103,6 +104,16 @@ class WeatherEditor(QDialog):
 
         for key, label, default in (
             (
+                "show_track_temperature",
+                "Temperatura atual da pista:",
+                True,
+            ),
+            (
+                "show_air_temperature",
+                "Temperatura atual do ar:",
+                True,
+            ),
+            (
                 "show_forecast",
                 "Linha do tempo:",
                 True,
@@ -110,6 +121,16 @@ class WeatherEditor(QDialog):
             (
                 "show_wet_status",
                 "Aviso de pista molhada:",
+                True,
+            ),
+            (
+                "show_rain_indicator",
+                "Indicador de chuva:",
+                True,
+            ),
+            (
+                "show_wet_indicator",
+                "Indicador de pista molhada:",
                 True,
             ),
             (
@@ -250,6 +271,28 @@ class WeatherEditor(QDialog):
             "Pasta de ícones:",
             icon_directory,
         )
+        for key, label, default in (
+            ("rain_indicator_icon", "Imagem da chuva:", "images/tempo/gotas.png"),
+            ("wet_indicator_icon", "Imagem da pista molhada:", "images/tempo/Pista_molhada.png"),
+        ):
+            row = QWidget()
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            path_edit = QLineEdit(str(self.config.get(key, default)))
+            path_edit.editingFinished.connect(
+                lambda current=key, edit=path_edit: self._set(
+                    current, edit.text().strip()
+                )
+            )
+            browse = QPushButton("Escolher...")
+            browse.clicked.connect(
+                lambda _=False, current=key, edit=path_edit: self._choose_icon(
+                    current, edit
+                )
+            )
+            row_layout.addWidget(path_edit, 1)
+            row_layout.addWidget(browse)
+            form.addRow(label, row)
 
         self.content_layout.addWidget(
             group
@@ -587,6 +630,18 @@ class WeatherEditor(QDialog):
             group
         )
         self.content_layout.addStretch()
+
+    def _choose_icon(self, key: str, edit: QLineEdit) -> None:
+        selected, _filter = QFileDialog.getOpenFileName(
+            self,
+            "Escolher imagem",
+            edit.text().strip(),
+            "Imagens (*.png *.jpg *.jpeg *.bmp *.webp)",
+        )
+        if not selected:
+            return
+        edit.setText(selected)
+        self._set(key, selected)
 
     def _choose_color(
         self,

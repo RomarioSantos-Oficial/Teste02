@@ -6,6 +6,8 @@
   "show_global_header": false,
   "show_header_split": true,
   "show_column_legend": false,
+  "background_enabled": true,
+  "detach_penalty_column": true,
   "relative_cars_ahead": 5,
   "relative_cars_behind": 5,
   "show_laps": false,

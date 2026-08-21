@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
+    QLineEdit,
     QPushButton,
     QScrollArea,
     QSpinBox,
@@ -72,6 +73,7 @@ class TyresEditor(QDialog):
         scroll.setWidget(content)
 
         self._build_data()
+        self._build_gte_temperature()
         self._build_units()
         self._build_thresholds()
         self._build_responsive()
@@ -270,6 +272,55 @@ class TyresEditor(QDialog):
         self.content_layout.addWidget(
             group
         )
+
+    def _build_gte_temperature(self) -> None:
+        group = QGroupBox("Temperatura especial — GTE")
+        form = QFormLayout(group)
+
+        enabled = QCheckBox()
+        enabled.setChecked(bool(self.config.get("gte_temperature_mode", True)))
+        enabled.toggled.connect(
+            lambda value: self._set("gte_temperature_mode", value)
+        )
+
+        source = QComboBox()
+        source.addItem("Carcaça (igual ao painel do jogo)", "carcass")
+        source.addItem("Camada interna — média", "inner_average")
+        source.addItem("Camada interna — centro", "inner_center")
+        source.addItem("Superfície — média", "surface_average")
+        source.addItem("Superfície — centro", "surface_center")
+        source.addItem("Média atual do overlay", "lmu_weighted")
+        index = source.findData(
+            self.config.get("gte_temperature_source", "carcass")
+        )
+        source.setCurrentIndex(max(0, index))
+        source.currentIndexChanged.connect(
+            lambda: self._set("gte_temperature_source", source.currentData())
+        )
+
+        offset = QDoubleSpinBox()
+        offset.setRange(-40.0, 40.0)
+        offset.setDecimals(1)
+        offset.setSingleStep(0.5)
+        offset.setSuffix(" °C")
+        offset.setValue(float(self.config.get("gte_temperature_offset_c", 0.0)))
+        offset.valueChanged.connect(
+            lambda value: self._set("gte_temperature_offset_c", value)
+        )
+
+        keywords = QLineEdit(
+            str(self.config.get("gte_detection_keywords", "gte,lmgt3,gt3"))
+        )
+        keywords.setPlaceholderText("gte,lmgt3,gt3")
+        keywords.editingFinished.connect(
+            lambda: self._set("gte_detection_keywords", keywords.text())
+        )
+
+        form.addRow("Ativar somente nos GTE/GT3:", enabled)
+        form.addRow("Leitura principal:", source)
+        form.addRow("Ajuste fino:", offset)
+        form.addRow("Identificação do carro:", keywords)
+        self.content_layout.addWidget(group)
 
     def _build_units(self) -> None:
         group = QGroupBox(

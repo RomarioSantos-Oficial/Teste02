@@ -42,7 +42,7 @@ def user_config_path() -> Path:
 # =====================================================================
 # IMPORTS DO PROJETO E BIBLIOTECAS (Agora seguros para carregar)
 # =====================================================================
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
@@ -139,6 +139,7 @@ class SectorFlowApplication:
         self.adapter = LMUAdapter(copy_access=True)
         self.session_tracker = SessionActivityTracker()
         self.timer = QTimer(self.menu)
+        self.timer.setTimerType(Qt.TimerType.PreciseTimer)
         self.timer.timeout.connect(self.update_lmu)
         # Memoria compartilhada e leve. Os widgets pesados conservam seus
         # limitadores individuais; o tick rapido beneficia Telemetry/volante.

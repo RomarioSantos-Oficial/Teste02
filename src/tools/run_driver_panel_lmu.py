@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
 
 
@@ -93,13 +93,14 @@ class LMUDriverPanelWindow(QWidget):
         self.adapter = LMUAdapter(copy_access=True)
 
         self.timer = QTimer(self)
+        self.timer.setTimerType(Qt.TimerType.PreciseTimer)
 
         self.timer.timeout.connect(
             self.read_lmu
         )
 
-        # 20 atualizações por segundo
-        self.timer.start(50)
+        # Mesma frequência do aplicativo principal: aproximadamente 60 Hz.
+        self.timer.start(16)
 
     def update_driver_panel_config(
         self,

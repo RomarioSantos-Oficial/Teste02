@@ -63,4 +63,5 @@ class DeltaViewData:
     fastest_lap: FastestLapData | None = None
     fastest_laps: list[FastestLapData] = field(default_factory=list)
     fastest_alpha: float = 0.0
+    sector_visible: bool = False
     session_key: str = ""

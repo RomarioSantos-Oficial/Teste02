@@ -10,9 +10,12 @@ from PySide6.QtWidgets import (
     QLineEdit, QPushButton, QSpinBox, QVBoxLayout, QWidget,
 )
 
-AVAILABLE = (
-    "standings", "relative", "delta", "map", "driver_panel", "battery",
-    "fuel_time", "tires", "damage", "weather", "flags", "radar",
+from src.ui.widget_registry import WIDGET_DEFINITIONS
+
+AVAILABLE = tuple(
+    definition.widget_id
+    for definition in WIDGET_DEFINITIONS
+    if definition.implemented and definition.widget_id != "url"
 )
 
 

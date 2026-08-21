@@ -37,6 +37,25 @@ class RelativeEditor(StandingsEditor):
             check = QCheckBox(); check.setChecked(bool(self.config.get(key, default)))
             check.toggled.connect(lambda value, current=key: self._set(current, value))
             form.addRow(label, check)
+        header_label = QLabel("Informacoes do cabecalho")
+        header_label.setStyleSheet("font-weight: 700; margin-top: 8px;")
+        form.addRow(header_label)
+        for key, label in (
+            ("show_header_session_type", "Tipo da sessao:"),
+            ("show_header_session_time", "Tempo da sessao:"),
+            ("show_header_server_time", "Horario do jogo:"),
+            ("show_header_local_time", "Horario do computador:"),
+            ("show_header_grip", "Estado da pista:"),
+            ("show_header_track_limits", "Limites de pista:"),
+            ("show_header_split", "Split da sessao:"),
+            ("show_header_source", "Fonte dos dados:"),
+        ):
+            check = QCheckBox()
+            check.setChecked(bool(self.config.get(key, True)))
+            check.toggled.connect(
+                lambda value, current=key: self._set(current, value)
+            )
+            form.addRow(label, check)
         self.layout_content.addWidget(group)
 
     def _build_columns(self) -> None:

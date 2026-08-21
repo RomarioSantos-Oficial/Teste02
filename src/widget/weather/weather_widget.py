@@ -178,6 +178,10 @@ class WeatherWidget(QWidget):
         self.current_grid = QGridLayout(
             self.current_panel
         )
+        self.current_grid.setAlignment(
+            Qt.AlignmentFlag.AlignHCenter
+            | Qt.AlignmentFlag.AlignVCenter
+        )
 
         self.track_icon = QLabel()
         self.track_icon.setObjectName(
@@ -194,7 +198,7 @@ class WeatherWidget(QWidget):
             Qt.AlignmentFlag.AlignCenter
         )
 
-        self.track_temp = QLabel("--°C")
+        self.track_temp = QLabel("--")
         self.track_temp.setObjectName(
             "TrackTemp"
         )
@@ -202,7 +206,7 @@ class WeatherWidget(QWidget):
             Qt.AlignmentFlag.AlignCenter
         )
 
-        self.air_temp = QLabel("--°C")
+        self.air_temp = QLabel("--")
         self.air_temp.setObjectName(
             "AirTemp"
         )
@@ -285,9 +289,13 @@ class WeatherWidget(QWidget):
             card_layout = QVBoxLayout(
                 card
             )
+            card_layout.setAlignment(
+                Qt.AlignmentFlag.AlignHCenter
+                | Qt.AlignmentFlag.AlignVCenter
+            )
 
             time_label = QLabel(
-                f"+{(index + 1) * 5}m"
+                f"{(index + 1) * 5}"
             )
             time_label.setObjectName(
                 "ForecastTime"
@@ -304,7 +312,7 @@ class WeatherWidget(QWidget):
                 Qt.AlignmentFlag.AlignCenter
             )
 
-            temp_label = QLabel("--°")
+            temp_label = QLabel("--")
             temp_label.setObjectName(
                 "ForecastTemp"
             )
@@ -334,6 +342,12 @@ class WeatherWidget(QWidget):
             card_layout.addWidget(
                 rain_label
             )
+            # Nenhuma linha recebe espaco elastico: tempo, icone e
+            # temperatura permanecem agrupados no centro da celula.
+            card_layout.setStretch(0, 0)
+            card_layout.setStretch(1, 0)
+            card_layout.setStretch(2, 0)
+            card_layout.setStretch(3, 0)
 
             self.forecast_layout.addWidget(
                 card,
@@ -370,17 +384,40 @@ class WeatherWidget(QWidget):
             0,
         )
         self.status_layout.setSpacing(2)
-        self.status_layout.addWidget(
-            self.wet_status
-        )
+        self.rain_indicator = QFrame()
+        self.rain_indicator.setObjectName("WeatherMetric")
+        rain_layout = QHBoxLayout(self.rain_indicator)
+        rain_layout.setContentsMargins(0, 0, 0, 0)
+        rain_layout.setSpacing(3)
+        self.rain_metric_icon = QLabel()
+        self.rain_metric_icon.setObjectName("WeatherMetricIcon")
+        self.rain_metric_value = QLabel("0%")
+        self.rain_metric_value.setObjectName("WeatherMetricValue")
+        rain_layout.addWidget(self.rain_metric_icon)
+        rain_layout.addWidget(self.rain_metric_value)
+
+        self.wet_indicator = QFrame()
+        self.wet_indicator.setObjectName("WeatherMetric")
+        wet_layout = QHBoxLayout(self.wet_indicator)
+        wet_layout.setContentsMargins(0, 0, 0, 0)
+        wet_layout.setSpacing(3)
+        self.wet_metric_icon = QLabel()
+        self.wet_metric_icon.setObjectName("WeatherMetricIcon")
+        self.wet_metric_value = QLabel("0%")
+        self.wet_metric_value.setObjectName("WeatherMetricValue")
+        wet_layout.addWidget(self.wet_metric_icon)
+        wet_layout.addWidget(self.wet_metric_value)
+
+        self.status_layout.addWidget(self.rain_indicator)
+        self.status_layout.addSpacing(8)
+        self.status_layout.addWidget(self.wet_indicator)
         self.status_layout.addWidget(
             self.wind_status
         )
         self.status_layout.addStretch(1)
-        self.wet_status.setSizePolicy(
-            QSizePolicy.Policy.Maximum,
-            QSizePolicy.Policy.Fixed,
-        )
+        self.wet_status.hide()
+        self.rain_indicator.hide()
+        self.wet_indicator.hide()
         self.wind_status.setSizePolicy(
             QSizePolicy.Policy.Maximum,
             QSizePolicy.Policy.Fixed,
@@ -421,6 +458,17 @@ class WeatherWidget(QWidget):
                 )
             )
         )
+        show_track = bool(
+            self.config.get("show_track_temperature", True)
+        )
+        show_air = bool(
+            self.config.get("show_air_temperature", True)
+        )
+        self.track_icon.setVisible(show_track)
+        self.track_temp.setVisible(show_track)
+        self.weather_icon.setVisible(show_air)
+        self.air_temp.setVisible(show_air)
+        self.current_panel.setVisible(show_track or show_air)
         self.forecast_panel.setVisible(
             bool(
                 self.config.get(
@@ -596,14 +644,11 @@ class WeatherWidget(QWidget):
             WeatherForecast
         ],
     ) -> None:
-        symbol = self._temperature_symbol()
         self.track_temp.setText(
             f"{self._temperature(sample.track_temp_c):.1f}"
-            f"{symbol}"
         )
         self.air_temp.setText(
             f"{self._temperature(sample.air_temp_c):.1f}"
-            f"{symbol}"
         )
 
         current_state = (
@@ -669,23 +714,34 @@ class WeatherWidget(QWidget):
             )
         )
 
-        if show_wet:
-            if sample.rain >= rain_threshold:
-                text = (
-                    f"CHUVA {rain_pct}%  |  "
-                    f"PISTA {wet_pct}%"
-                )
-            else:
-                text = (
-                    f"PISTA MOLHADA {wet_pct}%"
-                )
-
-            self.wet_status.setText(
-                text
+        show_rain_metric = (
+            show_wet
+            and bool(self.config.get("show_rain_indicator", True))
+            and sample.rain >= rain_threshold
+        )
+        show_wet_metric = (
+            show_wet
+            and bool(self.config.get("show_wet_indicator", True))
+            and sample.wetness >= wet_threshold
+        )
+        self.rain_metric_value.setText(f"{rain_pct}%")
+        self.wet_metric_value.setText(f"{wet_pct}%")
+        self.rain_indicator.setVisible(show_rain_metric)
+        self.wet_indicator.setVisible(show_wet_metric)
+        if show_rain_metric:
+            self._set_metric_icon(
+                self.rain_metric_icon,
+                "rain_indicator_icon",
+                "images/tempo/gotas.png",
+                "Gotas",
             )
-            self.wet_status.show()
-        else:
-            self.wet_status.hide()
+        if show_wet_metric:
+            self._set_metric_icon(
+                self.wet_metric_icon,
+                "wet_indicator_icon",
+                "images/tempo/Pista_molhada.png",
+                "Pista molhada",
+            )
 
         show_wind = bool(
             self.config.get(
@@ -704,7 +760,7 @@ class WeatherWidget(QWidget):
             self.wind_status.hide()
 
         self.status_panel.setVisible(
-            show_wet or show_wind
+            show_rain_metric or show_wet_metric or show_wind
         )
 
         show_forecast_rain = bool(
@@ -738,16 +794,9 @@ class WeatherWidget(QWidget):
                 continue
 
             forecast = forecasts[index]
-            card["time"].setText(
-                (
-                    "EST. "
-                    if forecast.estimated
-                    else "LMU "
-                )
-                + f"+{forecast.minutes_ahead}m"
-            )
+            card["time"].setText(str(forecast.minutes_ahead))
             card["temp"].setText(
-                f"{self._temperature(forecast.air_temp_c):.1f}°"
+                f"{self._temperature(forecast.air_temp_c):.1f}"
             )
             self._set_icon(
                 card["icon"],
@@ -771,17 +820,13 @@ class WeatherWidget(QWidget):
         state: str,
         forecast: bool = False,
     ) -> None:
-        base_size = (
-            24
-            if forecast
-            else 30
-        )
+        configured_size = label.property("weather_icon_size")
+        base_size = 24 if forecast else 30
         size = max(
             10,
-            round(
-                base_size
-                * self._responsive_scale
-            ),
+            int(configured_size)
+            if configured_size is not None
+            else round(base_size * self._responsive_scale),
         )
         pixmap = self.icons.pixmap(
             state,
@@ -798,6 +843,33 @@ class WeatherWidget(QWidget):
                     state
                 )
             )
+
+    def _set_metric_icon(
+        self,
+        label: QLabel,
+        config_key: str,
+        default_path: str,
+        fallback_state: str,
+    ) -> None:
+        configured = str(self.config.get(config_key, default_path) or "").strip()
+        path = Path(configured)
+        if not path.is_absolute():
+            path = PROJECT_ROOT / path
+        pixmap = QPixmap(str(path)) if path.is_file() else QPixmap()
+        if pixmap.isNull():
+            self._set_icon(label, fallback_state)
+            return
+        pixmap = WeatherIconManager._trim_transparent_margin(pixmap)
+        size = max(10, int(label.property("weather_icon_size") or 24))
+        label.setText("")
+        label.setPixmap(
+            pixmap.scaled(
+                size,
+                size,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+        )
 
     def resizeEvent(
         self,
@@ -880,7 +952,12 @@ class WeatherWidget(QWidget):
             0,
             0,
         )
-        self.current_grid.setSpacing(gap)
+        self.current_grid.setHorizontalSpacing(
+            max(8, round(12 * s))
+        )
+        self.current_grid.setVerticalSpacing(
+            max(1, round(2 * s))
+        )
         self.forecast_layout.setContentsMargins(
             gap,
             0,
@@ -892,7 +969,7 @@ class WeatherWidget(QWidget):
         )
 
         icon_size = max(
-            12,
+            28,
             round(
                 int(
                     self.config.get(
@@ -908,30 +985,49 @@ class WeatherWidget(QWidget):
             self.track_icon,
             self.weather_icon,
         ):
+            icon.setProperty("weather_icon_size", icon_size)
             icon.setFixedSize(
                 icon_size,
                 icon_size,
             )
 
+        metric_icon_size = max(30, round(icon_size * 1.25))
+        for icon in (self.rain_metric_icon, self.wet_metric_icon):
+            icon.setProperty("weather_icon_size", metric_icon_size)
+            icon.setFixedSize(metric_icon_size, metric_icon_size)
+        if self.rain_indicator.isVisible():
+            self._set_metric_icon(
+                self.rain_metric_icon, "rain_indicator_icon",
+                "images/tempo/gotas.png", "Gotas"
+            )
+        if self.wet_indicator.isVisible():
+            self._set_metric_icon(
+                self.wet_metric_icon, "wet_indicator_icon",
+                "images/tempo/Pista_molhada.png", "Pista molhada"
+            )
+
         for card in self.forecast_cards:
             forecast_icon = max(
-                10,
+                30,
                 round(
-                    icon_size * 0.80
+                    icon_size * 1.25
                 ),
+            )
+            card["icon"].setProperty(
+                "weather_icon_size", forecast_icon
             )
             card["icon"].setFixedSize(
                 forecast_icon,
                 forecast_icon,
             )
             card["layout"].setContentsMargins(
-                max(1, round(2 * s)),
-                max(1, round(2 * s)),
-                max(1, round(2 * s)),
-                max(1, round(2 * s)),
+                0,
+                0,
+                0,
+                0,
             )
             card["layout"].setSpacing(
-                max(1, round(2 * s))
+                0
             )
 
         current_width = max(
@@ -1002,22 +1098,22 @@ class WeatherWidget(QWidget):
             ),
         )
         value_size = max(
-            7,
+            14,
             round(base_font * scale),
         )
         forecast_size = max(
-            6,
+            14,
             round(
                 base_font
-                * 0.75
+                * 0.95
                 * scale
             ),
         )
         time_size = max(
-            6,
+            13,
             round(
                 base_font
-                * 0.62
+                * 0.82
                 * scale
             ),
         )
@@ -1099,21 +1195,19 @@ class WeatherWidget(QWidget):
             }}
 
             QLabel#TrackTemp {{
-                background-color: {panel};
+                background: transparent;
                 color: {track};
-                border: {border}px solid {border_color};
-                border-radius: {radius}px;
-                padding: {padding}px;
+                border: none;
+                padding: 0px;
                 font-size: {value_size}px;
                 font-weight: 900;
             }}
 
             QLabel#AirTemp {{
-                background-color: {panel};
+                background: transparent;
                 color: {air};
-                border: {border}px solid {border_color};
-                border-radius: {radius}px;
-                padding: {padding}px;
+                border: none;
+                padding: 0px;
                 font-size: {value_size}px;
                 font-weight: 900;
             }}
@@ -1128,6 +1222,25 @@ class WeatherWidget(QWidget):
                 font-weight: 900;
             }}
 
+            QFrame#WeatherMetric {{
+                background: transparent;
+                border: none;
+            }}
+
+            QLabel#WeatherMetricIcon {{
+                background: transparent;
+                border: none;
+            }}
+
+            QLabel#WeatherMetricValue {{
+                background: transparent;
+                color: {wet_text};
+                border: none;
+                padding: 0px;
+                font-size: {forecast_size}px;
+                font-weight: 900;
+            }}
+
             QLabel#WindStatus {{
                 background-color: {background};
                 color: {muted};
@@ -1138,24 +1251,23 @@ class WeatherWidget(QWidget):
             }}
 
             QFrame#ForecastCard {{
-                background-color: {background};
-                border: {border}px solid {border_color};
-                border-radius: {radius}px;
+                background: transparent;
+                border: none;
             }}
 
             QLabel#ForecastTime {{
                 color: {muted};
                 font-size: {time_size}px;
-                font-weight: bold;
+                font-weight: 900;
             }}
 
             QLabel#ForecastTemp {{
-                background-color: {panel};
+                background: transparent;
                 color: {forecast_text};
-                border-radius: {radius}px;
-                padding: {padding}px;
+                border: none;
+                padding: 0px;
                 font-size: {forecast_size}px;
-                font-weight: bold;
+                font-weight: 900;
             }}
 
             QLabel#ForecastRain {{

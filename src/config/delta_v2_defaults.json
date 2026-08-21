@@ -95,6 +95,8 @@
   },
   "penalty_limit_fallback": 0.0,
   "sector_tolerance_seconds": 0.001,
+  "sector_show_seconds": 5.0,
+  "sector_background_opacity": 0.72,
   "delta_good_side": "right",
   "penalty_increment": 0.25,
   "logo_auto_refresh": true,

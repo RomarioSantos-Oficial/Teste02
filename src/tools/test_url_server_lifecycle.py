@@ -10,6 +10,8 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtWidgets import QApplication, QLabel
 
+from src.ui.widget_registry import WIDGET_DEFINITIONS
+from src.widget.url.url_editor import AVAILABLE
 from src.widget.url.url_server_widget import UrlServerWidget
 
 
@@ -23,6 +25,15 @@ class UrlServerLifecycleTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.app = QApplication.instance() or QApplication([])
+
+    def test_editor_lists_every_implemented_publishable_widget(self) -> None:
+        expected = {
+            definition.widget_id
+            for definition in WIDGET_DEFINITIONS
+            if definition.implemented and definition.widget_id != "url"
+        }
+        self.assertEqual(set(AVAILABLE), expected)
+        self.assertIn("lap_timer", AVAILABLE)
 
     def test_disabling_stops_capture_and_closes_listening_port(self) -> None:
         port = free_port()

@@ -226,6 +226,8 @@ class LMUAdapter:
 
                 last_s1 = safe_float(getattr(score, "mLastSector1", 0.0))
                 last_s12 = safe_float(getattr(score, "mLastSector2", 0.0))
+                current_s1 = safe_float(getattr(score, "mCurSector1", 0.0))
+                current_s12 = safe_float(getattr(score, "mCurSector2", 0.0))
                 last_lap, last_lap_invalidated = (
                     self._resolve_driver_last_lap(
                         slot_id,
@@ -307,6 +309,10 @@ class LMUAdapter:
                         last_sector1_s=last_s1,
                         last_sector2_s=positive_difference(last_s12, last_s1),
                         last_sector3_s=positive_difference(last_lap, last_s12),
+                        current_sector1_s=current_s1,
+                        current_sector2_s=positive_difference(
+                            current_s12, current_s1
+                        ),
                         gap_ahead_s=safe_float(score.mTimeBehindNext),
                         gap_leader_s=safe_float(score.mTimeBehindLeader),
                         laps_behind_ahead=safe_int(

@@ -28,26 +28,38 @@ class DeltaSectorTracker:
         self.tolerance_s = max(0.0001, float(tolerance_s))
         self._session_key = ""
         self._last_values: list[float | None] = [None, None, None]
+        self._personal_best_values: list[float | None] = [None, None, None]
         self._display: list[DeltaSectorData] = self._empty()
+        self.last_changed_index: int | None = None
 
     def reset(self) -> None:
         self._session_key = ""
         self._last_values = [None, None, None]
+        self._personal_best_values = [None, None, None]
         self._display = self._empty()
+        self.last_changed_index = None
 
     def update(self, session: Any, session_key: str) -> list[DeltaSectorData]:
+        self.last_changed_index = None
         if session_key != self._session_key:
             self._session_key = session_key
             self._last_values = [None, None, None]
+            self._personal_best_values = [None, None, None]
             self._display = self._empty()
 
         player_row = self._player_row(session)
         if player_row is None:
             return self._copy_display()
 
+        # S1/S2 usam os splits da volta atual. Os campos ``last_*`` so
+        # mudam na chegada e faziam os tres anuncios ocorrerem juntos.
         latest = [
-            self._positive(getattr(player_row, "last_sector1_s", 0.0)),
-            self._positive(getattr(player_row, "last_sector2_s", 0.0)),
+            self._positive(
+                getattr(player_row, "current_sector1_s", 0.0)
+            ) or self._positive(getattr(player_row, "last_sector1_s", 0.0)),
+            self._positive(
+                getattr(player_row, "current_sector2_s", 0.0)
+            ) or self._positive(getattr(player_row, "last_sector2_s", 0.0)),
             self._positive(getattr(player_row, "last_sector3_s", 0.0)),
         ]
         personal_best = [
@@ -55,6 +67,9 @@ class DeltaSectorTracker:
             self._positive(getattr(player_row, "best_sector2_s", 0.0)),
             self._positive(getattr(player_row, "best_sector3_s", 0.0)),
         ]
+        for index, value in enumerate(personal_best):
+            if self._personal_best_values[index] is None and value is not None:
+                self._personal_best_values[index] = value
         session_best = self._session_best_sectors(
             session,
             str(getattr(player_row, "vehicle_class", "") or ""),
@@ -94,21 +109,25 @@ class DeltaSectorTracker:
             personal = personal_best[index]
             category_best = session_best[index]
 
-            status = SECTOR_WORSE
+            # O delta de cada setor sempre usa como referencia o setor da
+            # melhor volta pessoal, nunca o setor da volta imediatamente
+            # anterior. ``previous`` serve apenas para detectar uma nova
+            # passagem e impedir que o anuncio seja repetido.
+            comparison = self._personal_best_values[index] or personal
+            status = SECTOR_NEUTRAL
             if (
                 category_best is not None
                 and current <= category_best + self.tolerance_s
             ):
                 status = SECTOR_SESSION_BEST
-            elif (
-                personal is not None
-                and current <= personal + self.tolerance_s
-            ):
+            elif comparison is not None and current < comparison - self.tolerance_s:
                 status = SECTOR_BETTER
+            elif comparison is not None:
+                status = SECTOR_WORSE
 
             delta_s = None
-            if personal is not None:
-                delta_s = current - personal
+            if comparison is not None:
+                delta_s = current - comparison
 
             self._display[index] = DeltaSectorData(
                 label=f"S{index + 1}",
@@ -116,6 +135,12 @@ class DeltaSectorTracker:
                 time_s=current,
                 status=status,
             )
+            if (
+                self._personal_best_values[index] is None
+                or current < self._personal_best_values[index]
+            ):
+                self._personal_best_values[index] = current
+            self.last_changed_index = index
 
         return self._copy_display()
 

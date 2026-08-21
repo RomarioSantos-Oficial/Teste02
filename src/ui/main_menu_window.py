@@ -38,6 +38,7 @@ from src.widget.relative.relative_editor import RelativeEditor
 from src.widget.map.map_editor import MapEditor
 from src.widget.standings.standings_editor import StandingsEditor
 from src.widget.fuel_time.fuel_time_editor import FuelTimeEditor
+from src.widget.lap_timer.lap_timer_editor import LapTimerEditor
 from src.widget.url.url_editor import UrlEditor
 from src.widget.radar.radar_editor import RadarEditor
 
@@ -495,6 +496,10 @@ class MainMenuWindow(QMainWindow):
             )
         elif widget_id == "fuel_time":
             editor = FuelTimeEditor(
+                deepcopy(self.overlay_manager.config_data["widgets"][widget_id]), None
+            )
+        elif widget_id == "lap_timer":
+            editor = LapTimerEditor(
                 deepcopy(self.overlay_manager.config_data["widgets"][widget_id]), None
             )
         elif widget_id == "url":

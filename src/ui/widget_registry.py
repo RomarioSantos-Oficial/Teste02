@@ -20,6 +20,7 @@ WIDGET_DEFINITIONS: list[WidgetDefinition] = [
     WidgetDefinition("driver_panel", "Telemetry", "Carro", True, True),
     WidgetDefinition("battery", "Battery", "Carro", True, True),
     WidgetDefinition("fuel_time", "Fuel Time", "Estratégia", True, True),
+    WidgetDefinition("lap_timer", "Lap Timer", "Corrida", True, True),
     WidgetDefinition("tires", "Tyres", "Carro", True, True),
     WidgetDefinition("damage", "Damage", "Carro", True, True),
     WidgetDefinition("url", "URL", "Sistema", True, True),

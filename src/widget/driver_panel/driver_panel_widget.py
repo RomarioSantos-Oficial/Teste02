@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections import deque
+from bisect import bisect_right
+import time
 from typing import Any
 
 from PySide6.QtCore import QPoint, QRectF, Qt, Signal
@@ -33,6 +35,23 @@ class DriverPanelWidget(QWidget):
         )
         self.throttle_history: deque[float] = deque(maxlen=history_size)
         self.brake_history: deque[float] = deque(maxlen=history_size)
+        self.clutch_history: deque[float] = deque(maxlen=history_size)
+        self.rpm_history: deque[float] = deque(maxlen=history_size)
+        self.steering_history: deque[float] = deque(maxlen=history_size)
+        self.speed_history: deque[float] = deque(maxlen=history_size)
+        self.history_times: deque[float] = deque(maxlen=history_size)
+        self._active_graph_interval = str(
+            config.get("graph_interval", "10 s")
+        )
+        self._smoothed_steering = 0.0
+        self._max_rpm_seen = 0.0
+        self._max_throttle_seen = 0.0
+        self._max_brake_seen = 0.0
+        self._max_clutch_seen = 0.0
+        self._previous_throttle = 0.0
+        self._previous_brake = 0.0
+        self._previous_gear = 0
+        self._gear_flash_until = 0.0
 
         self.edit_mode = False
         self._dragging = False
@@ -57,10 +76,9 @@ class DriverPanelWidget(QWidget):
             float(self.config.get("opacity", 0.96))
         )
 
-        history_size = max(
-            30,
-            int(self.config.get("graph_history_points", 240)),
-        )
+        interval = str(self.config.get("graph_interval", "10 s"))
+        seconds = {"5 s": 5, "10 s": 10, "30 s": 30, "Volta": 180, "Sessão": 3600}.get(interval, 10)
+        history_size = max(30, min(216000, int(self.config.get("sample_rate_hz", 60)) * seconds))
 
         if self.throttle_history.maxlen != history_size:
             self.throttle_history = deque(
@@ -71,6 +89,15 @@ class DriverPanelWidget(QWidget):
                 self.brake_history,
                 maxlen=history_size,
             )
+            self.clutch_history = deque(self.clutch_history, maxlen=history_size)
+            self.rpm_history = deque(self.rpm_history, maxlen=history_size)
+            self.steering_history = deque(self.steering_history, maxlen=history_size)
+            self.speed_history = deque(self.speed_history, maxlen=history_size)
+            self.history_times = deque(self.history_times, maxlen=history_size)
+
+        if interval != self._active_graph_interval:
+            self.clear_graph()
+            self._active_graph_interval = interval
 
         self.update()
 
@@ -121,32 +148,64 @@ class DriverPanelWidget(QWidget):
                 float(getattr(player_data, "brake", 0.0)),
             ),
         )
+        clutch = max(0.0, min(1.0, float(getattr(player_data, "clutch", 0.0))))
+        steering = max(-1.0, min(1.0, float(getattr(player_data, "steering", 0.0))))
+        smoothing = max(0.0, min(0.95, float(self.config.get("steering_smoothing", 0.32))))
+        self._smoothed_steering += (steering - self._smoothed_steering) * (1.0 - smoothing)
+        rpm = max(0.0, float(getattr(player_data, "rpm", 0.0)))
+        max_rpm = max(1.0, float(getattr(player_data, "max_rpm", 9000.0) or 9000.0))
+        speed_kmh = max(0.0, float(getattr(player_data, "speed_kmh", 0.0)))
+        gear = int(getattr(player_data, "gear", 0))
+        if gear != self._previous_gear:
+            self._gear_flash_until = time.monotonic() + 0.22
+            self._previous_gear = gear
+        self._max_rpm_seen = max(self._max_rpm_seen, rpm)
+        self._max_throttle_seen = max(self._max_throttle_seen, throttle)
+        self._max_brake_seen = max(self._max_brake_seen, brake)
+        self._max_clutch_seen = max(self._max_clutch_seen, clutch)
 
         self.throttle_history.append(throttle)
         self.brake_history.append(brake)
+        self.clutch_history.append(clutch)
+        self.rpm_history.append(min(1.0, rpm / max_rpm))
+        self.steering_history.append((self._smoothed_steering + 1.0) * 0.5)
+        self.speed_history.append(min(1.0, speed_kmh / 350.0))
+        self.history_times.append(time.monotonic())
 
         self.view_data = DriverPanelViewData(
-            speed_kmh=float(
-                getattr(player_data, "speed_kmh", 0.0)
-            ),
-            rpm=float(getattr(player_data, "rpm", 0.0)),
-            max_rpm=float(
-                getattr(player_data, "max_rpm", 9000.0)
-                or 9000.0
-            ),
-            gear=int(getattr(player_data, "gear", 0)),
+            speed_kmh=speed_kmh,
+            rpm=rpm,
+            max_rpm=max_rpm,
+            gear=gear,
             throttle=throttle,
             brake=brake,
-            steering=float(
-                getattr(player_data, "steering", 0.0)
-            ),
+            clutch=clutch,
+            steering=self._smoothed_steering,
+            max_rpm_seen=self._max_rpm_seen,
+            max_throttle_seen=self._max_throttle_seen,
+            max_brake_seen=self._max_brake_seen,
+            max_clutch_seen=self._max_clutch_seen,
+            throttle_abrupt=throttle - self._previous_throttle > 0.20,
+            brake_abrupt=brake - self._previous_brake > 0.20,
+            gear_flash=time.monotonic() < self._gear_flash_until,
         )
+        self._previous_throttle = throttle
+        self._previous_brake = brake
 
         self.update()
 
     def clear_graph(self) -> None:
         self.throttle_history.clear()
         self.brake_history.clear()
+        self.clutch_history.clear()
+        self.rpm_history.clear()
+        self.steering_history.clear()
+        self.speed_history.clear()
+        self.history_times.clear()
+        self._max_rpm_seen = 0.0
+        self._max_throttle_seen = 0.0
+        self._max_brake_seen = 0.0
+        self._max_clutch_seen = 0.0
         self.update()
 
     def set_edit_mode(self, enabled: bool) -> None:
@@ -166,18 +225,65 @@ class DriverPanelWidget(QWidget):
         del event
 
         painter = QPainter(self)
+        throttle, brake, clutch, rpm, steering, speed = self._visible_history()
         self.renderer.draw(
             painter,
             QRectF(self.rect()),
             self.view_data,
-            list(self.throttle_history),
-            list(self.brake_history),
+            throttle,
+            brake,
+            clutch,
+            rpm,
+            steering,
+            speed,
             self.config,
             self.edit_mode,
         )
 
         if self.edit_mode:
             self._draw_resize_handle(painter)
+
+    def _visible_history(self) -> tuple[list[float], ...]:
+        """Mantém a curva original e posiciona cada amostra pelo tempo real."""
+        times = list(self.history_times)
+        series = [
+            list(self.throttle_history),
+            list(self.brake_history),
+            list(self.clutch_history),
+            list(self.rpm_history),
+            list(self.steering_history),
+            list(self.speed_history),
+        ]
+        if not times:
+            return tuple(series)
+
+        interval = str(self.config.get("graph_interval", "10 s"))
+        seconds = {"5 s": 5.0, "10 s": 10.0, "30 s": 30.0}.get(interval)
+        if seconds is not None:
+            now = time.monotonic()
+            cutoff = now - seconds
+            # Inclui uma amostra anterior ao corte para a linha entrar pela
+            # borda esquerda sem mudar seu formato.
+            start = max(0, bisect_right(times, cutoff) - 1)
+            timed: list[list[tuple[float, float]]] = []
+            for values in series:
+                timed.append([
+                    ((stamp - cutoff) / seconds, values[index])
+                    for index, stamp in enumerate(times[start:], start=start)
+                ])
+            return tuple(timed)
+
+        # Volta/sessão não possuem duração fixa antecipadamente; nesses modos
+        # apenas reduzimos a resolução sem alterar a ordem das amostras.
+        points = max(2, int(self.config.get("graph_history_points", 240)))
+        length = len(series[0])
+        if length > points:
+            indexes = [
+                round(index * (length - 1) / (points - 1))
+                for index in range(points)
+            ]
+            series = [[values[index] for index in indexes] for values in series]
+        return tuple(series)
 
     def _draw_resize_handle(self, painter: QPainter) -> None:
         size = max(10, int(min(self.width(), self.height()) * 0.055))

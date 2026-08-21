@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QLineF, QPoint, QRectF, Qt, QTimer, Signal
+from PySide6.QtCore import QLineF, QPoint, QPointF, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent, QPixmap
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
@@ -67,6 +67,7 @@ class StandingsWidget(QWidget):
         ("best", 140.0),
         ("last", 140.0),
         ("interval", 100.0),
+        ("delta", 90.0),
         ("gap", 100.0),
         ("tyre", 76.0),
         ("energy", 105.0),
@@ -490,11 +491,15 @@ class StandingsWidget(QWidget):
         painter.setRenderHint(QPainter.RenderHint.TextAntialiasing, True)
         colors = self.config.get("colors", {})
         outer = QRectF(self.rect()).adjusted(1, 1, -1, -1)
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor(colors.get("background", "#030711")))
-        painter.drawRect(outer)
+        popup_reserve = self._penalty_popup_reserve()
+        visual_outer = QRectF(outer)
+        visual_outer.setRight(max(outer.left(), outer.right() - popup_reserve))
+        if bool(self.config.get("background_enabled", True)):
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(colors.get("background", "#030711")))
+            painter.drawRect(visual_outer)
         margin = max(2.0, float(self.config.get("panel_margin", 8.0)) * self._scale)
-        content = outer.adjusted(margin, margin, -margin, -margin)
+        content = visual_outer.adjusted(margin, margin, -margin, -margin)
         y = content.top()
         if self._header_items():
             header_height = self._global_header_height()
@@ -512,7 +517,7 @@ class StandingsWidget(QWidget):
         if self.edit_mode:
             painter.setPen(QPen(QColor(colors.get("edit_border", "#9B5CFF")), max(1.0, 2.0 * self._scale), Qt.PenStyle.DashLine))
             painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.drawRect(outer)
+            painter.drawRect(visual_outer)
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor("#FFFFFF"))
             painter.drawRect(self._resize_handle_rect())
@@ -523,24 +528,11 @@ class StandingsWidget(QWidget):
         painter.setBrush(QColor(colors.get("header_background", "#000000")))
         painter.drawRect(rect)
         items = self._header_items()
-        # As fracoes antigas deixavam, por exemplo, 20% do painel reservado
-        # para "0x/4x". Em telas estreitas isso criava grandes vazios. Mede o
-        # conteudo real e distribui toda a largura de forma proporcional.
-        measure_font = self._section_font(
-            "global_header_font_size", 20.0, rect, 0.86
-        )
-        metrics = QFontMetrics(measure_font)
-        preferred_widths: list[float] = []
-        for text, _fraction, icon in items:
-            icon_width = rect.height() * 0.70 + 4 * self._scale if icon else 0.0
-            preferred_widths.append(
-                max(
-                    38.0 * self._scale,
-                    metrics.horizontalAdvance(str(text))
-                    + icon_width
-                    + 14.0 * self._scale,
-                )
-            )
+        # As larguras usam pesos fixos por tipo de informacao. Medir o texto
+        # atual fazia os blocos oscilarem quando um relogio ganhava digitos ou
+        # os algarismos mudavam de largura. Os pesos sao normalizados para
+        # continuar ocupando exatamente toda a faixa disponivel.
+        preferred_widths = [max(0.01, float(fraction)) for _text, fraction, _icon in items]
         preferred_total = sum(preferred_widths) or 1.0
         x = rect.left()
         for index, (text, fraction, icon) in enumerate(items):
@@ -549,18 +541,10 @@ class StandingsWidget(QWidget):
                 width = rect.right() - x
             cell = QRectF(x, rect.top(), width, rect.height())
             x += width
-            if index > 0:
-                painter.setPen(QPen(QColor(colors.get("header_separator", "#1E2633")), max(1.0, self._scale)))
-                painter.drawLine(cell.topLeft(), cell.bottomLeft())
-            target_width = max(
-                1.0,
-                self.DESIGN_WIDTH * preferred_widths[index]
-                / preferred_total * self._scale,
-            )
-            self._column_content_scale = max(
-                0.30,
-                min(1.0, cell.width() / target_width),
-            )
+            # Cada item ocupa proporcionalmente toda a largura restante, sem
+            # linhas verticais. A fonte parte do tamanho configurado e so e
+            # reduzida abaixo quando o conteudo realmente nao cabe na celula.
+            self._column_content_scale = 1.0
             painter.setFont(self._section_font("global_header_font_size", 20.0, cell, 1.0 if index == 0 else 0.86))
             painter.setPen(QColor(colors.get("text", "#FFFFFF")))
             target = cell.adjusted(4 * self._scale, 0, -3 * self._scale, 0)
@@ -589,6 +573,7 @@ class StandingsWidget(QWidget):
             else:
                 label = f"{icon}  {text}".strip()
             font = painter.font()
+            font.setBold(True)
             while font.pixelSize() > 7 and QFontMetrics(font).horizontalAdvance(label) > max(1.0, target.width()):
                 font.setPixelSize(font.pixelSize() - 1)
             painter.setFont(font)
@@ -668,40 +653,50 @@ class StandingsWidget(QWidget):
             (cell.width() for key, cell in distributed_columns if key == "dr"),
             dr_effective_width * self._scale,
         )
-        x = rect.left()
-        boxes = [
-            (
-                QRectF(x, rect.top(), class_width, rect.height() - 3 * self._scale),
-                category.class_name,
-            )
+        definitions: list[tuple[str, float, str]] = [
+            ("class", class_width, category.class_name)
         ]
-        x += class_width + gap
         if category.show_count:
-            boxes.append(
-                (
-                    QRectF(x, rect.top(), count_width, rect.height() - 3 * self._scale),
-                    f"{category.started}/{category.total}",
-                )
+            definitions.append(
+                ("count", count_width, f"{category.started}/{category.total}")
             )
-            x += count_width + gap
         lap_label = f"🏁  {category.current_lap}/{category.total_laps_text}"
-        boxes.append(
-            (
-                QRectF(x, rect.top(), lap_width, rect.height() - 3 * self._scale),
-                lap_label,
-            )
+        definitions.append(("lap", lap_width, lap_label))
+        has_sof = bool(
+            category.dr_sof_rank and category.dr_sof_progress is not None
         )
-        x += lap_width + gap
+        if has_sof:
+            definitions.append(("sof", sof_width, ""))
+
+        available = max(
+            1.0,
+            rect.width() - gap * max(0, len(definitions) - 1),
+        )
+        weight_total = sum(weight for _key, weight, _text in definitions) or 1.0
+        boxes: list[tuple[QRectF, str]] = []
         sof_box = None
-        if category.dr_sof_rank and category.dr_sof_progress is not None:
-            sof_box = QRectF(
+        x = rect.left()
+        for index, (key, weight, text) in enumerate(definitions):
+            width = available * weight / weight_total
+            if index == len(definitions) - 1:
+                width = rect.right() - x
+            box = QRectF(
                 x,
                 rect.top(),
-                sof_width,
+                max(1.0, width),
                 rect.height() - 3 * self._scale,
             )
-        painter.setFont(self._section_font("category_header_font_size", 18.0, rect))
+            if key == "sof":
+                sof_box = box
+            else:
+                boxes.append((box, text))
+            x += width + gap
+        base_category_font = self._section_font(
+            "category_header_font_size", 18.0, rect
+        )
+        base_category_font.setBold(True)
         for box, text in boxes:
+            painter.setFont(QFont(base_category_font))
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(color)
             painter.drawRect(box)
@@ -714,6 +709,15 @@ class StandingsWidget(QWidget):
                     pixmap = pixmap.scaled(max(1, int(size)), max(1, int(size)), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
                     painter.drawPixmap(int(target.left()), int(target.center().y() - pixmap.height() / 2), pixmap)
                     target.setLeft(target.left() + size + 3 * self._scale)
+            font = painter.font()
+            font.setBold(True)
+            while (
+                font.pixelSize() > 7
+                and QFontMetrics(font).horizontalAdvance(text)
+                > max(1.0, target.width())
+            ):
+                font.setPixelSize(font.pixelSize() - 1)
+            painter.setFont(font)
             painter.drawText(target, Qt.AlignmentFlag.AlignCenter, text)
         if sof_box is not None:
             header_content_scale = self._column_content_scale
@@ -723,7 +727,8 @@ class StandingsWidget(QWidget):
                 0.20,
                 min(
                     3.0,
-                    sof_width / max(1.0, dr_effective_width * self._scale),
+                    sof_box.width()
+                    / max(1.0, dr_effective_width * self._scale),
                 ),
             )
             self._draw_rank(
@@ -777,7 +782,7 @@ class StandingsWidget(QWidget):
             "position": "P", "change": "+/-", "flag": "PAÍS", "badge": "BADGE",
             "dr": "DR", "sr": "SR", "gain_dr": "ΔDR",
             "driver": "PILOTO", "brand": "MAR", "number": "#", "laps": "VLT",
-            "pit": "PIT", "best": "BEST", "last": "LAST", "interval": "INT", "gap": "GAP", "track_limits": "LIM", "penalty": "PEN",
+            "pit": "PIT", "best": "BEST", "last": "LAST", "interval": "INT", "delta": "DELTA", "gap": "GAP", "track_limits": "LIM", "penalty": "PEN",
             "tyre": "TYR",
             "energy": "VE/FUEL", "damage": "DMG",
         }
@@ -807,6 +812,38 @@ class StandingsWidget(QWidget):
 
     def _draw_row(self, painter: QPainter, rect: QRectF, row: StandingRow, category: CategoryBlock) -> None:
         colors = self.config.get("colors", {})
+        cells = self._column_rects(rect)
+        penalty_cell = next((cell for key, cell in cells if key == "penalty"), None)
+        detached_penalty = bool(self.config.get("detach_penalty_column", True))
+        penalty_gap = max(
+            0.0,
+            float(self.config.get("penalty_column_gap", 10.0)) * self._scale,
+        ) if detached_penalty else 0.0
+        main_right = (
+            max(rect.left(), penalty_cell.left() - penalty_gap)
+            if penalty_cell is not None and detached_penalty
+            else rect.right()
+        )
+        main_rect = QRectF(
+            rect.left(), rect.top(), main_right - rect.left(), rect.height()
+        )
+        if penalty_cell is not None and detached_penalty:
+            # A coluna de avisos fica fora do corpo da classificação. Limpa
+            # também o vão de separação, inclusive sobre o fundo geral.
+            painter.save()
+            painter.setCompositionMode(
+                QPainter.CompositionMode.CompositionMode_Clear
+            )
+            painter.fillRect(
+                QRectF(
+                    main_right,
+                    rect.top(),
+                    rect.right() - main_right,
+                    rect.height(),
+                ),
+                Qt.GlobalColor.transparent,
+            )
+            painter.restore()
         background = QColor(colors.get("row_background", "#030711"))
         if row.is_player:
             background = QColor(colors.get("player_background", "#111B2B"))
@@ -814,8 +851,7 @@ class StandingsWidget(QWidget):
             background = QColor(colors.get("pit_row_background", "#17191D"))
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(background)
-        painter.drawRect(rect)
-        cells = self._column_rects(rect)
+        painter.drawRect(main_rect)
         for key, cell in cells:
             base_width = dict(self.BASE_COLUMNS).get(key, cell.width())
             configured_width = float(
@@ -839,15 +875,42 @@ class StandingsWidget(QWidget):
             painter.setClipRect(cell)
             self._draw_cell(painter, key, cell, row, category)
             painter.restore()
+        if (
+            detached_penalty
+            and bool(self.config.get("show_penalty_column", True))
+        ):
+            popup_gap = max(
+                0.0,
+                float(self.config.get("penalty_column_gap", 10.0)) * self._scale,
+            )
+            popup_width = max(
+                18.0,
+                self._effective_column_width(
+                    "penalty",
+                    float(
+                        self.config.get("column_widths", {}).get(
+                            "penalty", dict(self.BASE_COLUMNS).get("penalty", 90.0)
+                        )
+                    ),
+                ) * self._scale,
+            )
+            popup = QRectF(
+                rect.right() + popup_gap,
+                rect.top(),
+                popup_width,
+                rect.height(),
+            )
+            painter.save()
+            painter.setClipRect(popup)
+            self._draw_cell(painter, "penalty", popup, row, category)
+            painter.restore()
         self._column_content_scale = 1.0
         row_color = self._row_class_color(row, category)
         painter.setPen(QPen(row_color, max(1.0, 1.2 * self._scale)))
-        penalty_cell = next((cell for key, cell in cells if key == "penalty"), None)
-        if penalty_cell is None:
+        if penalty_cell is None or not detached_penalty:
             painter.drawLine(rect.bottomLeft(), rect.bottomRight())
         else:
-            painter.drawLine(rect.bottomLeft(), penalty_cell.bottomLeft())
-            painter.drawLine(penalty_cell.bottomRight(), rect.bottomRight())
+            painter.drawLine(rect.bottomLeft(), QPointF(main_right, rect.bottom()))
 
     def _row_class_color(self, row: StandingRow, category: CategoryBlock) -> QColor:
         """Return the car's own class color, including in the mixed-class Relative."""
@@ -1027,7 +1090,7 @@ class StandingsWidget(QWidget):
             self._text(
                 painter,
                 cell,
-                f"Pit {row.pit_time_s:.0f}s",
+                f"{row.pit_time_s:.0f} s",
                 0.54,
                 True,
                 QColor("#FFFFFF"),
@@ -1065,6 +1128,39 @@ class StandingsWidget(QWidget):
             self._text(painter, rect, format_lap(row.last_lap_s), 0.68, True, color)
         elif key == "interval":
             self._text(painter, rect, row.interval_text, 0.68, True)
+        elif key == "delta":
+            value = row.rolling_delta_s
+            if value is None:
+                self._text(
+                    painter,
+                    rect,
+                    "--",
+                    0.68,
+                    True,
+                    QColor(colors.get("muted", "#A7AFBA")),
+                )
+                return
+            if value != 0.0:
+                background = QColor(
+                    colors.get(
+                        "delta_gain" if value > 0.0 else "delta_loss",
+                        "#008E16" if value > 0.0 else "#E52B35",
+                    )
+                )
+                background.setAlphaF(
+                    max(0.0, min(1.0, float(self.config.get("delta_background_opacity", 0.85))))
+                )
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(background)
+                painter.drawRect(
+                    rect.adjusted(
+                        3 * self._scale,
+                        3 * self._scale,
+                        -3 * self._scale,
+                        -3 * self._scale,
+                    )
+                )
+            self._text(painter, rect, row.rolling_delta_text, 0.68, True)
         elif key == "gap":
             self._text(painter, rect, row.gap_text, 0.68, True)
         elif key == "penalty":
@@ -1088,9 +1184,13 @@ class StandingsWidget(QWidget):
             has_penalty = row.penalty_text not in {"", "--"}
 
             # Prioridade solicitada para a coluna automática:
-            # GAR > DNF > DQ > INV > amarela > punição.
+            # GAR > PIT > DNF > DQ > INV > amarela > punição.
             if in_garage:
                 text, background, foreground = "GAR", QColor("#666666"), QColor("#FFFFFF")
+            elif row.in_pits:
+                text = "PIT"
+                background = QColor(colors.get("pit", "#F97316"))
+                foreground = QColor("#FFFFFF")
             elif is_dnf:
                 text, background, foreground = "DNF", QColor(colors.get("invalid_lap", "#FF3B45")), QColor("#FFFFFF")
             elif is_dq:
@@ -1410,6 +1510,10 @@ class StandingsWidget(QWidget):
         for key, default_width in self.BASE_COLUMNS:
             if not enabled.get(key, True):
                 continue
+            if key == "penalty" and bool(
+                self.config.get("detach_penalty_column", True)
+            ):
+                continue
             width = self._effective_column_width(
                 key,
                 float(configured_widths.get(key, default_width)),
@@ -1417,17 +1521,50 @@ class StandingsWidget(QWidget):
             if key in {"dr", "sr"} and show_gain_in_dr:
                 width *= 145.0 / 110.0
             columns.append((key, max(24.0, width)))
+        penalty_gap = (
+            max(0.0, float(self.config.get("penalty_column_gap", 10.0)))
+            * self._scale
+            if (
+                bool(self.config.get("detach_penalty_column", True))
+                and any(key == "penalty" for key, _ in columns)
+            )
+            else 0.0
+        )
         base_total = sum(width for _, width in columns)
-        factor = rect.width() / base_total if base_total > 0 else 1.0
+        usable_width = max(1.0, rect.width() - penalty_gap)
+        factor = usable_width / base_total if base_total > 0 else 1.0
         x = rect.left()
         result: list[tuple[str, QRectF]] = []
         for index, (key, width) in enumerate(columns):
+            if key == "penalty":
+                x += penalty_gap
             actual = width * factor
             if index == len(columns) - 1:
                 actual = rect.right() - x
             result.append((key, QRectF(x, rect.top(), actual, rect.height())))
             x += actual
         return result
+
+    def _penalty_popup_reserve(self) -> float:
+        if not (
+            bool(self.config.get("detach_penalty_column", True))
+            and bool(self.config.get("show_penalty_column", True))
+        ):
+            return 0.0
+        configured = float(
+            self.config.get("column_widths", {}).get(
+                "penalty", dict(self.BASE_COLUMNS).get("penalty", 90.0)
+            )
+        )
+        width = max(
+            18.0,
+            self._effective_column_width("penalty", configured) * self._scale,
+        )
+        gap = max(
+            0.0,
+            float(self.config.get("penalty_column_gap", 10.0)) * self._scale,
+        )
+        return width + gap
 
     def _enabled_columns(self) -> dict[str, bool]:
         return {
@@ -1446,6 +1583,11 @@ class StandingsWidget(QWidget):
             "last": bool(self.config.get("show_last_lap", True)),
             "interval": (
                 bool(self.config.get("show_interval", True))
+                and not bool(self.config.get("relative_mode", False))
+                and self.view.session_type == "Race"
+            ),
+            "delta": (
+                bool(self.config.get("show_delta", False))
                 and not bool(self.config.get("relative_mode", False))
                 and self.view.session_type == "Race"
             ),

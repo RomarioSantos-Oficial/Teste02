@@ -53,6 +53,7 @@ class LMUPenaltyLogReader:
         self._previous_counts: dict[int, int] = {}
         self._session_marker = ""
         self._next_refresh_at = 0.0
+        self._next_path_scan_at = 0.0
         self._trace_fragment = ""
         self._result_fragment = ""
 
@@ -100,9 +101,17 @@ class LMUPenaltyLogReader:
             self._by_driver.clear()
             self._anonymous.clear()
             self._previous_counts.clear()
+            self._next_path_scan_at = 0.0
         self._session_marker = marker
 
-        self._refresh_files()
+        # Enumerar todos os traces e XMLs do LMU pode levar 80-100 ms em
+        # instalações com muitos resultados. A execução a cada 0,25 s
+        # bloqueava toda a interface quatro vezes por segundo. Os arquivos
+        # ativos raramente mudam durante uma sessão, portanto só refazemos a
+        # descoberta periodicamente; a leitura incremental continua a 4 Hz.
+        if now >= self._next_path_scan_at:
+            self._refresh_files()
+            self._next_path_scan_at = now + 30.0
         self._read_result_updates()
         new_anonymous = self._read_trace_updates()
 

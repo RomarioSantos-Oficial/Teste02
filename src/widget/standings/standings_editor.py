@@ -42,6 +42,7 @@ class StandingsEditor(QDialog):
         ("best", "Melhor volta", 140.0),
         ("last", "Última volta", 140.0),
         ("interval", "Intervalo da categoria", 100.0),
+        ("delta", "Delta acumulado", 90.0),
         ("gap", "Gap/intervalo", 100.0),
         ("tyre", "Pneus", 76.0),
         ("energy", "Energia", 105.0),
@@ -167,20 +168,46 @@ class StandingsEditor(QDialog):
             ("show_best_lap", "Melhor volta (BEST):", True),
             ("show_last_lap", "Última volta (LAST):", True),
             ("show_interval", "Intervalo da categoria (INT):", True),
+            ("show_delta", "Delta acumulado (DELTA):", False),
             ("show_gap", "Gap/intervalo:", True),
             ("show_tyre", "Pneu:", True),
             ("show_invalid_lap_status", "Volta inválida:", True),
             ("show_pit_status", "Tempo/status do pit:", True),
             ("show_track_limits_column", "Coluna de limites de pista:", True),
             ("show_penalty_column", "Coluna de punição automática:", True),
+            ("detach_penalty_column", "Punições fora do bloco:", True),
             ("show_energy", "Bateria/Energia:", True),
             ("show_damage", "Dano:", True),
         )
         for key, label, default in options:
+            if key == "show_delta" and bool(self.config.get("relative_mode", False)):
+                continue
             check = QCheckBox()
             check.setChecked(bool(self.config.get(key, default)))
             check.toggled.connect(lambda value, current=key: self._set(current, value))
             form.addRow(label, check)
+
+        if not bool(self.config.get("relative_mode", False)):
+            delta_laps = QSpinBox()
+            delta_laps.setRange(1, 10)
+            delta_laps.setValue(int(self.config.get("delta_sample_laps", 5)))
+            delta_laps.valueChanged.connect(
+                lambda value: self._set("delta_sample_laps", value)
+            )
+            form.addRow("Voltas usadas no DELTA:", delta_laps)
+
+            delta_opacity = QDoubleSpinBox()
+            delta_opacity.setRange(0.0, 100.0)
+            delta_opacity.setDecimals(0)
+            delta_opacity.setSingleStep(5.0)
+            delta_opacity.setSuffix(" %")
+            delta_opacity.setValue(
+                float(self.config.get("delta_background_opacity", 0.85)) * 100.0
+            )
+            delta_opacity.valueChanged.connect(
+                lambda value: self._set("delta_background_opacity", value / 100.0)
+            )
+            form.addRow("Opacidade do DELTA:", delta_opacity)
         width_title = QLabel("Largura individual das colunas")
         width_title.setStyleSheet("font-weight: 700; margin-top: 10px;")
         form.addRow(width_title)
@@ -192,7 +219,7 @@ class StandingsEditor(QDialog):
         widths = self.config.setdefault("column_widths", {})
         for key, label, default_width in self.COLUMN_WIDTHS:
             if key not in {
-                "driver", "flag", "tyre", "badge", "brand", "interval"
+                "driver", "flag", "tyre", "badge", "brand", "interval", "delta"
             }:
                 continue
             control = QDoubleSpinBox()
@@ -209,6 +236,14 @@ class StandingsEditor(QDialog):
     def _build_dimensions(self) -> None:
         group = QGroupBox("Tamanho e fonte")
         form = QFormLayout(group)
+        background_enabled = QCheckBox()
+        background_enabled.setChecked(
+            bool(self.config.get("background_enabled", True))
+        )
+        background_enabled.toggled.connect(
+            lambda value: self._set("background_enabled", value)
+        )
+        form.addRow("Fundo geral do widget:", background_enabled)
         font = QComboBox()
         font.addItems(QFontDatabase.families())
         font.setCurrentText(str(self.config.get("font_name", "Bahnschrift Condensed")))
@@ -371,6 +406,7 @@ class StandingsEditor(QDialog):
             "text": "Texto", "muted": "Texto secundário", "row_background": "Linha normal",
             "player_background": "Linha do jogador", "position_gain": "Posição ganha",
             "position_loss": "Posição perdida", "personal_best": "Melhor volta",
+            "delta_gain": "DELTA — ganhando", "delta_loss": "DELTA — perdendo",
             "invalid_lap": "Volta inválida",
             "rank_bronze": "DR/SR Bronze",
             "rank_silver": "DR/SR Prata",

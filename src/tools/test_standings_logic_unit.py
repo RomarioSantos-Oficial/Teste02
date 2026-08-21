@@ -441,6 +441,38 @@ class StandingsLogicUnitTests(unittest.TestCase):
         row = StandingsLogic({}).build(session, {}, "MEM").categories[0].rows[0]
         self.assertEqual(row.penalty_text, "PEN")
 
+    def test_rolling_delta_averages_recent_lap_times_not_interval(self) -> None:
+        player = DriverData(
+            slot_id=1, driver_name="Player", vehicle_class="LMGT3",
+            position=2, laps=0, gap_leader_s=10.0, is_player=True,
+        )
+        rival = DriverData(
+            slot_id=2, driver_name="Rival", vehicle_class="LMGT3",
+            position=3, laps=0, gap_leader_s=14.0,
+        )
+        session = SessionData(connected=True, session=10, drivers=[player, rival])
+        logic = StandingsLogic({
+            "show_delta": True, "delta_sample_laps": 3,
+            "maximum_categories": 1, "player_category_rows": 5,
+        })
+        logic.build(session, {}, "MEM")
+
+        # Diferencas por volta: +0.3, +1.1 e +0.6. A coluna deve
+        # progredir com 1/2/3 voltas e terminar na media +0.7.
+        lap_pairs = ((70.0, 70.3), (71.0, 72.1), (69.0, 69.6))
+        for lap_number, (player_time, rival_time) in enumerate(lap_pairs, 1):
+            player.laps = rival.laps = lap_number
+            player.last_lap_s = player_time
+            rival.last_lap_s = rival_time
+            # Muda o intervalo para provar que ele nao alimenta o DELTA.
+            player.gap_leader_s = 10.0 + lap_number
+            rival.gap_leader_s = 30.0 + (lap_number * 5.0)
+            view = logic.build(session, {}, "MEM")
+
+        row = next(r for r in view.categories[0].rows if r.slot_id == 2)
+        self.assertEqual(row.rolling_delta_text, "+0.7")
+        self.assertNotEqual(row.rolling_delta_text, row.interval_text)
+
 
 if __name__ == "__main__":
     unittest.main()

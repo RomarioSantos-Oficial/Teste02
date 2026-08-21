@@ -26,6 +26,7 @@ from src.widget.standings.standings_widget import StandingsWidget
 from src.widget.standings.lmu_online_client import LMUOnlineIdentityClient
 from src.widget.standings.standings_online import LocalStandingsEnrichment
 from src.widget.fuel_time.fuel_time_widget import FuelTimeWidget
+from src.widget.lap_timer.lap_timer_widget import LapTimerWidget
 from src.widget.url.url_server_widget import UrlServerWidget
 from src.widget.radar.radar_widget import RadarWidget
 
@@ -38,13 +39,16 @@ class OverlayManager(QObject):
     # Intervalos independentes evitam redesenhar informações lentas na mesma
     # frequência da telemetria de direção (20 Hz).
     UPDATE_INTERVALS = {
-        "driver_panel": 1.0 / 60.0,
+        # O loop principal usa 16 ms. Um limite de 1/60 (16,67 ms) fazia
+        # alternar os ticks e reduzia a Telemetry para cerca de 31 FPS.
+        "driver_panel": 0.0,
         "delta": 0.05,
         "map": 0.05,
         "tires": 0.10,
         "battery": 0.10,
         "damage": 0.10,
         "fuel_time": 0.10,
+        "lap_timer": 0.10,
         "relative": 0.10,
         "radar": 0.05,
         "flags": 0.10,
@@ -258,6 +262,15 @@ class OverlayManager(QObject):
         self._prepare_widget("fuel_time", widget, config)
         return widget
 
+    def create_lap_timer(self) -> LapTimerWidget:
+        existing = self.widgets.get("lap_timer")
+        if isinstance(existing, LapTimerWidget):
+            return existing
+        config = deepcopy(self.config_data["widgets"]["lap_timer"])
+        widget = LapTimerWidget("lap_timer", config)
+        self._prepare_widget("lap_timer", widget, config)
+        return widget
+
     def create_url(self) -> UrlServerWidget:
         existing = self.widgets.get("url")
         if isinstance(existing, UrlServerWidget): return existing
@@ -326,6 +339,7 @@ class OverlayManager(QObject):
             "battery": self.create_battery,
             "damage": self.create_damage,
             "fuel_time": self.create_fuel_time,
+            "lap_timer": self.create_lap_timer,
             "url": self.create_url,
             "relative": self.create_relative,
             "radar": self.create_radar,
@@ -341,7 +355,7 @@ class OverlayManager(QObject):
 
     def create_enabled_widgets(self) -> None:
         for widget_id, config in self.config_data.get("widgets", {}).items():
-            if bool(config.get("enabled", False)) and widget_id in {"driver_panel", "delta", "flags", "weather", "tires", "battery", "damage", "fuel_time", "relative", "radar", "map", "standings", "url"}:
+            if bool(config.get("enabled", False)) and widget_id in {"driver_panel", "delta", "flags", "weather", "tires", "battery", "damage", "fuel_time", "lap_timer", "relative", "radar", "map", "standings", "url"}:
                 self.create_widget(widget_id)
 
     def _prepare_widget(
@@ -500,6 +514,10 @@ class OverlayManager(QObject):
         fuel_time = self.widgets.get("fuel_time")
         if fuel_time is not None and fuel_time.isVisible() and self._update_due("fuel_time", now):
             fuel_time.update_from_session(session)
+
+        lap_timer = self.widgets.get("lap_timer")
+        if lap_timer is not None and lap_timer.isVisible() and self._update_due("lap_timer", now):
+            lap_timer.update_from_session(session)
 
         relative = self.widgets.get("relative")
         if (
@@ -1107,6 +1125,23 @@ class OverlayManager(QObject):
                 fuel_default = json.loads(fuel_defaults_path.read_text(encoding="utf-8"))
                 data.setdefault("widgets", {}).setdefault("fuel_time", deepcopy(fuel_default))
                 data.setdefault("defaults", {}).setdefault("fuel_time", deepcopy(fuel_default))
+            lap_timer_defaults_path = self.config_path.with_name("lap_timer_defaults.json")
+            if not lap_timer_defaults_path.exists():
+                lap_timer_defaults_path = (
+                    Path(__file__).resolve().parents[1]
+                    / "config"
+                    / "lap_timer_defaults.json"
+                )
+            if lap_timer_defaults_path.exists():
+                lap_timer_default = json.loads(
+                    lap_timer_defaults_path.read_text(encoding="utf-8")
+                )
+                data.setdefault("widgets", {}).setdefault(
+                    "lap_timer", deepcopy(lap_timer_default)
+                )
+                data.setdefault("defaults", {}).setdefault(
+                    "lap_timer", deepcopy(lap_timer_default)
+                )
             url_defaults_path = self.config_path.with_name("url_defaults.json")
             if url_defaults_path.exists():
                 url_default = json.loads(url_defaults_path.read_text(encoding="utf-8"))

@@ -36,6 +36,7 @@ class TyresLogic:
         config: dict[str, Any],
     ) -> None:
         self.config = config
+        self._gte_vehicle = False
 
     def update_config(
         self,
@@ -47,6 +48,7 @@ class TyresLogic:
         self,
         player: Any,
     ) -> TyresViewData:
+        self._gte_vehicle = self._is_gte_vehicle(player)
         wheels_raw = list(
             getattr(
                 player,
@@ -141,6 +143,13 @@ class TyresLogic:
                 "lmu_weighted",
             )
         ).lower()
+        gte_mode = self._gte_vehicle and bool(
+            self.config.get("gte_temperature_mode", True)
+        )
+        if gte_mode:
+            source = str(
+                self.config.get("gte_temperature_source", "carcass")
+            ).lower()
 
         # O valor usado pelo MFD/doX combina a carcaça com as três
         # amostras da camada interna. Em alguns GT3 elas ficam muito
@@ -204,9 +213,43 @@ class TyresLogic:
 
         for value in values:
             if 1.0 < value < 300.0:
+                if gte_mode:
+                    correction = max(
+                        -40.0,
+                        min(
+                            40.0,
+                            float(
+                                self.config.get(
+                                    "gte_temperature_offset_c", 0.0
+                                )
+                            ),
+                        ),
+                    )
+                    return value + correction
                 return value
 
         return 0.0
+
+    def _is_gte_vehicle(self, player: Any) -> bool:
+        """Detecta somente carros GT configurados para a leitura especial."""
+        identity = " ".join(
+            (
+                str(getattr(player, "vehicle_name", "") or ""),
+                str(getattr(player, "vehicle_model", "") or ""),
+                str(getattr(player, "vehicle_class", "") or ""),
+            )
+        ).casefold()
+        raw_keywords = str(
+            self.config.get(
+                "gte_detection_keywords",
+                "gte,lmgt3,gt3",
+            )
+        )
+        keywords = (
+            word.strip().casefold()
+            for word in raw_keywords.split(",")
+        )
+        return any(word and word in identity for word in keywords)
 
     def temperature_color(
         self,

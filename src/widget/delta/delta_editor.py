@@ -502,6 +502,31 @@ class DeltaEditor(QDialog):
         )
         form = QFormLayout(group)
 
+        duration = QDoubleSpinBox()
+        duration.setRange(0.5, 30.0)
+        duration.setSingleStep(0.5)
+        duration.setSuffix(" s")
+        duration.setValue(float(self.config.get("sector_show_seconds", 5.0)))
+        duration.valueChanged.connect(
+            lambda value: self._set_root("sector_show_seconds", value)
+        )
+        form.addRow("Tempo do anúncio:", duration)
+
+        background_opacity = QDoubleSpinBox()
+        background_opacity.setRange(0.0, 100.0)
+        background_opacity.setDecimals(0)
+        background_opacity.setSingleStep(5.0)
+        background_opacity.setSuffix(" %")
+        background_opacity.setValue(
+            float(self.config.get("sector_background_opacity", 0.72)) * 100.0
+        )
+        background_opacity.valueChanged.connect(
+            lambda value: self._set_root(
+                "sector_background_opacity", value / 100.0
+            )
+        )
+        form.addRow("Opacidade do fundo:", background_opacity)
+
         tolerance = QDoubleSpinBox()
         tolerance.setRange(0.0001, 0.1000)
         tolerance.setDecimals(4)

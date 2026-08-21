@@ -62,6 +62,8 @@ class StandingsLogic:
         self._observed_laps_once = False
         self._race_totals: dict[str, int] = {}
         self._last_current_time = 0.0
+        self._delta_seen_laps: dict[int, int] = {}
+        self._delta_lap_history: dict[int, list[float]] = {}
 
     def update_config(self, config: dict[str, Any]) -> None:
         self.config = config
@@ -79,6 +81,8 @@ class StandingsLogic:
         self._observed_laps_once = False
         self._race_totals.clear()
         self._last_current_time = 0.0
+        self._delta_seen_laps.clear()
+        self._delta_lap_history.clear()
 
     def build(
         self,
@@ -116,6 +120,9 @@ class StandingsLogic:
         ):
             self._estimate_driver_rank_gains(rows)
         self._apply_lap_states(rows, now)
+        session_number = int(getattr(session, "session", 0) or 0)
+        if 10 <= session_number <= 13:
+            self._update_delta_lap_history(rows)
         self._last_current_time = float(
             getattr(session, "current_time_s", 0.0) or 0.0
         )
@@ -123,9 +130,9 @@ class StandingsLogic:
         class_leaders = self._class_leaders(rows)
         for row in rows:
             row.gap_text = self._gap_text(row, player, class_leaders.get(row.class_key), session)
-        session_number = int(getattr(session, "session", 0) or 0)
         if 10 <= session_number <= 13:
             self._apply_class_intervals(rows)
+            self._apply_rolling_deltas(rows, player)
         categories = (
             self._relative_block(rows, player, session)
             if bool(self.config.get("relative_mode", False))
@@ -143,6 +150,66 @@ class StandingsLogic:
             track_name=str(getattr(session, "track_name", "") or ""),
             categories=categories,
         )
+
+    def _update_delta_lap_history(self, rows: list[StandingRow]) -> None:
+        """Guarda os tempos das ultimas voltas de cada piloto."""
+        for row in rows:
+            slot = row.slot_id
+            completed = max(0, int(row.laps))
+            previous = self._delta_seen_laps.get(slot)
+            if previous is None:
+                self._delta_seen_laps[slot] = completed
+                self._delta_lap_history.setdefault(slot, [])
+                continue
+            if completed < previous:
+                self._delta_seen_laps[slot] = completed
+                self._delta_lap_history[slot] = []
+                continue
+            if completed == previous:
+                continue
+            lap_time = float(row.last_lap_s or 0.0)
+            if math.isfinite(lap_time) and 10.0 <= lap_time <= 1800.0:
+                history = self._delta_lap_history.setdefault(slot, [])
+                history.append(lap_time)
+                del history[:-10]
+            self._delta_seen_laps[slot] = completed
+
+    def _apply_rolling_deltas(
+        self,
+        rows: list[StandingRow],
+        player: StandingRow | None,
+    ) -> None:
+        if player is None:
+            return
+        sample = max(1, min(10, int(self.config.get("delta_sample_laps", 5))))
+        player_history = self._delta_lap_history.get(player.slot_id, [])
+        for row in rows:
+            row.rolling_delta_s = None
+            row.rolling_delta_text = "--"
+            if row.class_key != player.class_key:
+                continue
+            rival_history = self._delta_lap_history.get(row.slot_id, [])
+            available = min(sample, len(player_history), len(rival_history))
+            if available <= 0:
+                continue
+            player_laps = player_history[-available:]
+            rival_laps = rival_history[-available:]
+            # Compara volta a volta e mostra a media da amostragem. Um valor
+            # positivo significa que, em media, o rival gastou mais tempo que
+            # o jogador. Isto e independente do INT instantaneo na pista.
+            lap_differences = [
+                rival_lap - player_lap
+                for player_lap, rival_lap in zip(player_laps, rival_laps)
+            ]
+            value = sum(lap_differences) / available
+            rounded = round(value, 1)
+            if abs(rounded) < 0.05:
+                rounded = 0.0
+                text = "0.0"
+            else:
+                text = f"{rounded:+.1f}"
+            row.rolling_delta_s = rounded
+            row.rolling_delta_text = text
 
     @staticmethod
     def _apply_class_intervals(rows: list[StandingRow]) -> None:
