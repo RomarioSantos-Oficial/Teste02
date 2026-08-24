@@ -352,6 +352,49 @@ class StandingsLogicUnitTests(unittest.TestCase):
         by_name = {row.driver_name: row for row in rows}
         self.assertEqual(by_name["Ahead"].gap_text, "-1.0")
 
+    def test_gap_waits_for_a_complete_lap_like_current_silverstone_race(self) -> None:
+        session = SessionData(
+            connected=True,
+            session=10,
+            track_length_m=2633.525,
+            drivers=[
+                DriverData(
+                    slot_id=1, driver_name="Player", vehicle_class="GT3",
+                    position=1, laps=8, lap_distance_m=951.2,
+                    gap_leader_s=0.0, laps_behind_leader=0, is_player=True,
+                ),
+                DriverData(
+                    slot_id=2, driver_name="P2", vehicle_class="GT3",
+                    position=2, laps=7, lap_distance_m=1210.4,
+                    gap_leader_s=48.772, laps_behind_leader=0,
+                ),
+                DriverData(
+                    slot_id=3, driver_name="P3", vehicle_class="GT3",
+                    position=3, laps=7, lap_distance_m=1084.5,
+                    gap_leader_s=52.581, laps_behind_leader=0,
+                ),
+                DriverData(
+                    slot_id=4, driver_name="P4", vehicle_class="GT3",
+                    position=4, laps=7, lap_distance_m=1002.7,
+                    gap_leader_s=55.101, laps_behind_leader=0,
+                ),
+                DriverData(
+                    slot_id=5, driver_name="P5", vehicle_class="GT3",
+                    position=5, laps=7, lap_distance_m=885.2,
+                    gap_leader_s=0.0, laps_behind_leader=1,
+                ),
+            ],
+        )
+        rows = StandingsLogic(
+            {"maximum_categories": 1, "player_category_rows": 5}
+        ).build(session, {}, "MEM").categories[0].rows
+        by_name = {row.driver_name: row for row in rows}
+
+        self.assertEqual(by_name["P2"].gap_text, "+48.8")
+        self.assertEqual(by_name["P3"].gap_text, "+52.6")
+        self.assertEqual(by_name["P4"].gap_text, "+55.1")
+        self.assertEqual(by_name["P5"].gap_text, "-1L")
+
     def test_relative_excludes_dnf_dq_and_garage(self) -> None:
         session = SessionData(
             connected=True,

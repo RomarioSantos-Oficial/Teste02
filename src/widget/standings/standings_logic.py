@@ -1151,11 +1151,27 @@ class StandingsLogic:
             row_progress = row.laps + max(0.0, row.lap_distance_m) / track_length
             ref_progress = reference.laps + max(0.0, reference.lap_distance_m) / track_length
             lap_diff = row_progress - ref_progress
-            # Ao cruzar a linha, lapsBehindLeader pode oscilar por um tick.
-            # O progresso total mantém os dois carros próximos e impede o
-            # falso -1L/+1L. Só há volta real com diferença próxima de 1.
-            if abs(lap_diff) >= 0.85:
-                return f"{lap_diff:+.0f}L"
+            # O LMU diferencia quem realmente tomou uma volta por meio de
+            # lapsBehindLeader. A regra antiga arredondava a partir de 0,85
+            # volta e marcava prematuramente carros ainda separados por
+            # tempo. Exigimos uma volta completa no progresso; o valor
+            # oficial só antecipa a decisão por uma pequena tolerância de
+            # sincronização entre a linha de chegada e lapDistance.
+            official_lap_diff = (
+                reference.laps_behind_leader - row.laps_behind_leader
+            )
+            official_matches_progress = (
+                official_lap_diff != 0
+                and lap_diff != 0.0
+                and (official_lap_diff > 0) == (lap_diff > 0.0)
+                and abs(lap_diff) >= 0.995
+            )
+            if official_matches_progress:
+                return f"{official_lap_diff:+d}L"
+            if abs(lap_diff) >= 1.0:
+                completed_laps = math.trunc(lap_diff)
+                if completed_laps != 0:
+                    return f"{completed_laps:+d}L"
         elif abs(row.laps - reference.laps) >= 1:
             return f"{row.laps - reference.laps:+d}L"
         # API REST em primeiro lugar: timeBehindLeader de cada carro, relativo
