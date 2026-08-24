@@ -266,6 +266,10 @@ class StandingsWidget(QWidget):
             "pit": ("Pit 999s", .54),
             "best": ("9:59.999", .68),
             "last": ("9:59.999", .56),
+            # INT e DELTA usam sinal e uma casa decimal. +99.9 representa
+            # tres algarismos; valores reais maiores ampliam a coluna abaixo.
+            "interval": ("+99.9", .68),
+            "delta": ("+99.9", .68),
             "gap": ("+999.999", .68),
             "energy": ("~100.0 L", .68),
             "damage": ("100%", .68),
@@ -285,6 +289,10 @@ class StandingsWidget(QWidget):
                     live_samples.append(format_lap(row.best_lap_s))
                 elif key == "last":
                     live_samples.append(format_lap(row.last_lap_s))
+                elif key == "interval":
+                    live_samples.append(str(row.interval_text or "--"))
+                elif key == "delta":
+                    live_samples.append(str(row.rolling_delta_text or "--"))
                 elif key == "energy":
                     if row.fuel_liters is not None:
                         prefix = "~" if row.fuel_is_estimated else ""
@@ -1527,60 +1535,67 @@ class StandingsWidget(QWidget):
             "I": "#43A047",
         }
         tokens = [tyre_short(value).split("/", 1)[0] for value in compounds[:4]]
-        tokens = [token for token in tokens if token]
-        if not tokens:
+        tokens += [""] * (4 - len(tokens))
+        available = [token for token in tokens if token]
+        if not available:
             return
-        mixed = len(set(tokens)) > 1
-        shown = (tokens + [tokens[-1]] * 4)[:4] if mixed else tokens[:1]
-        size = min(rect.height() * (0.42 if mixed else 0.72), rect.width() * (0.22 if mixed else 0.48))
+
+        # Um único desenho permanece legível mesmo na coluna compacta. A faixa
+        # externa é dividida entre os eixos: primeiro arco = dianteiros;
+        # segundo arco = traseiros. Se um eixo ainda não tiver dado, usa-se o
+        # composto disponível no outro eixo como fallback.
+        front_token = next((token for token in tokens[:2] if token), available[0])
+        rear_token = next((token for token in tokens[2:4] if token), front_token)
+        size = min(rect.height() * 0.72, rect.width() * 0.48)
         size = max(7.0, size)
-        gap = max(1.5, 2.0 * self._scale)
-        if mixed:
-            origins = (
-                (-size - gap / 2, -size - gap / 2),
-                (gap / 2, -size - gap / 2),
-                (-size - gap / 2, gap / 2),
-                (gap / 2, gap / 2),
-            )
-        else:
-            origins = ((-size / 2, -size / 2),)
-        for token, (dx, dy) in zip(shown, origins):
-            tyre = QRectF(rect.center().x() + dx, rect.center().y() + dy, size, size)
-            color = QColor(compound_colors.get(token, self.config.get("colors", {}).get("tyre", "#C7B87A")))
-            painter.setPen(QPen(QColor("#111317"), max(1.0, size * 0.17)))
-            painter.setBrush(QColor("#25282D"))
-            painter.drawEllipse(tyre.adjusted(size * .08, size * .08, -size * .08, -size * .08))
-            # Faixa do composto cobrindo 55% da circunferência. O marcador
-            # antigo era pequeno demais para distinguir Wet/Medium/Hard no
-            # Standings e no Relative compactos.
-            compound_ring = tyre.adjusted(
-                size * .09,
-                size * .09,
-                -size * .09,
-                -size * .09,
-            )
-            painter.setBrush(Qt.BrushStyle.NoBrush)
+        tyre = QRectF(
+            rect.center().x() - size / 2,
+            rect.center().y() - size / 2,
+            size,
+            size,
+        )
+        fallback_color = self.config.get("colors", {}).get("tyre", "#C7B87A")
+        front_color = QColor(compound_colors.get(front_token, fallback_color))
+        rear_color = QColor(compound_colors.get(rear_token, fallback_color))
+        painter.setPen(QPen(QColor("#111317"), max(1.0, size * 0.17)))
+        painter.setBrush(QColor("#25282D"))
+        painter.drawEllipse(tyre.adjusted(size * .08, size * .08, -size * .08, -size * .08))
+
+        # A roda continua completa, mas a faixa do composto aparece em dois
+        # arcos opostos: um no lado esquerdo e outro no lado direito. As duas
+        # partes ficam de frente uma para a outra, com separação em cima e
+        # embaixo, como no desenho de referência.
+        compound_ring = tyre.adjusted(
+            size * .09,
+            size * .09,
+            -size * .09,
+            -size * .09,
+        )
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        arc_pen_width = max(1.5, size * .15)
+        rotation_angle = -60
+        for color, start_angle in (
+            (front_color, 110),
+            (rear_color, 290),
+        ):
             painter.setPen(
                 QPen(
                     color,
-                    max(1.5, size * .15),
+                    arc_pen_width,
                     Qt.PenStyle.SolidLine,
                     Qt.PenCapStyle.RoundCap,
                 )
             )
             painter.drawArc(
                 compound_ring,
-                72 * 16,
-                round(198 * 16),
+                (start_angle + rotation_angle) * 16,
+                140 * 16,
             )
-            hub = tyre.adjusted(size * .33, size * .33, -size * .33, -size * .33)
-            painter.setPen(QPen(QColor("#8A9098"), max(1.0, size * .08)))
-            painter.setBrush(QColor("#15171A"))
-            painter.drawEllipse(hub)
-            marker = QRectF(tyre.center().x() - size * .12, tyre.top(), size * .24, size * .19)
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(color)
-            painter.drawEllipse(marker)
+
+        hub = tyre.adjusted(size * .33, size * .33, -size * .33, -size * .33)
+        painter.setPen(QPen(QColor("#8A9098"), max(1.0, size * .08)))
+        painter.setBrush(QColor("#15171A"))
+        painter.drawEllipse(hub)
 
     def _draw_clipped_notice(self, painter: QPainter, rect: QRectF) -> None:
         if not self.edit_mode:

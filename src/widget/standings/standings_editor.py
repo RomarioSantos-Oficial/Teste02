@@ -239,7 +239,7 @@ class StandingsEditor(QDialog):
         widths = self.config.setdefault("column_widths", {})
         for key, label, default_width in self.COLUMN_WIDTHS:
             if key not in {
-                "driver", "flag", "tyre", "badge", "brand", "interval", "delta"
+                "driver", "flag", "tyre", "badge", "brand"
             }:
                 continue
             control = QDoubleSpinBox()
