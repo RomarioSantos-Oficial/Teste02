@@ -32,7 +32,7 @@ from .standings_assets import (
     publish_driver_country,
 )
 from .lmu_online_client import LMUOnlineIdentityClient
-from .standings_logic import StandingsLogic, canonical_class
+from .standings_logic import StandingsLogic, canonical_class, format_driver_name
 from .standings_models import (
     CategoryBlock,
     DriverMetadata,
@@ -75,6 +75,16 @@ class StandingsWidget(QWidget):
         ("track_limits", 88.0),
         ("penalty", 90.0),
     )
+    # Nome e imagens podem ceder espaco. As demais colunas carregam dados
+    # numericos e conservam a largura medida para a fonte uniforme da linha.
+    FLEXIBLE_COLUMNS = {"driver", "flag", "tyre", "badge", "brand"}
+    FLEXIBLE_MIN_WIDTHS = {
+        "driver": 72.0,
+        "flag": 24.0,
+        "tyre": 24.0,
+        "badge": 24.0,
+        "brand": 24.0,
+    }
 
     def __init__(
         self,
@@ -100,6 +110,8 @@ class StandingsWidget(QWidget):
         self.session: Any | None = None
         self.edit_mode = False
         self._column_content_scale = 1.0
+        self._layout_width_scale = 1.0
+        self._drawing_driver_row = False
         self.preview_mode = False
         self._last_build = 0.0
         self._scale = 1.0
@@ -110,7 +122,7 @@ class StandingsWidget(QWidget):
         self._resize_width = 0
         self._resize_height = 0
         self._fitting_height = False
-
+        self._fitting_width = False
         self.setWindowTitle("Sector Flow Drive - Standings")
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         # O limite antigo de 800x280 impedia o redimensionamento pelo puxador.
@@ -132,6 +144,7 @@ class StandingsWidget(QWidget):
         self.setWindowOpacity(max(0.10, min(1.0, float(self.config.get("opacity", 0.98)))))
         self._update_scale()
         self._rebuild(force=True)
+        self._fit_width_to_columns()
 
     def update_config(self, config: dict[str, Any]) -> None:
         if "column_width_reference_total" not in config:
@@ -191,6 +204,7 @@ class StandingsWidget(QWidget):
                 content_width * configured_total / reference_total
                 + 2.0 * horizontal_margin
             ),
+            self._minimum_panel_width(),
         )
         width = min(width, max(self.minimumWidth(), screen_geometry.width()))
         height = max(self.minimumHeight(), int(screen_geometry.height() * float(size.get("height", 0.72)) * external_scale))
@@ -251,7 +265,7 @@ class StandingsWidget(QWidget):
             "laps": ("999", .70),
             "pit": ("Pit 999s", .54),
             "best": ("9:59.999", .68),
-            "last": ("INV 9:59.999", .56),
+            "last": ("9:59.999", .56),
             "gap": ("+999.999", .68),
             "energy": ("~100.0 L", .68),
             "damage": ("100%", .68),
@@ -262,6 +276,29 @@ class StandingsWidget(QWidget):
         if sample is None:
             return width
         text, multiplier = sample
+        live_samples: list[str] = []
+        for category in self.view.categories:
+            for row in category.rows:
+                if key == "number":
+                    live_samples.append(str(row.car_number or "--"))
+                elif key == "best":
+                    live_samples.append(format_lap(row.best_lap_s))
+                elif key == "last":
+                    live_samples.append(format_lap(row.last_lap_s))
+                elif key == "energy":
+                    if row.fuel_liters is not None:
+                        prefix = "~" if row.fuel_is_estimated else ""
+                        live_samples.append(
+                            f"{prefix}{max(0.0, float(row.fuel_liters)):.1f} L"
+                        )
+                    elif row.energy_percent is not None:
+                        live_samples.append(f"{float(row.energy_percent):.1f}%")
+                elif key == "damage" and row.damage_percent is not None:
+                    live_samples.append(f"{float(row.damage_percent):.0f}%")
+        # As linhas dos pilotos usam fonte uniforme. A largura automatica
+        # precisa medir o texto com esse tamanho integral, sem os antigos
+        # multiplicadores individuais de cada coluna.
+        multiplier = 1.0
         row_height = max(14.0, float(self.config.get("row_height", 54.0)))
         row_scale = max(.70, min(1.55, (row_height / 54.0) ** .5))
         pixel_size = min(
@@ -271,8 +308,16 @@ class StandingsWidget(QWidget):
         font = QFont(str(self.config.get("font_name", "Bahnschrift Condensed")))
         font.setBold(True)
         font.setPixelSize(max(3, round(pixel_size)))
-        measured = QFontMetrics(font).horizontalAdvance(text)
+        metrics = QFontMetrics(font)
+        measured = max(
+            [metrics.horizontalAdvance(text)]
+            + [metrics.horizontalAdvance(value) for value in live_samples]
+        )
         padding = max(6.0, pixel_size * .55)
+        if key == "number":
+            # Separa visualmente carros de três dígitos da coluna de voltas,
+            # sem transformar a coluna em uma largura fixa.
+            padding += max(6.0, pixel_size * .30)
         # Para colunas textuais, o conteúdo é a fonte da geometria.
         return max(24.0, float(measured) + padding)
 
@@ -455,6 +500,26 @@ class StandingsWidget(QWidget):
         finally:
             self._fitting_height = False
 
+    def _fit_width_to_columns(self) -> None:
+        """Aplica a menor largura que preserva as colunas numericas."""
+        if self._fitting_width:
+            return
+        desired = self._minimum_panel_width()
+        screen = self.screen()
+        if screen is not None:
+            desired = min(desired, screen.availableGeometry().width())
+        desired = max(420, desired)
+        # A largura calculada serve como ponto inicial, não como trava. Depois
+        # disso o usuário pode redimensionar e todo o conteúdo escala junto.
+        self.setMinimumWidth(420)
+        if abs(self.width() - desired) <= 1:
+            return
+        self._fitting_width = True
+        try:
+            self.resize(desired, self.height())
+        finally:
+            self._fitting_width = False
+
     def _header_items(self) -> list[tuple[str, float, str]]:
         if not bool(self.config.get("show_global_header", True)):
             return []
@@ -631,42 +696,23 @@ class StandingsWidget(QWidget):
         )
         color = QColor(category.color)
         gap = max(3.0, 6.0 * self._scale)
-        class_width = min(rect.width() * 0.20, 190.0 * self._scale)
-        count_width = min(rect.width() * 0.18, 180.0 * self._scale)
-        lap_width = min(rect.width() * 0.20, 190.0 * self._scale)
-        # O SOF tem apenas três blocos curtos. Limitar a largura evita uma
-        # faixa vazia excessiva e preserva espaço para o restante do header.
-        dr_base_width = dict(self.BASE_COLUMNS).get("dr", 110.0)
-        dr_configured_width = float(
-            self.config.get("column_widths", {}).get("dr", dr_base_width)
-        )
-        dr_effective_width = self._effective_column_width(
-            "dr", dr_configured_width
-        )
-        # Usa a largura REAL que o DR recebe depois que todas as colunas são
-        # distribuídas no painel. Assim o SOF acompanha continuamente o
-        # arrasto de redimensionamento do Standings.
-        distributed_columns = self._column_rects(
-            QRectF(0.0, 0.0, rect.width(), rect.height())
-        )
-        sof_width = next(
-            (cell.width() for key, cell in distributed_columns if key == "dr"),
-            dr_effective_width * self._scale,
-        )
+        # Todos os blocos visiveis recebem o mesmo peso. Com Categoria,
+        # Pilotos, Voltas e SOF presentes, cada bloco ocupa 25% da linha.
+        equal_width_weight = 1.0
         definitions: list[tuple[str, float, str]] = [
-            ("class", class_width, category.class_name)
+            ("class", equal_width_weight, category.class_name)
         ]
         if category.show_count:
             definitions.append(
-                ("count", count_width, f"{category.started}/{category.total}")
+                ("count", equal_width_weight, f"{category.started}/{category.total}")
             )
         lap_label = f"🏁  {category.current_lap}/{category.total_laps_text}"
-        definitions.append(("lap", lap_width, lap_label))
+        definitions.append(("lap", equal_width_weight, lap_label))
         has_sof = bool(
             category.dr_sof_rank and category.dr_sof_progress is not None
         )
         if has_sof:
-            definitions.append(("sof", sof_width, ""))
+            definitions.append(("sof", equal_width_weight, ""))
 
         available = max(
             1.0,
@@ -720,17 +766,6 @@ class StandingsWidget(QWidget):
             painter.setFont(font)
             painter.drawText(target, Qt.AlignmentFlag.AlignCenter, text)
         if sof_box is not None:
-            header_content_scale = self._column_content_scale
-            # Replica também o fator de conteúdo usado na célula DR: ao
-            # aumentar/diminuir o STR, caixa e letras mudam juntas.
-            self._column_content_scale = max(
-                0.20,
-                min(
-                    3.0,
-                    sof_box.width()
-                    / max(1.0, dr_effective_width * self._scale),
-                ),
-            )
             self._draw_rank(
                 painter,
                 sof_box,
@@ -738,7 +773,6 @@ class StandingsWidget(QWidget):
                 category.dr_sof_progress,
                 prefix="SOF DR",
             )
-            self._column_content_scale = header_content_scale
         painter.setPen(QPen(color, max(1.0, 3.0 * self._scale)))
         painter.drawLine(rect.bottomLeft(), rect.bottomRight())
         self._column_content_scale = previous_content_scale
@@ -853,28 +887,14 @@ class StandingsWidget(QWidget):
         painter.setBrush(background)
         painter.drawRect(main_rect)
         for key, cell in cells:
-            base_width = dict(self.BASE_COLUMNS).get(key, cell.width())
-            configured_width = float(
-                self.config.get("column_widths", {}).get(key, base_width)
-            )
-            effective_width = self._effective_column_width(key, configured_width)
-            # Escala linear: aumentar a largura configurada em 50% aumenta
-            # também fonte/conteúdo em aproximadamente 50%.
-            configured_scale = (
-                configured_width / max(1.0, base_width)
-                if key in {"driver", "flag", "tyre", "badge", "brand"}
-                else 1.0
-            )
-            target_width = max(1.0, effective_width * self._scale)
-            actual_scale = cell.width() / target_width
-            self._column_content_scale = max(
-                0.20,
-                min(3.0, configured_scale * actual_scale),
-            )
             painter.save()
             painter.setClipRect(cell)
-            self._draw_cell(painter, key, cell, row, category)
-            painter.restore()
+            self._drawing_driver_row = True
+            try:
+                self._draw_cell(painter, key, cell, row, category)
+            finally:
+                self._drawing_driver_row = False
+                painter.restore()
         if (
             detached_penalty
             and bool(self.config.get("show_penalty_column", True))
@@ -948,21 +968,13 @@ class StandingsWidget(QWidget):
                 max_height,
             )
             if pixmap is not None:
-                source = QRectF(pixmap.rect())
-                target_ratio = target.width() / max(1.0, target.height())
-                source_ratio = source.width() / max(1.0, source.height())
-                if source_ratio > target_ratio:
-                    crop_width = source.height() * target_ratio
-                    source.setLeft(source.center().x() - crop_width / 2.0)
-                    source.setWidth(crop_width)
-                elif source_ratio < target_ratio:
-                    crop_height = source.width() / target_ratio
-                    source.setTop(source.center().y() - crop_height / 2.0)
-                    source.setHeight(crop_height)
-                painter.save()
-                painter.setClipRect(target)
-                painter.drawPixmap(target, pixmap, source)
-                painter.restore()
+                fitted = QRectF(
+                    target.center().x() - pixmap.width() / 2.0,
+                    target.center().y() - pixmap.height() / 2.0,
+                    pixmap.width(),
+                    pixmap.height(),
+                )
+                painter.drawPixmap(fitted, pixmap, QRectF(pixmap.rect()))
             else:
                 painter.setFont(self._font(0.70, False, emoji=True))
                 painter.setPen(QColor("#FFFFFF"))
@@ -1030,9 +1042,13 @@ class StandingsWidget(QWidget):
                 )
         elif key == "driver":
             target = rect.adjusted(8 * self._scale, 0, -6 * self._scale, 0)
-            painter.setFont(self._font(0.78, row.is_player))
+            painter.setFont(self._row_font(row.is_player))
             painter.setPen(QColor(colors.get("text", "#FFFFFF")))
-            text = painter.fontMetrics().elidedText(row.driver_name, Qt.TextElideMode.ElideRight, max(1, int(target.width())))
+            display_name = format_driver_name(
+                row.driver_name,
+                str(self.config.get("driver_name_format", "full")),
+            )
+            text = painter.fontMetrics().elidedText(display_name, Qt.TextElideMode.ElideRight, max(1, int(target.width())))
             painter.drawText(target, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, text)
         elif key == "brand":
             # Se o piloto terminou (finish_status == 1), usar a bandeira de chegada
@@ -1069,10 +1085,35 @@ class StandingsWidget(QWidget):
             else:
                 self._text(painter, rect, brand_short(row.manufacturer), 0.48, True, QColor(colors.get("brand_text", "#D8E1EA")))
         elif key == "number":
+            horizontal_inset = max(
+                0.75,
+                3.0
+                * self._scale
+                * getattr(self, "_layout_width_scale", 1.0),
+            )
+            vertical_inset = max(
+                0.5,
+                2.0
+                * self._scale
+                * getattr(self, "_layout_width_scale", 1.0),
+            )
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(row_color)
-            painter.drawRect(rect.adjusted(3 * self._scale, 2 * self._scale, -3 * self._scale, -2 * self._scale))
-            self._text(painter, rect, row.car_number or "--", 0.68, True)
+            painter.drawRect(
+                rect.adjusted(
+                    horizontal_inset,
+                    vertical_inset,
+                    -horizontal_inset,
+                    -vertical_inset,
+                )
+            )
+            self._row_text_fitted(
+                painter,
+                rect,
+                row.car_number or "--",
+                True,
+                QColor(colors.get("text", "#FFFFFF")),
+            )
         elif key == "laps":
             self._text(painter, rect, f"{row.laps:02d}", 0.70, True)
         elif key == "pit":
@@ -1102,7 +1143,9 @@ class StandingsWidget(QWidget):
                 color = QColor(colors.get("best_lap", "#8B4DFF"))
             else:
                 color = QColor(colors.get("last_lap", "#FFFFFF"))
-            self._text(painter, rect, format_lap(row.best_lap_s), 0.68, True, color)
+            self._row_text_fitted(
+                painter, rect, format_lap(row.best_lap_s), True, color
+            )
         elif key == "last":
             if (
                 row.last_lap_invalidated
@@ -1111,9 +1154,8 @@ class StandingsWidget(QWidget):
                 color = QColor(
                     colors.get("invalid_lap", "#FF3B45")
                 )
-                lap = format_lap(row.last_lap_s)
-                text = "INV" if row.last_lap_s <= 0 else f"INV {lap}"
-                self._text(painter, rect, text, 0.56, True, color)
+                text = format_lap(row.last_lap_s)
+                self._row_text_fitted(painter, rect, text, True, color)
                 return
             if row.last_lap_s <= 0:
                 color = QColor(colors.get("muted", "#A7AFBA"))
@@ -1125,7 +1167,9 @@ class StandingsWidget(QWidget):
                 color = QColor(colors.get("personal_best", "#008E16"))
             else:
                 color = QColor(colors.get("last_lap", "#FFFFFF"))
-            self._text(painter, rect, format_lap(row.last_lap_s), 0.68, True, color)
+            self._row_text_fitted(
+                painter, rect, format_lap(row.last_lap_s), True, color
+            )
         elif key == "interval":
             self._text(painter, rect, row.interval_text, 0.68, True)
         elif key == "delta":
@@ -1338,9 +1382,9 @@ class StandingsWidget(QWidget):
             padding = max(1.0, 2.0 * self._scale)
             cell = rect.adjusted(
                 padding,
-                5 * self._scale,
+                1 * self._scale,
                 -padding,
-                -5 * self._scale,
+                -1 * self._scale,
             )
 
         progress_text = "--"
@@ -1377,24 +1421,70 @@ class StandingsWidget(QWidget):
             )
             parts.append((gain_text, 0.26, dark, gain_color))
 
-        total = sum(weight for _, weight, _, _ in parts)
+        rank_font: QFont | None = None
+        if prefix == "SOF DR":
+            part_widths = [weight for _, weight, _, _ in parts]
+        else:
+            # Mede cada parte com a fonte uniforme da linha. Se a coluna
+            # estiver estreita demais, reduz DR/SR como um conjunto (nunca
+            # cada pedaco separadamente) para impedir texto cortado.
+            rank_font = self._row_font(True)
+
+            def measured_widths() -> list[float]:
+                metrics = QFontMetrics(rank_font)
+                padding = max(4.0, 6.0 * self._scale)
+                return [
+                    max(1.0, metrics.horizontalAdvance(text) + padding)
+                    for text, _weight, _background, _foreground in parts
+                ]
+
+            part_widths = measured_widths()
+            natural_width = sum(part_widths)
+            if natural_width > cell.width() and rank_font.pixelSize() > 7:
+                fitted_size = max(
+                    7,
+                    int(rank_font.pixelSize() * cell.width() / natural_width),
+                )
+                rank_font.setPixelSize(fitted_size)
+                part_widths = measured_widths()
+
+        total = sum(part_widths) or 1.0
         x = cell.left()
-        for index, (text, weight, background, foreground) in enumerate(parts):
-            width = cell.width() * weight / total
+        for index, (text, _weight, background, foreground) in enumerate(parts):
+            width = cell.width() * part_widths[index] / total
             if index == len(parts) - 1:
                 width = cell.right() - x
             part_rect = QRectF(x, cell.top(), width, cell.height())
             painter.setPen(QPen(QColor("#313744"), max(0.5, self._scale)))
             painter.setBrush(background)
             painter.drawRect(part_rect)
-            self._text(
-                painter,
-                part_rect,
-                text,
-                0.45 if gain_text else 0.50,
-                True,
-                foreground,
-            )
+            if prefix == "SOF DR":
+                # O SOF pertence ao cabecalho da categoria. Usa a mesma
+                # fonte e o mesmo tamanho-base de Categoria/Pilotos/Voltas,
+                # reduzindo somente se uma das partes nao couber.
+                font = self._section_font(
+                    "category_header_font_size", 18.0, part_rect
+                )
+                font.setBold(True)
+                target = part_rect.adjusted(
+                    3 * self._scale, 0, -3 * self._scale, 0
+                )
+                while (
+                    font.pixelSize() > 7
+                    and QFontMetrics(font).horizontalAdvance(text)
+                    > max(1.0, target.width())
+                ):
+                    font.setPixelSize(font.pixelSize() - 1)
+                painter.setFont(font)
+                painter.setPen(foreground)
+                painter.drawText(target, Qt.AlignmentFlag.AlignCenter, text)
+            else:
+                target = part_rect.adjusted(
+                    2 * self._scale, 0, -2 * self._scale, 0
+                )
+                painter.setFont(rank_font or self._row_font(True))
+                painter.setPen(foreground)
+                painter.drawText(target, Qt.AlignmentFlag.AlignCenter, text)
             x += width
 
     @staticmethod
@@ -1501,12 +1591,85 @@ class StandingsWidget(QWidget):
         self._text(painter, rect, "AUMENTE A ALTURA PARA MOSTRAR AS OUTRAS LINHAS", 0.48, True, QColor("#FFC42E"))
 
     def _column_rects(self, rect: QRectF) -> list[tuple[str, QRectF]]:
+        columns = self._column_width_specs()
+        penalty_gap = (
+            max(0.0, float(self.config.get("penalty_column_gap", 10.0)))
+            * self._scale
+            if (
+                bool(self.config.get("detach_penalty_column", True))
+                and any(key == "penalty" for key, _width, _minimum in columns)
+            )
+            else 0.0
+        )
+        usable_width = max(1.0, rect.width() - penalty_gap)
+        preferred = [width * self._scale for _key, width, _minimum in columns]
+        minimums = [minimum * self._scale for _key, _width, minimum in columns]
+        preferred_total = sum(preferred)
+        minimum_total = sum(minimums)
+
+        if usable_width >= preferred_total:
+            actual_widths = list(preferred)
+            extra = usable_width - preferred_total
+            driver_index = next(
+                (
+                    index
+                    for index, (key, _width, _minimum) in enumerate(columns)
+                    if key == "driver"
+                ),
+                len(columns) - 1,
+            )
+            if actual_widths:
+                # A sobra aumenta o nome do piloto, sem criar grandes vazios
+                # entre todas as colunas numericas.
+                actual_widths[driver_index] += extra
+            self._layout_width_scale = self._scale
+        elif usable_width >= minimum_total:
+            shrink_needed = preferred_total - usable_width
+            capacities = [
+                max(0.0, width - minimum)
+                for width, minimum in zip(preferred, minimums)
+            ]
+            capacity_total = sum(capacities)
+            if capacity_total > 0.0:
+                actual_widths = [
+                    width - shrink_needed * capacity / capacity_total
+                    for width, capacity in zip(preferred, capacities)
+                ]
+            else:
+                actual_widths = list(minimums)
+            # Os dados mantiveram sua largura natural e usam a fonte padrao.
+            self._layout_width_scale = self._scale
+        else:
+            # Se o usuario deixar o painel extremamente compacto, todas as
+            # colunas e a fonte diminuem juntas, sem recortes independentes.
+            factor = usable_width / max(1.0, minimum_total)
+            actual_widths = [width * factor for width in minimums]
+            self._layout_width_scale = max(
+                0.20,
+                min(3.0, self._scale * factor),
+            )
+
+        x = rect.left()
+        result: list[tuple[str, QRectF]] = []
+        for index, ((key, _preferred, _minimum), actual) in enumerate(
+            zip(columns, actual_widths)
+        ):
+            if key == "penalty":
+                x += penalty_gap
+            if index == len(columns) - 1:
+                actual = rect.right() - x
+            result.append((key, QRectF(x, rect.top(), actual, rect.height())))
+            x += actual
+        return result
+
+    def _column_width_specs(self) -> list[tuple[str, float, float]]:
+        """Retorna (coluna, largura preferida, largura minima)."""
         enabled = self._enabled_columns()
         show_gain_in_dr = bool(
             self.config.get("show_estimated_driver_rank_gain", False)
         ) and self._has_estimated_dr()
         configured_widths = self.config.get("column_widths", {})
-        columns = []
+        columns: list[tuple[str, float, float]] = []
         for key, default_width in self.BASE_COLUMNS:
             if not enabled.get(key, True):
                 continue
@@ -1514,36 +1677,40 @@ class StandingsWidget(QWidget):
                 self.config.get("detach_penalty_column", True)
             ):
                 continue
-            width = self._effective_column_width(
+            preferred = self._effective_column_width(
                 key,
                 float(configured_widths.get(key, default_width)),
             )
             if key in {"dr", "sr"} and show_gain_in_dr:
-                width *= 145.0 / 110.0
-            columns.append((key, max(24.0, width)))
-        penalty_gap = (
-            max(0.0, float(self.config.get("penalty_column_gap", 10.0)))
-            * self._scale
-            if (
-                bool(self.config.get("detach_penalty_column", True))
-                and any(key == "penalty" for key, _ in columns)
-            )
-            else 0.0
+                preferred *= 145.0 / 110.0
+            preferred = max(24.0, preferred)
+            if key in self.FLEXIBLE_COLUMNS:
+                minimum = min(
+                    preferred,
+                    float(self.FLEXIBLE_MIN_WIDTHS.get(key, 24.0)),
+                )
+            else:
+                minimum = preferred
+            columns.append((key, preferred, minimum))
+        return columns
+
+    def _minimum_panel_width(self) -> int:
+        minimum_content = sum(
+            minimum for _key, _preferred, minimum in self._column_width_specs()
+        ) * self._scale
+        margin = max(
+            2.0,
+            float(self.config.get("panel_margin", 8.0)) * self._scale,
         )
-        base_total = sum(width for _, width in columns)
-        usable_width = max(1.0, rect.width() - penalty_gap)
-        factor = usable_width / base_total if base_total > 0 else 1.0
-        x = rect.left()
-        result: list[tuple[str, QRectF]] = []
-        for index, (key, width) in enumerate(columns):
-            if key == "penalty":
-                x += penalty_gap
-            actual = width * factor
-            if index == len(columns) - 1:
-                actual = rect.right() - x
-            result.append((key, QRectF(x, rect.top(), actual, rect.height())))
-            x += actual
-        return result
+        return max(
+            420,
+            round(
+                minimum_content
+                + 2.0 * margin
+                + self._penalty_popup_reserve()
+                + 2.0
+            ),
+        )
 
     def _penalty_popup_reserve(self) -> float:
         if not (
@@ -1625,9 +1792,63 @@ class StandingsWidget(QWidget):
         color: QColor | None = None,
         alignment: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignCenter,
     ) -> None:
-        painter.setFont(self._font(multiplier, bold))
+        painter.setFont(
+            self._row_font(bold)
+            if self._drawing_driver_row
+            else self._font(multiplier, bold)
+        )
         painter.setPen(color or QColor(self.config.get("colors", {}).get("text", "#FFFFFF")))
         painter.drawText(rect, alignment, str(text))
+
+    def _row_text_fitted(
+        self,
+        painter: QPainter,
+        rect: QRectF,
+        text: str,
+        bold: bool,
+        color: QColor,
+    ) -> None:
+        """Desenha dados com a mesma fonte uniforme de toda a linha."""
+        font = self._row_font(bold)
+        padding = max(
+            0.75,
+            3.0
+            * getattr(self, "_layout_width_scale", 1.0),
+        )
+        target = rect.adjusted(padding, 0, -padding, 0)
+        painter.setFont(font)
+        painter.setPen(color)
+        painter.drawText(target, Qt.AlignmentFlag.AlignCenter, str(text))
+
+    def _row_font(self, bold: bool) -> QFont:
+        """Fonte uniforme usada exclusivamente nas linhas dos pilotos."""
+        font = QFont(str(self.config.get("font_name", "Bahnschrift Condensed")))
+        font.setBold(bold)
+        row_scale = max(
+            0.70,
+            min(
+                1.55,
+                (float(self.config.get("row_height", 54.0)) / 54.0) ** 0.5,
+            ),
+        )
+        base_row_height = max(
+            14.0,
+            float(self.config.get("row_height", 54.0)),
+        )
+        base_size = min(
+            float(self.config.get("font_size", 26)) * row_scale,
+            base_row_height * 0.68,
+        )
+        font.setPixelSize(
+            max(
+                3,
+                round(
+                    base_size
+                    * getattr(self, "_layout_width_scale", 1.0)
+                ),
+            )
+        )
+        return font
 
     def _font(self, multiplier: float, bold: bool, emoji: bool = False) -> QFont:
         family = "Segoe UI Emoji" if emoji else str(self.config.get("font_name", "Bahnschrift Condensed"))

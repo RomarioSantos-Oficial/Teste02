@@ -47,6 +47,20 @@ def _truncate_tenth(value: float) -> float:
     return math.trunc((numeric + epsilon) * 10.0) / 10.0
 
 
+def format_driver_name(value: Any, mode: str = "full") -> str:
+    """Formata apenas a exibicao, preservando o nome original para identidade."""
+    name = " ".join(str(value or "").split())
+    parts = name.split()
+    if len(parts) < 2 or mode == "full":
+        return name
+    if mode == "first_last_initial":
+        surname_initials = " ".join(f"{part[0].upper()}." for part in parts[1:])
+        return f"{parts[0]} {surname_initials}"
+    if mode == "first_initial_last":
+        return f"{parts[0][0].upper()}. {' '.join(parts[1:])}"
+    return name
+
+
 class StandingsLogic:
     def __init__(self, config: dict[str, Any]) -> None:
         self.config = config
@@ -1130,7 +1144,7 @@ class StandingsLogic:
             return "--"
         if row.slot_id == reference.slot_id:
             # O jogador e a origem dos gaps da propria categoria.
-            return "0.000" if row.is_player else "P1"
+            return "0.0" if row.is_player else "P1"
         track_length = float(getattr(session, "track_length_m", 0.0) or 0.0)
         lap_diff = 0.0
         if track_length > 0:

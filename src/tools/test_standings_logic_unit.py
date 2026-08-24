@@ -3,11 +3,26 @@ from __future__ import annotations
 import unittest
 
 from src.telemetry.models import DriverData, PlayerData, SessionData
-from src.widget.standings.standings_logic import StandingsLogic, canonical_class
+from src.widget.standings.standings_logic import (
+    StandingsLogic,
+    canonical_class,
+    format_driver_name,
+)
 from src.widget.standings.standings_models import DriverMetadata, StandingRow
 
 
 class StandingsLogicUnitTests(unittest.TestCase):
+    def test_driver_name_display_formats(self) -> None:
+        self.assertEqual(format_driver_name("Romario Santos", "full"), "Romario Santos")
+        self.assertEqual(
+            format_driver_name("Romario Santos", "first_last_initial"),
+            "Romario S.",
+        )
+        self.assertEqual(
+            format_driver_name("Romario Santos", "first_initial_last"),
+            "R. Santos",
+        )
+
     def test_interval_is_limited_to_previous_car_in_same_class(self) -> None:
         rows = [
             StandingRow(overall_position=1, class_position=1, class_key="HYPERCAR"),

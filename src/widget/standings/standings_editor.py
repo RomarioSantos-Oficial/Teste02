@@ -187,6 +187,26 @@ class StandingsEditor(QDialog):
             check.toggled.connect(lambda value, current=key: self._set(current, value))
             form.addRow(label, check)
 
+        name_format = QComboBox()
+        name_format.addItem("Nome completo (Romario Santos)", "full")
+        name_format.addItem(
+            "Nome + sobrenome abreviado (Romario S.)",
+            "first_last_initial",
+        )
+        name_format.addItem(
+            "Nome abreviado + sobrenome (R. Santos)",
+            "first_initial_last",
+        )
+        selected_format = str(self.config.get("driver_name_format", "full"))
+        selected_index = name_format.findData(selected_format)
+        name_format.setCurrentIndex(max(0, selected_index))
+        name_format.currentIndexChanged.connect(
+            lambda _index: self._set(
+                "driver_name_format", str(name_format.currentData())
+            )
+        )
+        form.addRow("Formato do nome do piloto:", name_format)
+
         if not bool(self.config.get("relative_mode", False)):
             delta_laps = QSpinBox()
             delta_laps.setRange(1, 10)
@@ -336,7 +356,7 @@ class StandingsEditor(QDialog):
             lambda: self._set("badge_directory", badge_dir.text().strip())
         )
         form.addRow("Fonte:", font)
-        form.addRow("Tamanho base:", size)
+        form.addRow("Tamanho da fonte das linhas:", size)
         form.addRow("Altura da linha:", row_height)
         form.addRow("Altura do cabeçalho principal:", header_height)
         form.addRow("Fonte do cabeçalho principal:", global_header_font)

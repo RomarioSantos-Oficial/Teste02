@@ -336,7 +336,7 @@ class CountryFlagStore(QObject):
         scaled = source.scaled(
             width,
             height,
-            Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+            Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation,
         )
         if scaled.isNull():

@@ -56,6 +56,7 @@
   "show_badge": true,
   "use_badge_images": true,
   "badge_directory": "images/badge",
+  "driver_name_format": "full",
   "show_driver_rank": true,
   "show_driver_rank_progress": true,
   "show_safety_rank": true,

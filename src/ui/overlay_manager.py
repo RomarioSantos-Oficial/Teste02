@@ -35,6 +35,7 @@ class OverlayManager(QObject):
     config_saved = Signal(Path)
     widget_created = Signal(str, QWidget)
     profile_changed = Signal(str)
+    session_active_changed = Signal(bool)
 
     # Intervalos independentes evitam redesenhar informações lentas na mesma
     # frequência da telemetria de direção (20 Hz).
@@ -56,9 +57,21 @@ class OverlayManager(QObject):
         "standings": 0.10,
     }
 
-    def __init__(self, config_path: str | Path, parent: QObject | None = None) -> None:
+    def __init__(
+        self,
+        config_path: str | Path,
+        parent: QObject | None = None,
+        *,
+        external_driver_panel: bool = False,
+        external_widget_ids: set[str] | None = None,
+    ) -> None:
         super().__init__(parent)
         self.config_path = Path(config_path)
+        self.external_widget_ids = set(external_widget_ids or ())
+        if external_driver_panel:
+            self.external_widget_ids.add("driver_panel")
+        # Mantido para compatibilidade com chamadas e testes anteriores.
+        self.external_driver_panel = "driver_panel" in self.external_widget_ids
         self.config_data = self._load_config()
         self._ensure_profiles()
         self.widgets: dict[str, QWidget] = {}
@@ -355,6 +368,8 @@ class OverlayManager(QObject):
 
     def create_enabled_widgets(self) -> None:
         for widget_id, config in self.config_data.get("widgets", {}).items():
+            if widget_id in self.external_widget_ids:
+                continue
             if bool(config.get("enabled", False)) and widget_id in {"driver_panel", "delta", "flags", "weather", "tires", "battery", "damage", "fuel_time", "lap_timer", "relative", "radar", "map", "standings", "url"}:
                 self.create_widget(widget_id)
 
@@ -389,6 +404,9 @@ class OverlayManager(QObject):
 
     def show_widget(self, widget_id: str) -> None:
         self.config_data["widgets"][widget_id]["enabled"] = True
+        if widget_id in self.external_widget_ids:
+            self.save_config()
+            return
         widget = self.widgets.get(widget_id) or self.create_widget(widget_id)
         if hasattr(widget, "update_config"):
             widget.update_config(deepcopy(self.config_data["widgets"][widget_id]))
@@ -458,6 +476,17 @@ class OverlayManager(QObject):
         damage = self.widgets.get("damage")
         if damage is not None and damage.isVisible():
             damage.update_telemetry(player_data)
+
+    def update_fast_player_data(self, player_data: Any) -> None:
+        """Atualiza somente o painel rápido sem depender da sessão completa."""
+        if not self.session_active or not bool(
+            getattr(player_data, "has_player", False)
+        ):
+            return
+        widget = self.widgets.get("driver_panel")
+        if widget is not None and widget.isVisible():
+            widget.update_telemetry(player_data)
+
     def update_session_data(self, session: Any) -> None:
         self._update_split_server_lifecycle(session)
         was_active = self.session_active
@@ -481,24 +510,26 @@ class OverlayManager(QObject):
         if not self.session_active:
             return
 
-        now = time.monotonic()
         self._hydrate_split_label(session)
+        self._update_session_widgets(
+            session,
+            time.monotonic(),
+            self._update_due,
+        )
 
-        driver_panel = self.widgets.get("driver_panel")
-        if (
-            driver_panel is not None
-            and driver_panel.isVisible()
-            and getattr(session, "player", None) is not None
-            and self._update_due("driver_panel", now)
-        ):
-            driver_panel.update_telemetry(session.player)
+    def _update_session_widgets(
+        self,
+        session: Any,
+        now: float,
+        due: Callable[[str, float], bool],
+    ) -> None:
 
         tires = self.widgets.get("tires")
         if (
             tires is not None
             and tires.isVisible()
             and getattr(session, "player", None) is not None
-            and self._update_due("tires", now)
+            and due("tires", now)
         ):
             tires.update_telemetry(session.player)
 
@@ -507,23 +538,23 @@ class OverlayManager(QObject):
             damage is not None
             and damage.isVisible()
             and getattr(session, "player", None) is not None
-            and self._update_due("damage", now)
+            and due("damage", now)
         ):
             damage.update_telemetry(session.player)
 
         fuel_time = self.widgets.get("fuel_time")
-        if fuel_time is not None and fuel_time.isVisible() and self._update_due("fuel_time", now):
+        if fuel_time is not None and fuel_time.isVisible() and due("fuel_time", now):
             fuel_time.update_from_session(session)
 
         lap_timer = self.widgets.get("lap_timer")
-        if lap_timer is not None and lap_timer.isVisible() and self._update_due("lap_timer", now):
+        if lap_timer is not None and lap_timer.isVisible() and due("lap_timer", now):
             lap_timer.update_from_session(session)
 
         relative = self.widgets.get("relative")
         if (
             relative is not None
             and relative.isVisible()
-            and self._update_due("relative", now)
+            and due("relative", now)
         ):
             relative.update_from_session(session)
 
@@ -536,7 +567,7 @@ class OverlayManager(QObject):
         if (
             radar is not None
             and bool(radar_config.get("enabled", False))
-            and self._update_due("radar", now)
+            and due("radar", now)
         ):
             radar.update_from_session(session)
 
@@ -546,7 +577,7 @@ class OverlayManager(QObject):
         )
         if battery is not None and bool(
             battery_config.get("enabled", False)
-        ) and self._update_due("battery", now):
+        ) and due("battery", now):
             # Continua atualizando mesmo oculto para reaparecer ao entrar em um Hypercar.
             battery.update_from_session(session)
 
@@ -554,7 +585,7 @@ class OverlayManager(QObject):
         if (
             delta is not None
             and delta.isVisible()
-            and self._update_due("delta", now)
+            and due("delta", now)
         ):
             delta.update_from_session(session)
 
@@ -567,14 +598,14 @@ class OverlayManager(QObject):
         )
         if flags is not None and bool(
             flags_config.get("enabled", False)
-        ) and self._update_due("flags", now):
+        ) and due("flags", now):
             flags.update_from_session(session)
 
         weather = self.widgets.get("weather")
         if (
             weather is not None
             and weather.isVisible()
-            and self._update_due("weather", now)
+            and due("weather", now)
         ):
             weather.update_from_session(session)
 
@@ -585,7 +616,7 @@ class OverlayManager(QObject):
         )
         if map_widget is not None and bool(
             map_config.get("enabled", False)
-        ) and self._update_due("map", now):
+        ) and due("map", now):
             # Continua aprendendo o traçado enquanto o widget está habilitado.
             map_widget.update_from_session(session)
 
@@ -595,9 +626,9 @@ class OverlayManager(QObject):
         )
         if standings is not None and bool(
             standings_config.get("enabled", False)
-        ) and self._update_due("standings", now):
+        ) and due("standings", now):
             standings.update_from_session(session)
-        self._update_url_sources(session, now)
+        self._update_url_sources(session, now, due)
 
     def _update_split_server_lifecycle(self, session: Any) -> None:
         """Reseta dados online somente ao realmente voltar ao menu."""
@@ -688,18 +719,24 @@ class OverlayManager(QObject):
                 source.hide()
         controller.set_sources(sources)
 
-    def _update_url_sources(self, session: Any, now: float) -> None:
+    def _update_url_sources(
+        self,
+        session: Any,
+        now: float,
+        due: Callable[[str, float], bool] | None = None,
+    ) -> None:
         controller = self.widgets.get("url")
         if not isinstance(controller, UrlServerWidget) or not bool(
             self.config_data.get("widgets", {}).get("url", {}).get("enabled", False)
         ): return
+        is_due = self._update_due if due is None else due
         for widget_id, widget in list(controller.sources.items()):
             # Uma fonte sem OBS/navegador ativo nao recebe trabalho. O mesmo
             # limitador usado pelo widget local impede atualizar duas vezes no
             # mesmo ciclo quando a fonte tambem esta visivel na tela.
             if not controller.is_client_active(widget_id):
                 continue
-            if not self._update_due(widget_id, now):
+            if not is_due(widget_id, now):
                 continue
             if widget_id in {"driver_panel", "tires", "damage"}:
                 player = getattr(session, "player", None)
@@ -741,6 +778,7 @@ class OverlayManager(QObject):
         url_widget = self.widgets.get("url")
         if isinstance(url_widget, UrlServerWidget):
             url_widget.set_output_active(self.session_active or self.edit_mode)
+        self.session_active_changed.emit(self.session_active)
 
     def _update_due(self, widget_id: str, now: float) -> bool:
         interval = self.UPDATE_INTERVALS.get(widget_id, 0.05)

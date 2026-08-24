@@ -47,12 +47,31 @@ from PySide6.QtGui import QAction, QIcon
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
-from src.telemetry.lmu_adapter import LMUAdapter
+from src.telemetry.lmu_workers import SessionTelemetryWorker
 from src.telemetry.session_state import SessionActivityTracker
 from src.i18n import install_translator, tr
 from src.ui.edit_mode_manager import EditModeManager
 from src.ui.main_menu_window import MainMenuWindow
+from src.ui.isolated_widget_process import (
+    IsolatedWidgetProcessController,
+    SessionBusPublisher,
+    SharedSessionBus,
+)
 from src.ui.overlay_manager import OverlayManager
+from src.widget.driver_panel.driver_panel_process import (
+    DriverPanelProcessController,
+)
+
+
+ISOLATED_SESSION_WIDGET_INTERVALS = {
+    "delta": 0.050,
+    "map": 0.050,
+    "lap_timer": 0.100,
+    "tires": 0.100,
+    "radar": 0.050,
+    "flags": 0.100,
+}
+EXTERNAL_WIDGET_IDS = {"driver_panel", *ISOLATED_SESSION_WIDGET_INTERVALS}
 
 
 INSTANCE_SERVER_NAME = "SectorFlow_ALFA_single_instance_v1"
@@ -116,11 +135,40 @@ class SingleInstanceGuard:
 class SectorFlowApplication:
     def __init__(self) -> None:
         config_path = user_config_path()
-        self.overlay_manager = OverlayManager(config_path)
+        self.overlay_manager = OverlayManager(
+            config_path,
+            external_widget_ids=EXTERNAL_WIDGET_IDS,
+        )
+        self.session_bus = SharedSessionBus()
+        self.driver_panel_process = DriverPanelProcessController(config_path)
+        self.isolated_widget_processes = {
+            widget_id: IsolatedWidgetProcessController(
+                config_path,
+                widget_id,
+                self.session_bus,
+                interval,
+            )
+            for widget_id, interval in ISOLATED_SESSION_WIDGET_INTERVALS.items()
+        }
+        self.widget_processes = [
+            self.driver_panel_process,
+            *self.isolated_widget_processes.values(),
+        ]
+        self.driver_panel_process.start()
+        for controller in self.isolated_widget_processes.values():
+            controller.start()
+        for controller in self.widget_processes:
+            self.overlay_manager.session_active_changed.connect(
+                controller.set_session_active
+            )
         self.menu = MainMenuWindow(self.overlay_manager, None)
         self.edit_manager = EditModeManager(self.menu)
         self.menu.edit_mode_manager = self.edit_manager
         self.edit_manager.edit_mode_changed.connect(self.overlay_manager.set_edit_mode)
+        for controller in self.widget_processes:
+            self.edit_manager.edit_mode_changed.connect(
+                controller.set_edit_mode
+            )
         self.overlay_manager.create_enabled_widgets()
         self.overlays_enabled = True
         self.tray: QSystemTrayIcon | None = None
@@ -136,13 +184,20 @@ class SectorFlowApplication:
                 self._refresh_tray_translations
             )
 
-        self.adapter = LMUAdapter(copy_access=True)
+        self.session_telemetry = SessionTelemetryWorker(interval_s=0.050)
+        self._last_session_sequence = -1
+        self.session_telemetry.start()
+        self.session_bus_publisher = SessionBusPublisher(
+            self.session_telemetry,
+            self.session_bus,
+        )
+        self.session_bus_publisher.start()
         self.session_tracker = SessionActivityTracker()
         self.timer = QTimer(self.menu)
         self.timer.setTimerType(Qt.TimerType.PreciseTimer)
         self.timer.timeout.connect(self.update_lmu)
-        # Memoria compartilhada e leve. Os widgets pesados conservam seus
-        # limitadores individuais; o tick rapido beneficia Telemetry/volante.
+        # O callback principal consome apenas o snapshot da sessao. Telemetry
+        # e os widgets visuais mais sensiveis vivem em processos isolados.
         self.timer.start(16)
 
     def show(self) -> None:
@@ -245,19 +300,21 @@ class SectorFlowApplication:
             )
 
     def update_lmu(self) -> None:
+        for controller in self.widget_processes:
+            for geometry in controller.pending_geometry():
+                self.overlay_manager._save_widget_geometry(*geometry)
+
         if not self.overlays_enabled:
             self.overlay_manager.set_session_active(False)
             self.menu.set_lmu_status(False, "overlays desativados pela bandeja")
             return
-        try:
-            session = self.adapter.read()
-        except Exception as exc:
-            self.overlay_manager.set_session_active(False)
-            self.menu.set_lmu_status(False, f"{tr('erro')}: {exc}")
+
+        sequence, session = self.session_telemetry.snapshot()
+        if sequence == self._last_session_sequence:
             return
+        self._last_session_sequence = sequence
 
         self.session_tracker.update(session)
-        self.timer.setInterval(500 if session.telemetry_paused else 16)
 
         if not session.connected:
             self.overlay_manager.set_session_active(False)
@@ -308,7 +365,10 @@ class SectorFlowApplication:
             return
         self._closed = True
         self.timer.stop()
-        self.adapter.close()
+        self.session_bus_publisher.close()
+        self.session_telemetry.close()
+        for controller in self.widget_processes:
+            controller.close()
         self.overlay_manager.close_all()
         self.menu.tray_mode_enabled = False
         self.menu.close()
