@@ -606,5 +606,6 @@
   "Área interna:": "Zona interna:",
   "Última volta": "Ultimo giro",
   "Última volta (LAST):": "Ultimo giro (ULTIMO):",
-  "◆ GREEN FLAG ◆": "◆ BANDIERA VERDE ◆"
+  "◆ GREEN FLAG ◆": "◆ BANDIERA VERDE ◆",
+  "release_notes_0_0_5_addendum": "AGGIORNAMENTO COMPLEMENTARE\n• In STR, la colonna PIT ora appare dopo il nome del pilota e prima del marchio dell'auto.\n• Le righe senza un tempo PIT visibile cedono quello spazio al nome del pilota; durante il PIT e per i giri configurati dopo l'uscita, le celle restano separate.\n• Aumentare la larghezza del nome sposta PIT e tutte le colonne successive della stessa quantità.\n• Il marchio dell'auto rimane visibile dopo l'arrivo e la bandiera a scacchi passa alla colonna STS.\n• Il programma di installazione usa un'icona multirisoluzione con il simbolo ingrandito, offre soltanto un collegamento facoltativo sul Desktop e non crea collegamenti nel menu Start.\n• La lingua scelta nell'app viene mantenuta durante gli aggiornamenti e le note vengono mostrate nella lingua attiva."
 }

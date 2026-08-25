@@ -21,12 +21,12 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 # 1. Verificar Python
-Write-Host "[1/6] Verificando Python..." -ForegroundColor Yellow
+Write-Host "[1/7] Verificando Python..." -ForegroundColor Yellow
 $pythonVersion = python --version 2>&1
 Write-Host "  $pythonVersion" -ForegroundColor Green
 
 # 2. Usar o ambiente virtual do projeto
-Write-Host "[2/6] Verificando dependencias..." -ForegroundColor Yellow
+Write-Host "[2/7] Verificando dependencias..." -ForegroundColor Yellow
 $PythonExe = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
 if (-not (Test-Path $PythonExe)) {
     throw "Ambiente virtual nao encontrado: $PythonExe"
@@ -37,14 +37,22 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "  Dependencias OK" -ForegroundColor Green
 
-# 3. Limpar build anterior
-Write-Host "[3/6] Limpando builds anteriores..." -ForegroundColor Yellow
+# 3. Gerar ícone e recursos do instalador
+Write-Host "[3/7] Gerando icone multirresolucao..." -ForegroundColor Yellow
+& $PythonExe "build\create_installer_assets.py"
+if ($LASTEXITCODE -ne 0) {
+    throw "Falha ao gerar os recursos do instalador."
+}
+Write-Host "  Icone e recursos OK" -ForegroundColor Green
+
+# 4. Limpar build anterior
+Write-Host "[4/7] Limpando builds anteriores..." -ForegroundColor Yellow
 if (Test-Path "build\work") { Remove-Item -Recurse -Force "build\work" }
 if (Test-Path "dist\SectorFlow") { Remove-Item -Recurse -Force "dist\SectorFlow" }
 Write-Host "  Limpeza OK" -ForegroundColor Green
 
-# 4. Build com PyInstaller
-Write-Host "[4/6] Gerando executavel com PyInstaller..." -ForegroundColor Yellow
+# 5. Build com PyInstaller
+Write-Host "[5/7] Gerando executavel com PyInstaller..." -ForegroundColor Yellow
 & $PythonExe -m PyInstaller --clean --noconfirm --workpath build\work build\SectorFlow.spec
 
 if ($LASTEXITCODE -ne 0) {
@@ -52,20 +60,20 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "  PyInstaller OK" -ForegroundColor Green
 
-# 5. Copiar para pasta de distribuicao
-Write-Host "[5/6] Preparando distribuicao..." -ForegroundColor Yellow
+# 6. Copiar para pasta de distribuicao
+Write-Host "[6/7] Preparando distribuicao..." -ForegroundColor Yellow
 $OutputDir = "app\SectorFlow"
 if (Test-Path $OutputDir) { Remove-Item -Recurse -Force $OutputDir }
 Copy-Item -Recurse -Force "dist\SectorFlow" $OutputDir
 Write-Host "  Distribuido em: $OutputDir" -ForegroundColor Green
 
-# 6. Assinatura (opcional)
+# Assinatura (opcional)
 if ($SignWithCert -ne "") {
-    Write-Host "[6/6] Assinando executavel..." -ForegroundColor Yellow
+    Write-Host "  Assinando executavel..." -ForegroundColor Yellow
     .\sign.ps1 -pfxPath $SignWithCert -pfxPassword $CertPassword
     Write-Host "  Assinatura OK" -ForegroundColor Green
 } else {
-    Write-Host "[6/6] Assinatura pulada (sem certificado)" -ForegroundColor Gray
+    Write-Host "  Assinatura pulada (sem certificado)" -ForegroundColor Gray
 }
 
 Write-Host ""
@@ -85,7 +93,7 @@ $InnoCompiler = $InnoCandidates | Where-Object { Test-Path -LiteralPath $_ } | S
 if (-not $InnoCompiler) {
     throw "Inno Setup 6 nao encontrado nos caminhos de sistema ou do usuario."
 }
-Write-Host "  Gerando instalador com Inno Setup 6..." -ForegroundColor Yellow
+Write-Host "[7/7] Gerando instalador com Inno Setup 6..." -ForegroundColor Yellow
 & $InnoCompiler "/Q" "build\sectorflow_installer.iss"
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup falhou." }
 Write-Host "  Instalador: app\SectorFlow_Setup_0.0.5.exe" -ForegroundColor Green

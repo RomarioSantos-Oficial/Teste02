@@ -61,6 +61,39 @@ def publish_driver_country(driver_name: str, nationality: str, code: str) -> Non
 def live_driver_country(driver_name: str) -> tuple[str, str]:
     return _LIVE_DRIVER_COUNTRIES.get(_asset_key(driver_name), ("", ""))
 
+
+def hydrate_session_driver_countries(session: Any) -> int:
+    """Copia para a sessão os países já identificados pelo Standings.
+
+    O Delta e outros widgets podem executar em processos separados. Variáveis
+    globais como ``_LIVE_DRIVER_COUNTRIES`` não atravessam essa fronteira, mas
+    os campos de cada ``DriverData`` fazem parte do snapshot serializado.
+    """
+    updated = 0
+    for driver in getattr(session, "drivers", []) or []:
+        name = str(getattr(driver, "driver_name", "") or "").strip()
+        if not name:
+            continue
+        nationality, code = live_driver_country(name)
+        nationality = str(nationality or "").strip()
+        code = str(code or "").strip().upper()
+        changed = False
+        current_nationality = str(
+            getattr(driver, "nationality", "") or ""
+        ).strip()
+        current_code = str(
+            getattr(driver, "country_code", "") or ""
+        ).strip()
+        if not current_nationality and nationality:
+            driver.nationality = nationality
+            changed = True
+        if not current_code and code:
+            driver.country_code = code
+            changed = True
+        if changed:
+            updated += 1
+    return updated
+
 BRANDS = {
     "296": "Ferrari", "488": "Ferrari", "499": "Ferrari",
     "911": "Porsche", "963": "Porsche", "992": "Porsche",

@@ -608,5 +608,6 @@
   "Área interna:": "Área interna:",
   "Última volta": "Última vuelta",
   "Última volta (LAST):": "Última vuelta (ÚLTIMA):",
-  "◆ GREEN FLAG ◆": "◆ BANDERA VERDE ◆"
+  "◆ GREEN FLAG ◆": "◆ BANDERA VERDE ◆",
+  "release_notes_0_0_5_addendum": "ACTUALIZACIÓN COMPLEMENTARIA\n• En STR, la columna PIT aparece ahora después del nombre del piloto y antes de la marca del coche.\n• Las filas sin un tiempo de PIT visible ceden ese espacio al nombre del piloto; durante el PIT y las vueltas configuradas tras la salida, las celdas permanecen separadas.\n• Aumentar el ancho del nombre desplaza PIT y todas las columnas siguientes en la misma cantidad.\n• La marca del coche permanece visible después de la llegada y la bandera a cuadros pasa a la columna STS.\n• El instalador usa un icono multirresolución con el símbolo ampliado, ofrece solo un acceso directo opcional en el Escritorio y no crea accesos directos en el menú Inicio.\n• El idioma elegido en la aplicación se conserva durante las actualizaciones y las notas se muestran en el idioma activo."
 }

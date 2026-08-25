@@ -16,6 +16,10 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QApplication, QWidget
 
+from src.widget.standings.standings_assets import (
+    hydrate_session_driver_countries,
+)
+
 
 SESSION_BUFFER_SIZE = 1024 * 1024
 AUTO_HIDE_WIDGETS = {"flags", "radar"}
@@ -44,7 +48,7 @@ class SharedSessionBus:
 
 
 class SessionBusPublisher:
-    """Copia o snapshot pronto do worker sem depender do event loop do Qt."""
+    """Copia o snapshot pronto e inclui metadados destinados a outros processos."""
 
     def __init__(self, source: Any, bus: SharedSessionBus) -> None:
         self.source = source
@@ -69,6 +73,10 @@ class SessionBusPublisher:
             sequence, session = self.source.snapshot()
             if sequence == last_sequence:
                 continue
+            # O Standings descobre países pela API online no processo
+            # principal. Colocar o resultado no próprio SessionData faz a
+            # informação atravessar o pickle usado por Delta/Mapa/etc.
+            hydrate_session_driver_countries(session)
             if self.bus.publish(sequence, session):
                 last_sequence = sequence
 

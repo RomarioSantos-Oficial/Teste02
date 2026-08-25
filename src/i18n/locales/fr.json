@@ -608,5 +608,6 @@
   "Área interna:": "Espace interne :",
   "Última volta": "Dernier tour",
   "Última volta (LAST):": "Dernier tour (DERNIER) :",
-  "◆ GREEN FLAG ◆": "◆ DRAPEAU VERT ◆"
+  "◆ GREEN FLAG ◆": "◆ DRAPEAU VERT ◆",
+  "release_notes_0_0_5_addendum": "MISE À JOUR COMPLÉMENTAIRE\n• Dans STR, la colonne PIT apparaît désormais après le nom du pilote et avant la marque de la voiture.\n• Les lignes sans temps de PIT visible prêtent cet espace au nom du pilote ; pendant le PIT et durant les tours configurés après la sortie, les cellules restent séparées.\n• Augmenter la largeur du nom décale PIT et toutes les colonnes suivantes de la même valeur.\n• La marque de la voiture reste visible après l'arrivée et le drapeau à damier passe dans la colonne STS.\n• L'installateur utilise une icône multirésolution avec le symbole agrandi, propose uniquement un raccourci Bureau facultatif et ne crée aucun raccourci dans le menu Démarrer.\n• La langue choisie dans l'application est conservée pendant les mises à jour et les notes sont affichées dans la langue active."
 }

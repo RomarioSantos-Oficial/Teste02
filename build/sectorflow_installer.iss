@@ -29,7 +29,8 @@ UsePreviousAppDir=yes
 UsePreviousGroup=yes
 UsePreviousTasks=yes
 UsePreviousLanguage=yes
-AllowNoIcons=no
+AllowNoIcons=yes
+DisableProgramGroupPage=yes
 LicenseFile=
 OutputDir=..\app
 OutputBaseFilename=SectorFlow_Setup_{#MyAppVersion}
@@ -74,10 +75,17 @@ Name: "chinesesimplified"; MessagesFile: "ChineseSimplified.isl"
 ; que JSONs, traduções, imagens e DLLs sejam atualizados junto com o EXE.
 Source: "..\dist\SectorFlow\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
+
+[InstallDelete]
+; Remove atalhos antigos do Menu Iniciar nas atualizações. A partir da 0.0.5,
+; o único atalho oferecido pelo instalador é o opcional da Área de Trabalho.
+Type: files; Name: "{group}\{#MyAppName}.lnk"
+Type: files; Name: "{group}\{cm:UninstallProgram,{#MyAppName}}.lnk"
+
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0
-Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
@@ -107,9 +115,12 @@ begin
   begin
     LanguageDir := ExpandConstant('{localappdata}\SectorFlow');
     LanguageFile := LanguageDir + '\language.json';
-    ForceDirectories(LanguageDir);
-    Json := '{"language": "' + AppLanguageCode() + '"}';
-    SaveStringToFile(LanguageFile, Json, False);
+    if not FileExists(LanguageFile) then
+    begin
+      ForceDirectories(LanguageDir);
+      Json := '{"language": "' + AppLanguageCode() + '"}';
+      SaveStringToFile(LanguageFile, Json, False);
+    end;
   end;
 end;
 

@@ -210,6 +210,13 @@ class MainMenuWindow(QMainWindow):
         translated_note = tr(translation_key) if translation_key else tr(source_note)
         if translation_key and translated_note == translation_key:
             translated_note = source_note
+        addendum_source = config.get("update_note_addendum", "").strip()
+        addendum_key = config.get("update_note_addendum_key", "").strip()
+        translated_addendum = tr(addendum_key) if addendum_key else tr(addendum_source)
+        if addendum_key and translated_addendum == addendum_key:
+            translated_addendum = addendum_source
+        if translated_addendum:
+            translated_note = f"{translated_note}\n\n{translated_addendum}"
         note = QLabel(translated_note)
         note.setObjectName("updateDialogNote")
         note.setWordWrap(True)

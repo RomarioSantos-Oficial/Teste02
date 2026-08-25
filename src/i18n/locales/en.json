@@ -618,5 +618,6 @@
   "Área interna:": "Internal area:",
   "Última volta": "Last lap",
   "Última volta (LAST):": "Last lap (LAST):",
-  "◆ GREEN FLAG ◆": "◆ GREEN FLAG ◆"
+  "◆ GREEN FLAG ◆": "◆ GREEN FLAG ◆",
+  "release_notes_0_0_5_addendum": "SUPPLEMENTARY UPDATE\n• In STR, the PIT column now appears after the driver name and before the car brand.\n• Rows without a visible PIT time lend that space to the driver name; during the PIT and for the configured laps after exit, the cells remain separate.\n• Increasing the driver-name width moves PIT and every following column by the same amount.\n• The car brand remains visible after the finish, and the checkered flag moves to the STS column.\n• The installer uses a multi-resolution icon with an enlarged symbol, offers only an optional Desktop shortcut, and creates no Start Menu shortcuts.\n• The language selected in the app is preserved during updates, and release notes are displayed in the active language."
 }
