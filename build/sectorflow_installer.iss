@@ -8,7 +8,7 @@
 ; ============================================================
 
 #define MyAppName "SectorFlow Overley"
-#define MyAppVersion "0.0.3"
+#define MyAppVersion "0.0.5"
 #define MyAppPublisher "Sector Flow"
 #define MyAppURL "https://github.com/RomarioSantos-Oficial/Teste02"
 #define MyAppExeName "SectorFlow.exe"
@@ -29,7 +29,7 @@ UsePreviousAppDir=yes
 UsePreviousGroup=yes
 UsePreviousTasks=yes
 UsePreviousLanguage=yes
-AllowNoIcons=yes
+AllowNoIcons=no
 LicenseFile=
 OutputDir=..\app
 OutputBaseFilename=SectorFlow_Setup_{#MyAppVersion}
@@ -70,16 +70,14 @@ Name: "polish"; MessagesFile: "compiler:Languages\Polish.isl"
 Name: "chinesesimplified"; MessagesFile: "ChineseSimplified.isl"
 
 [Files]
-Source: "..\dist\SectorFlow\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs replacesameversion
+; Todos os arquivos abaixo são privados do SectorFlow. O ignoreversion garante
+; que JSONs, traduções, imagens e DLLs sejam atualizados junto com o EXE.
+Source: "..\dist\SectorFlow\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-
-[Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked; OnlyBelowVersion: 6.1
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

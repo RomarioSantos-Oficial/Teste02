@@ -117,7 +117,7 @@ class MainMenuWindow(QMainWindow):
     @staticmethod
     def _load_header_config() -> dict[str, str]:
         defaults = {
-            "version": "0.0.3",
+            "version": "0.0.5",
             "update_note": "Novidades e correções da versão atual.",
             "donation_label": "Apoie o desenvolvimento",
             "donation_url": "",
@@ -206,7 +206,11 @@ class MainMenuWindow(QMainWindow):
         layout.addWidget(version)
 
         source_note = config.get("update_note", "").strip() or "Nenhuma nota cadastrada."
-        note = QLabel(tr(source_note))
+        translation_key = config.get("update_note_key", "").strip()
+        translated_note = tr(translation_key) if translation_key else tr(source_note)
+        if translation_key and translated_note == translation_key:
+            translated_note = source_note
+        note = QLabel(translated_note)
         note.setObjectName("updateDialogNote")
         note.setWordWrap(True)
         note.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
@@ -268,7 +272,7 @@ class MainMenuWindow(QMainWindow):
 
     def _refresh_dynamic_translations(self) -> None:
         """Reaplica textos que mudam depois que a janela foi traduzida."""
-        version = str(self.version_label.property("sectorflowVersion") or "0.0.3")
+        version = str(self.version_label.property("sectorflowVersion") or "0.0.5")
         self.version_label.setText(f"{tr('Versão')} {version}")
         self._reload_profiles()
         self.edit_mode_button.setText(

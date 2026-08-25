@@ -12,6 +12,37 @@ from src.widget.standings.standings_models import DriverMetadata, StandingRow
 
 
 class StandingsLogicUnitTests(unittest.TestCase):
+    def test_pit_time_remains_visible_for_configured_laps_after_exit(self) -> None:
+        driver = DriverData(
+            slot_id=1,
+            driver_name="Pit Driver",
+            vehicle_class="LMGT3",
+            position=1,
+            laps=5,
+            in_pits=True,
+        )
+        session = SessionData(
+            connected=True,
+            session=10,
+            drivers=[driver],
+        )
+        logic = StandingsLogic({"show_pit_status": True, "pit_status_laps": 2})
+
+        row = logic.build(session, {}, "MEM").categories[0].rows[0]
+        self.assertTrue(row.pit_status_visible)
+
+        driver.in_pits = False
+        row = logic.build(session, {}, "MEM").categories[0].rows[0]
+        self.assertTrue(row.pit_status_visible)
+
+        driver.laps = 6
+        row = logic.build(session, {}, "MEM").categories[0].rows[0]
+        self.assertTrue(row.pit_status_visible)
+
+        driver.laps = 7
+        row = logic.build(session, {}, "MEM").categories[0].rows[0]
+        self.assertFalse(row.pit_status_visible)
+
     def test_driver_name_display_formats(self) -> None:
         self.assertEqual(format_driver_name("Romario Santos", "full"), "Romario Santos")
         self.assertEqual(

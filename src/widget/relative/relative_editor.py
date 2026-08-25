@@ -4,9 +4,25 @@ from src.widget.standings.standings_editor import StandingsEditor
 
 
 class RelativeEditor(StandingsEditor):
-    COLUMN_WIDTHS = tuple(
-        item for item in StandingsEditor.COLUMN_WIDTHS
-        if item[0] not in {"laps", "best", "last"}
+    COLUMN_WIDTHS = (
+        ("position", "Posição", 46.0),
+        ("change", "Mudança de posição", 60.0),
+        ("flag", "Bandeira", 62.5),
+        ("badge", "Badge", 60.0),
+        ("driver", "Nome do piloto", 180.0),
+        ("brand", "Marca", 72.0),
+        ("dr", "Driver Rank (DR)", 110.0),
+        ("sr", "Safety Rank (SR)", 88.0),
+        ("number", "Número do carro", 58.0),
+        ("pit", "Tempo do pit", 90.0),
+        ("interval", "Intervalo da categoria", 100.0),
+        ("delta", "Delta acumulado", 90.0),
+        ("gap", "Gap/intervalo", 100.0),
+        ("tyre", "Pneus", 76.0),
+        ("energy", "Energia", 105.0),
+        ("damage", "Danos", 80.0),
+        ("track_limits", "Limites de pista", 88.0),
+        ("penalty", "Punição", 90.0),
     )
 
     def __init__(self, config, parent=None):

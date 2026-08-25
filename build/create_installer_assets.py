@@ -44,26 +44,19 @@ def create_ico():
         print(f"[AVISO] Logo nao encontrado: {LOGO_PNG}")
         return
     
-    img = Image.open(LOGO_PNG)
-    if img.mode == 'RGBA':
-        pass  # ICO suporta RGBA
-    else:
-        img = img.convert('RGBA')
-    
-    # Criar ICO com multiplos tamanhos
+    img = Image.open(LOGO_PNG).convert('RGBA')
+
+    # Centralizar em uma tela quadrada preserva a proporção da marca. Salvar a
+    # imagem-base em alta resolução permite que o Pillow gere todas as entradas
+    # do ICO; usar a miniatura 16x16 como base criava apenas uma entrada.
+    side = max(img.size)
+    square = Image.new('RGBA', (side, side), (0, 0, 0, 0))
+    square.alpha_composite(img, ((side - img.width) // 2, (side - img.height) // 2))
+
+    # Criar ICO real com múltiplos tamanhos para Explorer, atalhos e barra.
     sizes = [(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
-    icons = []
-    for size in sizes:
-        icon = img.resize(size, Image.LANCZOS)
-        icons.append(icon)
-    
     output_path = os.path.join(PROJECT_ROOT, "images", "logo", "Logo.ico")
-    icons[0].save(
-        output_path,
-        format='ICO',
-        sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)],
-        append_images=icons[1:] if len(icons) > 1 else None
-    )
+    square.save(output_path, format='ICO', sizes=sizes)
     print(f"[OK] ICO criado: {output_path}")
 
 if __name__ == "__main__":

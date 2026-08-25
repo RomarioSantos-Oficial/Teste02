@@ -6,9 +6,30 @@ from src.widget.standings.standings_widget import StandingsWidget
 
 
 class RelativeWidget(StandingsWidget):
-    BASE_COLUMNS = tuple(
-        item for item in StandingsWidget.BASE_COLUMNS
-        if item[0] not in {"laps", "best", "last"}
+    # Mantém a ordem anterior do Relative. A mudança de posição do PIT e da
+    # bandeira de chegada foi aprovada somente para o STR.
+    FINISH_FLAG_IN_STATUS_COLUMN = False
+    BORROW_INACTIVE_PIT_FOR_DRIVER = False
+    BASE_COLUMNS = (
+        ("position", 46.0),
+        ("change", 60.0),
+        ("flag", 62.5),
+        ("badge", 60.0),
+        ("driver", 105.0),
+        ("brand", 72.0),
+        ("dr", 110.0),
+        ("sr", 88.0),
+        ("gain_dr", 76.0),
+        ("number", 58.0),
+        ("pit", 90.0),
+        ("interval", 100.0),
+        ("delta", 90.0),
+        ("gap", 100.0),
+        ("tyre", 76.0),
+        ("energy", 105.0),
+        ("damage", 80.0),
+        ("track_limits", 88.0),
+        ("penalty", 90.0),
     )
 
     def __init__(self, widget_id: str, config: dict[str, Any], parent=None, **shared) -> None:

@@ -50,6 +50,8 @@ class StandingsWidget(QWidget):
     selected = Signal(str)
     DESIGN_WIDTH = 1500.0
     DESIGN_HEIGHT = 820.0
+    FINISH_FLAG_IN_STATUS_COLUMN = True
+    BORROW_INACTIVE_PIT_FOR_DRIVER = True
 
     BASE_COLUMNS = (
         ("position", 46.0),
@@ -57,13 +59,13 @@ class StandingsWidget(QWidget):
         ("flag", 62.5),
         ("badge", 60.0),
         ("driver", 105.0),
+        ("pit", 90.0),
         ("brand", 72.0),
         ("dr", 110.0),
         ("sr", 88.0),
         ("gain_dr", 76.0),
         ("number", 58.0),
         ("laps", 70.0),
-        ("pit", 90.0),
         ("best", 140.0),
         ("last", 140.0),
         ("interval", 100.0),
@@ -106,6 +108,9 @@ class StandingsWidget(QWidget):
         self.logos = BrandLogoStore(PROJECT_ROOT, config)
         self.badge_images = BadgeImageStore(PROJECT_ROOT, config)
         self.flags = CountryFlagStore(PROJECT_ROOT, config, self)
+        self._finish_flag_loaded = False
+        self._finish_flag_source: QPixmap | None = None
+        self._finish_flag_pixmaps: dict[tuple[int, int], QPixmap] = {}
         self.view = StandingsView()
         self.session: Any | None = None
         self.edit_mode = False
@@ -147,10 +152,53 @@ class StandingsWidget(QWidget):
         self._fit_width_to_columns()
 
     def update_config(self, config: dict[str, Any]) -> None:
+        width_delta = type(self).configured_flexible_width_delta(
+            self.config,
+            config,
+        )
+        previous_width = self.width()
         if "column_width_reference_total" not in config:
             config["column_width_reference_total"] = self.column_width_total()
         self.config = config
         self.apply_config()
+        if abs(width_delta) > 0.01:
+            target = max(
+                self.minimumWidth(),
+                self._minimum_panel_width(),
+                round(
+                    previous_width
+                    + width_delta
+                    * max(0.40, float(config.get("internal_scale", 1.0)))
+                ),
+            )
+            screen = self.screen()
+            if screen is not None:
+                target = min(target, screen.availableGeometry().width())
+            self.resize(target, self.height())
+
+    @classmethod
+    def configured_flexible_width_delta(
+        cls,
+        previous: dict[str, Any],
+        current: dict[str, Any],
+    ) -> float:
+        """Soma a alteração configurada nas colunas que aceitam largura manual."""
+        defaults = dict(cls.BASE_COLUMNS)
+        previous_widths = previous.get("column_widths", {}) or {}
+        current_widths = current.get("column_widths", {}) or {}
+        delta = 0.0
+        for key in cls.FLEXIBLE_COLUMNS:
+            default = float(defaults.get(key, 24.0))
+            try:
+                old_width = float(previous_widths.get(key, default))
+            except (TypeError, ValueError):
+                old_width = default
+            try:
+                new_width = float(current_widths.get(key, default))
+            except (TypeError, ValueError):
+                new_width = default
+            delta += new_width - old_width
+        return delta
 
     def apply_normalized_geometry(self, screen_geometry) -> None:
         position = self.config.get("position", {})
@@ -824,7 +872,8 @@ class StandingsWidget(QWidget):
             "position": "P", "change": "+/-", "flag": "PAÍS", "badge": "BADGE",
             "dr": "DR", "sr": "SR", "gain_dr": "ΔDR",
             "driver": "PILOTO", "brand": "MAR", "number": "#", "laps": "VLT",
-            "pit": "PIT", "best": "BEST", "last": "LAST", "interval": "INT", "delta": "DELTA", "gap": "GAP", "track_limits": "LIM", "penalty": "PEN",
+            "pit": "PIT", "best": "BEST", "last": "LAST", "interval": "INT", "delta": "DELTA", "gap": "GAP", "track_limits": "LIM",
+            "penalty": "STS" if self.FINISH_FLAG_IN_STATUS_COLUMN else "PEN",
             "tyre": "TYR",
             "energy": "VE/FUEL", "damage": "DMG",
         }
@@ -850,11 +899,49 @@ class StandingsWidget(QWidget):
             label = painter.fontMetrics().elidedText(label, Qt.TextElideMode.ElideRight, max(1, int(cell.width()-2)))
             painter.drawText(cell, Qt.AlignmentFlag.AlignCenter, label)
             painter.restore()
+        if (
+            bool(self.config.get("detach_penalty_column", True))
+            and bool(self.config.get("show_penalty_column", True))
+        ):
+            popup_gap = max(
+                0.0,
+                float(self.config.get("penalty_column_gap", 10.0)) * self._scale,
+            )
+            popup_width = max(
+                18.0,
+                self._effective_column_width(
+                    "penalty",
+                    float(
+                        self.config.get("column_widths", {}).get(
+                            "penalty", dict(self.BASE_COLUMNS).get("penalty", 90.0)
+                        )
+                    ),
+                ) * self._scale,
+            )
+            popup = QRectF(
+                rect.right() + popup_gap,
+                rect.top(),
+                popup_width,
+                rect.height(),
+            )
+            painter.save()
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(colors.get("legend_background", "#11151D")))
+            painter.drawRect(popup)
+            painter.setFont(self._section_font("column_legend_font_size", 12.0, rect))
+            painter.setPen(QColor(colors.get("muted", "#A7AFBA")))
+            painter.drawText(
+                popup,
+                Qt.AlignmentFlag.AlignCenter,
+                "STS" if self.FINISH_FLAG_IN_STATUS_COLUMN else "PEN",
+            )
+            painter.restore()
         self._column_content_scale = 1.0
 
     def _draw_row(self, painter: QPainter, rect: QRectF, row: StandingRow, category: CategoryBlock) -> None:
         colors = self.config.get("colors", {})
         cells = self._column_rects(rect)
+        draw_cells = type(self)._row_cells_with_pit_borrow(cells, row)
         penalty_cell = next((cell for key, cell in cells if key == "penalty"), None)
         detached_penalty = bool(self.config.get("detach_penalty_column", True))
         penalty_gap = max(
@@ -894,7 +981,7 @@ class StandingsWidget(QWidget):
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(background)
         painter.drawRect(main_rect)
-        for key, cell in cells:
+        for key, cell in draw_cells:
             painter.save()
             painter.setClipRect(cell)
             self._drawing_driver_row = True
@@ -940,6 +1027,39 @@ class StandingsWidget(QWidget):
         else:
             painter.drawLine(rect.bottomLeft(), QPointF(main_right, rect.bottom()))
 
+    @classmethod
+    def _row_cells_with_pit_borrow(
+        cls,
+        cells: list[tuple[str, QRectF]],
+        row: StandingRow,
+    ) -> list[tuple[str, QRectF]]:
+        """Empresta ao nome o espaço do PIT nas linhas sem indicador ativo."""
+        if not cls.BORROW_INACTIVE_PIT_FOR_DRIVER or bool(
+            getattr(row, "pit_status_visible", False)
+        ):
+            return cells
+
+        driver_index = next(
+            (index for index, (key, _cell) in enumerate(cells) if key == "driver"),
+            -1,
+        )
+        pit_index = next(
+            (index for index, (key, _cell) in enumerate(cells) if key == "pit"),
+            -1,
+        )
+        # O empréstimo só é seguro quando as duas células são vizinhas. Assim
+        # nenhuma coluna intermediária pode ser coberta pelo nome.
+        if driver_index < 0 or pit_index != driver_index + 1:
+            return cells
+
+        driver_rect = QRectF(cells[driver_index][1])
+        driver_rect.setRight(cells[pit_index][1].right())
+        return [
+            (key, driver_rect if index == driver_index else cell)
+            for index, (key, cell) in enumerate(cells)
+            if index != pit_index
+        ]
+
     def _row_class_color(self, row: StandingRow, category: CategoryBlock) -> QColor:
         """Return the car's own class color, including in the mixed-class Relative."""
         if row.class_key:
@@ -954,7 +1074,7 @@ class StandingsWidget(QWidget):
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(row_color)
             painter.drawRect(rect.adjusted(0, 2 * self._scale, -2 * self._scale, -2 * self._scale))
-            # Mostrar apenas a posição — a bandeira de chegada ficará na coluna 'brand'.
+            # A posição fica isolada; a chegada é desenhada na coluna STS.
             self._text(painter, rect, f"{row.class_position}", 0.76, True)
         elif key == "change":
             value = row.position_change
@@ -1059,27 +1179,15 @@ class StandingsWidget(QWidget):
             text = painter.fontMetrics().elidedText(display_name, Qt.TextElideMode.ElideRight, max(1, int(target.width())))
             painter.drawText(target, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, text)
         elif key == "brand":
-            # Se o piloto terminou (finish_status == 1), usar a bandeira de chegada
-            finished = False
-            try:
-                finished = int(getattr(row, "finish_status", 0) or 0) == 1
-            except Exception:
-                finished = False
             pixmap = None
-            if finished:
-                candidate = PROJECT_ROOT / "images" / "Flags" / "bandeira_chegada.png"
-                if candidate.is_file():
-                    try:
-                        pix = QPixmap(str(candidate))
-                        if not pix.isNull():
-                            pixmap = pix.scaled(
-                                max(1, int(rect.width() - 2)),
-                                max(1, int(rect.height() - 2)),
-                                Qt.AspectRatioMode.KeepAspectRatio,
-                                Qt.TransformationMode.SmoothTransformation,
-                            )
-                    except Exception:
-                        pixmap = None
+            # No STR a marca permanece visível mesmo depois da chegada. O
+            # Relative conserva o comportamento anterior por meio da flag da
+            # classe, para esta mudança não vazar para outro widget.
+            if self._is_finished(row) and not self.FINISH_FLAG_IN_STATUS_COLUMN:
+                pixmap = self._finish_flag_pixmap(
+                    max(1, int(rect.width() - 2)),
+                    max(1, int(rect.height() - 2)),
+                )
             if pixmap is None:
                 pixmap = self.logos.pixmap(
                     row.manufacturer,
@@ -1224,45 +1332,50 @@ class StandingsWidget(QWidget):
             )
             painter.fillRect(rect, Qt.GlobalColor.transparent)
             painter.restore()
-            finish = row.finish_state.casefold()
-            in_garage = bool(row.in_garage)
-            is_dnf = finish in {"dnf", "didnotfinish", "2"}
-            is_dq = finish in {"dq", "disqualified", "3"}
-            is_invalid = (
-                bool(row.current_lap_invalidated)
-                and bool(self.config.get("show_invalid_lap_status", True))
+            status = type(self)._automatic_status_kind(
+                row,
+                bool(self.config.get("show_invalid_lap_status", True)),
             )
-            has_yellow = row.under_yellow or row.flag in {1, 2}
-            has_penalty = row.penalty_text not in {"", "--"}
-
-            # Prioridade solicitada para a coluna automática:
-            # GAR > PIT > DNF > DQ > INV > amarela > punição.
-            if in_garage:
-                text, background, foreground = "GAR", QColor("#666666"), QColor("#FFFFFF")
-            elif row.in_pits:
-                text = "PIT"
-                background = QColor(colors.get("pit", "#F97316"))
-                foreground = QColor("#FFFFFF")
-            elif is_dnf:
-                text, background, foreground = "DNF", QColor(colors.get("invalid_lap", "#FF3B45")), QColor("#FFFFFF")
-            elif is_dq:
-                text, background, foreground = "DQ", QColor(colors.get("invalid_lap", "#FF3B45")), QColor("#FFFFFF")
-            elif is_invalid:
-                text, background, foreground = "INV", QColor(colors.get("invalid_lap", "#FF3B45")), QColor("#FFFFFF")
-            elif has_yellow:
-                text, background, foreground = "YEL", QColor("#FFD83D"), QColor("#101010")
-            elif has_penalty:
-                text = row.penalty_text
-                background = QColor(colors.get("invalid_lap", "#FF3B45"))
-                foreground = QColor("#FFFFFF")
-            else:
-                return
             cell = rect.adjusted(
                 3 * self._scale,
                 5 * self._scale,
                 -3 * self._scale,
                 -5 * self._scale,
             )
+
+            if status == "finish":
+                pixmap = self._finish_flag_pixmap(
+                    max(1, int(cell.width())),
+                    max(1, int(cell.height())),
+                )
+                if pixmap is not None:
+                    x = cell.center().x() - pixmap.width() / 2
+                    y = cell.center().y() - pixmap.height() / 2
+                    painter.drawPixmap(int(x), int(y), pixmap)
+                    return
+                # O texto mantém o estado legível se o recurso visual estiver
+                # ausente em uma instalação incompleta.
+                text, background, foreground = "FIN", QColor("#F4F4F4"), QColor("#101010")
+            elif status == "garage":
+                text, background, foreground = "GAR", QColor("#666666"), QColor("#FFFFFF")
+            elif status == "pit":
+                text = "PIT"
+                background = QColor(colors.get("pit", "#F97316"))
+                foreground = QColor("#FFFFFF")
+            elif status == "dnf":
+                text, background, foreground = "DNF", QColor(colors.get("invalid_lap", "#FF3B45")), QColor("#FFFFFF")
+            elif status == "dq":
+                text, background, foreground = "DQ", QColor(colors.get("invalid_lap", "#FF3B45")), QColor("#FFFFFF")
+            elif status == "invalid":
+                text, background, foreground = "INV", QColor(colors.get("invalid_lap", "#FF3B45")), QColor("#FFFFFF")
+            elif status == "yellow":
+                text, background, foreground = "YEL", QColor("#FFD83D"), QColor("#101010")
+            elif status == "penalty":
+                text = row.penalty_text
+                background = QColor(colors.get("invalid_lap", "#FF3B45"))
+                foreground = QColor("#FFFFFF")
+            else:
+                return
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(background)
             painter.drawRect(cell)
@@ -1305,6 +1418,78 @@ class StandingsWidget(QWidget):
                 self._draw_percent(painter, rect, row.energy_percent, "energy")
         elif key == "damage":
             self._draw_percent(painter, rect, row.damage_percent, "damage")
+
+    @staticmethod
+    def _is_finished(row: StandingRow) -> bool:
+        try:
+            return int(getattr(row, "finish_status", 0) or 0) == 1
+        except (TypeError, ValueError):
+            return False
+
+    @classmethod
+    def _automatic_status_kind(
+        cls,
+        row: StandingRow,
+        show_invalid_lap_status: bool = True,
+    ) -> str:
+        """Retorna o aviso vencedor conforme a prioridade da coluna STS."""
+        if cls.FINISH_FLAG_IN_STATUS_COLUMN and cls._is_finished(row):
+            return "finish"
+
+        finish = str(getattr(row, "finish_state", "") or "").casefold()
+        try:
+            finish_status = int(getattr(row, "finish_status", 0) or 0)
+        except (TypeError, ValueError):
+            finish_status = 0
+        if bool(getattr(row, "in_garage", False)):
+            return "garage"
+        if bool(getattr(row, "in_pits", False)):
+            return "pit"
+        if finish_status == 2 or finish in {"dnf", "didnotfinish", "2"}:
+            return "dnf"
+        if finish_status == 3 or finish in {"dq", "disqualified", "3"}:
+            return "dq"
+        if (
+            bool(getattr(row, "current_lap_invalidated", False))
+            and show_invalid_lap_status
+        ):
+            return "invalid"
+        if bool(getattr(row, "under_yellow", False)) or int(
+            getattr(row, "flag", 0) or 0
+        ) in {1, 2}:
+            return "yellow"
+        if str(getattr(row, "penalty_text", "") or "") not in {"", "--"}:
+            return "penalty"
+        return ""
+
+    def _finish_flag_pixmap(self, width: int, height: int) -> QPixmap | None:
+        """Carrega a bandeira uma vez e reutiliza as versões redimensionadas."""
+        width = max(1, int(width))
+        height = max(1, int(height))
+        if not self._finish_flag_loaded:
+            self._finish_flag_loaded = True
+            candidate = PROJECT_ROOT / "images" / "Flags" / "bandeira_chegada.png"
+            if candidate.is_file():
+                source = QPixmap(str(candidate))
+                if not source.isNull():
+                    self._finish_flag_source = source
+        if self._finish_flag_source is None:
+            return None
+
+        key = (width, height)
+        cached = self._finish_flag_pixmaps.get(key)
+        if cached is not None:
+            return cached
+        pixmap = self._finish_flag_source.scaled(
+            width,
+            height,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        if len(self._finish_flag_pixmaps) >= 32:
+            self._finish_flag_pixmaps.clear()
+        self._finish_flag_pixmaps[key] = pixmap
+        return pixmap
 
     def _draw_driver_status(self, painter: QPainter, rect: QRectF, row: StandingRow) -> None:
         status = ""
@@ -1699,7 +1884,13 @@ class StandingsWidget(QWidget):
             if key in {"dr", "sr"} and show_gain_in_dr:
                 preferred *= 145.0 / 110.0
             preferred = max(24.0, preferred)
-            if key in self.FLEXIBLE_COLUMNS:
+            if key == "driver":
+                # A largura escolhida para o nome é contratual: aumentar 50 px
+                # desloca PIT e todas as colunas seguintes nos mesmos 50 px.
+                # Em painéis menores, o redimensionamento global ainda pode
+                # reduzir tudo proporcionalmente pelo último ramo de layout.
+                minimum = preferred
+            elif key in self.FLEXIBLE_COLUMNS:
                 minimum = min(
                     preferred,
                     float(self.FLEXIBLE_MIN_WIDTHS.get(key, 24.0)),

@@ -434,25 +434,55 @@ class OverlayManager(QObject):
 
     def update_widget_config(self, widget_id: str, config: dict[str, Any]) -> None:
         previous = self.config_data.get("widgets", {}).get(widget_id, {})
+        widget = self.widgets.get(widget_id)
+        column_width_delta = 0.0
+        size_unchanged = previous.get("size", {}) == config.get("size", {})
+        if widget is not None and hasattr(
+            widget,
+            "configured_flexible_width_delta",
+        ):
+            column_width_delta = float(
+                widget.configured_flexible_width_delta(previous, config)
+            )
         if "column_width_reference_total" not in config:
             reference = previous.get("column_width_reference_total")
-            widget_for_reference = self.widgets.get(widget_id)
+            widget_for_reference = widget
             if reference is None and widget_for_reference is not None and hasattr(
                 widget_for_reference, "column_width_total"
             ):
                 reference = float(widget_for_reference.column_width_total())
             if reference is not None:
                 config["column_width_reference_total"] = float(reference)
-        self.config_data["widgets"][widget_id] = deepcopy(config)
-        widget = self.widgets.get(widget_id)
-
         if widget is not None:
             if hasattr(widget, "update_config"):
                 widget.update_config(deepcopy(config))
             self._apply_window_flags(widget, config)
             screen = widget.screen()
+            if (
+                screen is not None
+                and size_unchanged
+                and abs(column_width_delta) > 0.01
+                and hasattr(widget, "column_width_total")
+            ):
+                screen_geometry = screen.geometry()
+                config.setdefault("size", {})["width"] = max(
+                    0.01,
+                    min(1.0, widget.width() / max(1, screen_geometry.width())),
+                )
+                config["column_width_reference_total"] = float(
+                    widget.column_width_total()
+                )
+                if hasattr(widget, "config"):
+                    widget.config.setdefault("size", {})["width"] = config["size"][
+                        "width"
+                    ]
+                    widget.config["column_width_reference_total"] = config[
+                        "column_width_reference_total"
+                    ]
             if screen is not None and hasattr(widget, "apply_normalized_geometry"):
                 widget.apply_normalized_geometry(screen.geometry())
+
+        self.config_data["widgets"][widget_id] = deepcopy(config)
 
         if widget_id == "url":
             self._configure_url_sources()

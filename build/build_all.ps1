@@ -16,7 +16,7 @@ Set-Location $ProjectRoot
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  SectorFlow Overley 0.0.3 - Build Completo" -ForegroundColor Cyan
+Write-Host "  SectorFlow Overley 0.0.5 - Build Completo" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -32,6 +32,9 @@ if (-not (Test-Path $PythonExe)) {
     throw "Ambiente virtual nao encontrado: $PythonExe"
 }
 & $PythonExe -c "import PySide6, PyInstaller, websockets"
+if ($LASTEXITCODE -ne 0) {
+    throw "Dependencias de build ausentes. Execute: .venv\Scripts\python.exe -m pip install -r requirements.txt"
+}
 Write-Host "  Dependencias OK" -ForegroundColor Green
 
 # 3. Limpar build anterior
@@ -45,9 +48,7 @@ Write-Host "[4/6] Gerando executavel com PyInstaller..." -ForegroundColor Yellow
 & $PythonExe -m PyInstaller --clean --noconfirm --workpath build\work build\SectorFlow.spec
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "[ERRO] PyInstaller falhou!" -ForegroundColor Red
-    Read-Host "Pressione ENTER para sair"
-    exit 1
+    throw "PyInstaller falhou."
 }
 Write-Host "  PyInstaller OK" -ForegroundColor Green
 
@@ -75,14 +76,19 @@ Write-Host ""
 Write-Host "  Executavel:     $OutputDir\SectorFlow.exe" -ForegroundColor Green
 Write-Host "  Pasta completa: $OutputDir\" -ForegroundColor Green
 Write-Host ""
-$InnoCompiler = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-if (-not (Test-Path $InnoCompiler)) {
-    throw "Inno Setup 6 nao encontrado: $InnoCompiler"
+$InnoCandidates = @(
+    "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+    "C:\Program Files\Inno Setup 6\ISCC.exe",
+    (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 6\ISCC.exe")
+)
+$InnoCompiler = $InnoCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if (-not $InnoCompiler) {
+    throw "Inno Setup 6 nao encontrado nos caminhos de sistema ou do usuario."
 }
 Write-Host "  Gerando instalador com Inno Setup 6..." -ForegroundColor Yellow
-& $InnoCompiler "build\sectorflow_installer.iss"
+& $InnoCompiler "/Q" "build\sectorflow_installer.iss"
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup falhou." }
-Write-Host "  Instalador: app\SectorFlow_Setup_0.0.3.exe" -ForegroundColor Green
+Write-Host "  Instalador: app\SectorFlow_Setup_0.0.5.exe" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Para distribuir SEM instalador:" -ForegroundColor Yellow
 Write-Host "  Copie a pasta $OutputDir para outro PC e execute SectorFlow.exe" -ForegroundColor Yellow

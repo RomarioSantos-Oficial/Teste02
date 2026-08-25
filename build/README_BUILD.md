@@ -44,7 +44,7 @@ Depois de gerar o executável, instale o [Inno Setup](https://jrsoftware.org/isi
 ```
 
 Isso gera:
-- `app\SectorFlow_Setup_0.0.1.exe` — instalador profissional
+- `app\SectorFlow_Setup_0.0.5.exe` — instalador profissional
 
 ### 3. Distribuir para Outro PC
 
@@ -52,7 +52,7 @@ Isso gera:
 Copie toda a pasta `app\SectorFlow\` para o PC destino e execute `SectorFlow.exe`.
 
 **Opção B - Com instalador:**
-Distribua o arquivo `app\SectorFlow_Setup_0.0.1.exe`. O usuário executa e o instalador cuida de tudo.
+Distribua o arquivo `app\SectorFlow_Setup_0.0.5.exe`. O usuário executa e o instalador cuida de tudo.
 
 ---
 
@@ -83,8 +83,8 @@ app/
 │   ├── data/                      ← Dados empacotados
 │   └── vendor/                    ← Bibliotecas LMU
 │
-├── SectorFlow_Setup_0.0.1.exe     ← Instalador (se usar Inno Setup)
-└── SectorFlow ALFA 0.0.1.zip      ← Pacote ZIP
+├── SectorFlow_Setup_0.0.5.exe     ← Instalador (se usar Inno Setup)
+└── SectorFlow ALFA 0.0.5.zip      ← Pacote ZIP
 ```
 
 ---

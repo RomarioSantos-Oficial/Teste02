@@ -145,6 +145,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=str(PROJECT_ROOT / 'images/logo/Logo.ico'),
+    version=str(PROJECT_ROOT / 'build/version_info.txt'),
 )
 
 coll = COLLECT(
