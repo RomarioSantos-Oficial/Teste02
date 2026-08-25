@@ -23,7 +23,8 @@ from .standings_models import OnlineDriverIdentity, OnlineSnapshot
 
 
 _EVENT_ID_PATTERN = re.compile(
-    r"Joining race server for online event\s+([0-9a-fA-F-]{36})",
+    r"Joining(?:\s+[A-Za-z]+)?\s+server for online event\s+"
+    r"([0-9a-fA-F-]{36})",
     re.IGNORECASE,
 )
 
@@ -929,7 +930,11 @@ class LMUOnlineIdentityClient:
         )
         if explicit:
             match = re.search(r"(\d+)\s*/\s*(\d+)", explicit)
-            return f"S {match.group(1)}/{match.group(2)}" if match else ""
+            return (
+                cls._format_split_numbers(match.group(1), match.group(2))
+                if match
+                else ""
+            )
         current = cls._find_first_string_by_keys(
             payload,
             {"split", "splitno", "splitnumber", "currentsplit", "division", "divisionno"},
@@ -944,10 +949,23 @@ class LMUOnlineIdentityClient:
             },
         )
         if current and total:
-            return f"S {current}/{total}"
+            return cls._format_split_numbers(current, total)
         # Um numero isolado nao basta: mantem as tentativas de 1 segundo e
         # nunca grava um cabecalho incompleto como "S 6".
         return ""
+
+    @staticmethod
+    def _format_split_numbers(current: Any, total: Any) -> str:
+        try:
+            current_number = int(str(current).strip())
+            total_number = int(str(total).strip())
+        except (TypeError, ValueError):
+            return ""
+        # Uma única divisão não representa uma sala dividida. Também rejeita
+        # respostas incompletas ou incoerentes para não exibir dados antigos.
+        if total_number <= 1 or current_number < 1 or current_number > total_number:
+            return ""
+        return f"S {current_number}/{total_number}"
 
     @classmethod
     def _payload_looks_online(cls, payload: Any) -> bool:

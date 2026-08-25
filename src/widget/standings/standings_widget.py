@@ -139,7 +139,7 @@ class StandingsWidget(QWidget):
         self.timer.start(120)
         self.apply_config()
 
-    def apply_config(self) -> None:
+    def apply_config(self, *, fit_width: bool = True) -> None:
         self.logic.update_config(self.config)
         self.enrichment.update_config(self.config)
         self.online_client.update_config(self.config)
@@ -149,7 +149,8 @@ class StandingsWidget(QWidget):
         self.setWindowOpacity(max(0.10, min(1.0, float(self.config.get("opacity", 0.98)))))
         self._update_scale()
         self._rebuild(force=True)
-        self._fit_width_to_columns()
+        if fit_width:
+            self._fit_width_to_columns()
 
     def update_config(self, config: dict[str, Any]) -> None:
         width_delta = type(self).configured_flexible_width_delta(
@@ -160,11 +161,19 @@ class StandingsWidget(QWidget):
         if "column_width_reference_total" not in config:
             config["column_width_reference_total"] = self.column_width_total()
         self.config = config
-        self.apply_config()
+        # No STR, a largura automática é necessária ao criar o painel, mas
+        # não em cada alteração do editor: o tamanho manual deve permanecer.
+        # O Relative conserva o comportamento anterior.
+        self.apply_config(fit_width=self.widget_id != "standings")
         if abs(width_delta) > 0.01:
+            minimum_for_update = self.minimumWidth()
+            if self.widget_id != "standings":
+                minimum_for_update = max(
+                    minimum_for_update,
+                    self._minimum_panel_width(),
+                )
             target = max(
-                self.minimumWidth(),
-                self._minimum_panel_width(),
+                minimum_for_update,
                 round(
                     previous_width
                     + width_delta

@@ -123,6 +123,29 @@ class RaceControlClientTests(unittest.TestCase):
                 "11111111-2222-3333-4444-555555555555",
             )
 
+    def test_latest_practice_join_replaces_earlier_race_event(self) -> None:
+        client = LMUOnlineIdentityClient(Path.cwd(), {})
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            current = directory / "trace_current.txt"
+            current.write_text(
+                "\n".join(
+                    (
+                        "Joining race server for online event "
+                        "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                        "Joining practice server for online event "
+                        "11111111-2222-3333-4444-555555555555",
+                    )
+                ),
+                encoding="utf-8",
+            )
+            client._log_directories = lambda: [directory]
+
+            self.assertEqual(
+                client._find_event_id_in_logs(),
+                "11111111-2222-3333-4444-555555555555",
+            )
+
     def test_split_session_signature_changes_only_between_sessions(self) -> None:
         practice = SimpleNamespace(
             connected=True, track_name="Track", session=1,
@@ -222,6 +245,18 @@ class RaceControlClientTests(unittest.TestCase):
                 {"splitNo": "6", "numOfSplits": "9"}
             ),
             "S 6/9",
+        )
+        self.assertEqual(
+            LMUOnlineIdentityClient._split_label_from_payload(
+                {"splitNo": 1, "totalSplits": 1}
+            ),
+            "",
+        )
+        self.assertEqual(
+            LMUOnlineIdentityClient._split_label_from_payload(
+                {"splitLabel": "S 1/1"}
+            ),
+            "",
         )
 
     def test_split_is_requested_only_once_after_valid_response(self) -> None:

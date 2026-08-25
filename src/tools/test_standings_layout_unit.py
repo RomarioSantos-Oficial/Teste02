@@ -4,12 +4,83 @@ import unittest
 
 from PySide6.QtCore import QRectF
 
+from src.ui.overlay_manager import OverlayManager
 from src.widget.relative.relative_widget import RelativeWidget
 from src.widget.standings.standings_models import StandingRow
 from src.widget.standings.standings_widget import StandingsWidget
 
 
 class StandingsLayoutUnitTests(unittest.TestCase):
+    def test_str_editor_keeps_geometry_saved_after_drag(self) -> None:
+        dragged = {
+            "position": {"x": 0.0, "y": 0.0},
+            "size": {"width": 0.3385, "height": 0.2518},
+            "scale": 1.0,
+            "monitor": 0,
+            "column_width_reference_total": 968.2,
+            "font_size": 26,
+        }
+        stale_editor = {
+            "position": {"x": 0.01, "y": 0.02},
+            "size": {"width": 0.74, "height": 0.72},
+            "scale": 1.0,
+            "monitor": 0,
+            "column_width_reference_total": 1200.0,
+            "font_size": 28,
+        }
+
+        merged = OverlayManager._preserve_editor_geometry(
+            "standings",
+            dragged,
+            stale_editor,
+            preserve_geometry=True,
+        )
+
+        self.assertEqual(merged["position"], dragged["position"])
+        self.assertEqual(merged["size"], dragged["size"])
+        self.assertEqual(
+            merged["column_width_reference_total"],
+            dragged["column_width_reference_total"],
+        )
+        self.assertEqual(merged["font_size"], 28)
+
+    def test_restore_default_may_restore_str_geometry(self) -> None:
+        current = {"size": {"width": 0.3385, "height": 0.2518}}
+        defaults = {"size": {"width": 0.74, "height": 0.72}}
+
+        merged = OverlayManager._preserve_editor_geometry(
+            "standings",
+            current,
+            defaults,
+            preserve_geometry=False,
+        )
+
+        self.assertEqual(merged["size"], defaults["size"])
+
+    def test_str_editor_does_not_reapply_automatic_geometry(self) -> None:
+        self.assertFalse(
+            OverlayManager._should_reapply_normalized_geometry(
+                "standings",
+                preserve_geometry=True,
+            )
+        )
+
+    def test_str_restore_default_reapplies_automatic_geometry(self) -> None:
+        self.assertTrue(
+            OverlayManager._should_reapply_normalized_geometry(
+                "standings",
+                preserve_geometry=False,
+            )
+        )
+
+    def test_relative_keeps_its_previous_geometry_update(self) -> None:
+        self.assertTrue(
+            OverlayManager._should_reapply_normalized_geometry(
+                "relative",
+                preserve_geometry=True,
+            )
+        )
+
     def test_str_places_pit_between_driver_and_brand(self) -> None:
         columns = [key for key, _width in StandingsWidget.BASE_COLUMNS]
         driver_index = columns.index("driver")

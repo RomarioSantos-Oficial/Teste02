@@ -432,8 +432,52 @@ class OverlayManager(QObject):
     def set_widget_enabled(self, widget_id: str, enabled: bool) -> None:
         self.show_widget(widget_id) if enabled else self.hide_widget(widget_id)
 
-    def update_widget_config(self, widget_id: str, config: dict[str, Any]) -> None:
+    @staticmethod
+    def _preserve_editor_geometry(
+        widget_id: str,
+        previous: dict[str, Any],
+        incoming: dict[str, Any],
+        *,
+        preserve_geometry: bool,
+    ) -> dict[str, Any]:
+        """Impede que uma cópia antiga do editor desfaça o arraste do STR."""
+        config = deepcopy(incoming)
+        if widget_id != "standings" or not preserve_geometry:
+            return config
+        for key in (
+            "position",
+            "size",
+            "scale",
+            "monitor",
+            "column_width_reference_total",
+        ):
+            if key in previous:
+                config[key] = deepcopy(previous[key])
+        return config
+
+    @staticmethod
+    def _should_reapply_normalized_geometry(
+        widget_id: str,
+        *,
+        preserve_geometry: bool,
+    ) -> bool:
+        """Evita recalcular a largura mínima após editar o STR."""
+        return widget_id != "standings" or not preserve_geometry
+
+    def update_widget_config(
+        self,
+        widget_id: str,
+        config: dict[str, Any],
+        *,
+        preserve_geometry: bool = True,
+    ) -> None:
         previous = self.config_data.get("widgets", {}).get(widget_id, {})
+        config = self._preserve_editor_geometry(
+            widget_id,
+            previous,
+            config,
+            preserve_geometry=preserve_geometry,
+        )
         widget = self.widgets.get(widget_id)
         column_width_delta = 0.0
         size_unchanged = previous.get("size", {}) == config.get("size", {})
@@ -479,7 +523,14 @@ class OverlayManager(QObject):
                     widget.config["column_width_reference_total"] = config[
                         "column_width_reference_total"
                     ]
-            if screen is not None and hasattr(widget, "apply_normalized_geometry"):
+            if (
+                screen is not None
+                and hasattr(widget, "apply_normalized_geometry")
+                and self._should_reapply_normalized_geometry(
+                    widget_id,
+                    preserve_geometry=preserve_geometry,
+                )
+            ):
                 widget.apply_normalized_geometry(screen.geometry())
 
         self.config_data["widgets"][widget_id] = deepcopy(config)
@@ -492,7 +543,11 @@ class OverlayManager(QObject):
     def restore_widget_default(self, widget_id: str) -> None:
         default = self.config_data.get("defaults", {}).get(widget_id)
         if default is not None:
-            self.update_widget_config(widget_id, deepcopy(default))
+            self.update_widget_config(
+                widget_id,
+                deepcopy(default),
+                preserve_geometry=False,
+            )
 
     def update_player_data(self, player_data: Any) -> None:
         widget = self.widgets.get("driver_panel")
