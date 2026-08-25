@@ -119,6 +119,11 @@ class MainMenuWindow(QMainWindow):
         defaults = {
             "version": "0.0.5",
             "update_note": "Novidades e correções da versão atual.",
+            "update_note_key": "",
+            "update_note_addendum": "",
+            "update_note_addendum_key": "",
+            "update_note_fix": "",
+            "update_note_fix_key": "",
             "donation_label": "Apoie o desenvolvimento",
             "donation_url": "",
             "pix_key": "",
@@ -201,7 +206,7 @@ class MainMenuWindow(QMainWindow):
         dialog.setMinimumSize(480, 300)
         layout = QVBoxLayout(dialog)
 
-        version = QLabel(f"SectorFlow Overley — {tr('versão')} {config['version']}")
+        version = QLabel(f"SectorFlow Overley — {tr('Versão')} {config['version']}")
         version.setObjectName("updateDialogTitle")
         layout.addWidget(version)
 
@@ -217,6 +222,13 @@ class MainMenuWindow(QMainWindow):
             translated_addendum = addendum_source
         if translated_addendum:
             translated_note = f"{translated_note}\n\n{translated_addendum}"
+        fix_source = config.get("update_note_fix", "").strip()
+        fix_key = config.get("update_note_fix_key", "").strip()
+        translated_fix = tr(fix_key) if fix_key else tr(fix_source)
+        if fix_key and translated_fix == fix_key:
+            translated_fix = fix_source
+        if translated_fix:
+            translated_note = f"{translated_note}\n\n{translated_fix}"
         note = QLabel(translated_note)
         note.setObjectName("updateDialogNote")
         note.setWordWrap(True)
@@ -583,7 +595,7 @@ class MainMenuWindow(QMainWindow):
             if tray_icon is not None:
                 tray_icon.showMessage(
                     "SectorFlow Overley",
-                    "O programa continua na bandeja do Windows.",
+                    tr("O programa continua na bandeja do Windows."),
                     QSystemTrayIcon.MessageIcon.Information,
                     2500,
                 )

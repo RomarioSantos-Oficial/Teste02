@@ -23,6 +23,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.i18n import tr
+
 
 class DriverPanelEditor(QDialog):
     config_changed = Signal(dict)
@@ -120,7 +122,12 @@ class DriverPanelEditor(QDialog):
         image_path = QLineEdit(str(self.config.get("custom_wheel_image", "")))
         choose = QPushButton("Escolher…")
         def choose_image() -> None:
-            path, _ = QFileDialog.getOpenFileName(self, "Imagem do volante", "", "Imagens (*.png *.jpg *.jpeg *.webp)")
+            path, _ = QFileDialog.getOpenFileName(
+                self,
+                tr("Imagem do volante"),
+                "",
+                tr("Imagens (*.png *.jpg *.jpeg *.webp)"),
+            )
             if path:
                 image_path.setText(path)
                 self._set_root("custom_wheel_image", path)

@@ -37,6 +37,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.i18n import tr
+
 from .tyres_logic import TyresLogic
 from .tyres_models import (
     TyreWheelViewData,
@@ -931,7 +933,11 @@ class TyresWidget(QWidget):
             or "--"
         )
         self.compound_label.setText(
-            f"FRONT {front}  |  REAR {rear}"
+            tr(
+                "DIANTEIRO {front}  |  TRASEIRO {rear}",
+                front=front,
+                rear=rear,
+            )
         )
 
         warnings: list[str] = []

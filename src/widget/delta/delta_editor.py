@@ -23,6 +23,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.i18n import tr
+
 
 class DeltaEditor(QDialog):
     config_changed = Signal(dict)
@@ -755,7 +757,7 @@ class DeltaEditor(QDialog):
     def _choose_logo_directory(self) -> None:
         selected = QFileDialog.getExistingDirectory(
             self,
-            "Escolher pasta de logos",
+            tr("Escolher pasta de logos"),
         )
 
         if not selected:

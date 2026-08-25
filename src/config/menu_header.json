@@ -4,6 +4,8 @@
   "update_note_key": "release_notes_0_0_5",
   "update_note_addendum": "ATUALIZAÇÃO COMPLEMENTAR\n• No STR, a coluna PIT agora fica depois do nome do piloto e antes da marca do carro.\n• Linhas sem tempo de PIT visível emprestam esse espaço ao nome; durante o PIT e pelas voltas configuradas após a saída, as células permanecem separadas.\n• Aumentar a largura do nome desloca PIT e todas as colunas seguintes pela mesma quantidade.\n• A marca do carro permanece visível após a chegada e a bandeira quadriculada passa para a coluna STS.\n• A bandeira do país volta a aparecer no aviso de volta rápida do Delta mesmo com o widget em processo separado.\n• O STR identifica a sala mais recente também em treinos, não reutiliza o split de um evento anterior e oculta 1/1 quando não existe divisão real.\n• O instalador usa um ícone multirresolução com o símbolo ampliado, oferece somente o atalho opcional da Área de Trabalho e não cria atalhos no Menu Iniciar.\n• O idioma escolhido no aplicativo é preservado durante atualizações e as notas são exibidas no idioma ativo.",
   "update_note_addendum_key": "release_notes_0_0_5_addendum",
+  "update_note_fix": "CORREÇÃO ADICIONAL\n• Alterar qualquer configuração do STR agora preserva o tamanho e a posição escolhidos por arraste; somente Restaurar padrão reaplica a geometria original.\n• Textos recentes dos editores e avisos dinâmicos foram revisados nos nove idiomas.",
+  "update_note_fix_key": "release_notes_0_0_5_geometry_fix",
   "donation_label": "Apoie o desenvolvimento",
   "donation_url": "https://www.paypal.com/donate/?business=T9V8BDQ9RGMYJ&no_recurring=0&currency_code=BRL",
   "pix_key": "dfd7e167-fb4d-4be8-b7f9-9d171ade71ca",

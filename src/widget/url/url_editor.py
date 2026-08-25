@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 )
 
 from src.ui.widget_registry import WIDGET_DEFINITIONS
+from src.i18n import tr
 
 AVAILABLE = tuple(
     definition.widget_id
@@ -99,7 +100,11 @@ class UrlEditor(QDialog):
             line.setText(f"http://{host}:{port}/widget/{key}")
             active = key in selected
             line.setEnabled(active); button.setEnabled(active)
-            line.setToolTip("URL ativa para OBS" if active else "Ative Publicar para liberar esta URL")
+            line.setToolTip(
+                tr("URL ativa para OBS")
+                if active
+                else tr("Ative Publicar para liberar esta URL")
+            )
 
     def _copy_url(self, key: str) -> None:
         line, _button = self.url_rows[key]

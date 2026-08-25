@@ -40,6 +40,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.i18n import tr
+
 from .weather_icons import WeatherIconManager
 from .weather_models import (
     WeatherForecast,
@@ -752,7 +754,7 @@ class WeatherWidget(QWidget):
 
         if show_wind:
             self.wind_status.setText(
-                f"VENTO "
+                f"{tr('VENTO')} "
                 f"{sample.wind_speed_kmh:.1f} km/h"
             )
             self.wind_status.show()

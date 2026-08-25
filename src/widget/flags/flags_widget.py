@@ -31,6 +31,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.i18n import tr
+
 from .flags_logic import FlagsLogic
 from .flags_models import (
     FlagCar,
@@ -1167,21 +1169,21 @@ class FlagsWidget(QWidget):
 
             if yellow.player_is_hazard:
                 self.yellow_distance.setText(
-                    "VOCÊ É O PERIGO LOCAL"
+                    tr("VOCÊ É O PERIGO LOCAL")
                 )
             elif not yellow.cars:
                 self.yellow_distance.setText(
-                    "ATENÇÃO NA PISTA"
+                    tr("ATENÇÃO NA PISTA")
                 )
             elif yellow.distance < 0:
                 self.yellow_distance.setText(
-                    f"Atrás: "
+                    f"{tr('Atrás:')} "
                     f"{abs(int(yellow.distance))}m | "
                     f"{yellow.tempo_gap:.1f}s"
                 )
             else:
                 self.yellow_distance.setText(
-                    f"Frente: "
+                    f"{tr('Frente:')} "
                     f"{int(yellow.distance)}m | "
                     f"{yellow.tempo_gap:.1f}s"
                 )

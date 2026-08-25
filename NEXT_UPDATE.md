@@ -13,3 +13,4 @@
 - [x] Delta: transportar país e código ISO no snapshot compartilhado para restaurar a bandeira nos avisos de volta rápida do processo isolado.
 - [x] STR: reconhecer o evento mais recente também em treinos, não reutilizar split antigo e ocultar `1/1` quando a sala não possui divisão real.
 - [x] STR: preservar o tamanho e a posição escolhidos por arraste ao alterar opções no editor; somente `Restaurar padrão` reaplica a geometria original.
+- [x] Internacionalização: carregar corretamente as chaves das notas da versão e completar 112 textos visíveis recentes nos oito catálogos traduzidos.

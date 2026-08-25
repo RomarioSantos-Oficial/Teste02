@@ -37,6 +37,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.i18n import tr
+
 
 class WeatherEditor(QDialog):
     config_changed = Signal(dict)
@@ -284,7 +286,7 @@ class WeatherEditor(QDialog):
                     current, edit.text().strip()
                 )
             )
-            browse = QPushButton("Escolher...")
+            browse = QPushButton("Escolher…")
             browse.clicked.connect(
                 lambda _=False, current=key, edit=path_edit: self._choose_icon(
                     current, edit
@@ -634,9 +636,9 @@ class WeatherEditor(QDialog):
     def _choose_icon(self, key: str, edit: QLineEdit) -> None:
         selected, _filter = QFileDialog.getOpenFileName(
             self,
-            "Escolher imagem",
+            tr("Escolher imagem"),
             edit.text().strip(),
-            "Imagens (*.png *.jpg *.jpeg *.bmp *.webp)",
+            tr("Imagens (*.png *.jpg *.jpeg *.bmp *.webp)"),
         )
         if not selected:
             return

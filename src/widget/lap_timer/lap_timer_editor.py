@@ -10,6 +10,8 @@ from PySide6.QtWidgets import (
     QGroupBox, QHBoxLayout, QPushButton, QSpinBox, QVBoxLayout,
 )
 
+from src.i18n import tr
+
 
 class LapTimerEditor(QDialog):
     config_changed = Signal(dict)
@@ -22,14 +24,14 @@ class LapTimerEditor(QDialog):
         self.resize(430, 620)
         root = QVBoxLayout(self)
 
-        fields = QGroupBox("Informacoes visiveis")
+        fields = QGroupBox("Informações visíveis")
         form = QFormLayout(fields)
         choices = (
-            ("show_current", "Cronometro da volta atual"), ("show_last", "Ultima volta"),
+            ("show_current", "Cronômetro da volta atual"), ("show_last", "Última volta"),
             ("show_best", "Melhor volta"), ("show_predicted", "Tempo previsto"),
-            ("show_theoretical", "Volta teorica (melhores setores)"), ("show_laps", "Voltas atual / total"),
-            ("show_remaining", "Voltas restantes"), ("show_position", "Posicao geral"),
-            ("show_class_position", "Posicao na categoria"),
+            ("show_theoretical", "Volta teórica (melhores setores)"), ("show_laps", "Voltas atual / total"),
+            ("show_remaining", "Voltas restantes"), ("show_position", "Posição geral"),
+            ("show_class_position", "Posição na categoria"),
         )
         for key, label in choices:
             check = QCheckBox()
@@ -50,9 +52,9 @@ class LapTimerEditor(QDialog):
         decimals = QComboBox(); decimals.addItem("Milissegundos (3)", 3); decimals.addItem("Centésimos (2)", 2)
         decimals.setCurrentIndex(max(0, decimals.findData(int(self.config.get("decimals", 3)))))
         decimals.currentIndexChanged.connect(lambda _: self._set("decimals", int(decimals.currentData())))
-        vf.addRow("Precisao:", decimals)
+        vf.addRow("Precisão:", decimals)
         for key, label, low, high, step in (
-            ("title_font_scale", "Tamanho do titulo", .25, .85, .01),
+            ("title_font_scale", "Tamanho do título", .25, .85, .01),
             ("value_font_scale", "Tamanho dos valores", .25, .80, .01),
             ("label_font_scale", "Tamanho dos nomes", .18, .55, .01),
             ("opacity", "Opacidade da janela", .10, 1.0, .05),
@@ -72,14 +74,14 @@ class LapTimerEditor(QDialog):
             ("background", "Cor do fundo principal"),
             ("panel", "Cor do fundo das linhas"),
             ("border", "Cor da borda"),
-            ("title", "Cor do titulo"),
+            ("title", "Cor do título"),
             ("muted", "Cor dos nomes"),
             ("text", "Cor do texto"),
             ("current", "Cor da volta atual"),
             ("best", "Cor da melhor volta"),
-            ("predicted", "Cor da previsao"),
-            ("theoretical", "Cor da volta teorica"),
-            ("invalid", "Cor da volta invalida"),
+            ("predicted", "Cor da previsão"),
+            ("theoretical", "Cor da volta teórica"),
+            ("invalid", "Cor da volta inválida"),
         ):
             button = QPushButton(str(self.config.get("colors", {}).get(key, "#FFFFFF")))
             button.clicked.connect(lambda _=False, name=key, target=button: self._pick_color(name, target))
@@ -97,7 +99,12 @@ class LapTimerEditor(QDialog):
 
     def _pick_color(self, key: str, button: QPushButton) -> None:
         current = QColor(str(self.config.get("colors", {}).get(key, "#FFFFFF")))
-        color = QColorDialog.getColor(current, self, "Escolher cor", QColorDialog.ColorDialogOption.ShowAlphaChannel)
+        color = QColorDialog.getColor(
+            current,
+            self,
+            tr("Escolher cor"),
+            QColorDialog.ColorDialogOption.ShowAlphaChannel,
+        )
         if not color.isValid():
             return
         value = color.name(QColor.NameFormat.HexArgb if color.alpha() < 255 else QColor.NameFormat.HexRgb)
