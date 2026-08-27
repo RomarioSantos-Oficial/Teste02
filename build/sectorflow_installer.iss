@@ -34,8 +34,12 @@ DisableProgramGroupPage=yes
 LicenseFile=
 OutputDir=..\app
 OutputBaseFilename=SectorFlow_Setup_{#MyAppVersion}
-Compression=lzma2/ultra64
-SolidCompression=yes
+; O perfil ultra64/solid gerou um bloco LZMA2 corrompido ao extrair a DLL
+; Qt6WebEngineCore.dll (aprox. 205 MB) em algumas máquinas. Um dicionário
+; menor e arquivos comprimidos separadamente deixam a instalação verificável
+; e evitam que uma falha em um bloco afete os arquivos seguintes.
+Compression=lzma2/max
+SolidCompression=no
 WizardStyle=modern
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
