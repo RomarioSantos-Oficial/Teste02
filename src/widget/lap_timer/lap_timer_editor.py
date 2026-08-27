@@ -44,7 +44,12 @@ class LapTimerEditor(QDialog):
         vf = QFormLayout(visual)
         family = QFontComboBox()
         configured_family = str(self.config.get("font_name", "Arial"))
-        family.setCurrentFont(QFont(configured_family))
+        # QFont(family) usa pointSize=-1. O QFontComboBox tenta reaplicar
+        # esse valor e o Qt emite "Point size <= 0". Um tamanho válido aqui
+        # serve apenas para selecionar a família; o overlay usa pixels.
+        configured_font = QFont(configured_family)
+        configured_font.setPointSize(10)
+        family.setCurrentFont(configured_font)
         family.currentFontChanged.connect(
             lambda font: self._set("font_name", font.family())
         )

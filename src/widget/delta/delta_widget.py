@@ -472,6 +472,10 @@ class DeltaWidget(QWidget):
         )
         self.update()
 
+    def closeEvent(self, event) -> None:
+        self._animation_timer.stop()
+        event.accept()
+
     def clear_history(self) -> None:
         self._delta_history.clear()
         self.update()

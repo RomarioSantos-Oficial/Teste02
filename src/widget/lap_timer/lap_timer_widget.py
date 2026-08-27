@@ -83,6 +83,10 @@ class LapTimerWidget(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, not enabled)
         self.update()
 
+    def closeEvent(self, event) -> None:
+        self._paint_timer.stop()
+        event.accept()
+
     def _rows(self) -> list[tuple[str, str, str]]:
         c = self.config
         d = self.data

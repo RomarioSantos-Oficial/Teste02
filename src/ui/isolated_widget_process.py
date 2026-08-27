@@ -131,14 +131,14 @@ class IsolatedWidgetProcessController:
     def set_edit_mode(self, enabled: bool) -> None:
         self._edit_mode.value = bool(enabled)
 
-    def pending_geometry(self) -> list[tuple[str, float, float, float, float]]:
-        changes: list[tuple[str, float, float, float, float]] = []
+    def pending_geometry(self) -> list[tuple[Any, ...]]:
+        changes: list[tuple[Any, ...]] = []
         while True:
             try:
                 raw = self._geometry.get_nowait()
             except queue.Empty:
                 break
-            if isinstance(raw, tuple) and len(raw) == 5:
+            if isinstance(raw, tuple) and len(raw) in {5, 6}:
                 changes.append(raw)
         return changes
 
@@ -253,8 +253,12 @@ class _IsolatedWidgetHost:
             return
         self._config_mtime_ns = modified
         if config != self.config:
+            geometry_keys = ("position", "size", "scale", "monitor")
+            geometry_changed = any(
+                config.get(key) != self.config.get(key) for key in geometry_keys
+            )
             self.config = config
-            self._apply_config(force_geometry=True)
+            self._apply_config(force_geometry=geometry_changed)
 
     def _apply_config(self, *, force_geometry: bool) -> None:
         if hasattr(self.widget, "update_config"):
@@ -364,7 +368,15 @@ class _IsolatedWidgetHost:
         height: float,
     ) -> None:
         try:
-            self.geometry.put_nowait((widget_id, x, y, width, height))
+            profile_id = ""
+            try:
+                root = json.loads(self.config_path.read_text(encoding="utf-8"))
+                profile_id = str(root.get("active_profile", "") or "")
+            except (OSError, json.JSONDecodeError):
+                pass
+            self.geometry.put_nowait(
+                (widget_id, x, y, width, height, profile_id)
+            )
         except (OSError, ValueError):
             pass
 

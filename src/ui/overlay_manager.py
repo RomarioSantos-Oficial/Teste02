@@ -440,9 +440,9 @@ class OverlayManager(QObject):
         *,
         preserve_geometry: bool,
     ) -> dict[str, Any]:
-        """Impede que uma cópia antiga do editor desfaça o arraste do STR."""
+        """Impede que uma cópia antiga do editor desfaça o arraste."""
         config = deepcopy(incoming)
-        if widget_id != "standings" or not preserve_geometry:
+        if not preserve_geometry:
             return config
         for key in (
             "position",
@@ -795,10 +795,18 @@ class OverlayManager(QObject):
         sources: dict[str, QWidget] = {}
         for widget_id in selected:
             if widget_id == "url": continue
+            existing = self.widgets.get(widget_id)
             try:
-                source = self.widgets.get(widget_id) or self.create_widget(widget_id)
+                source = existing or self.create_widget(widget_id)
             except (KeyError, TypeError):
                 continue
+            # Fontes usadas apenas para renderizar a saída do navegador não
+            # são overlays nativos. Isto é especialmente importante para
+            # widgets que também vivem em processos isolados: sem a marcação,
+            # o modo de edição mostrava as duas instâncias na tela.
+            if existing is None and widget_id in self.external_widget_ids:
+                source.setProperty("sectorflow_url_source", True)
+                source.hide()
             sources[widget_id] = source
             if not bool(self.config_data.get("widgets", {}).get(widget_id, {}).get("enabled", False)):
                 source.hide()
@@ -839,7 +847,10 @@ class OverlayManager(QObject):
             self._set_click_through(widget, click_through)
 
             is_enabled = bool(config.get("enabled", False))
-            if is_enabled and (self.edit_mode or self.session_active):
+            is_url_source = bool(widget.property("sectorflow_url_source"))
+            if is_enabled and not is_url_source and (
+                self.edit_mode or self.session_active
+            ):
                 widget.show()
             else:
                 widget.hide()
@@ -856,7 +867,10 @@ class OverlayManager(QObject):
         for widget_id, widget in self.widgets.items():
             config = self.config_data.get("widgets", {}).get(widget_id, {})
             is_enabled = bool(config.get("enabled", False))
-            if is_enabled and (self.session_active or self.edit_mode):
+            is_url_source = bool(widget.property("sectorflow_url_source"))
+            if is_enabled and not is_url_source and (
+                self.session_active or self.edit_mode
+            ):
                 widget.show()
             else:
                 widget.hide()
@@ -1302,8 +1316,19 @@ class OverlayManager(QObject):
         y: float,
         width: float,
         height: float,
+        profile_id: str = "",
     ) -> None:
-        config = self.config_data["widgets"][widget_id]
+        requested_profile = str(profile_id or "")
+        active_profile = self.active_profile_id
+        if requested_profile and requested_profile != active_profile:
+            profile = self.config_data.get("profiles", {}).get(requested_profile)
+            if not isinstance(profile, dict):
+                return
+            config = profile.get("widgets", {}).get(widget_id)
+            if not isinstance(config, dict):
+                return
+        else:
+            config = self.config_data["widgets"][widget_id]
         config.setdefault("position", {})
         config.setdefault("size", {})
         # A bateria pode operar no modo compacto (somente o medidor), cuja
@@ -1315,7 +1340,11 @@ class OverlayManager(QObject):
         config["size"]["width"] = max(minimum_width, min(1.0, width))
         config["size"]["height"] = max(minimum_height, min(1.0, height))
         config["scale"] = 1.0
-        widget = self.widgets.get(widget_id)
+        widget = (
+            self.widgets.get(widget_id)
+            if not requested_profile or requested_profile == active_profile
+            else None
+        )
         if widget is not None and hasattr(widget, "config"):
             widget.config.setdefault("position", {}).update(config["position"])
             widget.config.setdefault("size", {}).update(config["size"])

@@ -255,14 +255,21 @@ class StandingsWidget(QWidget):
                 or configured_total
             ),
         )
-        width = max(
-            self.minimumWidth(),
-            int(
-                content_width * configured_total / reference_total
-                + 2.0 * horizontal_margin
-            ),
-            self._minimum_panel_width(),
-        )
+        if self.widget_id == "standings":
+            # Ao recriar o STR numa troca de perfil, a geometria salva pelo
+            # usuário é autoritativa. Recalcular pela soma das colunas fazia
+            # a largura mudar sempre que DR/SR ou outra coluna alterava o
+            # total em relação à referência gravada anteriormente.
+            width = max(self.minimumWidth(), int(base_width))
+        else:
+            width = max(
+                self.minimumWidth(),
+                int(
+                    content_width * configured_total / reference_total
+                    + 2.0 * horizontal_margin
+                ),
+                self._minimum_panel_width(),
+            )
         width = min(width, max(self.minimumWidth(), screen_geometry.width()))
         height = max(self.minimumHeight(), int(screen_geometry.height() * float(size.get("height", 0.72)) * external_scale))
         x = int(screen_geometry.left() + screen_geometry.width() * float(position.get("x", 0.01)))
@@ -1594,7 +1601,7 @@ class StandingsWidget(QWidget):
             value = float(progress)
             if 0.0 <= value <= 1.0:
                 value *= 100.0
-            progress_text = f"{max(0.0, min(100.0, value)):.0f}%"
+            progress_text = self._format_rank_percent(value)
 
         gain_text = ""
         if (
@@ -1603,7 +1610,8 @@ class StandingsWidget(QWidget):
                 self.config.get("show_estimated_driver_rank_gain", False)
             )
         ):
-            gain_text = f"{float(estimated_gain):+.0f}%"
+            gain_value = float(estimated_gain)
+            gain_text = self._format_rank_percent(gain_value, signed=True)
 
         # Layout compacto inspirado no TinyPedal: DR | S1 | 43% | -5%.
         # Somente o bloco do nivel recebe a cor do rank; nao ha barra inferior.
@@ -1688,6 +1696,12 @@ class StandingsWidget(QWidget):
                 painter.setPen(foreground)
                 painter.drawText(target, Qt.AlignmentFlag.AlignCenter, text)
             x += width
+
+    @staticmethod
+    def _format_rank_percent(value: float, *, signed: bool = False) -> str:
+        value = max(-100.0 if signed else 0.0, min(100.0, float(value)))
+        spec = "+.1f" if signed else ".1f"
+        return format(value, spec).rstrip("0").rstrip(".") + "%"
 
     @staticmethod
     def _rank_short(rank: str) -> str:

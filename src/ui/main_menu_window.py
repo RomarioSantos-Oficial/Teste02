@@ -608,7 +608,8 @@ class MainMenuWindow(QMainWindow):
     def _set_edit_mode(self, enabled: bool) -> None:
         if self.edit_mode_manager is not None:
             self.edit_mode_manager.set_enabled(enabled)
-        self.overlay_manager.set_edit_mode(enabled)
+        else:
+            self.overlay_manager.set_edit_mode(enabled)
         self.edit_mode_button.setText(
             tr("Modo edição: LIGADO") if enabled else tr("Modo edição: DESLIGADO")
         )

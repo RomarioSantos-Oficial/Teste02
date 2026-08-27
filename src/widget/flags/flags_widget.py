@@ -1394,6 +1394,10 @@ class FlagsWidget(QWidget):
 
         self.update()
 
+    def closeEvent(self, event) -> None:
+        self.visibility_timer.stop()
+        event.accept()
+
     def reset_session_state(self) -> None:
         self.logic.reset()
         self.snapshot = FlagsSnapshot()
