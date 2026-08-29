@@ -1331,10 +1331,7 @@ class OverlayManager(QObject):
             config = self.config_data["widgets"][widget_id]
         config.setdefault("position", {})
         config.setdefault("size", {})
-        # A bateria pode operar no modo compacto (somente o medidor), cuja
-        # largura legítima é bem menor que os 5% usados pelos painéis comuns.
-        minimum_width = 0.01 if widget_id == "battery" else 0.05
-        minimum_height = 0.02 if widget_id == "battery" else 0.05
+        minimum_width, minimum_height = self._geometry_minimum_ratios(widget_id)
         config["position"]["x"] = max(0.0, min(1.0, x))
         config["position"]["y"] = max(0.0, min(1.0, y))
         config["size"]["width"] = max(minimum_width, min(1.0, width))
@@ -1355,6 +1352,18 @@ class OverlayManager(QObject):
             if hasattr(widget, "config"):
                 widget.config["column_width_reference_total"] = reference_total
         self.save_config()
+
+    @staticmethod
+    def _geometry_minimum_ratios(widget_id: str) -> tuple[float, float]:
+        """Limites normalizados usados ao persistir redimensionamentos."""
+        if widget_id == "battery":
+            return 0.01, 0.02
+        if widget_id == "driver_panel":
+            # O limite físico do próprio widget mantém a telemetria legível.
+            # Razões menores evitam que monitores 1440p/4K ampliem o painel
+            # novamente apenas durante a gravação da geometria.
+            return 0.01, 0.01
+        return 0.05, 0.05
 
     def _apply_window_flags(self, widget: QWidget, config: dict[str, Any]) -> None:
         visible = widget.isVisible()

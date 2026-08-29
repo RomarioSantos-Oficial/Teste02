@@ -1,6 +1,9 @@
 {
   "en": {
     "Ajuste fino:": "Fine adjustment:",
+    "Exibir fundo do painel:": "Show panel background:",
+    "Margem do fundo:": "Background margin:",
+    "Fonte do desgaste:": "Wear font:",
     "Ao lado da marcha": "Next to the gear",
     "Ativar somente nos GTE/GT3:": "Enable only for GTE/GT3:",
     "Ative Publicar para liberar esta URL": "Enable Publish to make this URL available",
@@ -115,6 +118,9 @@
   },
   "es": {
     "Ajuste fino:": "Ajuste fino:",
+    "Exibir fundo do painel:": "Mostrar fondo del panel:",
+    "Margem do fundo:": "Margen del fondo:",
+    "Fonte do desgaste:": "Fuente del desgaste:",
     "Ao lado da marcha": "Junto a la marcha",
     "Ativar somente nos GTE/GT3:": "Activar solo en GTE/GT3:",
     "Ative Publicar para liberar esta URL": "Activa Publicar para habilitar esta URL",
@@ -229,6 +235,9 @@
   },
   "fr": {
     "Ajuste fino:": "Réglage fin :",
+    "Exibir fundo do painel:": "Afficher l’arrière-plan du panneau :",
+    "Margem do fundo:": "Marge de l’arrière-plan :",
+    "Fonte do desgaste:": "Police de l’usure :",
     "Ao lado da marcha": "À côté du rapport",
     "Ativar somente nos GTE/GT3:": "Activer uniquement pour GTE/GT3 :",
     "Ative Publicar para liberar esta URL": "Activez Publier pour rendre cette URL disponible",
@@ -343,6 +352,9 @@
   },
   "it": {
     "Ajuste fino:": "Regolazione fine:",
+    "Exibir fundo do painel:": "Mostra sfondo del pannello:",
+    "Margem do fundo:": "Margine dello sfondo:",
+    "Fonte do desgaste:": "Carattere usura:",
     "Ao lado da marcha": "Accanto alla marcia",
     "Ativar somente nos GTE/GT3:": "Attiva solo per GTE/GT3:",
     "Ative Publicar para liberar esta URL": "Attiva Pubblica per rendere disponibile questo URL",
@@ -457,6 +469,9 @@
   },
   "de": {
     "Ajuste fino:": "Feineinstellung:",
+    "Exibir fundo do painel:": "Panelhintergrund anzeigen:",
+    "Margem do fundo:": "Hintergrundabstand:",
+    "Fonte do desgaste:": "Verschleißschrift:",
     "Ao lado da marcha": "Neben dem Gang",
     "Ativar somente nos GTE/GT3:": "Nur für GTE/GT3 aktivieren:",
     "Ative Publicar para liberar esta URL": "Veröffentlichen aktivieren, um diese URL freizugeben",
@@ -571,6 +586,9 @@
   },
   "pl": {
     "Ajuste fino:": "Dokładna regulacja:",
+    "Exibir fundo do painel:": "Pokaż tło panelu:",
+    "Margem do fundo:": "Margines tła:",
+    "Fonte do desgaste:": "Czcionka zużycia:",
     "Ao lado da marcha": "Obok biegu",
     "Ativar somente nos GTE/GT3:": "Włącz tylko dla GTE/GT3:",
     "Ative Publicar para liberar esta URL": "Włącz publikowanie, aby udostępnić ten adres URL",
@@ -685,6 +703,9 @@
   },
   "ko": {
     "Ajuste fino:": "미세 조정:",
+    "Exibir fundo do painel:": "패널 배경 표시:",
+    "Margem do fundo:": "배경 여백:",
+    "Fonte do desgaste:": "마모 글꼴:",
     "Ao lado da marcha": "기어 옆",
     "Ativar somente nos GTE/GT3:": "GTE/GT3에서만 활성화:",
     "Ative Publicar para liberar esta URL": "이 URL을 사용하려면 게시를 활성화하세요",
@@ -799,6 +820,9 @@
   },
   "zh_CN": {
     "Ajuste fino:": "微调：",
+    "Exibir fundo do painel:": "显示面板背景：",
+    "Margem do fundo:": "背景边距：",
+    "Fonte do desgaste:": "磨损字体：",
     "Ao lado da marcha": "档位旁边",
     "Ativar somente nos GTE/GT3:": "仅为 GTE/GT3 启用：",
     "Ative Publicar para liberar esta URL": "启用“发布”以开放此 URL",

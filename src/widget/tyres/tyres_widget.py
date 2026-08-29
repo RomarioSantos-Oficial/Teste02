@@ -46,6 +46,38 @@ from .tyres_models import (
 )
 
 
+def tyres_panel_margin(config: dict[str, Any], scale: float) -> int:
+    return max(
+        0,
+        round(float(config.get("panel_margin", 6.0)) * float(scale)),
+    )
+
+
+def tyres_wear_font_size(
+    config: dict[str, Any],
+    base_font: int,
+    scale: float,
+) -> int:
+    wear_scale = max(0.50, float(config.get("wear_font_scale", 0.95)))
+    return max(8, round(base_font * wear_scale * float(scale)))
+
+
+def tyres_main_frame_style(
+    config: dict[str, Any],
+    background: str,
+    radius: int,
+    border_width: int,
+    border: str,
+) -> str:
+    if not bool(config.get("show_background", True)):
+        return "background: transparent; border: none;"
+    return (
+        f"background-color: {background}; "
+        f"border-radius: {radius}px; "
+        f"border: {border_width}px solid {border};"
+    )
+
+
 class WheelGroup(QWidget):
     def __init__(
         self,
@@ -1035,10 +1067,7 @@ class TyresWidget(QWidget):
             ),
         )
         s = self._responsive_scale
-        margin = max(
-            3,
-            round(12 * s),
-        )
+        margin = tyres_panel_margin(self.config, s)
         row_gap = max(
             3,
             round(6 * s),
@@ -1151,13 +1180,10 @@ class TyresWidget(QWidget):
                 base_font * scale
             ),
         )
-        wear_size = max(
-            7,
-            round(
-                base_font
-                * 0.78
-                * scale
-            ),
+        wear_size = tyres_wear_font_size(
+            self.config,
+            base_font,
+            scale,
         )
         detail_size = max(
             5,
@@ -1188,6 +1214,14 @@ class TyresWidget(QWidget):
             round(3 * scale),
         )
 
+        main_frame_style = tyres_main_frame_style(
+            self.config,
+            background,
+            radius,
+            border_width,
+            border,
+        )
+
         self.setStyleSheet(
             f"""
             TyresWidget {{
@@ -1197,10 +1231,7 @@ class TyresWidget(QWidget):
             }}
 
             QFrame#TyresMainFrame {{
-                background-color: {background};
-                border-radius: {radius}px;
-                border: {border_width}px
-                solid {border};
+                {main_frame_style}
             }}
 
             QLabel {{

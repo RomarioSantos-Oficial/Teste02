@@ -921,7 +921,7 @@ class StandingsWidget(QWidget):
         ):
             popup_gap = max(
                 0.0,
-                float(self.config.get("penalty_column_gap", 10.0)) * self._scale,
+                float(self.config.get("penalty_column_gap", 0.0)) * self._scale,
             )
             popup_width = max(
                 18.0,
@@ -962,7 +962,7 @@ class StandingsWidget(QWidget):
         detached_penalty = bool(self.config.get("detach_penalty_column", True))
         penalty_gap = max(
             0.0,
-            float(self.config.get("penalty_column_gap", 10.0)) * self._scale,
+            float(self.config.get("penalty_column_gap", 0.0)) * self._scale,
         ) if detached_penalty else 0.0
         main_right = (
             max(rect.left(), penalty_cell.left() - penalty_gap)
@@ -1012,7 +1012,7 @@ class StandingsWidget(QWidget):
         ):
             popup_gap = max(
                 0.0,
-                float(self.config.get("penalty_column_gap", 10.0)) * self._scale,
+                float(self.config.get("penalty_column_gap", 0.0)) * self._scale,
             )
             popup_width = max(
                 18.0,
@@ -1842,7 +1842,7 @@ class StandingsWidget(QWidget):
     def _column_rects(self, rect: QRectF) -> list[tuple[str, QRectF]]:
         columns = self._column_width_specs()
         penalty_gap = (
-            max(0.0, float(self.config.get("penalty_column_gap", 10.0)))
+            max(0.0, float(self.config.get("penalty_column_gap", 0.0)))
             * self._scale
             if (
                 bool(self.config.get("detach_penalty_column", True))
@@ -1984,7 +1984,7 @@ class StandingsWidget(QWidget):
         )
         gap = max(
             0.0,
-            float(self.config.get("penalty_column_gap", 10.0)) * self._scale,
+            float(self.config.get("penalty_column_gap", 0.0)) * self._scale,
         )
         return width + gap
 

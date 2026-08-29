@@ -78,7 +78,7 @@
   "show_track_limits_column": true,
   "show_penalty_column": true,
   "detach_penalty_column": true,
-  "penalty_column_gap": 10.0,
+  "penalty_column_gap": 0.0,
   "show_energy": true,
   "show_damage": true,
   "enable_local_api": true,

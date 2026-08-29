@@ -643,6 +643,59 @@ class TyresEditor(QDialog):
         )
         form = QFormLayout(group)
 
+        show_background = QCheckBox()
+        show_background.setChecked(
+            bool(
+                self.config.get(
+                    "show_background",
+                    True,
+                )
+            )
+        )
+        show_background.toggled.connect(
+            lambda value: self._set(
+                "show_background",
+                value,
+            )
+        )
+
+        panel_margin = QDoubleSpinBox()
+        panel_margin.setRange(0.0, 24.0)
+        panel_margin.setSingleStep(1.0)
+        panel_margin.setSuffix(" px")
+        panel_margin.setValue(
+            float(
+                self.config.get(
+                    "panel_margin",
+                    6.0,
+                )
+            )
+        )
+        panel_margin.valueChanged.connect(
+            lambda value: self._set(
+                "panel_margin",
+                value,
+            )
+        )
+
+        wear_font_scale = QDoubleSpinBox()
+        wear_font_scale.setRange(0.50, 2.00)
+        wear_font_scale.setSingleStep(0.05)
+        wear_font_scale.setValue(
+            float(
+                self.config.get(
+                    "wear_font_scale",
+                    0.95,
+                )
+            )
+        )
+        wear_font_scale.valueChanged.connect(
+            lambda value: self._set(
+                "wear_font_scale",
+                value,
+            )
+        )
+
         font_name = QComboBox()
         font_name.addItems(
             QFontDatabase.families()
@@ -700,6 +753,18 @@ class TyresEditor(QDialog):
             )
         )
 
+        form.addRow(
+            "Exibir fundo do painel:",
+            show_background,
+        )
+        form.addRow(
+            "Margem do fundo:",
+            panel_margin,
+        )
+        form.addRow(
+            "Fonte do desgaste:",
+            wear_font_scale,
+        )
         form.addRow(
             "Fonte:",
             font_name,

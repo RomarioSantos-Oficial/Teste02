@@ -28,6 +28,7 @@ from src.i18n import tr
 
 class DriverPanelEditor(QDialog):
     config_changed = Signal(dict)
+    geometry_changed = Signal(str, str, object)
     restore_requested = Signal()
 
     def __init__(
@@ -192,7 +193,7 @@ class DriverPanelEditor(QDialog):
             spin = self._percent_spin(value)
             spin.valueChanged.connect(
                 lambda v, s=section, k=key:
-                self._set_nested(s, k, v / 100)
+                self._set_geometry_nested(s, k, v / 100)
             )
             form.addRow(label, spin)
 
@@ -203,7 +204,7 @@ class DriverPanelEditor(QDialog):
             float(self.config.get("scale", 1.0))
         )
         scale.valueChanged.connect(
-            lambda v: self._set_root("scale", v)
+            lambda v: self._set_geometry_root("scale", v)
         )
 
         form.addRow("Escala geral:", scale)
@@ -520,6 +521,23 @@ class DriverPanelEditor(QDialog):
         self.config_changed.emit(
             deepcopy(self.config)
         )
+
+    def _set_geometry_nested(
+        self,
+        section: str,
+        key: str,
+        value: Any,
+    ) -> None:
+        self.config.setdefault(section, {})[key] = value
+        self.geometry_changed.emit(section, key, value)
+
+    def _set_geometry_root(
+        self,
+        key: str,
+        value: Any,
+    ) -> None:
+        self.config[key] = value
+        self.geometry_changed.emit("", key, value)
 
     def _choose_color(
         self,

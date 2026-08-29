@@ -13,6 +13,9 @@ from .driver_panel_renderer import DriverPanelRenderer, DriverPanelViewData
 
 
 class DriverPanelWidget(QWidget):
+    MINIMUM_WIDTH = 180
+    MINIMUM_HEIGHT = 70
+
     geometry_changed = Signal(str, float, float, float, float)
     selected = Signal(str)
 
@@ -65,8 +68,9 @@ class DriverPanelWidget(QWidget):
         self._resize_start_global = QPoint()
         self._resize_start_size = None
 
-        # Permite painel realmente pequeno.
-        self.setMinimumSize(360, 130)
+        # O desenho interno é responsivo; este limite mantém o puxador e os
+        # principais dados utilizáveis sem obrigar o painel a 360 x 130 px.
+        self.setMinimumSize(self.MINIMUM_WIDTH, self.MINIMUM_HEIGHT)
 
         self.setAttribute(
             Qt.WidgetAttribute.WA_TranslucentBackground,

@@ -567,6 +567,10 @@ class MainMenuWindow(QMainWindow):
                 current_id, config
             )
         )
+        if isinstance(editor, DriverPanelEditor):
+            editor.geometry_changed.connect(
+                self._update_driver_panel_geometry
+            )
         editor.restore_requested.connect(
             lambda current_id=widget_id: self.overlay_manager.restore_widget_default(current_id)
         )
@@ -580,6 +584,26 @@ class MainMenuWindow(QMainWindow):
         editor.show()
         editor.raise_()
         editor.activateWindow()
+
+    def _update_driver_panel_geometry(
+        self,
+        section: str,
+        key: str,
+        value,
+    ) -> None:
+        """Aplica somente o campo geométrico editado sobre o estado atual."""
+        config = deepcopy(
+            self.overlay_manager.config_data["widgets"]["driver_panel"]
+        )
+        if section:
+            config.setdefault(section, {})[key] = value
+        else:
+            config[key] = value
+        self.overlay_manager.update_widget_config(
+            "driver_panel",
+            config,
+            preserve_geometry=False,
+        )
 
     def _editor_closed(self, widget_id: str) -> None:
         self.editors.pop(widget_id, None)

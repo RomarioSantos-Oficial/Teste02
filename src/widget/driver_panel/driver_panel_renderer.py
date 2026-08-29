@@ -39,7 +39,7 @@ class DriverPanelRenderer:
         c=config.get("colors",{}); bg=QColor(c.get("background","#05080C")); bg.setAlphaF(float(config.get("background_opacity",.92)))
         panel=QColor(c.get("panel","#071014")); border=QColor(c.get("border","#18333A")); text=QColor(c.get("text","#F4F8FA")); muted=QColor(c.get("muted","#8CA0A8"))
         colors={"rpm":QColor(c.get("rpm_graph","#FFD21F")),"throttle":QColor(c.get("throttle","#18E65A")),"brake":QColor(c.get("brake","#FF2638")),"clutch":QColor(c.get("clutch","#278BFF")),"steering":QColor(c.get("steering_graph","#C783FF")),"speed":QColor(c.get("speed","#20D4E8"))}
-        s=max(.30,min(2.5,min(bounds.width()/1600,bounds.height()/650))); radius=max(5,float(config.get("border_radius",14))*s)
+        s=max(.12,min(2.5,min(bounds.width()/1600,bounds.height()/650))); radius=max(5,float(config.get("border_radius",14))*s)
         p.setPen(QPen(border,max(1,2*s))); p.setBrush(bg); p.drawRoundedRect(bounds.adjusted(1,1,-1,-1),radius,radius)
         content=bounds.adjusted(max(7,16*s),max(7,16*s),-max(7,16*s),-max(7,16*s)); e=config.get("elements",{}); show=lambda k:bool(e.get(k,True))
         wheel_w=content.width()*(.23 if show("steering") or show("gear") or show("speed") else 0)
