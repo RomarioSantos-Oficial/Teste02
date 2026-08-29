@@ -639,13 +639,25 @@ class StandingsLogic:
             damage_is_estimated = bool(
                 getattr(driver, "damage_is_estimated", False)
             )
-        tyre_compounds = tuple(
-            str(value or "").strip()
-            for value in (getattr(driver, "tire_compounds", []) or [])[:4]
-            if str(value or "").strip()
+        raw_tyre_compounds = list(
+            (getattr(driver, "tire_compounds", []) or [])[:4]
         )
-        if not tyre_compounds and extra.tyre_compound:
-            tyre_compounds = (extra.tyre_compound,) * 4
+        tyre_compounds = tuple(
+            str(value or "").strip() for value in raw_tyre_compounds
+        )
+        if not any(tyre_compounds) and extra.tyre_compound:
+            parts = [
+                part.strip()
+                for part in str(extra.tyre_compound).split("/")
+                if part.strip()
+            ]
+            if len(parts) >= 4:
+                tyre_compounds = tuple(parts[:4])
+            elif len(parts) == 2:
+                # O enriquecimento REST compacto publica dianteiro/traseiro.
+                tyre_compounds = (parts[0], parts[0], parts[1], parts[1])
+            else:
+                tyre_compounds = (str(extra.tyre_compound).strip(),) * 4
         return StandingRow(
             slot_id=slot_id,
             overall_position=overall,

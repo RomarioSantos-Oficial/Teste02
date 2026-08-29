@@ -1742,68 +1742,94 @@ class StandingsWidget(QWidget):
             "W": "#2196F3",
             "I": "#43A047",
         }
-        tokens = [tyre_short(value).split("/", 1)[0] for value in compounds[:4]]
-        tokens += [""] * (4 - len(tokens))
+        tokens = list(tyre_position_tokens(compounds))
         available = [token for token in tokens if token]
         if not available:
             return
 
-        # Um único desenho permanece legível mesmo na coluna compacta. A faixa
-        # externa é dividida entre os eixos: primeiro arco = dianteiros;
-        # segundo arco = traseiros. Se um eixo ainda não tiver dado, usa-se o
-        # composto disponível no outro eixo como fallback.
-        front_token = next((token for token in tokens[:2] if token), available[0])
-        rear_token = next((token for token in tokens[2:4] if token), front_token)
-        size = min(rect.height() * 0.72, rect.width() * 0.48)
-        size = max(7.0, size)
-        tyre = QRectF(
-            rect.center().x() - size / 2,
-            rect.center().y() - size / 2,
-            size,
-            size,
-        )
         fallback_color = self.config.get("colors", {}).get("tyre", "#C7B87A")
-        front_color = QColor(compound_colors.get(front_token, fallback_color))
-        rear_color = QColor(compound_colors.get(rear_token, fallback_color))
-        painter.setPen(QPen(QColor("#111317"), max(1.0, size * 0.17)))
-        painter.setBrush(QColor("#25282D"))
-        painter.drawEllipse(tyre.adjusted(size * .08, size * .08, -size * .08, -size * .08))
+        icon_fill = tyre_icon_fill(self.config.get("tyre_icon_scale", 1.25))
 
-        # A roda continua completa, mas a faixa do composto aparece em dois
-        # arcos opostos: um no lado esquerdo e outro no lado direito. As duas
-        # partes ficam de frente uma para a outra, com separação em cima e
-        # embaixo, como no desenho de referência.
-        compound_ring = tyre.adjusted(
-            size * .09,
-            size * .09,
-            -size * .09,
-            -size * .09,
-        )
-        painter.setBrush(Qt.BrushStyle.NoBrush)
-        arc_pen_width = max(1.5, size * .15)
-        rotation_angle = -60
-        for color, start_angle in (
-            (front_color, 110),
-            (rear_color, 290),
-        ):
+        def draw_wheel(wheel_rect: QRectF, token: str) -> None:
+            size = min(wheel_rect.width(), wheel_rect.height())
+            tyre = QRectF(
+                wheel_rect.center().x() - size / 2,
+                wheel_rect.center().y() - size / 2,
+                size,
+                size,
+            )
+            color = QColor(compound_colors.get(token, fallback_color))
+            if not token:
+                color = QColor("#59616B")
+
+            painter.setPen(QPen(QColor("#111317"), max(0.8, size * 0.14)))
+            painter.setBrush(QColor("#25282D"))
+            painter.drawEllipse(
+                tyre.adjusted(size * .08, size * .08, -size * .08, -size * .08)
+            )
+
+            ring = tyre.adjusted(
+                size * .10,
+                size * .10,
+                -size * .10,
+                -size * .10,
+            )
+            painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.setPen(
                 QPen(
                     color,
-                    arc_pen_width,
+                    max(1.0, size * .14),
                     Qt.PenStyle.SolidLine,
                     Qt.PenCapStyle.RoundCap,
                 )
             )
-            painter.drawArc(
-                compound_ring,
-                (start_angle + rotation_angle) * 16,
-                140 * 16,
-            )
+            painter.drawArc(ring, 0, 360 * 16)
 
-        hub = tyre.adjusted(size * .33, size * .33, -size * .33, -size * .33)
-        painter.setPen(QPen(QColor("#8A9098"), max(1.0, size * .08)))
-        painter.setBrush(QColor("#15171A"))
-        painter.drawEllipse(hub)
+            hub = tyre.adjusted(
+                size * .33,
+                size * .33,
+                -size * .33,
+                -size * .33,
+            )
+            painter.setPen(QPen(QColor("#8A9098"), max(0.7, size * .07)))
+            painter.setBrush(QColor("#15171A"))
+            painter.drawEllipse(hub)
+
+        # Um composto nas quatro posições: uma roda grande. Com mais de um
+        # composto: FL/FR na linha superior e RL/RR na inferior.
+        if len(set(available)) == 1:
+            maximum = min(rect.width(), rect.height()) * .92
+            size = max(7.0, maximum * icon_fill)
+            draw_wheel(
+                QRectF(
+                    rect.center().x() - size / 2,
+                    rect.center().y() - size / 2,
+                    size,
+                    size,
+                ),
+                available[0],
+            )
+            return
+
+        gap = max(1.0, 1.5 * self._scale)
+        maximum = min((rect.width() - gap) / 2, (rect.height() - gap) / 2)
+        size = max(4.0, maximum * icon_fill)
+        group_width = size * 2 + gap
+        group_height = size * 2 + gap
+        left = rect.center().x() - group_width / 2
+        top = rect.center().y() - group_height / 2
+        for index, token in enumerate(tokens):
+            column = index % 2
+            row = index // 2
+            draw_wheel(
+                QRectF(
+                    left + column * (size + gap),
+                    top + row * (size + gap),
+                    size,
+                    size,
+                ),
+                token,
+            )
 
     def _draw_clipped_notice(self, painter: QPainter, rect: QRectF) -> None:
         if not self.edit_mode:
@@ -2232,3 +2258,23 @@ def tyre_short(value: str) -> str:
         if word in text:
             return short
     return text[:3]
+
+
+def tyre_position_tokens(values: tuple[str, ...] | list[str]) -> tuple[str, str, str, str]:
+    """Retorna FL, FR, RL e RR sem deslocar posições ainda desconhecidas."""
+    tokens = [
+        tyre_short(value).split("/", 1)[0] if str(value or "").strip() else ""
+        for value in list(values or ())[:4]
+    ]
+    tokens.extend([""] * (4 - len(tokens)))
+    return tokens[0], tokens[1], tokens[2], tokens[3]
+
+
+def tyre_icon_fill(value: object) -> float:
+    """Converte a escala editável (0,70–2,00) em ocupação segura da célula."""
+    try:
+        scale = float(value)
+    except (TypeError, ValueError):
+        scale = 1.25
+    scale = max(0.70, min(2.00, scale))
+    return max(0.50, min(1.00, 0.30 + 0.35 * scale))

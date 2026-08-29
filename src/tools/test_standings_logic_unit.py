@@ -230,6 +230,10 @@ class StandingsLogicUnitTests(unittest.TestCase):
         self.assertEqual(category.total_laps_text, "20.0")
         self.assertEqual(rows["Class Leader"].tyre_compound, "Wet")
         self.assertEqual(rows["Player"].tyre_compound, "Soft/Hard")
+        self.assertEqual(
+            rows["Player"].tyre_compounds,
+            ("Soft", "Soft", "Hard", "Hard"),
+        )
         self.assertEqual(rows["Player"].track_limits_text, "5/6")
         self.assertEqual(rows["Player"].penalty_text, "--")
         self.assertEqual(rows["Class Leader"].damage_percent, 25.0)
@@ -238,6 +242,24 @@ class StandingsLogicUnitTests(unittest.TestCase):
         self.assertAlmostEqual(category.dr_sof_progress or 0.0, 0.0)
         self.assertEqual(category.dr_sof_drivers, 2)
         self.assertEqual(rows["Player"].estimated_driver_rank_gain, -5.0)
+
+    def test_tyre_positions_do_not_shift_when_one_value_is_missing(self) -> None:
+        session = SessionData(
+            connected=True,
+            session=10,
+            drivers=[
+                DriverData(
+                    slot_id=1,
+                    driver_name="Mixed",
+                    vehicle_class="LMGT3",
+                    position=1,
+                    tire_compounds=["Soft", "", "Hard", "Wet"],
+                )
+            ],
+        )
+
+        row = StandingsLogic({}).build(session, {}, "MEM").categories[0].rows[0]
+        self.assertEqual(row.tyre_compounds, ("Soft", "", "Hard", "Wet"))
 
     def test_practice_uses_player_lap_for_player_class(self) -> None:
         session = SessionData(

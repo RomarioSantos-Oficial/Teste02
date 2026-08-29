@@ -7,10 +7,88 @@ from PySide6.QtCore import QRectF
 from src.ui.overlay_manager import OverlayManager
 from src.widget.relative.relative_widget import RelativeWidget
 from src.widget.standings.standings_models import StandingRow
-from src.widget.standings.standings_widget import StandingsWidget
+from src.widget.standings.standings_widget import (
+    StandingsWidget,
+    tyre_icon_fill,
+    tyre_position_tokens,
+)
 
 
 class StandingsLayoutUnitTests(unittest.TestCase):
+    class PainterProbe:
+        def __init__(self) -> None:
+            self.ellipses: list[QRectF] = []
+            self.arcs: list[QRectF] = []
+
+        def setPen(self, _pen) -> None:
+            pass
+
+        def setBrush(self, _brush) -> None:
+            pass
+
+        def drawEllipse(self, rect: QRectF) -> None:
+            self.ellipses.append(QRectF(rect))
+
+        def drawArc(self, rect: QRectF, _start: int, _span: int) -> None:
+            self.arcs.append(QRectF(rect))
+
+    class TyreWidgetProbe:
+        def __init__(self, scale: float = 1.25) -> None:
+            self.config = {"tyre_icon_scale": scale, "colors": {}}
+            self._scale = 1.0
+
+    def test_tyre_tokens_keep_fl_fr_rl_rr_positions(self) -> None:
+        self.assertEqual(
+            tyre_position_tokens(["Soft", "", "Hard", "Wet"]),
+            ("S", "", "H", "W"),
+        )
+
+    def test_tyre_icon_editor_scale_changes_visible_fill(self) -> None:
+        small = tyre_icon_fill(0.70)
+        normal = tyre_icon_fill(1.25)
+        large = tyre_icon_fill(2.00)
+        self.assertLess(small, normal)
+        self.assertLess(normal, large)
+        self.assertLessEqual(large, 1.0)
+
+    def test_uniform_compound_draws_one_wheel(self) -> None:
+        painter = self.PainterProbe()
+        StandingsWidget._draw_tyre(
+            self.TyreWidgetProbe(),
+            painter,
+            QRectF(0.0, 0.0, 80.0, 40.0),
+            ("Soft", "Soft", "Soft", "Soft"),
+        )
+        self.assertEqual(len(painter.arcs), 1)
+        self.assertEqual(len(painter.ellipses), 2)
+
+    def test_mixed_compounds_draw_four_wheels(self) -> None:
+        painter = self.PainterProbe()
+        StandingsWidget._draw_tyre(
+            self.TyreWidgetProbe(),
+            painter,
+            QRectF(0.0, 0.0, 80.0, 40.0),
+            ("Soft", "Medium", "Hard", "Wet"),
+        )
+        self.assertEqual(len(painter.arcs), 4)
+        self.assertEqual(len(painter.ellipses), 8)
+
+    def test_tyre_scale_changes_the_drawn_wheel_size(self) -> None:
+        small_painter = self.PainterProbe()
+        large_painter = self.PainterProbe()
+        rect = QRectF(0.0, 0.0, 80.0, 40.0)
+        compounds = ("Soft",) * 4
+        StandingsWidget._draw_tyre(
+            self.TyreWidgetProbe(0.70), small_painter, rect, compounds
+        )
+        StandingsWidget._draw_tyre(
+            self.TyreWidgetProbe(2.00), large_painter, rect, compounds
+        )
+        self.assertLess(
+            small_painter.ellipses[0].width(),
+            large_painter.ellipses[0].width(),
+        )
+
     def test_str_editor_keeps_geometry_saved_after_drag(self) -> None:
         dragged = {
             "position": {"x": 0.0, "y": 0.0},

@@ -557,7 +557,10 @@ def _driver_compounds(record: dict[str, Any]) -> list[str]:
     )
     if isinstance(raw, (list, tuple)):
         values = [str(value or "").strip() for value in raw[:4]]
-        return [value for value in values if value]
+        # A ordem representa FL, FR, RL e RR. Remover entradas vazias muda o
+        # eixo/lado dos valores seguintes e faz uma montagem mista aparecer
+        # na posição errada no Standings/Relative.
+        return values if any(values) else []
     front = _first_present(
         record,
         "frontTireCompound",

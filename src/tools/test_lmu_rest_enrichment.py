@@ -4,12 +4,20 @@ import time
 import unittest
 
 from src.telemetry.lmu_rest_client import LMURestSnapshot
-from src.telemetry.lmu_rest_enrichment import apply_rest_snapshot
+from src.telemetry.lmu_rest_enrichment import _driver_compounds, apply_rest_snapshot
 from src.telemetry.models import DriverData, PlayerData, SessionData, WheelData
 from src.ui.overlay_manager import OverlayManager
 
 
 class LMURestEnrichmentTests(unittest.TestCase):
+    def test_driver_compounds_keep_wheel_positions(self) -> None:
+        self.assertEqual(
+            _driver_compounds(
+                {"tireCompounds": ["Soft", "", "Hard", "Wet"]}
+            ),
+            ["Soft", "", "Hard", "Wet"],
+        )
+
     class OverlayProbe:
         @staticmethod
         def _log_overlay_decision(*_args, **_kwargs) -> None:
