@@ -434,6 +434,11 @@ class LMUAdapter:
                 player = self._read_player(
                     telemetry.telemInfo[player_index]
                 )
+                # A telemetria publica apenas um identificador numerico de
+                # classe. O scoring possui o nome completo (Hypercar, LMGT3,
+                # LMP2 etc.), encontrado acima pelo mesmo slot do jogador.
+                if player_row is not None:
+                    player.vehicle_class = player_row.vehicle_class
             else:
                 self._reset_lap_validity()
 

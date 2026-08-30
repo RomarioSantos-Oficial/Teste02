@@ -12,7 +12,9 @@
 from __future__ import annotations
 
 import math
-from typing import Any
+import time
+from dataclasses import dataclass
+from typing import Any, Callable
 
 from .tyres_models import (
     TyreWheelViewData,
@@ -29,26 +31,67 @@ COMPOUND_NAMES = {
     4: "Intermediate",
 }
 
+_INNER_TEMPERATURE_SOURCES = {
+    "inner_average",
+    "inner_center",
+    "lmu_weighted",
+}
+
+
+@dataclass(slots=True)
+class _TemperatureHealth:
+    reference_inner: tuple[float, float, float]
+    reference_aux: tuple[float, float]
+    unchanged_since: float
+    stale: bool = False
+    fallback_source: str = "lmu_weighted"
+
 
 class TyresLogic:
     def __init__(
         self,
         config: dict[str, Any],
+        *,
+        clock: Callable[[], float] | None = None,
     ) -> None:
         self.config = config
+        self._clock = clock or time.monotonic
         self._gte_vehicle = False
+        self._hyper_vehicle = False
+        self._vehicle_identity = ""
+        self._temperature_health: dict[int, _TemperatureHealth] = {}
 
     def update_config(
         self,
         config: dict[str, Any],
     ) -> None:
+        health_keys = (
+            "temperature_source",
+            "gte_temperature_mode",
+            "gte_temperature_source",
+            "hyper_temperature_mode",
+            "hyper_temperature_source",
+            "temperature_stale_fallback_enabled",
+            "temperature_stale_timeout_s",
+            "temperature_stale_epsilon_c",
+            "temperature_stale_aux_delta_c",
+        )
+        if any(config.get(key) != self.config.get(key) for key in health_keys):
+            self._temperature_health.clear()
         self.config = config
 
     def build_view(
         self,
         player: Any,
     ) -> TyresViewData:
+        identity = self._identity(player)
+        if identity != self._vehicle_identity:
+            self._vehicle_identity = identity
+            self._temperature_health.clear()
         self._gte_vehicle = self._is_gte_vehicle(player)
+        self._hyper_vehicle = self._is_hyper_vehicle(player)
+        now = self._clock()
+        vehicle_speed_kmh = self._float(player, "speed_kmh")
         wheels_raw = list(
             getattr(
                 player,
@@ -71,6 +114,8 @@ class TyresLogic:
                 self._wheel_view(
                     index,
                     raw,
+                    now,
+                    vehicle_speed_kmh,
                 )
             )
 
@@ -137,19 +182,10 @@ class TyresLogic:
         self,
         wheel: TyreWheelViewData,
     ) -> float:
-        source = str(
-            self.config.get(
-                "temperature_source",
-                "lmu_weighted",
-            )
-        ).lower()
+        source = self._temperature_source(wheel)
         gte_mode = self._gte_vehicle and bool(
             self.config.get("gte_temperature_mode", True)
         )
-        if gte_mode:
-            source = str(
-                self.config.get("gte_temperature_source", "carcass")
-            ).lower()
 
         # O valor usado pelo MFD/doX combina a carcaça com as três
         # amostras da camada interna. Em alguns GT3 elas ficam muito
@@ -230,6 +266,52 @@ class TyresLogic:
 
         return 0.0
 
+    def _temperature_source(self, wheel: TyreWheelViewData) -> str:
+        source = str(
+            self.config.get("temperature_source", "lmu_weighted")
+        ).lower()
+        if self._gte_vehicle and bool(
+            self.config.get("gte_temperature_mode", True)
+        ):
+            source = str(
+                self.config.get("gte_temperature_source", "carcass")
+            ).lower()
+        elif (
+            self._hyper_vehicle
+            and bool(self.config.get("hyper_temperature_mode", True))
+            and source in _INNER_TEMPERATURE_SOURCES
+        ):
+            # A camada interna pode deixar de ser atualizada em alguns
+            # Hypercars. A leitura ponderada continua acompanhando a carcaça
+            # e corresponde melhor ao valor térmico principal do LMU.
+            source = str(
+                self.config.get("hyper_temperature_source", "lmu_weighted")
+            ).lower()
+
+        health = self._temperature_health.get(wheel.index)
+        if (
+            health is not None
+            and health.stale
+            and source in _INNER_TEMPERATURE_SOURCES
+            and bool(
+                self.config.get("temperature_stale_fallback_enabled", True)
+            )
+        ):
+            source = health.fallback_source
+        return source
+
+    def temperature_source_stale(self, wheel_index: int) -> bool:
+        """Informa se a fonte interna deixou de acompanhar as demais."""
+        health = self._temperature_health.get(int(wheel_index))
+        return bool(health is not None and health.stale)
+
+    @staticmethod
+    def _identity(player: Any) -> str:
+        return "|".join(
+            str(getattr(player, name, "") or "").casefold()
+            for name in ("vehicle_name", "vehicle_model", "vehicle_class")
+        )
+
     def _is_gte_vehicle(self, player: Any) -> bool:
         """Detecta somente carros GT configurados para a leitura especial."""
         identity = " ".join(
@@ -243,6 +325,26 @@ class TyresLogic:
             self.config.get(
                 "gte_detection_keywords",
                 "gte,lmgt3,gt3",
+            )
+        )
+        keywords = (
+            word.strip().casefold()
+            for word in raw_keywords.split(",")
+        )
+        return any(word and word in identity for word in keywords)
+
+    def _is_hyper_vehicle(self, player: Any) -> bool:
+        identity = " ".join(
+            (
+                str(getattr(player, "vehicle_name", "") or ""),
+                str(getattr(player, "vehicle_model", "") or ""),
+                str(getattr(player, "vehicle_class", "") or ""),
+            )
+        ).casefold()
+        raw_keywords = str(
+            self.config.get(
+                "hyper_detection_keywords",
+                "hypercar,lmh,lmdh",
             )
         )
         keywords = (
@@ -596,6 +698,8 @@ class TyresLogic:
         self,
         index: int,
         raw: Any,
+        now: float,
+        vehicle_speed_kmh: float,
     ) -> TyreWheelViewData:
         if raw is None:
             return TyreWheelViewData(
@@ -740,12 +844,105 @@ class TyresLogic:
                 )
             ),
         )
+        self._update_temperature_health(
+            wheel,
+            now,
+            vehicle_speed_kmh,
+        )
         wheel.main_temp_c = (
             self.main_temperature_c(
                 wheel
             )
         )
         return wheel
+
+    def _update_temperature_health(
+        self,
+        wheel: TyreWheelViewData,
+        now: float,
+        vehicle_speed_kmh: float,
+    ) -> None:
+        inner = (
+            wheel.inner_left_c,
+            wheel.inner_center_c,
+            wheel.inner_right_c,
+        )
+        carcass = wheel.carcass_temp_c
+        surface = wheel.surface_average_c
+        if not (
+            all(1.0 < value < 300.0 for value in inner)
+            and (1.0 < carcass < 300.0 or 1.0 < surface < 300.0)
+        ):
+            self._temperature_health.pop(wheel.index, None)
+            return
+
+        aux = (carcass, surface)
+        state = self._temperature_health.get(wheel.index)
+        if state is None:
+            self._temperature_health[wheel.index] = _TemperatureHealth(
+                reference_inner=inner,
+                reference_aux=aux,
+                unchanged_since=now,
+            )
+            return
+
+        inner_epsilon = max(
+            0.001,
+            float(self.config.get("temperature_stale_epsilon_c", 0.02)),
+        )
+        inner_changed = max(
+            abs(value - reference)
+            for value, reference in zip(inner, state.reference_inner)
+        ) >= inner_epsilon
+        if inner_changed:
+            state.reference_inner = inner
+            state.reference_aux = aux
+            state.unchanged_since = now
+            state.stale = False
+            state.fallback_source = "lmu_weighted"
+            return
+
+        minimum_speed = max(
+            0.0,
+            float(self.config.get("temperature_stale_min_speed_kmh", 20.0)),
+        )
+        moving = (
+            vehicle_speed_kmh >= minimum_speed
+            or abs(wheel.rotation_rad_s) >= 5.0
+        )
+        if not moving:
+            if not state.stale:
+                state.reference_aux = aux
+                state.unchanged_since = now
+            return
+
+        timeout = max(
+            1.0,
+            float(self.config.get("temperature_stale_timeout_s", 3.0)),
+        )
+        aux_delta = max(
+            0.05,
+            float(self.config.get("temperature_stale_aux_delta_c", 0.35)),
+        )
+        carcass_changed = (
+            1.0 < carcass < 300.0
+            and abs(carcass - state.reference_aux[0]) >= aux_delta
+        )
+        surface_changed = (
+            1.0 < surface < 300.0
+            and abs(surface - state.reference_aux[1]) >= aux_delta
+        )
+        if (
+            now - state.unchanged_since >= timeout
+            and (carcass_changed or surface_changed)
+        ):
+            state.stale = True
+            # Prefira a ponderada quando a carcaça continua viva; ela evita
+            # um salto grande ao sair da média interna. Se só a superfície
+            # variar, use-a diretamente para não conservar outro valor parado.
+            state.fallback_source = (
+                "lmu_weighted" if carcass_changed else "surface_average"
+            )
 
     def _preview_wheel(
         self,

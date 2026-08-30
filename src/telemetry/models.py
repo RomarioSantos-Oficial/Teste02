@@ -146,6 +146,7 @@ class DriverData:
 class PlayerData:
     vehicle_name: str = ""
     vehicle_model: str = ""
+    vehicle_class: str = ""
     ignition_starter: int = 0
     speed_kmh: float = 0.0
     rpm: float = 0.0
