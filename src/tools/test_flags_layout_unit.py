@@ -7,8 +7,10 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+from PySide6.QtCore import QPoint
 from PySide6.QtWidgets import QApplication
 
+from src.ui.overlay_manager import OverlayManager
 from src.widget.flags.flags_widget import FlagsWidget
 
 
@@ -56,6 +58,26 @@ class FlagsLayoutUnitTests(unittest.TestCase):
         self.assertEqual(widget.width(), 110)
         self.assertLess(widget._responsive_scale, 0.48)
         widget.close()
+
+    def test_resize_uses_one_horizontal_pixel_without_vertical_jump(self) -> None:
+        self.assertEqual(
+            FlagsWidget._resize_width_from_delta(160, QPoint(3, 20)),
+            163,
+        )
+        self.assertEqual(
+            FlagsWidget._resize_width_from_delta(160, QPoint(-4, -20)),
+            156,
+        )
+        self.assertEqual(
+            FlagsWidget._resize_width_from_delta(160, QPoint(0, 30)),
+            160,
+        )
+
+    def test_saved_geometry_does_not_enlarge_flags_on_high_resolution(self) -> None:
+        self.assertEqual(
+            OverlayManager._geometry_minimum_ratios("flags"),
+            (0.01, 0.01),
+        )
 
 
 if __name__ == "__main__":

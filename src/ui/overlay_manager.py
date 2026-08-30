@@ -1363,6 +1363,11 @@ class OverlayManager(QObject):
             # Razões menores evitam que monitores 1440p/4K ampliem o painel
             # novamente apenas durante a gravação da geometria.
             return 0.01, 0.01
+        if widget_id == "flags":
+            # O próprio widget mantém o limite físico de 110 px. Não converta
+            # esse limite novamente em 5% da tela, pois em 1440p/4K ele
+            # aumentaria assim que o usuário soltasse o puxador.
+            return 0.01, 0.01
         return 0.05, 0.05
 
     def _apply_window_flags(self, widget: QWidget, config: dict[str, Any]) -> None:

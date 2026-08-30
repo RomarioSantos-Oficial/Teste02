@@ -1529,29 +1529,12 @@ class FlagsWidget(QWidget):
                 event.globalPosition().toPoint()
                 - self._resize_start_global
             )
-
-            # Aceita arrastar pela horizontal ou vertical.
-            width_from_x = (
-                self._resize_start_width
-                + delta.x()
-            )
-            aspect = max(
-                1.2,
-                self._resize_start_width
-                / max(
-                    1,
-                    self._resize_start_height,
-                ),
-            )
-            width_from_y = (
-                self._resize_start_width
-                + delta.y() * aspect
-            )
-            chosen = (
-                width_from_x
-                if abs(delta.x())
-                >= abs(delta.y())
-                else width_from_y
+            # A altura do Flags é calculada pelo conteúdo. Usar delta.y()
+            # para alterar a largura multiplicava poucos pixels pela razão
+            # largura/altura e causava saltos, sobretudo perto de 110 px.
+            chosen = self._resize_width_from_delta(
+                self._resize_start_width,
+                delta,
             )
 
             self.resize(
@@ -1580,6 +1563,14 @@ class FlagsWidget(QWidget):
             )
             else Qt.CursorShape.SizeAllCursor
         )
+
+    @staticmethod
+    def _resize_width_from_delta(
+        start_width: int,
+        delta: QPoint,
+    ) -> int:
+        """Redimensiona 1 px de largura para cada 1 px horizontal."""
+        return int(start_width) + int(delta.x())
 
     def mouseReleaseEvent(
         self,
