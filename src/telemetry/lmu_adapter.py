@@ -321,6 +321,23 @@ class LMUAdapter:
                         laps_behind_leader=safe_int(
                             getattr(score, "mLapsBehindLeader", 0)
                         ),
+                        live_scoring={
+                            "position": safe_int(score.mPlace),
+                            "laps": completed_laps,
+                            "lap_distance_m": safe_float(score.mLapDist),
+                            "time_into_lap_s": safe_float(
+                                getattr(score, "mTimeIntoLap", 0.0)
+                            ),
+                            "lap_start_event_time_s": lap_start_et,
+                            "gap_ahead_s": safe_float(score.mTimeBehindNext),
+                            "gap_leader_s": safe_float(score.mTimeBehindLeader),
+                            "laps_behind_ahead": safe_int(
+                                getattr(score, "mLapsBehindNext", 0)
+                            ),
+                            "laps_behind_leader": safe_int(
+                                getattr(score, "mLapsBehindLeader", 0)
+                            ),
+                        },
                         in_pits=bool(score.mInPits),
                         penalties=safe_int(score.mNumPenalties),
                         track_limits_steps=(

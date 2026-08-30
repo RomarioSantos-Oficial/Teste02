@@ -84,6 +84,11 @@ class DriverData:
     gap_leader_s: float = 0.0
     laps_behind_ahead: int = 0
     laps_behind_leader: int = 0
+    # Cópia coerente dos campos de scoring obtidos na mesma leitura da memória
+    # compartilhada. O enriquecimento REST pode atualizar os campos públicos
+    # acima em outra cadência; widgets de classificação usam esta cópia para
+    # não misturar voltas, posição e gaps pertencentes a instantes diferentes.
+    live_scoring: dict[str, float | int] = field(default_factory=dict)
     in_pits: bool = False
     penalties: int = 0
     penalty_type: str = ""

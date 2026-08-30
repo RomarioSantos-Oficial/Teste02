@@ -47,6 +47,88 @@ def _truncate_tenth(value: float) -> float:
     return math.trunc((numeric + epsilon) * 10.0) / 10.0
 
 
+def _live_scoring_value(driver: Any, key: str, default: Any = 0) -> Any:
+    """Lê o scoring coerente da memória antes do valor enriquecido pelo REST."""
+    live = getattr(driver, "live_scoring", None)
+    if isinstance(live, dict) and key in live:
+        return live[key]
+    return getattr(driver, key, default)
+
+
+def _race_progress(row: StandingRow, track_length_m: float) -> float | None:
+    if not math.isfinite(track_length_m) or track_length_m <= 1.0:
+        return None
+    distance = float(row.lap_distance_m or 0.0)
+    if not math.isfinite(distance):
+        return None
+    fraction = max(0.0, min(1.0, distance / track_length_m))
+    return max(0, int(row.laps)) + fraction
+
+
+def _official_lap_relation(
+    row: StandingRow,
+    reference: StandingRow,
+) -> int | None:
+    """Retorna a relação com o mesmo sinal dos gaps: frente -, atrás +."""
+    row_behind = int(row.laps_behind_leader)
+    reference_behind = int(reference.laps_behind_leader)
+    if row_behind < 0 or reference_behind < 0:
+        return None
+    return row_behind - reference_behind
+
+
+def _reference_lap_time(*rows: StandingRow) -> float:
+    for attribute in ("estimated_lap_s", "last_lap_s", "best_lap_s"):
+        for row in rows:
+            value = float(getattr(row, attribute, 0.0) or 0.0)
+            if math.isfinite(value) and 3.0 <= value <= 1800.0:
+                return value
+    return 0.0
+
+
+def _relative_time_seconds(
+    row: StandingRow,
+    reference: StandingRow,
+    track_length_m: float,
+) -> float | None:
+    """Calcula segundos relativos sem subtrair gaps de voltas diferentes."""
+    row_progress = _race_progress(row, track_length_m)
+    reference_progress = _race_progress(reference, track_length_m)
+    progress_delta = (
+        row_progress - reference_progress
+        if row_progress is not None and reference_progress is not None
+        else None
+    )
+    row_time = float(row.time_into_lap_s or 0.0)
+    reference_time = float(reference.time_into_lap_s or 0.0)
+    timing_available = (
+        row.lap_start_event_time_s > 0.0
+        and reference.lap_start_event_time_s > 0.0
+    ) or row_time != 0.0 or reference_time != 0.0
+    lap_time = _reference_lap_time(reference, row)
+
+    if timing_available and math.isfinite(row_time) and math.isfinite(reference_time):
+        if progress_delta is not None and progress_delta != 0.0:
+            if progress_delta > 0.0:
+                # row está à frente da referência.
+                interval = row_time - reference_time
+                if interval < 0.0 and lap_time > 0.0:
+                    interval += lap_time
+                return -abs(interval)
+            # reference está à frente de row.
+            interval = reference_time - row_time
+            if interval < 0.0 and lap_time > 0.0:
+                interval += lap_time
+            return abs(interval)
+        seconds = row_time - reference_time
+        if math.isfinite(seconds):
+            return seconds
+
+    if progress_delta is not None and lap_time > 0.0:
+        return -progress_delta * lap_time
+    return None
+
+
 def format_driver_name(value: Any, mode: str = "full") -> str:
     """Formata apenas a exibicao, preservando o nome original para identidade."""
     name = " ".join(str(value or "").split())
@@ -114,7 +196,9 @@ class StandingsLogic:
         now = time.monotonic()
         drivers = sorted(
             list(getattr(session, "drivers", []) or []),
-            key=lambda item: int(getattr(item, "position", 9999) or 9999),
+            key=lambda item: int(
+                _live_scoring_value(item, "position", 9999) or 9999
+            ),
         )
         class_positions = self._class_positions(drivers)
         rows = [
@@ -145,7 +229,10 @@ class StandingsLogic:
         for row in rows:
             row.gap_text = self._gap_text(row, player, class_leaders.get(row.class_key), session)
         if 10 <= session_number <= 13:
-            self._apply_class_intervals(rows)
+            self._apply_class_intervals(
+                rows,
+                float(getattr(session, "track_length_m", 0.0) or 0.0),
+            )
             self._apply_rolling_deltas(rows, player)
         categories = (
             self._relative_block(rows, player, session)
@@ -226,7 +313,10 @@ class StandingsLogic:
             row.rolling_delta_text = text
 
     @staticmethod
-    def _apply_class_intervals(rows: list[StandingRow]) -> None:
+    def _apply_class_intervals(
+        rows: list[StandingRow],
+        track_length_m: float = 0.0,
+    ) -> None:
         """Preenche INT somente contra o carro anterior da mesma classe."""
         overall = sorted(rows, key=lambda row: row.overall_position or 9999)
         overall_previous = {
@@ -245,6 +335,14 @@ class StandingsLogic:
                     continue
                 previous = class_rows[index - 1]
 
+                # lapsBehindLeader possui a mesma base para todos os carros e
+                # continua válido mesmo quando outra categoria aparece entre
+                # os dois na classificação geral.
+                official_lap_delta = _official_lap_relation(row, previous)
+                if official_lap_delta is not None and official_lap_delta > 0:
+                    row.interval_text = f"+{official_lap_delta}L"
+                    continue
+
                 # A API fornece timeBehindNext/lapsBehindNext para a ordem
                 # geral. Eles so servem ao INT de classe quando o carro geral
                 # imediatamente anterior e o mesmo anterior desta categoria.
@@ -252,17 +350,33 @@ class StandingsLogic:
                     if row.laps_behind_ahead > 0:
                         row.interval_text = f"+{row.laps_behind_ahead}L"
                         continue
-                    if row.interval_s > 0:
+                    if row.interval_s > 0 and official_lap_delta == 0:
                         row.interval_text = f"+{_truncate_tenth(row.interval_s):.1f}"
                         continue
 
-                lap_delta = row.laps_behind_leader - previous.laps_behind_leader
-                if lap_delta > 0:
-                    row.interval_text = f"+{lap_delta}L"
+                previous_progress = _race_progress(previous, track_length_m)
+                row_progress = _race_progress(row, track_length_m)
+                if official_lap_delta is None and (
+                    previous_progress is not None and row_progress is not None
+                ):
+                    progress_delta = previous_progress - row_progress
+                    if progress_delta >= 1.0:
+                        row.interval_text = f"+{max(1, math.floor(progress_delta + 1e-9))}L"
+                        continue
+
+                interval = _relative_time_seconds(row, previous, track_length_m)
+                if interval is not None and abs(interval) >= 0.05:
+                    row.interval_text = f"+{_truncate_tenth(abs(interval)):.1f}"
                     continue
-                interval = row.gap_leader_s - previous.gap_leader_s
-                if interval >= 0 and (row.gap_leader_s > 0 or previous.gap_leader_s > 0):
-                    row.interval_text = f"+{_truncate_tenth(interval):.1f}"
+
+                # Último fallback, seguro apenas quando a informação oficial
+                # confirma que ambos pertencem à mesma volta do líder.
+                if official_lap_delta == 0:
+                    interval = row.gap_leader_s - previous.gap_leader_s
+                    if interval >= 0 and (
+                        row.gap_leader_s > 0 or previous.gap_leader_s > 0
+                    ):
+                        row.interval_text = f"+{_truncate_tenth(interval):.1f}"
 
     def _relative_block(
         self,
@@ -456,7 +570,7 @@ class StandingsLogic:
         now: float,
     ) -> StandingRow:
         slot_id = int(getattr(driver, "slot_id", 0) or 0)
-        overall = int(getattr(driver, "position", 0) or 0)
+        overall = int(_live_scoring_value(driver, "position", 0) or 0)
         class_position = class_positions.get(slot_id, int(getattr(driver, "position_in_class", 0) or 0))
         self._start_overall.setdefault(slot_id, overall)
         self._start_class.setdefault(slot_id, class_position)
@@ -575,7 +689,7 @@ class StandingsLogic:
         in_pits = bool(getattr(driver, "in_pits", False)) or bool(
             getattr(driver, "pitting", False)
         )
-        completed_laps = int(getattr(driver, "laps", 0) or 0)
+        completed_laps = int(_live_scoring_value(driver, "laps", 0) or 0)
         was_in_pits = self._pit_was_inside.get(slot_id, False)
         if in_pits:
             self._pit_started.setdefault(slot_id, now)
@@ -683,10 +797,15 @@ class StandingsLogic:
             safety_rank_progress=extra.safety_rank_progress,
             estimated_driver_rank_gain=extra.estimated_driver_rank_gain,
             laps=completed_laps,
-            lap_distance_m=float(getattr(driver, "lap_distance_m", 0.0) or 0.0),
-            time_into_lap_s=float(getattr(driver, "time_into_lap_s", 0.0) or 0.0),
+            lap_distance_m=float(
+                _live_scoring_value(driver, "lap_distance_m", 0.0) or 0.0
+            ),
+            time_into_lap_s=float(
+                _live_scoring_value(driver, "time_into_lap_s", 0.0) or 0.0
+            ),
             lap_start_event_time_s=float(
-                getattr(driver, "lap_start_event_time_s", 0.0) or 0.0
+                _live_scoring_value(driver, "lap_start_event_time_s", 0.0)
+                or 0.0
             ),
             best_lap_s=float(getattr(driver, "best_lap_s", 0.0) or 0.0),
             estimated_lap_s=float(
@@ -695,8 +814,12 @@ class StandingsLogic:
             last_lap_s=float(getattr(driver, "last_lap_s", 0.0) or 0.0),
             current_lap_invalidated=current_lap_invalidated,
             last_lap_invalidated=last_lap_invalidated,
-            gap_leader_s=float(getattr(driver, "gap_leader_s", 0.0) or 0.0),
-            interval_s=float(getattr(driver, "gap_ahead_s", 0.0) or 0.0),
+            gap_leader_s=float(
+                _live_scoring_value(driver, "gap_leader_s", 0.0) or 0.0
+            ),
+            interval_s=float(
+                _live_scoring_value(driver, "gap_ahead_s", 0.0) or 0.0
+            ),
             tyre_compound=(
                 extra.tyre_compound
                 or self._compound_label(
@@ -716,10 +839,10 @@ class StandingsLogic:
             ),
             penalty_text=self._penalty_text(driver, session, is_player),
             laps_behind_leader=int(
-                getattr(driver, "laps_behind_leader", 0) or 0
+                _live_scoring_value(driver, "laps_behind_leader", 0) or 0
             ),
             laps_behind_ahead=int(
-                getattr(driver, "laps_behind_ahead", 0) or 0
+                _live_scoring_value(driver, "laps_behind_ahead", 0) or 0
             ),
             finish_state=(
                 extra.finish_state
@@ -1158,45 +1281,42 @@ class StandingsLogic:
             # O jogador e a origem dos gaps da propria categoria.
             return "0.0" if row.is_player else "P1"
         track_length = float(getattr(session, "track_length_m", 0.0) or 0.0)
-        lap_diff = 0.0
-        if track_length > 0:
-            row_progress = row.laps + max(0.0, row.lap_distance_m) / track_length
-            ref_progress = reference.laps + max(0.0, reference.lap_distance_m) / track_length
-            lap_diff = row_progress - ref_progress
-            # O LMU diferencia quem realmente tomou uma volta por meio de
-            # lapsBehindLeader. A regra antiga arredondava a partir de 0,85
-            # volta e marcava prematuramente carros ainda separados por
-            # tempo. Exigimos uma volta completa no progresso; o valor
-            # oficial só antecipa a decisão por uma pequena tolerância de
-            # sincronização entre a linha de chegada e lapDistance.
-            official_lap_diff = (
-                reference.laps_behind_leader - row.laps_behind_leader
-            )
-            official_matches_progress = (
-                official_lap_diff != 0
-                and lap_diff != 0.0
-                and (official_lap_diff > 0) == (lap_diff > 0.0)
-                and abs(lap_diff) >= 0.995
-            )
-            if official_matches_progress:
-                return f"{official_lap_diff:+d}L"
-            if abs(lap_diff) >= 1.0:
-                completed_laps = math.trunc(lap_diff)
-                if completed_laps != 0:
-                    return f"{completed_laps:+d}L"
-        elif abs(row.laps - reference.laps) >= 1:
-            return f"{row.laps - reference.laps:+d}L"
-        # API REST em primeiro lugar: timeBehindLeader de cada carro, relativo
-        # ao jogador/referência da categoria.
-        gap = row.gap_leader_s - reference.gap_leader_s
-        if abs(gap) < 0.05 and abs(lap_diff) >= 0.001:
-            reference_lap = (
-                reference.last_lap_s
-                if reference.last_lap_s > 0.0
-                else reference.best_lap_s
-            )
-            if reference_lap > 0.0:
-                gap = -lap_diff * reference_lap
+        official_lap_relation = _official_lap_relation(row, reference)
+        if official_lap_relation:
+            # Mantém o mesmo sinal usado nos segundos: frente -, atrás +.
+            return f"{official_lap_relation:+d}L"
+
+        row_progress = _race_progress(row, track_length)
+        reference_progress = _race_progress(reference, track_length)
+        progress_delta = (
+            row_progress - reference_progress
+            if row_progress is not None and reference_progress is not None
+            else None
+        )
+        if official_lap_relation is None:
+            # Valores negativos de lapsBehindLeader são transitórios na linha.
+            # Só o progresso completo pode confirmar uma volta nesse caso.
+            if progress_delta is not None and abs(progress_delta) >= 1.0:
+                completed_laps = max(1, math.floor(abs(progress_delta) + 1e-9))
+                relation = -completed_laps if progress_delta > 0.0 else completed_laps
+                return f"{relation:+d}L"
+            if progress_delta is None and abs(row.laps - reference.laps) >= 1:
+                relation = reference.laps - row.laps
+                return f"{relation:+d}L"
+
+        # timeBehindLeader só possui uma base comparável quando o LMU confirma
+        # que os dois carros estão na mesma volta relativa ao líder.
+        gap = 0.0
+        if official_lap_relation == 0:
+            gap = row.gap_leader_s - reference.gap_leader_s
+        if abs(gap) < 0.05:
+            calculated = _relative_time_seconds(row, reference, track_length)
+            if calculated is not None:
+                gap = calculated
+            elif official_lap_relation is None:
+                # Durante o único tick inválido da linha ainda é melhor manter
+                # o pequeno gap oficial do que apagar a informação.
+                gap = row.gap_leader_s - reference.gap_leader_s
         if abs(gap) < 0.05:
             return "0.0"
         return f"{gap:+.1f}"

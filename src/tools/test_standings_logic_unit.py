@@ -446,7 +446,91 @@ class StandingsLogicUnitTests(unittest.TestCase):
         self.assertEqual(by_name["P2"].gap_text, "+48.8")
         self.assertEqual(by_name["P3"].gap_text, "+52.6")
         self.assertEqual(by_name["P4"].gap_text, "+55.1")
-        self.assertEqual(by_name["P5"].gap_text, "-1L")
+        self.assertEqual(by_name["P5"].gap_text, "+1L")
+
+    def test_gap_and_interval_are_stable_with_player_between_lapped_cars(self) -> None:
+        leader = DriverData(
+            slot_id=1, driver_name="Leader", vehicle_class="GT3",
+            position=1, laps=20, lap_distance_m=500.0,
+            time_into_lap_s=10.0, estimated_lap_s=100.0,
+            gap_leader_s=0.0, laps_behind_leader=0,
+        )
+        player = DriverData(
+            slot_id=2, driver_name="Player", vehicle_class="GT3",
+            position=2, laps=19, lap_distance_m=3500.0,
+            time_into_lap_s=70.0, estimated_lap_s=100.0,
+            gap_leader_s=100.0, gap_ahead_s=50.0,
+            laps_behind_leader=1, laps_behind_ahead=0, is_player=True,
+        )
+        behind = DriverData(
+            slot_id=3, driver_name="Behind", vehicle_class="GT3",
+            position=3, laps=18, lap_distance_m=4500.0,
+            time_into_lap_s=90.0, estimated_lap_s=100.0,
+            gap_leader_s=180.0, gap_ahead_s=80.0,
+            laps_behind_leader=2, laps_behind_ahead=0,
+        )
+        session = SessionData(
+            connected=True, session=10, track_length_m=5000.0,
+            drivers=[leader, player, behind],
+        )
+        logic = StandingsLogic(
+            {"maximum_categories": 1, "player_category_rows": 3}
+        )
+
+        for distances_and_gaps in (
+            (500.0, 3500.0, 4500.0, 100.0, 180.0, 50.0, 80.0),
+            (4000.0, 1000.0, 3500.0, 40.0, 70.0, 40.0, 30.0),
+        ):
+            (
+                leader.lap_distance_m,
+                player.lap_distance_m,
+                behind.lap_distance_m,
+                player.gap_leader_s,
+                behind.gap_leader_s,
+                player.gap_ahead_s,
+                behind.gap_ahead_s,
+            ) = distances_and_gaps
+            rows = logic.build(session, {}, "MEM").categories[0].rows
+            by_name = {row.driver_name: row for row in rows}
+            self.assertEqual(by_name["Leader"].gap_text, "-1L")
+            self.assertEqual(by_name["Player"].interval_text, "+1L")
+            self.assertEqual(by_name["Behind"].gap_text, "+1L")
+            self.assertEqual(by_name["Behind"].interval_text, "+1L")
+
+    def test_standings_prefers_coherent_live_scoring_over_stale_rest_values(self) -> None:
+        session = SessionData(
+            connected=True, session=10, track_length_m=5000.0,
+            drivers=[
+                DriverData(
+                    slot_id=1, driver_name="Leader", vehicle_class="GT3",
+                    position=2, laps=19, laps_behind_leader=1,
+                    live_scoring={
+                        "position": 1, "laps": 20, "lap_distance_m": 500.0,
+                        "time_into_lap_s": 10.0, "lap_start_event_time_s": 1000.0,
+                        "gap_leader_s": 0.0, "gap_ahead_s": 0.0,
+                        "laps_behind_leader": 0, "laps_behind_ahead": 0,
+                    },
+                ),
+                DriverData(
+                    slot_id=2, driver_name="Player", vehicle_class="GT3",
+                    position=1, laps=20, laps_behind_leader=0, is_player=True,
+                    live_scoring={
+                        "position": 2, "laps": 19, "lap_distance_m": 3500.0,
+                        "time_into_lap_s": 70.0, "lap_start_event_time_s": 940.0,
+                        "gap_leader_s": 100.0, "gap_ahead_s": 50.0,
+                        "laps_behind_leader": 1, "laps_behind_ahead": 0,
+                    },
+                ),
+            ],
+        )
+
+        rows = StandingsLogic(
+            {"maximum_categories": 1, "player_category_rows": 2}
+        ).build(session, {}, "API").categories[0].rows
+        by_name = {row.driver_name: row for row in rows}
+        self.assertEqual(by_name["Leader"].overall_position, 1)
+        self.assertEqual(by_name["Player"].overall_position, 2)
+        self.assertEqual(by_name["Leader"].gap_text, "-1L")
 
     def test_relative_excludes_dnf_dq_and_garage(self) -> None:
         session = SessionData(
