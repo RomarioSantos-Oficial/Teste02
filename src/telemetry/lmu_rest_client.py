@@ -77,12 +77,6 @@ class LMULocalRestClient:
             timeout_s=0.60,
         ),
         EndpointSpec(
-            "tire_info",
-            "/rest/garage/tireinfo",
-            2.00,
-            scope="vehicle",
-        ),
-        EndpointSpec(
             "vehicle_condition",
             "/rest/garage/getVehicleCondition",
             1.00,

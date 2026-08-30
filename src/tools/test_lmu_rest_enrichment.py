@@ -185,8 +185,9 @@ class LMURestEnrichmentTests(unittest.TestCase):
         self.assertEqual(session.player.fuel_liters, 55.0)
         self.assertAlmostEqual(session.player.vehicle_damage, 0.12)
         self.assertAlmostEqual(session.player.wheels[0].wear, 0.9)
-        self.assertAlmostEqual(session.player.wheels[0].surface_left_c, 27.0)
-        self.assertAlmostEqual(session.player.wheels[0].pressure_kpa, 140.0)
+        # tire_info pertence à garagem/aquecedores e não é telemetria viva.
+        self.assertAlmostEqual(session.player.wheels[0].surface_left_c, 0.0)
+        self.assertAlmostEqual(session.player.wheels[0].pressure_kpa, 0.0)
         player_row = session.drivers[0]
         self.assertEqual(player_row.car_number, "69")
         self.assertEqual(player_row.team_name, "Team Test")
@@ -212,6 +213,43 @@ class LMURestEnrichmentTests(unittest.TestCase):
         self.assertTrue(player_row.drs_active)
         self.assertEqual(player_row.flag, 6)
         self.assertEqual(player_row.attack_mode_remaining_count, 2)
+
+    def test_garage_tire_info_does_not_replace_live_track_values(self) -> None:
+        session = self.make_session()
+        wheel = session.player.wheels[0]
+        wheel.surface_left_c = 42.4
+        wheel.surface_center_c = 46.9
+        wheel.surface_right_c = 47.7
+        wheel.pressure_kpa = 155.32
+        wheel.tire_load_n = 6025.9
+        now = time.monotonic()
+        payload = {
+            "tire_info": {
+                "frontLeft": {
+                    "leftTemperature": 348.65,
+                    "centerTemperature": 348.65,
+                    "rightTemperature": 348.65,
+                    "pressure": 131.0,
+                    "load": 272.44,
+                }
+            }
+        }
+
+        apply_rest_snapshot(
+            session,
+            LMURestSnapshot(
+                payloads=payload,
+                updated_at={"tire_info": now},
+                available=True,
+                last_success_at=now,
+            ),
+        )
+
+        self.assertAlmostEqual(wheel.surface_left_c, 42.4)
+        self.assertAlmostEqual(wheel.surface_center_c, 46.9)
+        self.assertAlmostEqual(wheel.surface_right_c, 47.7)
+        self.assertAlmostEqual(wheel.pressure_kpa, 155.32)
+        self.assertAlmostEqual(wheel.tire_load_n, 6025.9)
 
     def test_overlay_visibility_prefers_fresh_rest_state(self) -> None:
         session = self.make_session()

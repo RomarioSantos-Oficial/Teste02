@@ -74,19 +74,19 @@ class RadarWidget(QWidget):
         scale: float,
     ) -> None:
         self.ui_scale = max(
-            0.42,
+            0.20,
             min(2.50, float(scale)),
         )
         self.setFixedSize(
             max(
-                68,
+                32,
                 round(
                     self.BASE_WIDTH
                     * self.ui_scale
                 ),
             ),
             max(
-                26,
+                12,
                 round(
                     self.BASE_HEIGHT
                     * self.ui_scale
@@ -336,6 +336,7 @@ class FlagsWidget(QWidget):
 
     BASE_WIDTH = 520.0
     BASE_FONT_SIZE = 16.0
+    MINIMUM_WIDTH = 110
 
     def __init__(
         self,
@@ -376,7 +377,7 @@ class FlagsWidget(QWidget):
             Qt.WidgetAttribute.WA_TranslucentBackground,
             True,
         )
-        self.setMinimumWidth(220)
+        self.setMinimumWidth(self.MINIMUM_WIDTH)
         self.setSizePolicy(
             QSizePolicy.Policy.Preferred,
             QSizePolicy.Policy.Fixed,
@@ -643,6 +644,13 @@ class FlagsWidget(QWidget):
             Qt.AlignmentFlag.AlignCenter
         )
         label.setWordWrap(False)
+        # Textos longos não podem impor uma largura mínima ao painel. O Qt
+        # recorta o conteúdo quando o usuário escolhe um Flags compacto.
+        label.setMinimumWidth(0)
+        label.setSizePolicy(
+            QSizePolicy.Policy.Ignored,
+            QSizePolicy.Policy.Fixed,
+        )
 
         if title:
             label.setProperty(
@@ -775,15 +783,15 @@ class FlagsWidget(QWidget):
     ) -> None:
         self._metrics_pending = False
 
-        minimum_scale = max(
-            0.35,
-            float(
-                self.config.get(
-                    "responsive_min_scale",
-                    0.48,
-                )
-            ),
+        configured_minimum_scale = float(
+            self.config.get("responsive_min_scale", 0.21)
         )
+        # 0.48 era o padrão antigo e impedia larguras menores que ~220 px.
+        # Trate esse valor legado como o novo mínimo para configurações já
+        # existentes, sem exigir que o usuário apague o perfil salvo.
+        if abs(configured_minimum_scale - 0.48) < 0.0001:
+            configured_minimum_scale = 0.20
+        minimum_scale = max(0.20, configured_minimum_scale)
         maximum_scale = max(
             minimum_scale,
             float(
@@ -794,7 +802,7 @@ class FlagsWidget(QWidget):
             ),
         )
         internal_scale = max(
-            0.50,
+            0.25,
             float(
                 self.config.get(
                     "internal_scale",
@@ -817,31 +825,31 @@ class FlagsWidget(QWidget):
         s = self._responsive_scale
 
         outer_margin = max(
-            2,
+            1,
             round(5 * s),
         )
         outer_spacing = max(
-            2,
+            1,
             round(5 * s),
         )
         top_spacing = max(
-            3,
+            1,
             round(10 * s),
         )
         pill_h_margin = max(
-            4,
+            1,
             round(10 * s),
         )
         pill_v_margin = max(
-            3,
+            1,
             round(6 * s),
         )
         distance_h_margin = max(
-            6,
+            1,
             round(20 * s),
         )
         radar_v_margin = max(
-            3,
+            1,
             round(10 * s),
         )
 
@@ -916,11 +924,11 @@ class FlagsWidget(QWidget):
             )
 
         category_min = max(
-            48,
+            20,
             round(92 * s),
         )
         position_min = max(
-            42,
+            18,
             round(74 * s),
         )
 
@@ -992,7 +1000,7 @@ class FlagsWidget(QWidget):
             ),
         )
         title_size = max(
-            6,
+            4,
             round(
                 base_font
                 * 0.60
@@ -1000,7 +1008,7 @@ class FlagsWidget(QWidget):
             ),
         )
         value_size = max(
-            7,
+            5,
             round(
                 base_font
                 * 0.90
@@ -1008,7 +1016,7 @@ class FlagsWidget(QWidget):
             ),
         )
         green_size = max(
-            8,
+            6,
             round(
                 base_font
                 * 1.25
@@ -1016,23 +1024,23 @@ class FlagsWidget(QWidget):
             ),
         )
         radius_card = max(
-            5,
+            2,
             round(16 * scale),
         )
         radius_pill = max(
-            4,
+            2,
             round(12 * scale),
         )
         radius_radar = max(
-            4,
+            2,
             round(16 * scale),
         )
         green_padding_v = max(
-            3,
+            1,
             round(8 * scale),
         )
         green_padding_h = max(
-            5,
+            2,
             round(12 * scale),
         )
         family = str(

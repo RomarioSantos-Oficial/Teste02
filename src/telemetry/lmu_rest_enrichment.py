@@ -5,7 +5,7 @@ import time
 from typing import Any
 
 from .lmu_rest_client import LMURestSnapshot
-from .models import DriverData, SessionData, WheelData
+from .models import DriverData, SessionData
 
 
 _SESSION_NUMBERS = {
@@ -41,8 +41,6 @@ _FINISH_CODES = {
     "FSTAT_DQ": 3,
     "FSTAT_DISQUALIFIED": 3,
 }
-
-_WHEEL_KEYS = ("frontLeft", "frontRight", "rearLeft", "rearRight")
 
 _SECTOR_CODES = {
     "SECTOR1": 1,
@@ -82,11 +80,6 @@ def apply_rest_snapshot(
         session,
         snapshot.value("vehicle_condition", max_age_s=3.0, now=now),
     )
-    _apply_tire_info(
-        session,
-        snapshot.value("tire_info", max_age_s=3.0, now=now),
-    )
-
     weather = snapshot.value("weather", max_age_s=30.0, now=now)
     if isinstance(weather, dict):
         session.weather_schedule = weather
@@ -614,38 +607,6 @@ def _apply_player_condition(session: SessionData, payload: Any) -> None:
     for index, remaining in enumerate(tire_condition[: len(player.wheels)]):
         if 0.0 <= remaining <= 1.0:
             player.wheels[index].wear = remaining
-
-
-def _apply_tire_info(session: SessionData, payload: Any) -> None:
-    player = session.player
-    if player is None or not isinstance(payload, dict):
-        return
-    while len(player.wheels) < 4:
-        player.wheels.append(WheelData())
-    for index, key in enumerate(_WHEEL_KEYS):
-        record = payload.get(key)
-        if not isinstance(record, dict):
-            continue
-        wheel = player.wheels[index]
-        wheel.surface_left_c = _temperature_c(
-            record.get("leftTemperature"),
-            wheel.surface_left_c,
-        )
-        wheel.surface_center_c = _temperature_c(
-            record.get("centerTemperature"),
-            wheel.surface_center_c,
-        )
-        wheel.surface_right_c = _temperature_c(
-            record.get("rightTemperature"),
-            wheel.surface_right_c,
-        )
-        wheel.pressure_kpa = _positive(
-            record.get("pressure"),
-            wheel.pressure_kpa,
-        )
-        load_kg = _number(record.get("load"))
-        if load_kg is not None and load_kg >= 0.0:
-            wheel.tire_load_n = load_kg * 9.80665
 
 
 def _identity(value: Any) -> str:

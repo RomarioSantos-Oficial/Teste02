@@ -48,7 +48,7 @@ class TyresCompoundTests(unittest.TestCase):
             "gte_detection_keywords": "gte,lmgt3,gt3",
             "hyper_temperature_mode": True,
             "hyper_temperature_source": "lmu_weighted",
-            "hyper_detection_keywords": "hypercar,lmh,lmdh",
+            "hyper_detection_keywords": "hyper,hypercar,lmh,lmdh",
             "temperature_stale_fallback_enabled": True,
             "temperature_stale_timeout_s": 3.0,
             "temperature_stale_epsilon_c": 0.02,
@@ -95,7 +95,7 @@ class TyresCompoundTests(unittest.TestCase):
 
     def test_hyper_uses_weighted_source_instead_of_frozen_inner_only(self) -> None:
         player = PlayerData(
-            vehicle_class="Hypercar",
+            vehicle_class="Hyper",
             vehicle_model="Porsche 963",
             speed_kmh=180.0,
             wheels=[self._wheel()],

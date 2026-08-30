@@ -35,7 +35,7 @@
   "gte_detection_keywords": "gte,lmgt3,gt3",
   "hyper_temperature_mode": true,
   "hyper_temperature_source": "lmu_weighted",
-  "hyper_detection_keywords": "hypercar,lmh,lmdh",
+  "hyper_detection_keywords": "hyper,hypercar,lmh,lmdh",
   "temperature_stale_fallback_enabled": true,
   "temperature_stale_timeout_s": 3.0,
   "temperature_stale_epsilon_c": 0.02,

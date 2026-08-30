@@ -344,7 +344,7 @@ class TyresLogic:
         raw_keywords = str(
             self.config.get(
                 "hyper_detection_keywords",
-                "hypercar,lmh,lmdh",
+                "hyper,hypercar,lmh,lmdh",
             )
         )
         keywords = (

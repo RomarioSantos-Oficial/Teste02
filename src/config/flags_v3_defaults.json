@@ -11,7 +11,7 @@
   },
   "scale": 1.0,
   "internal_scale": 1.0,
-  "responsive_min_scale": 0.48,
+  "responsive_min_scale": 0.21,
   "responsive_max_scale": 2.2,
   "opacity": 1.0,
   "always_on_top": true,

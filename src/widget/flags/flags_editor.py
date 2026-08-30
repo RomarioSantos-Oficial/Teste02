@@ -302,7 +302,7 @@ class FlagsEditor(QDialog):
         form = QFormLayout(group)
 
         internal = QDoubleSpinBox()
-        internal.setRange(0.50, 2.00)
+        internal.setRange(0.25, 2.00)
         internal.setSingleStep(0.05)
         internal.setValue(
             float(
@@ -321,13 +321,13 @@ class FlagsEditor(QDialog):
         )
 
         min_scale = QDoubleSpinBox()
-        min_scale.setRange(0.25, 1.00)
+        min_scale.setRange(0.20, 1.00)
         min_scale.setSingleStep(0.05)
         min_scale.setValue(
             float(
                 self.config.get(
                     "responsive_min_scale",
-                    0.48,
+                    0.21,
                 )
             )
         )
