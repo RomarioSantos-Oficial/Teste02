@@ -16,7 +16,7 @@ Set-Location $ProjectRoot
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  SectorFlow Overley 0.0.5 - Build Completo" -ForegroundColor Cyan
+Write-Host "  SectorFlow Overley 0.0.6 - Build Completo" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -96,7 +96,7 @@ if (-not $InnoCompiler) {
 Write-Host "[7/7] Gerando instalador com Inno Setup 6..." -ForegroundColor Yellow
 & $InnoCompiler "/Q" "build\sectorflow_installer.iss"
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup falhou." }
-Write-Host "  Instalador: app\SectorFlow_Setup_0.0.5.exe" -ForegroundColor Green
+Write-Host "  Instalador: app\SectorFlow_Setup_0.0.6.exe" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Para distribuir SEM instalador:" -ForegroundColor Yellow
 Write-Host "  Copie a pasta $OutputDir para outro PC e execute SectorFlow.exe" -ForegroundColor Yellow

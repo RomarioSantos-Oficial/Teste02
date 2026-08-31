@@ -117,7 +117,7 @@ class MainMenuWindow(QMainWindow):
     @staticmethod
     def _load_header_config() -> dict[str, str]:
         defaults = {
-            "version": "0.0.5",
+            "version": "0.0.6",
             "update_note": "Novidades e correções da versão atual.",
             "update_note_key": "",
             "update_note_addendum": "",
@@ -291,7 +291,7 @@ class MainMenuWindow(QMainWindow):
 
     def _refresh_dynamic_translations(self) -> None:
         """Reaplica textos que mudam depois que a janela foi traduzida."""
-        version = str(self.version_label.property("sectorflowVersion") or "0.0.5")
+        version = str(self.version_label.property("sectorflowVersion") or "0.0.6")
         self.version_label.setText(f"{tr('Versão')} {version}")
         self._reload_profiles()
         self.edit_mode_button.setText(
