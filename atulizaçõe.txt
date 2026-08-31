@@ -1,0 +1,7 @@
+aquivo de date como online_debug não deve ser ebildade juntos com outros quivos porque tem aquivos pessoa do progamdo! então ele deve se bildaddo e veja se ele quebra se não bildado njunto, alme disso ele dev ser apagado sempre que usario sair da sesão!
+track_maps tbm não pode ser inviado aquivos dentro da bilde junto!
+se na maquina tiver esse aquirvos com de track_maps ele não apga deixa como esta!
+ja os online_debug ele deve apaga e fica a regrade de assim que sair da sessão ele apga aquile dado! porque tem daods seinsives nele. 
+as paste de online_debug e track_maps deve ser bildadeas porem sem daos pesseoais!
+
+dapos pessoais do progamdor não pode ser enviados e bildados!

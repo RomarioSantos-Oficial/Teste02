@@ -21,11 +21,10 @@ a = Analysis(
     datas=[
         # Imagens (logos, badges, flags, tempo, logo principal)
         (str(PROJECT_ROOT / 'images'), 'images'),
-        # Dados (flags, track_maps, vehicle_catalog, online_profiles)
+        # Apenas dados públicos. Cache de mapas, perfis e logs de sessão são
+        # locais do usuário e as pastas vazias são criadas pelo build.
         (str(PROJECT_ROOT / 'data/flags'), 'data/flags'),
-        (str(PROJECT_ROOT / 'data/track_maps'), 'data/track_maps'),
         (str(PROJECT_ROOT / 'data/vehicle_catalog'), 'data/vehicle_catalog'),
-        (str(PROJECT_ROOT / 'data/online_profiles'), 'data/online_profiles'),
         # Configuração principal
         (str(PROJECT_ROOT / 'src/config/*.json'), 'src/config'),
         (str(PROJECT_ROOT / 'src/i18n/locales/*.json'), 'src/i18n/locales'),

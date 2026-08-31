@@ -23,6 +23,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Iterable
 
+from src.private_data import clear_online_debug
+
 from .standings_models import DriverMetadata, normalize_identity
 
 
@@ -499,7 +501,24 @@ class LocalStandingsEnrichment:
         try:
             previous_connected = bool(self._last_connected)
             previous_session = str(self._last_session_id or "")
-            if connected != previous_connected or (session_id and session_id != previous_session):
+            session_ended = previous_connected and not connected
+            session_changed = bool(
+                previous_session
+                and session_id
+                and session_id != previous_session
+            )
+            if session_ended or session_changed:
+                try:
+                    clear_online_debug(self.project_root)
+                except OSError:
+                    pass
+            if (
+                not session_ended
+                and (
+                    connected != previous_connected
+                    or (session_id and session_id != previous_session)
+                )
+            ):
                 details = {
                     "was_connected": previous_connected,
                     "now_connected": connected,

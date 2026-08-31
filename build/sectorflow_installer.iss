@@ -79,6 +79,13 @@ Name: "chinesesimplified"; MessagesFile: "ChineseSimplified.isl"
 ; que JSONs, traduções, imagens e DLLs sejam atualizados junto com o EXE.
 Source: "..\dist\SectorFlow\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
+[Dirs]
+; Criadas vazias em uma instalação nova. Em atualizações, o instalador não
+; remove mapas e caches que já pertencem ao usuário.
+Name: "{app}\_internal\data\online_debug"
+Name: "{app}\_internal\data\online_profiles"
+Name: "{app}\_internal\data\track_maps"
+
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
 

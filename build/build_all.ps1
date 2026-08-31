@@ -58,6 +58,22 @@ Write-Host "[5/7] Gerando executavel com PyInstaller..." -ForegroundColor Yellow
 if ($LASTEXITCODE -ne 0) {
     throw "PyInstaller falhou."
 }
+
+# Dados de sessão e caches pertencem ao usuário. As pastas precisam existir
+# para o programa, mas nunca podem levar arquivos da máquina de desenvolvimento.
+$PrivateDataDirectories = @(
+    "online_debug",
+    "online_profiles",
+    "track_maps"
+)
+foreach ($PrivateDirectory in $PrivateDataDirectories) {
+    $PrivatePath = Join-Path "dist\SectorFlow\_internal\data" $PrivateDirectory
+    New-Item -ItemType Directory -Path $PrivatePath -Force | Out-Null
+    $PrivateFiles = @(Get-ChildItem -LiteralPath $PrivatePath -File -Recurse -Force)
+    if ($PrivateFiles.Count -ne 0) {
+        throw "Build bloqueado: dados privados encontrados em $PrivatePath"
+    }
+}
 Write-Host "  PyInstaller OK" -ForegroundColor Green
 
 # 6. Copiar para pasta de distribuicao
@@ -65,6 +81,13 @@ Write-Host "[6/7] Preparando distribuicao..." -ForegroundColor Yellow
 $OutputDir = "app\SectorFlow"
 if (Test-Path $OutputDir) { Remove-Item -Recurse -Force $OutputDir }
 Copy-Item -Recurse -Force "dist\SectorFlow" $OutputDir
+foreach ($PrivateDirectory in $PrivateDataDirectories) {
+    $PrivatePath = Join-Path "$OutputDir\_internal\data" $PrivateDirectory
+    $PrivateFiles = @(Get-ChildItem -LiteralPath $PrivatePath -File -Recurse -Force)
+    if ($PrivateFiles.Count -ne 0) {
+        throw "Distribuicao bloqueada: dados privados encontrados em $PrivatePath"
+    }
+}
 Write-Host "  Distribuido em: $OutputDir" -ForegroundColor Green
 
 # Assinatura (opcional)

@@ -50,6 +50,7 @@ from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 from src.telemetry.lmu_workers import SessionTelemetryWorker
 from src.telemetry.session_state import SessionActivityTracker
 from src.i18n import install_translator, tr
+from src.private_data import clear_online_debug, ensure_private_data_directories
 from src.ui.edit_mode_manager import EditModeManager
 from src.ui.main_menu_window import MainMenuWindow
 from src.ui.isolated_widget_process import (
@@ -370,6 +371,10 @@ class SectorFlowApplication:
         for controller in self.widget_processes:
             controller.close()
         self.overlay_manager.close_all()
+        try:
+            clear_online_debug(PROJECT_ROOT)
+        except OSError:
+            pass
         self.menu.tray_mode_enabled = False
         self.menu.close()
         if self.tray is not None:
@@ -377,6 +382,11 @@ class SectorFlowApplication:
 
 
 def main() -> None:
+    ensure_private_data_directories(PROJECT_ROOT)
+    try:
+        clear_online_debug(PROJECT_ROOT)
+    except OSError:
+        pass
     app = QApplication(sys.argv)
     install_translator(app)
     app.setQuitOnLastWindowClosed(False)

@@ -84,11 +84,8 @@ class OverlayManager(QObject):
         self._last_split_label = ""
         self._split_server_active = False
         self._split_recheck_authoritative = False
-        # caminho de log para debug de decisões de overlay
-        try:
-            project_root = Path(self.config_path).resolve().parents[2]
-        except Exception:
-            project_root = Path.cwd()
+        # O log temporário acompanha a raiz empacotada e é removido ao sair.
+        project_root = Path(__file__).resolve().parents[2]
         self._overlay_check_log = project_root / "data" / "online_debug" / "overlay_checks.log"
 
     @property
