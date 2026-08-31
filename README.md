@@ -118,7 +118,7 @@ SectorFlow_Setup_NOVA_VERSAO.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSE
 powershell -NoProfile -Command "Get-FileHash '.\SectorFlow_Setup_0.0.6.exe' -Algorithm SHA256"
 ```
 
-SHA-256 do instalador 0.0.6 gerado em 30/08/2026:
+SHA-256 do instalador 0.0.6 (será preenchido após o build final):
 
 ```text
 O hash será preenchido após a geração final do instalador.

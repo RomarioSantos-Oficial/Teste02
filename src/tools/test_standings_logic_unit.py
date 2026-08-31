@@ -448,6 +448,41 @@ class StandingsLogicUnitTests(unittest.TestCase):
         self.assertEqual(by_name["P4"].gap_text, "+55.1")
         self.assertEqual(by_name["P5"].gap_text, "+1L")
 
+    def test_only_cars_that_actually_lapped_player_show_minus_one_lap(self) -> None:
+        session = SessionData(
+            connected=True,
+            session=10,
+            track_length_m=5000.0,
+            drivers=[
+                DriverData(
+                    slot_id=1, driver_name="Leader", vehicle_class="GT3",
+                    position=1, laps=10, lap_distance_m=1000.0,
+                    time_into_lap_s=20.0, estimated_lap_s=100.0,
+                    laps_behind_leader=0,
+                ),
+                DriverData(
+                    slot_id=2, driver_name="P2", vehicle_class="GT3",
+                    position=2, laps=10, lap_distance_m=0.0,
+                    time_into_lap_s=0.0, estimated_lap_s=100.0,
+                    laps_behind_leader=0,
+                ),
+                DriverData(
+                    slot_id=5, driver_name="Player", vehicle_class="GT3",
+                    position=5, laps=9, lap_distance_m=500.0,
+                    time_into_lap_s=10.0, estimated_lap_s=100.0,
+                    laps_behind_leader=1, is_player=True,
+                ),
+            ],
+        )
+
+        rows = StandingsLogic(
+            {"maximum_categories": 1, "player_category_rows": 5}
+        ).build(session, {}, "MEM").categories[0].rows
+        by_name = {row.driver_name: row for row in rows}
+
+        self.assertEqual(by_name["Leader"].gap_text, "-1L")
+        self.assertEqual(by_name["P2"].gap_text, "-90.0")
+
     def test_gap_and_interval_are_stable_with_player_between_lapped_cars(self) -> None:
         leader = DriverData(
             slot_id=1, driver_name="Leader", vehicle_class="GT3",

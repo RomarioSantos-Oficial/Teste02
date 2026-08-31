@@ -169,6 +169,19 @@ class StandingsLayoutUnitTests(unittest.TestCase):
         self.assertLess(columns.index("brand"), columns.index("pit"))
         self.assertEqual(columns.index("pit"), columns.index("number") + 1)
 
+    def test_only_str_uses_black_brand_cell_and_full_width_logo(self) -> None:
+        self.assertTrue(StandingsWidget.BRAND_CELL_BLACK_BACKGROUND)
+        self.assertTrue(StandingsWidget.BRAND_LOGO_FILL_WIDTH)
+        self.assertFalse(RelativeWidget.BRAND_CELL_BLACK_BACKGROUND)
+        self.assertFalse(RelativeWidget.BRAND_LOGO_FILL_WIDTH)
+
+        cell = QRectF(12.0, 5.0, 72.0, 40.0)
+        target = StandingsWidget._brand_logo_target(cell, 120, 30)
+        self.assertEqual(target.left(), cell.left())
+        self.assertEqual(target.width(), cell.width())
+        self.assertAlmostEqual(target.height(), 18.0)
+        self.assertAlmostEqual(target.center().y(), cell.center().y())
+
     def test_finish_has_highest_priority_in_str_status(self) -> None:
         row = StandingRow(
             finish_status=1,
@@ -183,6 +196,12 @@ class StandingsLayoutUnitTests(unittest.TestCase):
     def test_relative_does_not_move_finish_to_penalty_column(self) -> None:
         row = StandingRow(finish_status=1, in_garage=True)
         self.assertEqual(RelativeWidget._automatic_status_kind(row), "garage")
+
+    def test_invalid_lap_is_not_shown_in_external_penalty_column(self) -> None:
+        row = StandingRow(current_lap_invalidated=True)
+        self.assertEqual(StandingsWidget._automatic_status_kind(row, False), "")
+        self.assertEqual(RelativeWidget._automatic_status_kind(row, False), "")
+        self.assertEqual(StandingsWidget._automatic_status_kind(row, True), "invalid")
 
     def test_driver_width_delta_is_exact(self) -> None:
         previous = {"column_widths": {"driver": 108.0, "brand": 52.0}}

@@ -1282,10 +1282,6 @@ class StandingsLogic:
             return "0.0" if row.is_player else "P1"
         track_length = float(getattr(session, "track_length_m", 0.0) or 0.0)
         official_lap_relation = _official_lap_relation(row, reference)
-        if official_lap_relation:
-            # Mantém o mesmo sinal usado nos segundos: frente -, atrás +.
-            return f"{official_lap_relation:+d}L"
-
         row_progress = _race_progress(row, track_length)
         reference_progress = _race_progress(reference, track_length)
         progress_delta = (
@@ -1293,16 +1289,28 @@ class StandingsLogic:
             if row_progress is not None and reference_progress is not None
             else None
         )
-        if official_lap_relation is None:
-            # Valores negativos de lapsBehindLeader são transitórios na linha.
-            # Só o progresso completo pode confirmar uma volta nesse caso.
-            if progress_delta is not None and abs(progress_delta) >= 1.0:
+        # lapsBehindLeader compara cada carro exclusivamente ao líder. Quando
+        # o líder ultrapassa o jogador, os outros carros ainda na volta dele
+        # aparentam -1L contra o jogador antes de ultrapassá-lo. No GAP
+        # individual de um carro à frente, a volta só é confirmada pelo
+        # progresso entre os pares. O líder e carros atrás preservam a volta
+        # oficial, pois nesses casos o dado não sofre esse efeito cascata.
+        if official_lap_relation and (
+            official_lap_relation > 0
+            or (leader is not None and row.slot_id == leader.slot_id)
+        ):
+            return f"{official_lap_relation:+d}L"
+        if progress_delta is not None:
+            if abs(progress_delta) >= 1.0:
                 completed_laps = max(1, math.floor(abs(progress_delta) + 1e-9))
                 relation = -completed_laps if progress_delta > 0.0 else completed_laps
                 return f"{relation:+d}L"
-            if progress_delta is None and abs(row.laps - reference.laps) >= 1:
-                relation = reference.laps - row.laps
-                return f"{relation:+d}L"
+        elif official_lap_relation:
+            # Sem comprimento de pista, o dado oficial é o fallback seguro.
+            return f"{official_lap_relation:+d}L"
+        elif official_lap_relation is None and abs(row.laps - reference.laps) >= 1:
+            relation = reference.laps - row.laps
+            return f"{relation:+d}L"
 
         # timeBehindLeader só possui uma base comparável quando o LMU confirma
         # que os dois carros estão na mesma volta relativa ao líder.
@@ -1317,6 +1325,10 @@ class StandingsLogic:
                 # Durante o único tick inválido da linha ainda é melhor manter
                 # o pequeno gap oficial do que apagar a informação.
                 gap = row.gap_leader_s - reference.gap_leader_s
+            elif official_lap_relation != 0:
+                # A volta oficial contra o líder não foi confirmada entre este
+                # carro e o jogador e também faltam dados para calcular tempo.
+                return "--"
         if abs(gap) < 0.05:
             return "0.0"
         return f"{gap:+.1f}"

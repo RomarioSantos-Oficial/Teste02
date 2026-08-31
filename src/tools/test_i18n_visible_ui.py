@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (  # noqa: E402
     QWidget,
 )
 
-from src.i18n.translator import LANGUAGES, _load_catalog  # noqa: E402
+from src.i18n.translator import LANGUAGES, _load_catalog, _source_text  # noqa: E402
 from src.ui.main_menu_window import MainMenuWindow  # noqa: E402
 from src.widget.battery.battery_editor import BatteryEditor  # noqa: E402
 from src.widget.damage.damage_editor import DamageEditor  # noqa: E402
@@ -119,7 +119,7 @@ class VisibleUiTranslationTests(unittest.TestCase):
             editor.deleteLater()
 
         return {
-            text
+            _source_text(text)
             for text in texts
             if not TECHNICAL_TEXT.fullmatch(text)
             and text not in TECHNICAL_LABELS

@@ -52,6 +52,8 @@ class StandingsWidget(QWidget):
     DESIGN_HEIGHT = 820.0
     FINISH_FLAG_IN_STATUS_COLUMN = True
     BORROW_INACTIVE_PIT_FOR_DRIVER = True
+    BRAND_CELL_BLACK_BACKGROUND = True
+    BRAND_LOGO_FILL_WIDTH = True
 
     BASE_COLUMNS = (
         ("position", 46.0),
@@ -1195,6 +1197,8 @@ class StandingsWidget(QWidget):
             text = painter.fontMetrics().elidedText(display_name, Qt.TextElideMode.ElideRight, max(1, int(target.width())))
             painter.drawText(target, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, text)
         elif key == "brand":
+            if self.BRAND_CELL_BLACK_BACKGROUND:
+                painter.fillRect(rect, QColor("#000000"))
             pixmap = None
             # No STR a marca permanece visível mesmo depois da chegada. O
             # Relative conserva o comportamento anterior por meio da flag da
@@ -1205,15 +1209,24 @@ class StandingsWidget(QWidget):
                     max(1, int(rect.height() - 2)),
                 )
             if pixmap is None:
+                logo_margin = 0 if self.BRAND_LOGO_FILL_WIDTH else 2
                 pixmap = self.logos.pixmap(
                     row.manufacturer,
-                    max(1, int(rect.width() - 2)),
-                    max(1, int(rect.height() - 2)),
+                    max(1, round(rect.width()) - logo_margin),
+                    max(1, round(rect.height()) - logo_margin),
                 )
             if pixmap is not None:
-                x = rect.center().x() - pixmap.width() / 2
-                y = rect.center().y() - pixmap.height() / 2
-                painter.drawPixmap(int(x), int(y), pixmap)
+                if self.BRAND_LOGO_FILL_WIDTH:
+                    target = self._brand_logo_target(
+                        rect,
+                        pixmap.width(),
+                        pixmap.height(),
+                    )
+                    painter.drawPixmap(target, pixmap, QRectF(pixmap.rect()))
+                else:
+                    x = rect.center().x() - pixmap.width() / 2
+                    y = rect.center().y() - pixmap.height() / 2
+                    painter.drawPixmap(int(x), int(y), pixmap)
             else:
                 self._text(painter, rect, brand_short(row.manufacturer), 0.48, True, QColor(colors.get("brand_text", "#D8E1EA")))
         elif key == "number":
@@ -1350,7 +1363,8 @@ class StandingsWidget(QWidget):
             painter.restore()
             status = type(self)._automatic_status_kind(
                 row,
-                bool(self.config.get("show_invalid_lap_status", True)),
+                bool(self.config.get("show_invalid_lap_status", True))
+                and not bool(self.config.get("detach_penalty_column", True)),
             )
             cell = rect.adjusted(
                 3 * self._scale,
@@ -1441,6 +1455,22 @@ class StandingsWidget(QWidget):
             return int(getattr(row, "finish_status", 0) or 0) == 1
         except (TypeError, ValueError):
             return False
+
+    @staticmethod
+    def _brand_logo_target(
+        rect: QRectF,
+        source_width: int,
+        source_height: int,
+    ) -> QRectF:
+        """Ocupa toda a largura da célula sem deformar o logo."""
+        width = max(1.0, rect.width())
+        height = width * max(1, source_height) / max(1, source_width)
+        return QRectF(
+            rect.left(),
+            rect.center().y() - height / 2.0,
+            width,
+            height,
+        )
 
     @classmethod
     def _automatic_status_kind(

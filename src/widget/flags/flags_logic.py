@@ -74,9 +74,26 @@ class FlagsLogic:
             float(self.config.get("yellow_max_behind_m", 100.0)),
         )
         phase = self._int(session, "game_phase")
-        # FCY so deve ser exibido na fase oficial atual. O estado detalhado
-        # pode permanecer com o ultimo valor durante transicoes da prova.
-        full_course_yellow = phase == 6
+        yellow_state = self._int(session, "yellow_flag_state")
+        yellow_state_name = str(
+            getattr(session, "yellow_flag_state_name", "") or ""
+        ).strip().casefold()
+        yellow_state_token = "".join(
+            character
+            for character in yellow_state_name
+            if character.isalnum() or character == "-"
+        )
+        # mYellowFlagState > 0 também cobre as transições oficiais do FCY:
+        # pendente, boxes fechados/abertos, última volta e retomada.
+        named_full_course_yellow = bool(yellow_state_token) and not (
+            yellow_state_token in {"0", "none", "noflag", "invalid", "-1"}
+            or yellow_state_token.endswith(("none", "noflag", "invalid"))
+        )
+        full_course_yellow = (
+            phase == 6
+            or yellow_state > 0
+            or named_full_course_yellow
+        )
         sector_flags = tuple(getattr(session, "sector_flags", ()) or ())
         # Na memória real do LMU, 1 representa setor sob amarela. Valores
         # como 11 também aparecem durante pista verde e não são amarelas.
@@ -161,9 +178,17 @@ class FlagsLogic:
 
         candidates.sort(key=lambda car: (car.distance < 0.0, abs(car.distance)))
         if not candidates:
-            # Igual ao TinyPedal: uma amarela em outro ponto da pista nao
-            # abre o widget sem um carro lento dentro da distancia definida.
-            return FlagAlert()
+            # A amarela oficial continua visível quando a telemetria não
+            # identifica o carro causador ou ele está fora do alcance.
+            return FlagAlert(
+                active=True,
+                driver="BANDEIRA AMARELA",
+                category="AMARELA",
+                position=0,
+                distance=0.0,
+                tempo_gap=0.0,
+                cars=[],
+            )
 
         target = candidates[0]
         return FlagAlert(
