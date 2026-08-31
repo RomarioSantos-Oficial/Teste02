@@ -356,6 +356,7 @@ class FlagsWidget(QWidget):
         self.blue_ativa = False
         self.green_ativa = False
         self.widget_visivel = False
+        self._session_active = True
         self.tempo_ultima_ativacao = 0.0
         self.ultimo_timestamp = 0
 
@@ -445,6 +446,10 @@ class FlagsWidget(QWidget):
         )
 
         self.yellow_distance_frame = QFrame()
+        self.yellow_distance_frame.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Fixed,
+        )
         self.yellow_distance_layout = QVBoxLayout(
             self.yellow_distance_frame
         )
@@ -480,7 +485,6 @@ class FlagsWidget(QWidget):
         )
         self.yellow_outer.addWidget(
             self.yellow_distance_frame,
-            alignment=Qt.AlignmentFlag.AlignCenter,
         )
         self.yellow_outer.addWidget(
             self.yellow_radar_frame
@@ -534,6 +538,10 @@ class FlagsWidget(QWidget):
         )
 
         self.blue_distance_frame = QFrame()
+        self.blue_distance_frame.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Fixed,
+        )
         self.blue_distance_layout = QVBoxLayout(
             self.blue_distance_frame
         )
@@ -569,7 +577,6 @@ class FlagsWidget(QWidget):
         )
         self.blue_outer.addWidget(
             self.blue_distance_frame,
-            alignment=Qt.AlignmentFlag.AlignCenter,
         )
         self.blue_outer.addWidget(
             self.blue_radar_frame
@@ -1177,23 +1184,25 @@ class FlagsWidget(QWidget):
 
             if yellow.player_is_hazard:
                 self.yellow_distance.setText(
-                    tr("VOCÊ É O PERIGO LOCAL")
+                    "0m | 0.0s"
                 )
             elif not yellow.cars:
                 self.yellow_distance.setText(
-                    tr("ATENÇÃO NA PISTA")
+                    "--m | --s"
                 )
             elif yellow.distance < 0:
+                arrival = self._arrival_text(yellow.tempo_gap)
                 self.yellow_distance.setText(
                     f"{tr('Atrás:')} "
-                    f"{abs(int(yellow.distance))}m | "
-                    f"{yellow.tempo_gap:.1f}s"
+                    f"{abs(int(yellow.distance))}m"
+                    f"{arrival}"
                 )
             else:
+                arrival = self._arrival_text(yellow.tempo_gap)
                 self.yellow_distance.setText(
                     f"{tr('Frente:')} "
-                    f"{int(yellow.distance)}m | "
-                    f"{yellow.tempo_gap:.1f}s"
+                    f"{int(yellow.distance)}m"
+                    f"{arrival}"
                 )
 
             self.yellow_radar.update_radar_data(
@@ -1268,9 +1277,13 @@ class FlagsWidget(QWidget):
                 if blue.position > 0
                 else "---"
             )
-            self.blue_distance.setText(
-                f" {abs(int(blue.distance))}m"
-            )
+            if blue.cars:
+                self.blue_distance.setText(
+                    f"{tr('Atrás:')} {abs(int(blue.distance))}m"
+                    f"{self._arrival_text(blue.tempo_gap)}"
+                )
+            else:
+                self.blue_distance.setText("--m | --s")
             self.blue_radar.update_radar_data(
                 blue.cars
             )
@@ -1294,6 +1307,10 @@ class FlagsWidget(QWidget):
         self.verificar_visibilidade_widget()
         self._schedule_responsive_update()
 
+    @staticmethod
+    def _arrival_text(seconds: float) -> str:
+        return f" | {seconds:.1f}s" if seconds > 0.0 else " | --s"
+
     def verificar_visibilidade_widget(
         self,
     ) -> None:
@@ -1305,15 +1322,27 @@ class FlagsWidget(QWidget):
         )
 
         if self.edit_mode:
-            if not self.widget_visivel:
+            if not self.isVisible():
                 self.show()
-                self.widget_visivel = True
+            self.widget_visivel = True
+            return
+
+        # O processo isolado é a autoridade para dizer se o jogador está
+        # realmente dirigindo. Fora desse estado, um snapshot antigo jamais
+        # pode reabrir a janela pelo temporizador interno.
+        if not self._session_active:
+            if self.isVisible():
+                self.hide()
+            self.widget_visivel = False
             return
 
         if alguma_ativa:
-            if not self.widget_visivel:
+            # O host do processo isolado pode ocultar a janela durante uma
+            # transição de sessão sem alterar widget_visivel. Verificar o
+            # estado real evita que a próxima bandeira fique invisível.
+            if not self.isVisible():
                 self.show()
-                self.widget_visivel = True
+            self.widget_visivel = True
 
             self.tempo_ultima_ativacao = agora
             return
@@ -1324,9 +1353,9 @@ class FlagsWidget(QWidget):
                 True,
             )
         ):
-            if not self.widget_visivel:
+            if not self.isVisible():
                 self.show()
-                self.widget_visivel = True
+            self.widget_visivel = True
             return
 
         duracao = max(
@@ -1401,6 +1430,21 @@ class FlagsWidget(QWidget):
                 self.widget_visivel = True
 
         self.update()
+
+    def set_session_active(self, active: bool) -> None:
+        active = bool(active)
+        if active == self._session_active:
+            return
+
+        self._session_active = active
+        if not active:
+            if self.edit_mode:
+                return
+            # Limpa também os indicadores internos. Assim o timer de 100 ms
+            # não disputa show()/hide() com o host isolado de 16 ms.
+            self.reset_session_state()
+            self.hide()
+            self.widget_visivel = False
 
     def closeEvent(self, event) -> None:
         self.visibility_timer.stop()

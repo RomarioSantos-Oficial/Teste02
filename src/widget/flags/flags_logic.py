@@ -74,26 +74,10 @@ class FlagsLogic:
             float(self.config.get("yellow_max_behind_m", 100.0)),
         )
         phase = self._int(session, "game_phase")
-        yellow_state = self._int(session, "yellow_flag_state")
-        yellow_state_name = str(
-            getattr(session, "yellow_flag_state_name", "") or ""
-        ).strip().casefold()
-        yellow_state_token = "".join(
-            character
-            for character in yellow_state_name
-            if character.isalnum() or character == "-"
-        )
-        # mYellowFlagState > 0 também cobre as transições oficiais do FCY:
-        # pendente, boxes fechados/abertos, última volta e retomada.
-        named_full_course_yellow = bool(yellow_state_token) and not (
-            yellow_state_token in {"0", "none", "noflag", "invalid", "-1"}
-            or yellow_state_token.endswith(("none", "noflag", "invalid"))
-        )
-        full_course_yellow = (
-            phase == 6
-            or yellow_state > 0
-            or named_full_course_yellow
-        )
+        # O LMU pode conservar mYellowFlagState e os nomes vindos da API
+        # durante transições. A fase 6 é a confirmação oficial de FCY
+        # usada pela versão de referência e não permanece presa no menu.
+        full_course_yellow = phase == 6
         sector_flags = tuple(getattr(session, "sector_flags", ()) or ())
         # Na memória real do LMU, 1 representa setor sob amarela. Valores
         # como 11 também aparecem durante pista verde e não são amarelas.
@@ -123,6 +107,24 @@ class FlagsLogic:
             1.0,
             float(self.config.get("yellow_hazard_speed_kmh", 15.12)),
         )
+        # Um carro que provoca amarela pode continuar em movimento depois de
+        # uma rodada ou contato. O limite fixo de 15,12 km/h descartava esses
+        # casos e removia justamente a distância/chegada mais útil ao piloto.
+        candidate_speed_limit = max(
+            hazard_speed,
+            min(120.0, player_speed * 0.60),
+        )
+        individual_yellow_confirmed = any(
+            self._driver_has_local_yellow(row)
+            for row in self._drivers(session)
+            if not self._in_paddock(row)
+        )
+        # O LMU pode mostrar YEL na interface e ainda publicar flag=0 e
+        # under_yellow=False. Sem confirmação individual, conserva o limite
+        # estrito da versão de referência; com confirmação, aceita o carro
+        # causador ainda em movimento para manter distância e tempo de chegada.
+        if not individual_yellow_confirmed:
+            candidate_speed_limit = hazard_speed
         player_causing_local_yellow = (
             any_sector_yellow
             and player_speed < hazard_speed
@@ -152,9 +154,8 @@ class FlagsLogic:
                 continue
             if self._int(row, "finish_status") != 0:
                 continue
-
             row_speed = max(0.0, self._float(row, "speed_kmh"))
-            if row_speed >= hazard_speed:
+            if row_speed >= candidate_speed_limit:
                 continue
 
             distance = self._signed_track_gap(session, player, row)
@@ -164,12 +165,17 @@ class FlagsLogic:
             elif abs(distance) > behind_limit:
                 continue
 
-            closing_speed_ms = max(1.0, (player_speed - row_speed) / 3.6)
+            closing_speed_ms = (player_speed - row_speed) / 3.6
+            tempo_gap = (
+                distance / closing_speed_ms
+                if distance >= 0.0 and closing_speed_ms > 0.1
+                else 0.0
+            )
             candidates.append(
                 self._to_flag_car(
                     row,
                     distance=distance,
-                    tempo_gap=abs(distance) / closing_speed_ms,
+                    tempo_gap=tempo_gap,
                     raw_pos_x=self._relative_lateral(player, row),
                     raw_pos_y=-distance,
                     is_blue=False,
@@ -178,17 +184,10 @@ class FlagsLogic:
 
         candidates.sort(key=lambda car: (car.distance < 0.0, abs(car.distance)))
         if not candidates:
-            # A amarela oficial continua visível quando a telemetria não
-            # identifica o carro causador ou ele está fora do alcance.
-            return FlagAlert(
-                active=True,
-                driver="BANDEIRA AMARELA",
-                category="AMARELA",
-                position=0,
-                distance=0.0,
-                tempo_gap=0.0,
-                cars=[],
-            )
+            # Igual à versão de referência/TinyPedal: uma amarela em
+            # outro ponto da pista não abre o widget sem perigo confirmado
+            # dentro da distância configurada.
+            return FlagAlert()
 
         target = candidates[0]
         return FlagAlert(
@@ -213,6 +212,7 @@ class FlagsLogic:
             return FlagAlert()
 
         player_position = self._int(player, "position")
+        player_speed = max(0.0, self._float(player, "speed_kmh"))
         candidates: list[FlagCar] = []
         for row in self._drivers(session)[:64]:
             if self._bool(row, "is_player") or self._in_paddock(row):
@@ -229,12 +229,17 @@ class FlagsLogic:
             ):
                 continue
 
+            row_speed = max(0.0, self._float(row, "speed_kmh"))
+            closing_speed_ms = (row_speed - player_speed) / 3.6
             candidates.append(
                 self._to_flag_car(
                     row,
                     distance=distance,
-                    tempo_gap=abs(distance)
-                    / max(1.0, self._float(row, "speed_kmh") / 3.6),
+                    tempo_gap=(
+                        abs(distance) / closing_speed_ms
+                        if closing_speed_ms > 0.1
+                        else 0.0
+                    ),
                     raw_pos_x=self._relative_lateral(player, row),
                     raw_pos_y=-distance,
                     is_blue=True,
@@ -398,6 +403,9 @@ class FlagsLogic:
             or int(getattr(row, "pit_state", 0) or 0) > 0
         )
 
+    def _driver_has_local_yellow(self, row: Any) -> bool:
+        return self._bool(row, "under_yellow") or self._int(row, "flag") in {1, 2}
+
     @staticmethod
     def _drivers(session: Any) -> list[Any]:
         return list(getattr(session, "drivers", []) or [])
@@ -409,6 +417,12 @@ class FlagsLogic:
         )
 
     def _session_allows_flags(self, session: Any) -> bool:
+        if not bool(getattr(session, "connected", True)):
+            return False
+        if bool(getattr(session, "telemetry_paused", False)):
+            return False
+        if self._int(session, "game_phase") in {0, 8, 9}:
+            return False
         session_type = self._int(session, "session")
         return 1 <= session_type <= 8 or 10 <= session_type <= 13
 

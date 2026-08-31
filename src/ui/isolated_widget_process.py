@@ -216,7 +216,7 @@ class _IsolatedWidgetHost:
         self._pending_session: Any | None = None
         self._last_data_update = 0.0
         self._last_edit_mode = False
-        self._last_driving = False
+        self._last_driving: bool | None = None
         self._last_config_check = 0.0
         self._config_mtime_ns = self._mtime_ns()
         self._closed = False
@@ -339,6 +339,12 @@ class _IsolatedWidgetHost:
         editing = bool(self.edit_mode.value)
         driving = bool(self.session_active.value)
         enabled = bool(self.config.get("enabled", False))
+
+        if driving != self._last_driving and hasattr(
+            self.widget,
+            "set_session_active",
+        ):
+            self.widget.set_session_active(driving)
 
         if editing != self._last_edit_mode:
             self._last_edit_mode = editing

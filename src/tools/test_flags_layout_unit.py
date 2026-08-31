@@ -10,6 +10,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6.QtCore import QPoint
 from PySide6.QtWidgets import QApplication
 
+from src.telemetry.models import DriverData, SessionData
 from src.ui.overlay_manager import OverlayManager
 from src.widget.flags.flags_widget import FlagsWidget
 
@@ -78,6 +79,120 @@ class FlagsLayoutUnitTests(unittest.TestCase):
             OverlayManager._geometry_minimum_ratios("flags"),
             (0.01, 0.01),
         )
+
+    def test_yellow_reopens_after_isolated_host_hid_window(self) -> None:
+        widget = FlagsWidget("flags", self._config())
+        widget.show()
+        widget.widget_visivel = True
+        widget.hide()
+        session = SessionData(
+            connected=True,
+            session=10,
+            game_phase=5,
+            track_length_m=5000.0,
+            sector_flags=(1, 0, 0),
+            drivers=[
+                DriverData(
+                    slot_id=1,
+                    driver_name="Player",
+                    vehicle_class="LMGT3",
+                    position=1,
+                    is_player=True,
+                    speed_kmh=180.0,
+                    lap_distance_m=1000.0,
+                ),
+                DriverData(
+                    slot_id=2,
+                    driver_name="Confirmed Hazard",
+                    vehicle_class="LMGT3",
+                    position=2,
+                    speed_kmh=60.0,
+                    lap_distance_m=1300.0,
+                    under_yellow=True,
+                ),
+            ],
+        )
+
+        widget.update_from_session(session)
+        self.app.processEvents()
+
+        self.assertTrue(widget.yellow_ativa)
+        self.assertTrue(widget.isVisible())
+        widget.close()
+
+    def test_compact_distance_panel_keeps_width_and_self_hazard_values(self) -> None:
+        widget = FlagsWidget("flags", self._config())
+        widget.resize(176, max(50, widget.height()))
+        session = SessionData(
+            connected=True,
+            session=10,
+            game_phase=5,
+            track_length_m=5000.0,
+            sector_flags=(1, 0, 0),
+            drivers=[
+                DriverData(
+                    slot_id=1,
+                    driver_name="Player",
+                    vehicle_class="HYPER",
+                    position=15,
+                    is_player=True,
+                    speed_kmh=0.0,
+                    lap_distance_m=1000.0,
+                    under_yellow=True,
+                )
+            ],
+        )
+
+        widget.update_from_session(session)
+        widget._apply_responsive_metrics()
+        self.app.processEvents()
+
+        self.assertEqual(widget.yellow_distance.text(), "0m | 0.0s")
+        self.assertGreater(widget.yellow_distance_frame.width(), 100)
+        widget.close()
+
+    def test_inactive_session_clears_stale_flag_and_prevents_reopen(self) -> None:
+        widget = FlagsWidget("flags", self._config())
+        session = SessionData(
+            connected=True,
+            session=10,
+            game_phase=5,
+            track_length_m=5000.0,
+            sector_flags=(1, 0, 0),
+            drivers=[
+                DriverData(
+                    slot_id=1,
+                    driver_name="Player",
+                    vehicle_class="HYPER",
+                    position=1,
+                    is_player=True,
+                    speed_kmh=180.0,
+                    lap_distance_m=1000.0,
+                ),
+                DriverData(
+                    slot_id=2,
+                    driver_name="Confirmed Hazard",
+                    vehicle_class="HYPER",
+                    position=2,
+                    speed_kmh=30.0,
+                    lap_distance_m=1200.0,
+                    under_yellow=True,
+                ),
+            ],
+        )
+
+        widget.update_from_session(session)
+        self.app.processEvents()
+        self.assertTrue(widget.isVisible())
+
+        widget.set_session_active(False)
+        widget.verificar_visibilidade_widget()
+        self.app.processEvents()
+
+        self.assertFalse(widget.yellow_ativa)
+        self.assertFalse(widget.widget_visivel)
+        self.assertFalse(widget.isVisible())
+        widget.close()
 
 
 if __name__ == "__main__":
