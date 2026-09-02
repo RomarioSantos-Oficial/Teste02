@@ -22,6 +22,7 @@ from src.widget.relative.relative_widget import RelativeWidget
 from src.widget.tyres.tyres_widget import TyresWidget
 from src.widget.weather.weather_widget import WeatherWidget
 from src.widget.map.map_widget import TrackMapWidget
+from src.widget.standings.delta_history_store import DeltaHistoryStore
 from src.widget.standings.standings_widget import StandingsWidget
 from src.widget.standings.lmu_online_client import LMUOnlineIdentityClient
 from src.widget.standings.standings_online import LocalStandingsEnrichment
@@ -74,6 +75,19 @@ class OverlayManager(QObject):
         self.external_driver_panel = "driver_panel" in self.external_widget_ids
         self.config_data = self._load_config()
         self._ensure_profiles()
+        self._delta_history_path = (
+            self.config_path.parent
+            / "session_cache"
+            / "standings_delta_history.json"
+        )
+        standings_config = self.config_data.get("widgets", {}).get(
+            "standings", {}
+        )
+        if not (
+            bool(standings_config.get("enabled", False))
+            and bool(standings_config.get("show_delta", False))
+        ):
+            DeltaHistoryStore(self._delta_history_path).delete()
         self.widgets: dict[str, QWidget] = {}
         self.session_active = False
         self.edit_mode = False
@@ -331,6 +345,7 @@ class OverlayManager(QObject):
         if isinstance(existing, StandingsWidget):
             return existing
         config = deepcopy(self.config_data["widgets"]["standings"])
+        config["_delta_history_path"] = str(self._delta_history_path)
         enrichment, online = self._standings_services(config)
         widget = StandingsWidget(
             "standings",
@@ -571,6 +586,11 @@ class OverlayManager(QObject):
 
     def update_session_data(self, session: Any) -> None:
         self._update_split_server_lifecycle(session)
+        standings = self.widgets.get("standings")
+        if standings is not None and hasattr(
+            standings, "observe_session_lifecycle"
+        ):
+            standings.observe_session_lifecycle(session)
         was_active = self.session_active
         allowed = self._session_allows_overlays(session)
         if allowed and not was_active:

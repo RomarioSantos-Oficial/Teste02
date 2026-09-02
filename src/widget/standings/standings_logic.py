@@ -12,13 +12,15 @@
 
 from __future__ import annotations
 
+import hashlib
 import math
 import re
 import time
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any
 
+from .delta_history_store import DeltaHistoryStore, SCHEMA_VERSION
 from .standings_assets import detect_manufacturer
 from .standings_models import (
     CategoryBlock,
@@ -37,6 +39,12 @@ CLASS_RULES = (
     ("LMGT3", ("lmgt3", "gt3"), "#058B12"),
     ("LMGT4", ("lmgt4", "gt4"), "#D98200"),
 )
+
+
+@dataclass(frozen=True, slots=True)
+class DeltaLapSample:
+    lap_number: int
+    time_s: float
 
 
 def _truncate_tenth(value: float) -> float:
@@ -144,8 +152,16 @@ def format_driver_name(value: Any, mode: str = "full") -> str:
 
 
 class StandingsLogic:
-    def __init__(self, config: dict[str, Any]) -> None:
+    def __init__(
+        self,
+        config: dict[str, Any],
+        *,
+        delta_history_store: DeltaHistoryStore | None = None,
+    ) -> None:
         self.config = config
+        self._delta_history_store = delta_history_store
+        self._delta_store_empty = delta_history_store is None
+        self._delta_config_enabled = self._delta_feature_enabled(config)
         self._session_key = ""
         self._start_overall: dict[int, int] = {}
         self._start_class: dict[int, int] = {}
@@ -158,13 +174,30 @@ class StandingsLogic:
         self._observed_laps_once = False
         self._race_totals: dict[str, int] = {}
         self._last_current_time = 0.0
-        self._delta_seen_laps: dict[int, int] = {}
-        self._delta_lap_history: dict[int, list[float]] = {}
+        self._delta_seen_laps: dict[str, int] = {}
+        self._delta_lap_history: dict[str, list[DeltaLapSample]] = {}
+        self._delta_driver_classes: dict[str, str] = {}
+        self._delta_restore_attempted = False
+        self._delta_player_class = ""
+        self._delta_menu_since: float | None = None
+        if self._delta_history_store is not None and not self._delta_config_enabled:
+            self._delta_history_store.delete()
+            self._delta_store_empty = True
 
     def update_config(self, config: dict[str, Any]) -> None:
         self.config = config
+        enabled = self._delta_feature_enabled(config)
+        if enabled != self._delta_config_enabled:
+            self._clear_delta_history(delete_persisted=True)
+            self._delta_restore_attempted = enabled
+        self._delta_config_enabled = enabled
 
-    def reset(self) -> None:
+    def reset(self, *, clear_persisted: bool = True) -> None:
+        self._reset_runtime_state()
+        if clear_persisted:
+            self._delete_delta_store()
+
+    def _reset_runtime_state(self) -> None:
         self._session_key = ""
         self._start_overall.clear()
         self._start_class.clear()
@@ -179,6 +212,14 @@ class StandingsLogic:
         self._last_current_time = 0.0
         self._delta_seen_laps.clear()
         self._delta_lap_history.clear()
+        self._delta_driver_classes.clear()
+        self._delta_restore_attempted = False
+        self._delta_player_class = ""
+        self._delta_menu_since = None
+
+    def close(self) -> None:
+        if self._delta_history_store is not None:
+            self._delta_history_store.close(flush=True)
 
     def build(
         self,
@@ -191,7 +232,10 @@ class StandingsLogic:
             return StandingsView(source_text=source_text)
         key = self._make_session_key(session)
         if self._session_changed(key, session):
-            self.reset()
+            previous_key = self._session_key
+            self._reset_runtime_state()
+            if previous_key:
+                self._delete_delta_store()
             self._session_key = key
         now = time.monotonic()
         drivers = sorted(
@@ -219,12 +263,26 @@ class StandingsLogic:
             self._estimate_driver_rank_gains(rows)
         self._apply_lap_states(rows, now)
         session_number = int(getattr(session, "session", 0) or 0)
-        if 10 <= session_number <= 13:
-            self._update_delta_lap_history(rows)
+        player = next((row for row in rows if row.is_player), None)
+        delta_active = (
+            self._delta_config_enabled
+            and 10 <= session_number <= 13
+            and not bool(getattr(session, "race_finished", False))
+            and player is not None
+        )
+        if delta_active and player is not None:
+            if self._delta_player_class and self._delta_player_class != player.class_key:
+                self._clear_delta_history(delete_persisted=True)
+                self._delta_restore_attempted = True
+            self._delta_player_class = player.class_key
+            self._restore_delta_history(session, rows)
+            if self._update_delta_lap_history(rows, player.class_key):
+                self._persist_delta_history(session)
+        else:
+            self._clear_delta_history(delete_persisted=True)
         self._last_current_time = float(
             getattr(session, "current_time_s", 0.0) or 0.0
         )
-        player = next((row for row in rows if row.is_player), None)
         class_leaders = self._class_leaders(rows)
         for row in rows:
             row.gap_text = self._gap_text(row, player, class_leaders.get(row.class_key), session)
@@ -252,28 +310,273 @@ class StandingsLogic:
             categories=categories,
         )
 
-    def _update_delta_lap_history(self, rows: list[StandingRow]) -> None:
-        """Guarda os tempos das ultimas voltas de cada piloto."""
+    @staticmethod
+    def _delta_feature_enabled(config: dict[str, Any]) -> bool:
+        return bool(config.get("enabled", True)) and bool(
+            config.get("show_delta", False)
+        )
+
+    def _clear_delta_history(self, *, delete_persisted: bool) -> None:
+        self._delta_seen_laps.clear()
+        self._delta_lap_history.clear()
+        self._delta_driver_classes.clear()
+        self._delta_restore_attempted = False
+        self._delta_player_class = ""
+        self._delta_menu_since = None
+        if delete_persisted:
+            self._delete_delta_store()
+
+    def _delete_delta_store(self) -> None:
+        if self._delta_history_store is None or self._delta_store_empty:
+            return
+        self._delta_history_store.delete()
+        self._delta_store_empty = True
+
+    def observe_session_lifecycle(self, session: Any) -> None:
+        """Limpa no fim real sem confundir uma falha breve de telemetria."""
+        if self._delta_history_store is None:
+            return
+        if not self._delta_config_enabled:
+            self._clear_delta_history(delete_persisted=True)
+            return
+        if bool(getattr(session, "race_finished", False)):
+            self._clear_delta_history(delete_persisted=True)
+            return
+        if not bool(getattr(session, "connected", False)):
+            self._delta_menu_since = None
+            return
+        session_number = int(getattr(session, "session", 0) or 0)
+        location = int(getattr(session, "application_location", 0) or 0)
+        if not 10 <= session_number <= 13:
+            self._clear_delta_history(delete_persisted=True)
+            return
+        if location == 0:
+            now = time.monotonic()
+            if self._delta_menu_since is None:
+                self._delta_menu_since = now
+            elif now - self._delta_menu_since >= 2.0:
+                self._clear_delta_history(delete_persisted=True)
+            return
+        self._delta_menu_since = None
+        key = self._make_session_key(session)
+        if self._session_key and key != self._session_key:
+            self._clear_delta_history(delete_persisted=True)
+
+    def _update_delta_lap_history(
+        self,
+        rows: list[StandingRow],
+        player_class: str,
+    ) -> bool:
+        """Guarda numero e tempo das dez ultimas voltas observadas."""
+        changed = False
         for row in rows:
-            slot = row.slot_id
+            if row.class_key != player_class or not row.delta_identity:
+                continue
+            identity = row.delta_identity
             completed = max(0, int(row.laps))
-            previous = self._delta_seen_laps.get(slot)
+            lap_time = float(row.last_lap_s or 0.0)
+            valid_lap_time = (
+                completed > 0
+                and math.isfinite(lap_time)
+                and 10.0 <= lap_time <= 1800.0
+            )
+            self._delta_driver_classes[identity] = row.class_key
+            previous = self._delta_seen_laps.get(identity)
             if previous is None:
-                self._delta_seen_laps[slot] = completed
-                self._delta_lap_history.setdefault(slot, [])
+                self._delta_seen_laps[identity] = completed
+                history = self._delta_lap_history.setdefault(identity, [])
+                if valid_lap_time:
+                    history.append(DeltaLapSample(completed, lap_time))
+                changed = True
                 continue
             if completed < previous:
-                self._delta_seen_laps[slot] = completed
-                self._delta_lap_history[slot] = []
+                self._delta_seen_laps[identity] = completed
+                self._delta_lap_history[identity] = []
+                changed = True
                 continue
+            history = self._delta_lap_history.setdefault(identity, [])
             if completed == previous:
+                # Versoes anteriores podiam salvar last_seen_lap sem guardar a
+                # primeira volta. Recupera a volta oficial atual assim que o
+                # tempo estiver disponivel, sem esperar a volta seguinte.
+                if (
+                    valid_lap_time
+                    and not any(
+                        sample.lap_number == completed for sample in history
+                    )
+                ):
+                    history.append(DeltaLapSample(completed, lap_time))
+                    history.sort(key=lambda sample: sample.lap_number)
+                    del history[:-10]
+                    changed = True
                 continue
-            lap_time = float(row.last_lap_s or 0.0)
-            if math.isfinite(lap_time) and 10.0 <= lap_time <= 1800.0:
-                history = self._delta_lap_history.setdefault(slot, [])
-                history.append(lap_time)
+            if valid_lap_time:
+                history[:] = [
+                    sample for sample in history
+                    if sample.lap_number != completed
+                ]
+                history.append(DeltaLapSample(completed, lap_time))
+                history.sort(key=lambda sample: sample.lap_number)
                 del history[:-10]
-            self._delta_seen_laps[slot] = completed
+            self._delta_seen_laps[identity] = completed
+            changed = True
+        return changed
+
+    def _restore_delta_history(
+        self,
+        session: Any,
+        rows: list[StandingRow],
+    ) -> None:
+        store = self._delta_history_store
+        if store is None or self._delta_restore_attempted:
+            return
+        current_time = float(getattr(session, "current_time_s", 0.0) or 0.0)
+        start_time = float(getattr(session, "start_event_time_s", 0.0) or 0.0)
+        if current_time <= 0.0 and start_time <= 0.0:
+            return
+        self._delta_restore_attempted = True
+        payload = store.load()
+        if payload is None:
+            self._delta_store_empty = True
+            return
+        self._delta_store_empty = False
+        if not self._delta_saved_session_matches(payload, session):
+            self._delete_delta_store()
+            return
+        raw_drivers = payload.get("drivers")
+        if not isinstance(raw_drivers, dict):
+            self._delete_delta_store()
+            return
+        current_identities = {
+            row.delta_identity for row in rows if row.delta_identity
+        }
+        restored = False
+        for identity, raw_entry in raw_drivers.items():
+            if not isinstance(identity, str) or not isinstance(raw_entry, dict):
+                continue
+            if identity not in current_identities:
+                # Conserva quem pode voltar durante a mesma corrida, mas nao
+                # usa dados sem uma identidade valida no quadro atual.
+                continue
+            class_key = str(raw_entry.get("class", "") or "")
+            if class_key != self._delta_player_class:
+                continue
+            try:
+                seen_lap = max(0, int(raw_entry.get("last_seen_lap", 0)))
+            except (TypeError, ValueError):
+                continue
+            samples_by_lap: dict[int, DeltaLapSample] = {}
+            raw_laps = raw_entry.get("laps", [])
+            if isinstance(raw_laps, list):
+                for raw_sample in raw_laps:
+                    if not isinstance(raw_sample, dict):
+                        continue
+                    try:
+                        lap_number = int(raw_sample.get("number", -1))
+                        lap_time = float(raw_sample.get("time_s", 0.0))
+                    except (TypeError, ValueError):
+                        continue
+                    if (
+                        0 <= lap_number <= seen_lap
+                        and math.isfinite(lap_time)
+                        and 10.0 <= lap_time <= 1800.0
+                    ):
+                        samples_by_lap[lap_number] = DeltaLapSample(
+                            lap_number,
+                            lap_time,
+                        )
+            self._delta_seen_laps[identity] = seen_lap
+            self._delta_lap_history[identity] = sorted(
+                samples_by_lap.values(),
+                key=lambda sample: sample.lap_number,
+            )[-10:]
+            self._delta_driver_classes[identity] = class_key
+            restored = True
+        if not restored:
+            self._delete_delta_store()
+
+    def _delta_saved_session_matches(
+        self,
+        payload: dict[str, Any],
+        session: Any,
+    ) -> bool:
+        try:
+            schema_version = int(payload.get("schema_version", 0) or 0)
+        except (TypeError, ValueError):
+            return False
+        if schema_version != SCHEMA_VERSION:
+            return False
+        raw_session = payload.get("session")
+        if not isinstance(raw_session, dict):
+            return False
+        if str(raw_session.get("key", "") or "") != self._session_key:
+            return False
+        saved_server = str(raw_session.get("server", "") or "").strip()
+        current_server = str(getattr(session, "server_name", "") or "").strip()
+        if saved_server and current_server and saved_server != current_server:
+            return False
+        try:
+            saved_start = float(raw_session.get("start_event_time_s", 0.0) or 0.0)
+            current_start = float(
+                getattr(session, "start_event_time_s", 0.0) or 0.0
+            )
+            saved_current = float(raw_session.get("current_time_s", 0.0) or 0.0)
+            current_time = float(getattr(session, "current_time_s", 0.0) or 0.0)
+            saved_at = float(payload.get("saved_at", 0.0) or 0.0)
+        except (TypeError, ValueError):
+            return False
+        if (
+            saved_start > 0.0
+            and current_start > 0.0
+            and abs(saved_start - current_start) > 2.0
+        ):
+            return False
+        if saved_current > 0.0 and current_time + 5.0 < saved_current:
+            return False
+        if saved_at > 0.0 and time.time() - saved_at > 72.0 * 3600.0:
+            return False
+        return True
+
+    def _persist_delta_history(self, session: Any) -> None:
+        store = self._delta_history_store
+        if store is None or not self._delta_config_enabled:
+            return
+        drivers: dict[str, dict[str, Any]] = {}
+        for identity, seen_lap in self._delta_seen_laps.items():
+            class_key = self._delta_driver_classes.get(identity, "")
+            if class_key != self._delta_player_class:
+                continue
+            drivers[identity] = {
+                "class": class_key,
+                "last_seen_lap": int(seen_lap),
+                "laps": [
+                    {
+                        "number": sample.lap_number,
+                        "time_s": round(sample.time_s, 6),
+                    }
+                    for sample in self._delta_lap_history.get(identity, [])[-10:]
+                ],
+            }
+        payload = {
+            "schema_version": SCHEMA_VERSION,
+            "saved_at": time.time(),
+            "session": {
+                "key": self._session_key,
+                "track": str(getattr(session, "track_name", "") or ""),
+                "session_number": int(getattr(session, "session", 0) or 0),
+                "max_laps": int(getattr(session, "max_laps", 0) or 0),
+                "server": str(getattr(session, "server_name", "") or ""),
+                "start_event_time_s": float(
+                    getattr(session, "start_event_time_s", 0.0) or 0.0
+                ),
+                "current_time_s": float(
+                    getattr(session, "current_time_s", 0.0) or 0.0
+                ),
+            },
+            "drivers": drivers,
+        }
+        store.schedule_save(payload)
+        self._delta_store_empty = False
 
     def _apply_rolling_deltas(
         self,
@@ -283,13 +586,13 @@ class StandingsLogic:
         if player is None:
             return
         sample = max(1, min(10, int(self.config.get("delta_sample_laps", 5))))
-        player_history = self._delta_lap_history.get(player.slot_id, [])
+        player_history = self._delta_lap_history.get(player.delta_identity, [])
         for row in rows:
             row.rolling_delta_s = None
             row.rolling_delta_text = "--"
             if row.class_key != player.class_key:
                 continue
-            rival_history = self._delta_lap_history.get(row.slot_id, [])
+            rival_history = self._delta_lap_history.get(row.delta_identity, [])
             available = min(sample, len(player_history), len(rival_history))
             if available <= 0:
                 continue
@@ -299,7 +602,7 @@ class StandingsLogic:
             # positivo significa que, em media, o rival gastou mais tempo que
             # o jogador. Isto e independente do INT instantaneo na pista.
             lap_differences = [
-                rival_lap - player_lap
+                rival_lap.time_s - player_lap.time_s
                 for player_lap, rival_lap in zip(player_laps, rival_laps)
             ]
             value = sum(lap_differences) / available
@@ -560,6 +863,26 @@ class StandingsLogic:
         capacity = _optional_float(capacities.get(capacity_key)) or fallback
         return fraction * capacity, fraction * 100.0, True
 
+    def _delta_identity(
+        self,
+        driver: Any,
+        slot_id: int,
+        driver_name: str,
+    ) -> str:
+        steam_id = str(getattr(driver, "steam_id", "") or "").strip()
+        if steam_id:
+            source = f"steam:{steam_id}"
+        else:
+            source = "|".join((
+                f"slot:{slot_id}",
+                normalize_identity(driver_name),
+                str(getattr(driver, "car_number", "") or "").strip(),
+                str(getattr(driver, "vehicle_filename", "") or "").strip(),
+            ))
+        return hashlib.sha256(
+            f"{self._session_key}|{source}".encode("utf-8", errors="replace")
+        ).hexdigest()[:24]
+
     def _row_from_driver(
         self,
         driver: Any,
@@ -774,6 +1097,7 @@ class StandingsLogic:
                 tyre_compounds = (str(extra.tyre_compound).strip(),) * 4
         return StandingRow(
             slot_id=slot_id,
+            delta_identity=self._delta_identity(driver, slot_id, name),
             overall_position=overall,
             class_position=class_position,
             position_change=change,

@@ -53,6 +53,7 @@ class DriverMetadata:
 @dataclass(slots=True)
 class StandingRow:
     slot_id: int = 0
+    delta_identity: str = ""
     overall_position: int = 0
     class_position: int = 0
     position_change: int = 0

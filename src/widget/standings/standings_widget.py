@@ -31,6 +31,7 @@ from .standings_assets import (
     flag_emoji,
     publish_driver_country,
 )
+from .delta_history_store import DeltaHistoryStore
 from .lmu_online_client import LMUOnlineIdentityClient
 from .standings_logic import StandingsLogic, canonical_class, format_driver_name
 from .standings_models import (
@@ -102,7 +103,17 @@ class StandingsWidget(QWidget):
         super().__init__(parent)
         self.widget_id = widget_id
         self.config = config
-        self.logic = StandingsLogic(config)
+        delta_history_store = None
+        if widget_id == "standings":
+            configured_history_path = config.get("_delta_history_path")
+            delta_history_store = DeltaHistoryStore(
+                configured_history_path or None,
+                debounce_s=float(config.get("_delta_history_debounce_s", 0.5)),
+            )
+        self.logic = StandingsLogic(
+            config,
+            delta_history_store=delta_history_store,
+        )
         self._owns_enrichment = shared_enrichment is None
         self._owns_online_client = shared_online_client is None
         self.enrichment = shared_enrichment or LocalStandingsEnrichment(PROJECT_ROOT, config)
@@ -402,6 +413,9 @@ class StandingsWidget(QWidget):
         self.online_client.trigger_refresh(session)
         self._rebuild()
 
+    def observe_session_lifecycle(self, session: Any) -> None:
+        self.logic.observe_session_lifecycle(session)
+
     def set_preview_data(self, session: Any, metadata: list[DriverMetadata]) -> None:
         self.preview_mode = True
         self.session = session
@@ -424,6 +438,7 @@ class StandingsWidget(QWidget):
 
     def closeEvent(self, event) -> None:
         self.timer.stop()
+        self.logic.close()
         if self._owns_enrichment:
             self.enrichment.stop()
         self.flags.stop()
