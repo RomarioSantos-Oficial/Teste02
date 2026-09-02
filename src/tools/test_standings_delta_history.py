@@ -80,7 +80,7 @@ class StandingsDeltaHistoryTests(unittest.TestCase):
 
         self.assertEqual(
             observed,
-            ["+1.0", "+1.5", "+2.0", "+2.5", "+3.0", "+4.0"],
+            ["+1.0", "+3.0", "+6.0", "+10.0", "+15.0", "+20.0"],
         )
 
     def test_first_observed_completed_lap_is_used_immediately(self) -> None:
@@ -173,7 +173,7 @@ class StandingsDeltaHistoryTests(unittest.TestCase):
                 self._config(),
                 delta_history_store=DeltaHistoryStore(path, debounce_s=0.0),
             )
-            self.assertEqual(self._rival_delta(restored, session), "+1.5")
+            self.assertEqual(self._rival_delta(restored, session), "+3.0")
             restored.close()
 
             different_session = StandingsLogic(

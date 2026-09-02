@@ -598,14 +598,15 @@ class StandingsLogic:
                 continue
             player_laps = player_history[-available:]
             rival_laps = rival_history[-available:]
-            # Compara volta a volta e mostra a media da amostragem. Um valor
-            # positivo significa que, em media, o rival gastou mais tempo que
-            # o jogador. Isto e independente do INT instantaneo na pista.
+            # Compara volta a volta e mostra o total acumulado da amostragem.
+            # Um valor positivo significa que o rival gastou mais tempo que o
+            # jogador no conjunto das voltas. Isto e independente do INT
+            # instantaneo na pista.
             lap_differences = [
                 rival_lap.time_s - player_lap.time_s
                 for player_lap, rival_lap in zip(player_laps, rival_laps)
             ]
-            value = sum(lap_differences) / available
+            value = sum(lap_differences)
             rounded = round(value, 1)
             if abs(rounded) < 0.05:
                 rounded = 0.0

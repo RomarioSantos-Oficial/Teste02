@@ -671,7 +671,7 @@ class StandingsLogicUnitTests(unittest.TestCase):
         row = StandingsLogic({}).build(session, {}, "MEM").categories[0].rows[0]
         self.assertEqual(row.penalty_text, "PEN")
 
-    def test_rolling_delta_averages_recent_lap_times_not_interval(self) -> None:
+    def test_rolling_delta_totals_recent_lap_times_not_interval(self) -> None:
         player = DriverData(
             slot_id=1, driver_name="Player", vehicle_class="LMGT3",
             position=2, laps=0, gap_leader_s=10.0, is_player=True,
@@ -688,7 +688,7 @@ class StandingsLogicUnitTests(unittest.TestCase):
         logic.build(session, {}, "MEM")
 
         # Diferencas por volta: +0.3, +1.1 e +0.6. A coluna deve
-        # progredir com 1/2/3 voltas e terminar na media +0.7.
+        # progredir com 1/2/3 voltas e terminar no total +2.0.
         lap_pairs = ((70.0, 70.3), (71.0, 72.1), (69.0, 69.6))
         for lap_number, (player_time, rival_time) in enumerate(lap_pairs, 1):
             player.laps = rival.laps = lap_number
@@ -700,7 +700,7 @@ class StandingsLogicUnitTests(unittest.TestCase):
             view = logic.build(session, {}, "MEM")
 
         row = next(r for r in view.categories[0].rows if r.slot_id == 2)
-        self.assertEqual(row.rolling_delta_text, "+0.7")
+        self.assertEqual(row.rolling_delta_text, "+2.0")
         self.assertNotEqual(row.rolling_delta_text, row.interval_text)
 
 
