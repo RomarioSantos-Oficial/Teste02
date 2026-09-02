@@ -35,6 +35,7 @@ _INNER_TEMPERATURE_SOURCES = {
     "inner_average",
     "inner_center",
     "lmu_weighted",
+    "surface_inner_average",
 }
 
 
@@ -57,7 +58,9 @@ class TyresLogic:
         self.config = config
         self._clock = clock or time.monotonic
         self._gte_vehicle = False
+        self._gt3_vehicle = False
         self._hyper_vehicle = False
+        self._lmp2_vehicle = False
         self._lmp3_vehicle = False
         self._vehicle_identity = ""
         self._temperature_health: dict[int, _TemperatureHealth] = {}
@@ -68,10 +71,14 @@ class TyresLogic:
     ) -> None:
         health_keys = (
             "temperature_source",
-            "gte_temperature_mode",
-            "gte_temperature_source",
+            "gte_profile_mode",
+            "gte_profile_source",
+            "gt3_temperature_mode",
+            "gt3_temperature_source",
             "hyper_temperature_mode",
             "hyper_temperature_source",
+            "lmp2_temperature_mode",
+            "lmp2_temperature_source",
             "lmp3_temperature_mode",
             "lmp3_temperature_source",
             "temperature_stale_fallback_enabled",
@@ -92,7 +99,9 @@ class TyresLogic:
             self._vehicle_identity = identity
             self._temperature_health.clear()
         self._gte_vehicle = self._is_gte_vehicle(player)
+        self._gt3_vehicle = self._is_gt3_vehicle(player)
         self._hyper_vehicle = self._is_hyper_vehicle(player)
+        self._lmp2_vehicle = self._is_lmp2_vehicle(player)
         self._lmp3_vehicle = self._is_lmp3_vehicle(player)
         now = self._clock()
         vehicle_speed_kmh = self._float(player, "speed_kmh")
@@ -187,9 +196,6 @@ class TyresLogic:
         wheel: TyreWheelViewData,
     ) -> float:
         source = self._temperature_source(wheel)
-        gte_mode = self._gte_vehicle and bool(
-            self.config.get("gte_temperature_mode", True)
-        )
 
         # O valor usado pelo MFD/doX combina a carcaça com as três
         # amostras da camada interna. Em alguns GT3 elas ficam muito
@@ -211,8 +217,89 @@ class TyresLogic:
             if weighted_values_valid
             else 0.0
         )
+        # Perfil medido no painel de pneus dos Hypercars do LMU com captura
+        # sincronizada.
+        hyper_panel_weighted = (
+            wheel.carcass_temp_c * 0.42 + wheel.inner_average_c * 0.58
+            if (
+                1.0 < wheel.carcass_temp_c < 300.0
+                and 1.0 < wheel.inner_average_c < 300.0
+            )
+            else 0.0
+        )
+        # Perfil fixo do LMP2 obtido pelo melhor ajuste conjunto das amostras
+        # sincronizadas em baixa e alta velocidade.
+        lmp2_panel_weighted = (
+            wheel.carcass_temp_c * 0.44 + wheel.inner_average_c * 0.56
+            if (
+                1.0 < wheel.carcass_temp_c < 300.0
+                and 1.0 < wheel.inner_average_c < 300.0
+            )
+            else 0.0
+        )
+        surface_average = wheel.surface_average_c
+        inner_average = wheel.inner_average_c
+        # O LMU organiza mTemperature como esquerda/centro/direita no eixo
+        # do carro. Portanto, a borda externa fica à esquerda nos pneus FL/RL
+        # e à direita nos pneus FR/RR.
+        surface_outer = (
+            wheel.surface_left_c
+            if wheel.index in (0, 2)
+            else wheel.surface_right_c
+        )
+        surface_values = (
+            wheel.surface_left_c,
+            wheel.surface_center_c,
+            wheel.surface_right_c,
+        )
+        valid_surface_values = tuple(
+            value for value in surface_values if 1.0 < value < 300.0
+        )
+        surface_peak = max(valid_surface_values, default=0.0)
+        surface_inner_average = (
+            (surface_average + inner_average) * 0.5
+            if (
+                1.0 < surface_average < 300.0
+                and 1.0 < inner_average < 300.0
+            )
+            else 0.0
+        )
 
         candidates = {
+            "hyper_panel_weighted": (
+                hyper_panel_weighted,
+                wheel.carcass_temp_c,
+                wheel.inner_average_c,
+                lmu_weighted,
+                surface_average,
+            ),
+            "lmp2_panel_weighted": (
+                lmp2_panel_weighted,
+                wheel.carcass_temp_c,
+                wheel.inner_average_c,
+                lmu_weighted,
+                surface_average,
+            ),
+            "surface_peak": (
+                surface_peak,
+                surface_average,
+                surface_outer,
+                inner_average,
+                wheel.carcass_temp_c,
+            ),
+            "surface_outer": (
+                surface_outer,
+                surface_average,
+                wheel.surface_center_c,
+                inner_average,
+                wheel.carcass_temp_c,
+            ),
+            "surface_inner_average": (
+                surface_inner_average,
+                surface_average,
+                inner_average,
+                wheel.carcass_temp_c,
+            ),
             "lmu_weighted": (
                 lmu_weighted,
                 wheel.carcass_temp_c,
@@ -253,19 +340,6 @@ class TyresLogic:
 
         for value in values:
             if 1.0 < value < 300.0:
-                if gte_mode:
-                    correction = max(
-                        -40.0,
-                        min(
-                            40.0,
-                            float(
-                                self.config.get(
-                                    "gte_temperature_offset_c", 0.0
-                                )
-                            ),
-                        ),
-                    )
-                    return value + correction
                 return value
 
         return 0.0
@@ -284,21 +358,46 @@ class TyresLogic:
                 self.config.get("lmp3_temperature_source", "inner_average")
             ).lower()
         elif self._gte_vehicle and bool(
-            self.config.get("gte_temperature_mode", True)
+            self.config.get("gte_profile_mode", True)
         ):
+            # No GTE, o valor principal do painel do LMU acompanha o ponto mais
+            # quente das três amostras da superfície. A posição desse ponto
+            # muda entre borda e centro conforme o pneu aquece ou esfria.
             source = str(
-                self.config.get("gte_temperature_source", "carcass")
+                self.config.get(
+                    "gte_profile_source", "surface_peak"
+                )
+            ).lower()
+        elif self._gt3_vehicle and bool(
+            self.config.get("gt3_temperature_mode", True)
+        ):
+            # No LMGT3, a leitura principal do painel acompanha diretamente a
+            # média das três amostras da camada interna. A superfície oscila
+            # muito mais e pode ficar mais de 20 °C abaixo do painel do jogo.
+            source = str(
+                self.config.get(
+                    "gt3_temperature_source", "inner_average"
+                )
+            ).lower()
+        elif self._lmp2_vehicle and bool(
+            self.config.get("lmp2_temperature_mode", True)
+        ):
+            # O perfil LMP2 é fixo e independente da velocidade.
+            source = str(
+                self.config.get(
+                    "lmp2_temperature_source", "lmp2_panel_weighted"
+                )
             ).lower()
         elif (
             self._hyper_vehicle
             and bool(self.config.get("hyper_temperature_mode", True))
-            and source in _INNER_TEMPERATURE_SOURCES
         ):
-            # A camada interna pode deixar de ser atualizada em alguns
-            # Hypercars. A leitura ponderada continua acompanhando a carcaça
-            # e corresponde melhor ao valor térmico principal do LMU.
+            # O perfil da categoria deve prevalecer sobre a escolha global.
+            # Antes, uma fonte global de superfície impedia esta regra.
             source = str(
-                self.config.get("hyper_temperature_source", "lmu_weighted")
+                self.config.get(
+                    "hyper_temperature_source", "hyper_panel_weighted"
+                )
             ).lower()
 
         health = self._temperature_health.get(wheel.index)
@@ -310,7 +409,11 @@ class TyresLogic:
                 self.config.get("temperature_stale_fallback_enabled", True)
             )
         ):
-            source = health.fallback_source
+            source = (
+                "surface_average"
+                if self._gte_vehicle and source == "surface_inner_average"
+                else health.fallback_source
+            )
         return source
 
     def temperature_source_stale(self, wheel_index: int) -> bool:
@@ -326,7 +429,19 @@ class TyresLogic:
         )
 
     def _is_gte_vehicle(self, player: Any) -> bool:
-        """Detecta somente carros GT configurados para a leitura especial."""
+        """Detecta GTE sem misturar a categoria com LMGT3/GT3."""
+        class_name = "".join(
+            character
+            for character in str(
+                getattr(player, "vehicle_class", "") or ""
+            ).casefold()
+            if character.isalnum()
+        )
+        if class_name == "gte":
+            return True
+        if class_name in {"gt3", "lmgt3"}:
+            return False
+
         identity = " ".join(
             (
                 str(getattr(player, "vehicle_name", "") or ""),
@@ -336,9 +451,38 @@ class TyresLogic:
         ).casefold()
         raw_keywords = str(
             self.config.get(
-                "gte_detection_keywords",
-                "gte,lmgt3,gt3",
+                "gte_profile_detection_keywords",
+                "gte",
             )
+        )
+        keywords = (
+            word.strip().casefold()
+            for word in raw_keywords.split(",")
+        )
+        return any(word and word in identity for word in keywords)
+
+    def _is_gt3_vehicle(self, player: Any) -> bool:
+        """Detecta GT3/LMGT3 sem misturar a categoria com GTE."""
+        class_name = "".join(
+            character
+            for character in str(
+                getattr(player, "vehicle_class", "") or ""
+            ).casefold()
+            if character.isalnum()
+        )
+        if class_name in {"gt3", "lmgt3"}:
+            return True
+        if class_name == "gte":
+            return False
+
+        identity = " ".join(
+            (
+                str(getattr(player, "vehicle_name", "") or ""),
+                str(getattr(player, "vehicle_model", "") or ""),
+            )
+        ).casefold()
+        raw_keywords = str(
+            self.config.get("gt3_detection_keywords", "lmgt3,gt3")
         )
         keywords = (
             word.strip().casefold()
@@ -366,6 +510,33 @@ class TyresLogic:
         ).casefold()
         raw_keywords = str(
             self.config.get("lmp3_detection_keywords", "lmp3")
+        )
+        keywords = (
+            word.strip().casefold()
+            for word in raw_keywords.split(",")
+        )
+        return any(word and word in identity for word in keywords)
+
+    def _is_lmp2_vehicle(self, player: Any) -> bool:
+        """Detecta LMP2, incluindo nomes de classe como LMP2_ELMS."""
+        class_name = "".join(
+            character
+            for character in str(
+                getattr(player, "vehicle_class", "") or ""
+            ).casefold()
+            if character.isalnum()
+        )
+        if class_name.startswith("lmp2"):
+            return True
+
+        identity = " ".join(
+            (
+                str(getattr(player, "vehicle_name", "") or ""),
+                str(getattr(player, "vehicle_model", "") or ""),
+            )
+        ).casefold()
+        raw_keywords = str(
+            self.config.get("lmp2_detection_keywords", "lmp2")
         )
         keywords = (
             word.strip().casefold()

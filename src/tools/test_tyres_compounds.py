@@ -46,11 +46,17 @@ class TyresCompoundTests(unittest.TestCase):
             "lmp3_temperature_mode": True,
             "lmp3_temperature_source": "inner_average",
             "lmp3_detection_keywords": "lmp3",
-            "gte_temperature_mode": True,
-            "gte_temperature_source": "carcass",
-            "gte_detection_keywords": "gte,lmgt3,gt3",
+            "lmp2_temperature_mode": True,
+            "lmp2_temperature_source": "lmp2_panel_weighted",
+            "lmp2_detection_keywords": "lmp2",
+            "gte_profile_mode": True,
+            "gte_profile_source": "surface_peak",
+            "gte_profile_detection_keywords": "gte",
+            "gt3_temperature_mode": True,
+            "gt3_temperature_source": "inner_average",
+            "gt3_detection_keywords": "lmgt3,gt3",
             "hyper_temperature_mode": True,
-            "hyper_temperature_source": "lmu_weighted",
+            "hyper_temperature_source": "hyper_panel_weighted",
             "hyper_detection_keywords": "hyper,hypercar,lmh,lmdh",
             "temperature_stale_fallback_enabled": True,
             "temperature_stale_timeout_s": 3.0,
@@ -96,24 +102,24 @@ class TyresCompoundTests(unittest.TestCase):
         self.assertEqual(logic.temperature_color(view.wheels[1], 58.0), "warm")
         self.assertEqual(logic.temperature_color(view.wheels[0], 58.0), "cold")
 
-    def test_hyper_uses_weighted_source_instead_of_frozen_inner_only(self) -> None:
+    def test_hyper_profile_overrides_global_surface_source(self) -> None:
         player = PlayerData(
             vehicle_class="Hyper",
             vehicle_model="Porsche 963",
             speed_kmh=180.0,
             wheels=[self._wheel()],
         )
-        logic = TyresLogic(self._config("inner_average"))
+        logic = TyresLogic(self._config("surface_average"))
 
         wheel = logic.build_view(player).wheels[0]
 
-        self.assertAlmostEqual(logic.main_temperature_c(wheel), 72.62)
+        self.assertAlmostEqual(logic.main_temperature_c(wheel), 72.06)
         self.assertFalse(logic.temperature_source_stale(0))
 
-    def test_lmp2_falls_back_when_inner_temperature_really_freezes(self) -> None:
+    def test_generic_profile_falls_back_when_inner_temperature_freezes(self) -> None:
         clock = _Clock()
         player = PlayerData(
-            vehicle_class="LMP2",
+            vehicle_class="TEST",
             speed_kmh=180.0,
             wheels=[self._wheel()],
         )
@@ -134,7 +140,7 @@ class TyresCompoundTests(unittest.TestCase):
     def test_stale_inner_source_returns_when_lmu_resumes_it(self) -> None:
         clock = _Clock()
         player = PlayerData(
-            vehicle_class="LMP2",
+            vehicle_class="TEST",
             speed_kmh=180.0,
             wheels=[self._wheel()],
         )
@@ -157,7 +163,7 @@ class TyresCompoundTests(unittest.TestCase):
     def test_stationary_car_does_not_trigger_false_stale_detection(self) -> None:
         clock = _Clock()
         player = PlayerData(
-            vehicle_class="LMP2",
+            vehicle_class="TEST",
             speed_kmh=0.0,
             wheels=[self._wheel(rotation_rad_s=0.0)],
         )
@@ -170,13 +176,52 @@ class TyresCompoundTests(unittest.TestCase):
         self.assertFalse(logic.temperature_source_stale(0))
         self.assertEqual(logic.main_temperature_c(stationary), 75.0)
 
-    def test_gt3_keeps_configured_carcass_rule(self) -> None:
+    def test_gte_uses_hottest_surface_sample(self) -> None:
+        player = PlayerData(
+            vehicle_class="GTE",
+            speed_kmh=180.0,
+            wheels=[self._wheel(inner_c=82.98, surface_c=68.0) for _ in range(4)],
+        )
+        logic = TyresLogic(self._config("surface_average"))
+
+        wheels = logic.build_view(player).wheels
+
+        self.assertEqual(
+            [logic.main_temperature_c(wheel) for wheel in wheels],
+            [69.0, 69.0, 69.0, 69.0],
+        )
+
+    def test_gt3_uses_inner_average_instead_of_gte_or_surface(self) -> None:
         player = PlayerData(
             vehicle_class="LMGT3",
             speed_kmh=180.0,
-            wheels=[self._wheel(carcass_c=69.0)],
+            wheels=[self._wheel(inner_c=82.0, surface_c=68.0)],
         )
-        logic = TyresLogic(self._config())
+        logic = TyresLogic(self._config("surface_average"))
+
+        wheel = logic.build_view(player).wheels[0]
+
+        self.assertEqual(logic.main_temperature_c(wheel), 82.0)
+
+    def test_gt3_profile_can_be_disabled(self) -> None:
+        config = self._config("surface_average")
+        config["gt3_temperature_mode"] = False
+        player = PlayerData(
+            vehicle_class="LMGT3",
+            wheels=[self._wheel(inner_c=82.0, surface_c=68.0)],
+        )
+        logic = TyresLogic(config)
+
+        wheel = logic.build_view(player).wheels[0]
+
+        self.assertEqual(logic.main_temperature_c(wheel), 68.0)
+
+    def test_gte_does_not_use_gt3_profile(self) -> None:
+        player = PlayerData(
+            vehicle_class="GTE",
+            wheels=[self._wheel(inner_c=82.0, surface_c=68.0)],
+        )
+        logic = TyresLogic(self._config("surface_average"))
 
         wheel = logic.build_view(player).wheels[0]
 
@@ -194,6 +239,44 @@ class TyresCompoundTests(unittest.TestCase):
         wheel = logic.build_view(player).wheels[0]
 
         self.assertEqual(logic.main_temperature_c(wheel), 72.0)
+
+    def test_lmp2_profile_matches_synchronized_game_panel(self) -> None:
+        player = PlayerData(
+            vehicle_class="LMP2_ELMS",
+            vehicle_model="Oreca 07",
+            speed_kmh=24.8,
+            wheels=[
+                self._wheel(
+                    inner_c=66.238,
+                    carcass_c=77.570,
+                    surface_c=50.440,
+                )
+            ],
+        )
+        logic = TyresLogic(self._config("surface_average"))
+
+        wheel = logic.build_view(player).wheels[0]
+
+        self.assertAlmostEqual(logic.main_temperature_c(wheel), 71.22408)
+
+    def test_lmp2_profile_keeps_fixed_weight_while_moving(self) -> None:
+        player = PlayerData(
+            vehicle_class="LMP2_ELMS",
+            vehicle_model="Oreca 07",
+            speed_kmh=73.4,
+            wheels=[
+                self._wheel(
+                    inner_c=70.338,
+                    carcass_c=81.331,
+                    surface_c=67.400,
+                )
+            ],
+        )
+        logic = TyresLogic(self._config("surface_average"))
+
+        wheel = logic.build_view(player).wheels[0]
+
+        self.assertAlmostEqual(logic.main_temperature_c(wheel), 75.17492)
 
     def test_lmp3_profile_can_be_disabled(self) -> None:
         config = self._config("surface_average")
@@ -224,7 +307,7 @@ class TyresCompoundTests(unittest.TestCase):
     def test_surface_source_is_not_replaced_by_inner_stale_fallback(self) -> None:
         clock = _Clock()
         player = PlayerData(
-            vehicle_class="LMP2",
+            vehicle_class="TEST",
             speed_kmh=180.0,
             wheels=[self._wheel()],
         )

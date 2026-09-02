@@ -74,7 +74,10 @@ class TyresEditor(QDialog):
 
         self._build_data()
         self._build_lmp3_temperature()
+        self._build_lmp2_temperature()
         self._build_gte_temperature()
+        self._build_gt3_temperature()
+        self._build_hyper_temperature()
         self._build_units()
         self._build_thresholds()
         self._build_responsive()
@@ -305,53 +308,161 @@ class TyresEditor(QDialog):
         form.addRow("Leitura principal:", source)
         self.content_layout.addWidget(group)
 
+    def _build_lmp2_temperature(self) -> None:
+        group = QGroupBox("Temperatura especial — LMP2")
+        form = QFormLayout(group)
+
+        enabled = QCheckBox()
+        enabled.setChecked(
+            bool(self.config.get("lmp2_temperature_mode", True))
+        )
+        enabled.toggled.connect(
+            lambda value: self._set("lmp2_temperature_mode", value)
+        )
+
+        source = QComboBox()
+        source.addItem(
+            "Perfil do painel do jogo (44% carcaça + 56% interna)",
+            "lmp2_panel_weighted",
+        )
+        source.addItem("Carcaça", "carcass")
+        source.addItem("Camada interna — média", "inner_average")
+        source.addItem("Média atual do overlay", "lmu_weighted")
+        source.addItem("Superfície — ponto mais quente", "surface_peak")
+        source.addItem("Superfície — média", "surface_average")
+        index = source.findData(
+            self.config.get(
+                "lmp2_temperature_source", "lmp2_panel_weighted"
+            )
+        )
+        source.setCurrentIndex(max(0, index))
+        source.currentIndexChanged.connect(
+            lambda: self._set("lmp2_temperature_source", source.currentData())
+        )
+
+        form.addRow("Ativar automaticamente no LMP2:", enabled)
+        form.addRow("Leitura principal:", source)
+        self.content_layout.addWidget(group)
+
     def _build_gte_temperature(self) -> None:
         group = QGroupBox("Temperatura especial — GTE")
         form = QFormLayout(group)
 
         enabled = QCheckBox()
-        enabled.setChecked(bool(self.config.get("gte_temperature_mode", True)))
+        enabled.setChecked(bool(self.config.get("gte_profile_mode", True)))
         enabled.toggled.connect(
-            lambda value: self._set("gte_temperature_mode", value)
+            lambda value: self._set("gte_profile_mode", value)
         )
 
         source = QComboBox()
-        source.addItem("Carcaça (igual ao painel do jogo)", "carcass")
+        source.addItem(
+            "Superfície — ponto mais quente (igual ao jogo)",
+            "surface_peak",
+        )
+        source.addItem(
+            "Superfície — borda externa (igual ao jogo)",
+            "surface_outer",
+        )
+        source.addItem(
+            "Superfície + camada interna — média",
+            "surface_inner_average",
+        )
         source.addItem("Camada interna — média", "inner_average")
-        source.addItem("Camada interna — centro", "inner_center")
         source.addItem("Superfície — média", "surface_average")
-        source.addItem("Superfície — centro", "surface_center")
+        source.addItem("Carcaça", "carcass")
         source.addItem("Média atual do overlay", "lmu_weighted")
+        source.addItem("Camada interna — centro", "inner_center")
+        source.addItem("Superfície — centro", "surface_center")
         index = source.findData(
-            self.config.get("gte_temperature_source", "carcass")
+            self.config.get("gte_profile_source", "surface_peak")
         )
         source.setCurrentIndex(max(0, index))
         source.currentIndexChanged.connect(
-            lambda: self._set("gte_temperature_source", source.currentData())
-        )
-
-        offset = QDoubleSpinBox()
-        offset.setRange(-40.0, 40.0)
-        offset.setDecimals(1)
-        offset.setSingleStep(0.5)
-        offset.setSuffix(" °C")
-        offset.setValue(float(self.config.get("gte_temperature_offset_c", 0.0)))
-        offset.valueChanged.connect(
-            lambda value: self._set("gte_temperature_offset_c", value)
+            lambda: self._set("gte_profile_source", source.currentData())
         )
 
         keywords = QLineEdit(
-            str(self.config.get("gte_detection_keywords", "gte,lmgt3,gt3"))
+            str(self.config.get("gte_profile_detection_keywords", "gte"))
         )
-        keywords.setPlaceholderText("gte,lmgt3,gt3")
+        keywords.setPlaceholderText("gte")
         keywords.editingFinished.connect(
-            lambda: self._set("gte_detection_keywords", keywords.text())
+            lambda: self._set(
+                "gte_profile_detection_keywords", keywords.text()
+            )
         )
 
-        form.addRow("Ativar somente nos GTE/GT3:", enabled)
+        form.addRow("Ativar automaticamente no GTE:", enabled)
         form.addRow("Leitura principal:", source)
-        form.addRow("Ajuste fino:", offset)
         form.addRow("Identificação do carro:", keywords)
+        self.content_layout.addWidget(group)
+
+    def _build_hyper_temperature(self) -> None:
+        group = QGroupBox("Temperatura especial — Hypercar")
+        form = QFormLayout(group)
+
+        enabled = QCheckBox()
+        enabled.setChecked(
+            bool(self.config.get("hyper_temperature_mode", True))
+        )
+        enabled.toggled.connect(
+            lambda value: self._set("hyper_temperature_mode", value)
+        )
+
+        source = QComboBox()
+        source.addItem(
+            "Perfil do painel do jogo (42% carcaça + 58% interna)",
+            "hyper_panel_weighted",
+        )
+        source.addItem("Carcaça", "carcass")
+        source.addItem("Camada interna — média", "inner_average")
+        source.addItem("Média atual do overlay", "lmu_weighted")
+        source.addItem("Superfície — ponto mais quente", "surface_peak")
+        source.addItem("Superfície — média", "surface_average")
+        index = source.findData(
+            self.config.get(
+                "hyper_temperature_source", "hyper_panel_weighted"
+            )
+        )
+        source.setCurrentIndex(max(0, index))
+        source.currentIndexChanged.connect(
+            lambda: self._set("hyper_temperature_source", source.currentData())
+        )
+
+        form.addRow("Ativar automaticamente no Hypercar:", enabled)
+        form.addRow("Leitura principal:", source)
+        self.content_layout.addWidget(group)
+
+    def _build_gt3_temperature(self) -> None:
+        group = QGroupBox("Temperatura especial — GT3")
+        form = QFormLayout(group)
+
+        enabled = QCheckBox()
+        enabled.setChecked(
+            bool(self.config.get("gt3_temperature_mode", True))
+        )
+        enabled.toggled.connect(
+            lambda value: self._set("gt3_temperature_mode", value)
+        )
+
+        source = QComboBox()
+        source.addItem(
+            "Perfil do painel do jogo (média interna)",
+            "inner_average",
+        )
+        source.addItem("Carcaça", "carcass")
+        source.addItem("Média atual do overlay", "lmu_weighted")
+        source.addItem("Superfície — ponto mais quente", "surface_peak")
+        source.addItem("Superfície — média", "surface_average")
+        index = source.findData(
+            self.config.get("gt3_temperature_source", "inner_average")
+        )
+        source.setCurrentIndex(max(0, index))
+        source.currentIndexChanged.connect(
+            lambda: self._set("gt3_temperature_source", source.currentData())
+        )
+
+        form.addRow("Ativar automaticamente no GT3:", enabled)
+        form.addRow("Leitura principal:", source)
         self.content_layout.addWidget(group)
 
     def _build_units(self) -> None:
