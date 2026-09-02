@@ -73,6 +73,7 @@ class TyresEditor(QDialog):
         scroll.setWidget(content)
 
         self._build_data()
+        self._build_lmp3_temperature()
         self._build_gte_temperature()
         self._build_units()
         self._build_thresholds()
@@ -272,6 +273,37 @@ class TyresEditor(QDialog):
         self.content_layout.addWidget(
             group
         )
+
+    def _build_lmp3_temperature(self) -> None:
+        group = QGroupBox("Temperatura especial — LMP3")
+        form = QFormLayout(group)
+
+        enabled = QCheckBox()
+        enabled.setChecked(
+            bool(self.config.get("lmp3_temperature_mode", True))
+        )
+        enabled.toggled.connect(
+            lambda value: self._set("lmp3_temperature_mode", value)
+        )
+
+        source = QComboBox()
+        source.addItem("Camada interna — média", "inner_average")
+        source.addItem("Média jogo/MFD", "lmu_weighted")
+        source.addItem("Carcaça", "carcass")
+        source.addItem("Superfície — média", "surface_average")
+        source.addItem("Camada interna — centro", "inner_center")
+        source.addItem("Superfície — centro", "surface_center")
+        index = source.findData(
+            self.config.get("lmp3_temperature_source", "inner_average")
+        )
+        source.setCurrentIndex(max(0, index))
+        source.currentIndexChanged.connect(
+            lambda: self._set("lmp3_temperature_source", source.currentData())
+        )
+
+        form.addRow("Ativar automaticamente no LMP3:", enabled)
+        form.addRow("Leitura principal:", source)
+        self.content_layout.addWidget(group)
 
     def _build_gte_temperature(self) -> None:
         group = QGroupBox("Temperatura especial — GTE")

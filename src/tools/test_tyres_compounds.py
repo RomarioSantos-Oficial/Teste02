@@ -43,6 +43,9 @@ class TyresCompoundTests(unittest.TestCase):
     def _config(source: str = "inner_average") -> dict:
         return {
             "temperature_source": source,
+            "lmp3_temperature_mode": True,
+            "lmp3_temperature_source": "inner_average",
+            "lmp3_detection_keywords": "lmp3",
             "gte_temperature_mode": True,
             "gte_temperature_source": "carcass",
             "gte_detection_keywords": "gte,lmgt3,gt3",
@@ -178,6 +181,45 @@ class TyresCompoundTests(unittest.TestCase):
         wheel = logic.build_view(player).wheels[0]
 
         self.assertEqual(logic.main_temperature_c(wheel), 69.0)
+
+    def test_lmp3_uses_inner_average_instead_of_global_surface(self) -> None:
+        player = PlayerData(
+            vehicle_class="LMP3",
+            vehicle_model="Ginetta G61-LT-P325 Evo",
+            speed_kmh=180.0,
+            wheels=[self._wheel(inner_c=72.0, carcass_c=75.0, surface_c=57.0)],
+        )
+        logic = TyresLogic(self._config("surface_average"))
+
+        wheel = logic.build_view(player).wheels[0]
+
+        self.assertEqual(logic.main_temperature_c(wheel), 72.0)
+
+    def test_lmp3_profile_can_be_disabled(self) -> None:
+        config = self._config("surface_average")
+        config["lmp3_temperature_mode"] = False
+        player = PlayerData(
+            vehicle_class="LMP3",
+            wheels=[self._wheel(inner_c=72.0, surface_c=57.0)],
+        )
+        logic = TyresLogic(config)
+
+        wheel = logic.build_view(player).wheels[0]
+
+        self.assertEqual(logic.main_temperature_c(wheel), 57.0)
+
+    def test_lmp3_exact_class_does_not_depend_on_keywords(self) -> None:
+        config = self._config("surface_average")
+        config["lmp3_detection_keywords"] = ""
+        player = PlayerData(
+            vehicle_class="LMP3",
+            wheels=[self._wheel(inner_c=72.0, surface_c=57.0)],
+        )
+        logic = TyresLogic(config)
+
+        wheel = logic.build_view(player).wheels[0]
+
+        self.assertEqual(logic.main_temperature_c(wheel), 72.0)
 
     def test_surface_source_is_not_replaced_by_inner_stale_fallback(self) -> None:
         clock = _Clock()

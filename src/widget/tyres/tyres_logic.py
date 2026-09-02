@@ -58,6 +58,7 @@ class TyresLogic:
         self._clock = clock or time.monotonic
         self._gte_vehicle = False
         self._hyper_vehicle = False
+        self._lmp3_vehicle = False
         self._vehicle_identity = ""
         self._temperature_health: dict[int, _TemperatureHealth] = {}
 
@@ -71,6 +72,8 @@ class TyresLogic:
             "gte_temperature_source",
             "hyper_temperature_mode",
             "hyper_temperature_source",
+            "lmp3_temperature_mode",
+            "lmp3_temperature_source",
             "temperature_stale_fallback_enabled",
             "temperature_stale_timeout_s",
             "temperature_stale_epsilon_c",
@@ -90,6 +93,7 @@ class TyresLogic:
             self._temperature_health.clear()
         self._gte_vehicle = self._is_gte_vehicle(player)
         self._hyper_vehicle = self._is_hyper_vehicle(player)
+        self._lmp3_vehicle = self._is_lmp3_vehicle(player)
         now = self._clock()
         vehicle_speed_kmh = self._float(player, "speed_kmh")
         wheels_raw = list(
@@ -270,7 +274,16 @@ class TyresLogic:
         source = str(
             self.config.get("temperature_source", "lmu_weighted")
         ).lower()
-        if self._gte_vehicle and bool(
+        if self._lmp3_vehicle and bool(
+            self.config.get("lmp3_temperature_mode", True)
+        ):
+            # O LMP3 publica uma superfície bem mais fria que a temperatura
+            # principal exibida pelo jogo. A média da camada interna acompanha
+            # melhor o estado térmico do pneu sem aplicar um offset fixo.
+            source = str(
+                self.config.get("lmp3_temperature_source", "inner_average")
+            ).lower()
+        elif self._gte_vehicle and bool(
             self.config.get("gte_temperature_mode", True)
         ):
             source = str(
@@ -326,6 +339,33 @@ class TyresLogic:
                 "gte_detection_keywords",
                 "gte,lmgt3,gt3",
             )
+        )
+        keywords = (
+            word.strip().casefold()
+            for word in raw_keywords.split(",")
+        )
+        return any(word and word in identity for word in keywords)
+
+    def _is_lmp3_vehicle(self, player: Any) -> bool:
+        """Detecta LMP3 pela classe oficial e usa texto apenas como fallback."""
+        class_name = "".join(
+            character
+            for character in str(
+                getattr(player, "vehicle_class", "") or ""
+            ).casefold()
+            if character.isalnum()
+        )
+        if class_name == "lmp3":
+            return True
+
+        identity = " ".join(
+            (
+                str(getattr(player, "vehicle_name", "") or ""),
+                str(getattr(player, "vehicle_model", "") or ""),
+            )
+        ).casefold()
+        raw_keywords = str(
+            self.config.get("lmp3_detection_keywords", "lmp3")
         )
         keywords = (
             word.strip().casefold()
