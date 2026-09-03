@@ -205,7 +205,15 @@ class LMUOnlineIdentityClient:
                 self._generation += 1
             if self._thread is not None and self._thread.is_alive():
                 return
-            if not force and now - self._last_refresh < interval:
+            # Zero significa "nunca atualizado". Em uma inicializacao recente
+            # do Windows, time.monotonic() ainda pode ser menor que o intervalo
+            # de 15 minutos; comparar diretamente com zero bloqueava a primeira
+            # consulta e deixava a thread inexistente ate o uptime passar disso.
+            if (
+                not force
+                and self._last_refresh > 0.0
+                and now - self._last_refresh < interval
+            ):
                 return
             self._last_refresh = now
             generation = self._generation
