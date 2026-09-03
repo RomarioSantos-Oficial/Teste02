@@ -28,6 +28,12 @@ _EVENT_ID_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+_EVENT_ENDED_PATTERN = re.compile(
+    r"(?:Disconnected\s+from\s+server|Enter\s+Single\s+Player|"
+    r"Restoring\s+single\s+player\s+session\s+settings)",
+    re.IGNORECASE,
+)
+
 
 class LMUOnlineIdentityClient:
     """Leitor direto do LMU: memória é tratada fora; aqui entram REST e perfis online."""
@@ -125,6 +131,15 @@ class LMUOnlineIdentityClient:
         # A leitura REST local normal e feita por LocalStandingsEnrichment.
         # Este cliente usa o mesmo fluxo RaceOS do cliente oficial do LMU.
         # O ticket temporario nunca e persistido pelo Sector Flow.
+        with self._lock:
+            known_online = self._snapshot.session_online
+        if not self.split_allowed_for_session(session, known_online):
+            # A renderizacao tambem possui esta trava, mas limpar aqui evita
+            # que uma resposta da corrida online anterior sobreviva durante
+            # toda a sessao Single Player.
+            with self._lock:
+                self._snapshot.split_label = ""
+                self._snapshot.event_id = ""
         if not bool(self.config.get("online_enrichment", False)):
             return
         if not bool(self.config.get("use_cloud_profiles", False)):
@@ -337,6 +352,15 @@ class LMUOnlineIdentityClient:
         session_online = self._multiplayer_roster_available(
             payloads.get("teams")
         ) or self._payload_looks_online(payloads)
+        split_allowed = self.split_allowed_for_session(
+            session,
+            session_online,
+        )
+        if not split_allowed:
+            # O log da mesma abertura do LMU pode conter um eventId antigo.
+            # Ele nao representa a corrida atual quando ela e Single Player.
+            event_id = ""
+            split_label = ""
 
         cloud_identities: list[OnlineDriverIdentity] = []
         cloud_split_label = ""
@@ -365,6 +389,8 @@ class LMUOnlineIdentityClient:
         # esse valor obsoleto quando a sessao atual nao possuia divisao.
         if bool(self.config.get("use_cloud_profiles", False)):
             split_label = cloud_split_label
+        if not split_allowed:
+            split_label = ""
         if cloud_available:
             source_message = "LMU REST + perfis online"
         elif local_available:
@@ -787,7 +813,14 @@ class LMUOnlineIdentityClient:
                             raw = handle.read()
                         text = raw.decode("utf-8", errors="ignore")
                     matches = list(_EVENT_ID_PATTERN.finditer(text))
-                    if matches and path.stat().st_mtime > newest_mtime:
+                    if (
+                        matches
+                        and not _EVENT_ENDED_PATTERN.search(
+                            text,
+                            matches[-1].end(),
+                        )
+                        and path.stat().st_mtime > newest_mtime
+                    ):
                         newest_mtime = path.stat().st_mtime
                         newest = matches[-1].group(1)
                 except OSError:
@@ -843,6 +876,27 @@ class LMUOnlineIdentityClient:
                 seen.add(key)
                 result.append(candidate)
         return result
+
+    @staticmethod
+    def split_allowed_for_session(
+        session: Any | None,
+        session_online: bool = False,
+    ) -> bool:
+        """Autoriza split somente quando a sessao atual parece online."""
+        if session is None:
+            return bool(session_online)
+        if hasattr(session, "connected") and not bool(
+            getattr(session, "connected", False)
+        ):
+            return False
+        server_name = str(
+            getattr(session, "server_name", "") or ""
+        ).strip().casefold()
+        if server_name in {"-none-", "none", "offline", "single player"}:
+            return False
+        if server_name:
+            return True
+        return bool(session_online)
 
     @staticmethod
     def normalize_name(value: str) -> str:

@@ -479,11 +479,19 @@ class StandingsWidget(QWidget):
             source,
             self.enrichment.vehicle_catalog(vehicle_names),
         )
+        split_allowed = self.online_client.split_allowed_for_session(
+            self.session,
+            snapshot.session_online,
+        )
         self.view.split_label = (
             snapshot.split_label
             or str(getattr(self.session, "split_label", "") or "")
-        )
-        if self.session is not None and snapshot.split_label:
+        ) if split_allowed else ""
+        if (
+            split_allowed
+            and self.session is not None
+            and snapshot.split_label
+        ):
             # Compartilha a descoberta online com Delta e demais overlays
             # que recebem o mesmo quadro de sessao.
             setattr(self.session, "split_label", snapshot.split_label)

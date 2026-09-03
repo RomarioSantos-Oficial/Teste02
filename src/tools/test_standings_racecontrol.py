@@ -11,6 +11,7 @@ from typing import Any
 
 from src.widget.standings.lmu_online_client import LMUOnlineIdentityClient
 from src.widget.standings.standings_assets import badge_asset_key
+from src.widget.standings.standings_models import OnlineSnapshot
 from src.widget.standings.standings_online import LocalStandingsEnrichment
 
 
@@ -146,6 +147,35 @@ class RaceControlClientTests(unittest.TestCase):
                 "11111111-2222-3333-4444-555555555555",
             )
 
+    def test_event_id_ends_after_disconnect_or_single_player(self) -> None:
+        client = LMUOnlineIdentityClient(Path.cwd(), {})
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            current = directory / "trace_current.txt"
+            current.write_text(
+                "\n".join(
+                    (
+                        "Joining race server for online event "
+                        "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                        "[NETLOG] Disconnected from server.",
+                        "[ELS] Enter Single Player",
+                    )
+                ),
+                encoding="utf-8",
+            )
+            client._log_directories = lambda: [directory]
+            self.assertEqual(client._find_event_id_in_logs(), "")
+
+            with current.open("a", encoding="utf-8") as handle:
+                handle.write(
+                    "\nJoining practice server for online event "
+                    "11111111-2222-3333-4444-555555555555"
+                )
+            self.assertEqual(
+                client._find_event_id_in_logs(),
+                "11111111-2222-3333-4444-555555555555",
+            )
+
     def test_split_session_signature_changes_only_between_sessions(self) -> None:
         practice = SimpleNamespace(
             connected=True, track_name="Track", session=1,
@@ -258,6 +288,45 @@ class RaceControlClientTests(unittest.TestCase):
             ),
             "",
         )
+
+    def test_offline_session_never_requests_or_displays_cloud_split(self) -> None:
+        client = FakeRaceControlClient()
+        session = SimpleNamespace(
+            connected=True,
+            server_name="-none-",
+            track_name="Track",
+            session=10,
+            drivers=[SimpleNamespace(driver_name="AI Driver")],
+        )
+
+        snapshot = client.refresh_sync(session)
+
+        self.assertEqual(snapshot.event_id, "")
+        self.assertEqual(snapshot.split_label, "")
+        self.assertFalse(any(
+            "/api/v1/event/my-split/" in request[0]
+            for request in client.requests
+        ))
+
+    def test_offline_transition_hides_cached_split_immediately(self) -> None:
+        client = LMUOnlineIdentityClient(
+            Path.cwd(),
+            {"online_enrichment": False, "use_cloud_profiles": False},
+        )
+        client.set_test_snapshot(OnlineSnapshot(
+            session_online=True,
+            event_id="11111111-2222-3333-4444-555555555555",
+            split_label="S 2/18",
+        ))
+        session = SimpleNamespace(
+            connected=True,
+            server_name="-none-",
+        )
+
+        client.trigger_refresh(session)
+
+        self.assertEqual(client.snapshot().event_id, "")
+        self.assertEqual(client.snapshot().split_label, "")
 
     def test_split_is_requested_only_once_after_valid_response(self) -> None:
         client = FakeRaceControlClient()

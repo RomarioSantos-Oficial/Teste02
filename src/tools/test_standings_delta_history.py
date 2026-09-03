@@ -30,6 +30,7 @@ class StandingsDeltaHistoryTests(unittest.TestCase):
             slot_id=1,
             steam_id="player-1",
             driver_name="Player",
+            car_number="17",
             vehicle_class="LMGT3",
             position=1,
             laps=0,
@@ -39,6 +40,7 @@ class StandingsDeltaHistoryTests(unittest.TestCase):
             slot_id=2,
             steam_id="rival-2",
             driver_name="Rival",
+            car_number="22",
             vehicle_class="LMGT3",
             position=2,
             laps=0,
@@ -82,6 +84,101 @@ class StandingsDeltaHistoryTests(unittest.TestCase):
             observed,
             ["+1.0", "+3.0", "+6.0", "+10.0", "+15.0", "+20.0"],
         )
+
+    def test_timed_race_lap_limit_markers_do_not_reset_history(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "delta.json"
+            session, player, rival = self._session()
+            session.max_laps = 0
+            logic = StandingsLogic(
+                self._config(),
+                delta_history_store=DeltaHistoryStore(path, debounce_s=0.0),
+            )
+            logic.build(session, {}, "MEM")
+
+            observed = []
+            for lap_number, maximum, difference in (
+                (1, 0, 1.0),
+                (2, 2_147_483_647, 2.0),
+                (3, 0, 3.0),
+            ):
+                session.max_laps = maximum
+                session.current_time_s += 70.0
+                player.laps = rival.laps = lap_number
+                player.last_lap_s = 70.0
+                rival.last_lap_s = 70.0 + difference
+                observed.append(self._rival_delta(logic, session))
+
+            self.assertEqual(observed, ["+1.0", "+3.0", "+6.0"])
+            self.assertEqual(logic._session_key, "Test Track|10|0")
+            self.assertTrue(all(
+                len(history) == 3
+                for history in logic._delta_lap_history.values()
+            ))
+            logic.close()
+
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["session"]["key"], "Test Track|10|0")
+            self.assertEqual(payload["session"]["max_laps"], 0)
+
+    def test_transient_steam_id_does_not_split_driver_history(self) -> None:
+        session, player, rival = self._session()
+        logic = StandingsLogic(self._config())
+        logic.build(session, {}, "MEM")
+
+        observed = []
+        for lap_number, difference, steam_ids in (
+            (1, 1.0, ("player-1", "rival-2")),
+            (2, 2.0, ("", "")),
+            (3, 3.0, ("player-1", "rival-2")),
+        ):
+            player.steam_id, rival.steam_id = steam_ids
+            player.laps = rival.laps = lap_number
+            player.last_lap_s = 70.0
+            rival.last_lap_s = 70.0 + difference
+            session.current_time_s += 70.0
+            observed.append(self._rival_delta(logic, session))
+
+        self.assertEqual(observed, ["+1.0", "+3.0", "+6.0"])
+        self.assertTrue(all(
+            len(history) == 3
+            for history in logic._delta_lap_history.values()
+        ))
+
+    def test_garage_and_dq_drivers_are_removed_from_delta(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "delta.json"
+            session, player, rival = self._session()
+            logic = StandingsLogic(
+                self._config(),
+                delta_history_store=DeltaHistoryStore(path, debounce_s=0.0),
+            )
+            logic.build(session, {}, "MEM")
+
+            player.laps = rival.laps = 1
+            player.last_lap_s, rival.last_lap_s = 70.0, 71.0
+            self.assertEqual(self._rival_delta(logic, session), "+1.0")
+
+            rival.in_garage = True
+            rival.laps = 2
+            rival.last_lap_s = 72.0
+            self.assertEqual(self._rival_delta(logic, session), "--")
+            rival_identity = logic._delta_identity(2, "Rival", "22")
+            self.assertNotIn(rival_identity, logic._delta_lap_history)
+
+            rival.in_garage = False
+            rival.finish_status = 3
+            rival.finish_status_name = "DQ"
+            rival.laps = 3
+            self.assertEqual(self._rival_delta(logic, session), "--")
+            self.assertNotIn(rival_identity, logic._delta_lap_history)
+            logic.close()
+
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(len(payload["drivers"]), 1)
+            entry = next(iter(payload["drivers"].values()))
+            self.assertEqual(entry["slot_id"], 1)
+            self.assertEqual(entry["car_number"], "17")
 
     def test_first_observed_completed_lap_is_used_immediately(self) -> None:
         session, player, rival = self._session()
@@ -269,6 +366,7 @@ class StandingsDeltaHistoryTests(unittest.TestCase):
                 connected=True,
                 session=10,
                 application_location=0,
+                navigation_state="NAV_MAIN_MENU",
             )
             with patch(
                 "src.widget.standings.standings_logic.time.monotonic",
@@ -280,6 +378,63 @@ class StandingsDeltaHistoryTests(unittest.TestCase):
                 self.assertTrue(path.exists())
                 logic.observe_session_lifecycle(menu_frame)
                 self.assertFalse(path.exists())
+            logic.close()
+
+    def test_pausing_race_does_not_clear_delta_history(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "delta.json"
+            path.write_text("{}", encoding="utf-8")
+            logic = StandingsLogic(
+                self._config(),
+                delta_history_store=DeltaHistoryStore(path, debounce_s=0.0),
+            )
+            paused_frame = SessionData(
+                connected=True,
+                session=10,
+                application_location=0,
+                navigation_state="NAV_REALTIME",
+                game_phase=9,
+            )
+            with patch(
+                "src.widget.standings.standings_logic.time.monotonic",
+                side_effect=(10.0, 20.0, 30.0),
+            ):
+                logic.observe_session_lifecycle(paused_frame)
+                logic.observe_session_lifecycle(paused_frame)
+                logic.observe_session_lifecycle(paused_frame)
+            self.assertTrue(path.exists())
+            logic.close()
+
+    def test_delta_sum_keeps_laps_completed_before_pause(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "delta.json"
+            session, player, rival = self._session()
+            session.navigation_state = "NAV_REALTIME"
+            logic = StandingsLogic(
+                self._config(delta_sample_laps=3),
+                delta_history_store=DeltaHistoryStore(path, debounce_s=0.0),
+            )
+            logic.build(session, {}, "MEM")
+
+            player.laps = rival.laps = 1
+            player.last_lap_s, rival.last_lap_s = 70.0, 69.8
+            self.assertEqual(self._rival_delta(logic, session), "-0.2")
+
+            session.application_location = 0
+            session.game_phase = 9
+            with patch(
+                "src.widget.standings.standings_logic.time.monotonic",
+                side_effect=(10.0, 20.0, 30.0),
+            ):
+                logic.observe_session_lifecycle(session)
+                logic.observe_session_lifecycle(session)
+                logic.observe_session_lifecycle(session)
+
+            session.game_phase = 5
+            player.laps = rival.laps = 2
+            player.last_lap_s, rival.last_lap_s = 70.0, 74.1
+            session.current_time_s += 70.0
+            self.assertEqual(self._rival_delta(logic, session), "+3.9")
             logic.close()
 
     def test_corrupt_json_is_discarded(self) -> None:
@@ -308,6 +463,10 @@ class StandingsDeltaHistoryTests(unittest.TestCase):
             self.assertNotIn("player-1", raw)
             self.assertNotIn("rival-2", raw)
             self.assertLessEqual(len(payload["drivers"]), 2)
+            self.assertEqual(
+                {entry["car_number"] for entry in payload["drivers"].values()},
+                {"17", "22"},
+            )
 
 
 if __name__ == "__main__":

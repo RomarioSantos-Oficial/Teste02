@@ -181,6 +181,8 @@ class StandingsLogic:
         self._delta_seen_laps: dict[str, int] = {}
         self._delta_lap_history: dict[str, list[DeltaLapSample]] = {}
         self._delta_driver_classes: dict[str, str] = {}
+        self._delta_driver_slots: dict[str, int] = {}
+        self._delta_car_numbers: dict[str, str] = {}
         self._delta_restore_attempted = False
         self._delta_player_class = ""
         self._delta_menu_since: float | None = None
@@ -217,6 +219,8 @@ class StandingsLogic:
         self._delta_seen_laps.clear()
         self._delta_lap_history.clear()
         self._delta_driver_classes.clear()
+        self._delta_driver_slots.clear()
+        self._delta_car_numbers.clear()
         self._delta_restore_attempted = False
         self._delta_player_class = ""
         self._delta_menu_since = None
@@ -324,6 +328,8 @@ class StandingsLogic:
         self._delta_seen_laps.clear()
         self._delta_lap_history.clear()
         self._delta_driver_classes.clear()
+        self._delta_driver_slots.clear()
+        self._delta_car_numbers.clear()
         self._delta_restore_attempted = False
         self._delta_player_class = ""
         self._delta_menu_since = None
@@ -350,17 +356,23 @@ class StandingsLogic:
             self._delta_menu_since = None
             return
         session_number = int(getattr(session, "session", 0) or 0)
-        location = int(getattr(session, "application_location", 0) or 0)
         if not 10 <= session_number <= 13:
             self._clear_delta_history(delete_persisted=True)
             return
-        if location == 0:
+        navigation_state = str(
+            getattr(session, "navigation_state", "") or ""
+        ).strip().upper()
+        if navigation_state == "NAV_MAIN_MENU":
             now = time.monotonic()
             if self._delta_menu_since is None:
                 self._delta_menu_since = now
             elif now - self._delta_menu_since >= 2.0:
                 self._clear_delta_history(delete_persisted=True)
             return
+        # mOptionsLocation/application_location tambem vale zero durante uma
+        # pausa dentro da corrida. Ele nao pode ser usado sozinho para
+        # concluir que o jogador voltou ao menu, pois isso apagava todas as
+        # voltas anteriores do DELTA ao pausar para conferir o overlay.
         self._delta_menu_since = None
         key = self._make_session_key(session)
         if self._session_key and key != self._session_key:
@@ -377,6 +389,9 @@ class StandingsLogic:
             if row.class_key != player_class or not row.delta_identity:
                 continue
             identity = row.delta_identity
+            if not self._delta_driver_eligible(row):
+                changed = self._discard_delta_driver(identity) or changed
+                continue
             completed = max(0, int(row.laps))
             lap_time = float(row.last_lap_s or 0.0)
             valid_lap_time = (
@@ -385,6 +400,8 @@ class StandingsLogic:
                 and 10.0 <= lap_time <= 1800.0
             )
             self._delta_driver_classes[identity] = row.class_key
+            self._delta_driver_slots[identity] = int(row.slot_id)
+            self._delta_car_numbers[identity] = str(row.car_number or "")
             previous = self._delta_seen_laps.get(identity)
             if previous is None:
                 self._delta_seen_laps[identity] = completed
@@ -426,6 +443,34 @@ class StandingsLogic:
             changed = True
         return changed
 
+    @staticmethod
+    def _delta_driver_eligible(row: StandingRow) -> bool:
+        """DELTA usa somente pilotos nao desclassificados e fora da garagem."""
+        finish = normalize_identity(row.finish_state)
+        return not (
+            row.in_garage
+            or row.finish_status == 3
+            or finish in {"dq", "disqualified", "fstatdq", "3"}
+        )
+
+    def _discard_delta_driver(self, identity: str) -> bool:
+        changed = any(
+            identity in mapping
+            for mapping in (
+                self._delta_seen_laps,
+                self._delta_lap_history,
+                self._delta_driver_classes,
+                self._delta_driver_slots,
+                self._delta_car_numbers,
+            )
+        )
+        self._delta_seen_laps.pop(identity, None)
+        self._delta_lap_history.pop(identity, None)
+        self._delta_driver_classes.pop(identity, None)
+        self._delta_driver_slots.pop(identity, None)
+        self._delta_car_numbers.pop(identity, None)
+        return changed
+
     def _restore_delta_history(
         self,
         session: Any,
@@ -451,14 +496,17 @@ class StandingsLogic:
         if not isinstance(raw_drivers, dict):
             self._delete_delta_store()
             return
-        current_identities = {
-            row.delta_identity for row in rows if row.delta_identity
+        current_rows = {
+            row.delta_identity: row
+            for row in rows
+            if row.delta_identity and self._delta_driver_eligible(row)
         }
         restored = False
         for identity, raw_entry in raw_drivers.items():
             if not isinstance(identity, str) or not isinstance(raw_entry, dict):
                 continue
-            if identity not in current_identities:
+            row = current_rows.get(identity)
+            if row is None:
                 # Conserva quem pode voltar durante a mesma corrida, mas nao
                 # usa dados sem uma identidade valida no quadro atual.
                 continue
@@ -495,6 +543,8 @@ class StandingsLogic:
                 key=lambda sample: sample.lap_number,
             )[-10:]
             self._delta_driver_classes[identity] = class_key
+            self._delta_driver_slots[identity] = int(row.slot_id)
+            self._delta_car_numbers[identity] = str(row.car_number or "")
             restored = True
         if not restored:
             self._delete_delta_store()
@@ -552,6 +602,8 @@ class StandingsLogic:
                 continue
             drivers[identity] = {
                 "class": class_key,
+                "slot_id": int(self._delta_driver_slots.get(identity, 0)),
+                "car_number": self._delta_car_numbers.get(identity, ""),
                 "last_seen_lap": int(seen_lap),
                 "laps": [
                     {
@@ -568,7 +620,7 @@ class StandingsLogic:
                 "key": self._session_key,
                 "track": str(getattr(session, "track_name", "") or ""),
                 "session_number": int(getattr(session, "session", 0) or 0),
-                "max_laps": int(getattr(session, "max_laps", 0) or 0),
+                "max_laps": self._stable_max_laps(session),
                 "server": str(getattr(session, "server_name", "") or ""),
                 "start_event_time_s": float(
                     getattr(session, "start_event_time_s", 0.0) or 0.0
@@ -587,14 +639,18 @@ class StandingsLogic:
         rows: list[StandingRow],
         player: StandingRow | None,
     ) -> None:
-        if player is None:
+        for row in rows:
+            row.rolling_delta_s = None
+            row.rolling_delta_text = "--"
+        if player is None or not self._delta_driver_eligible(player):
             return
         sample = max(1, min(10, int(self.config.get("delta_sample_laps", 5))))
         player_history = self._delta_lap_history.get(player.delta_identity, [])
         for row in rows:
-            row.rolling_delta_s = None
-            row.rolling_delta_text = "--"
-            if row.class_key != player.class_key:
+            if (
+                row.class_key != player.class_key
+                or not self._delta_driver_eligible(row)
+            ):
                 continue
             rival_history = self._delta_lap_history.get(row.delta_identity, [])
             available = min(sample, len(player_history), len(rival_history))
@@ -870,20 +926,18 @@ class StandingsLogic:
 
     def _delta_identity(
         self,
-        driver: Any,
         slot_id: int,
         driver_name: str,
+        car_number: str,
     ) -> str:
-        steam_id = str(getattr(driver, "steam_id", "") or "").strip()
-        if steam_id:
-            source = f"steam:{steam_id}"
-        else:
-            source = "|".join((
-                f"slot:{slot_id}",
-                normalize_identity(driver_name),
-                str(getattr(driver, "car_number", "") or "").strip(),
-                str(getattr(driver, "vehicle_filename", "") or "").strip(),
-            ))
+        # O Steam ID e outros campos REST podem aparecer e sumir entre
+        # leituras. Na corrida, o slot e o numero pertencem ao mesmo carro;
+        # o nome distingue uma eventual troca de piloto nesse carro.
+        source = "|".join((
+            f"slot:{int(slot_id)}",
+            f"car:{normalize_identity(car_number)}",
+            f"driver:{normalize_identity(driver_name)}",
+        ))
         return hashlib.sha256(
             f"{self._session_key}|{source}".encode("utf-8", errors="replace")
         ).hexdigest()[:24]
@@ -1103,7 +1157,7 @@ class StandingsLogic:
                 tyre_compounds = (str(extra.tyre_compound).strip(),) * 4
         return StandingRow(
             slot_id=slot_id,
-            delta_identity=self._delta_identity(driver, slot_id, name),
+            delta_identity=self._delta_identity(slot_id, name, car_number),
             overall_position=overall,
             class_position=class_position,
             position_change=change,
@@ -1772,11 +1826,20 @@ class StandingsLogic:
         )
 
     @staticmethod
+    def _stable_max_laps(session: Any) -> int:
+        """Normaliza os marcadores de corrida por tempo usados pelo LMU."""
+        try:
+            maximum = int(getattr(session, "max_laps", 0) or 0)
+        except (TypeError, ValueError):
+            return 0
+        return maximum if 0 < maximum <= 500 else 0
+
+    @staticmethod
     def _make_session_key(session: Any) -> str:
         return "|".join((
             str(getattr(session, "track_name", "") or ""),
             str(getattr(session, "session", 0) or 0),
-            str(getattr(session, "max_laps", 0) or 0),
+            str(StandingsLogic._stable_max_laps(session)),
         ))
 
 
