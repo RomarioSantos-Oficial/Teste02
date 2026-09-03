@@ -4,7 +4,10 @@ import unittest
 from unittest.mock import patch
 
 from src.telemetry.models import DriverData, PlayerData, SessionData
-from src.widget.lap_timer.lap_timer_tracker import LapTimerTracker
+from src.widget.lap_timer.lap_timer_tracker import (
+    LapTimerTracker,
+    estimated_total_laps_text,
+)
 from src.widget.lap_timer.lap_timer_widget import format_lap
 
 
@@ -60,6 +63,11 @@ class LapTimerTrackerTests(unittest.TestCase):
     def test_lap_formatter(self) -> None:
         self.assertEqual(format_lap(92.487, 3), "1:32.487")
         self.assertEqual(format_lap(92.487, 2), "1:32.49")
+
+    def test_total_laps_formatter_keeps_one_decimal(self) -> None:
+        self.assertEqual(estimated_total_laps_text(10.14), "10.1")
+        self.assertEqual(estimated_total_laps_text(64.0), "64.0")
+        self.assertEqual(estimated_total_laps_text(None), "--")
 
     def test_stale_lower_sample_does_not_move_stopwatch_backwards(self) -> None:
         session = self.session()

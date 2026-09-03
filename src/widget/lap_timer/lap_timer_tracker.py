@@ -44,12 +44,10 @@ def displayed_lap_number(
 
 
 def estimated_total_laps_text(value: float | None) -> str:
-    """Formata o total estimado exatamente como o Lap Timer."""
+    """Formata a previsao total com uma casa decimal."""
     if value is None or not math.isfinite(value):
         return "--"
-    if abs(value - round(value)) < 0.001:
-        return str(int(round(value)))
-    return f"~{int(math.ceil(value))}"
+    return f"{value:.1f}"
 
 
 def estimate_laps(
