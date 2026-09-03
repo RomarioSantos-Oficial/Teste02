@@ -74,6 +74,7 @@ class StandingRow:
     safety_rank_progress: float | None = None
     estimated_driver_rank_gain: float | None = None
     laps: int = 0
+    display_lap: int = 0
     lap_distance_m: float = 0.0
     time_into_lap_s: float = 0.0
     lap_start_event_time_s: float = 0.0

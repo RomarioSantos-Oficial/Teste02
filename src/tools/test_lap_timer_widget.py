@@ -34,6 +34,8 @@ class LapTimerTrackerTests(unittest.TestCase):
         self.assertEqual(data.last_lap_s, 92.4)
         self.assertEqual(data.best_lap_s, 91.8)
         self.assertAlmostEqual(data.theoretical_lap_s, 91.8)
+        self.assertEqual(data.completed_laps, 4)
+        self.assertEqual(data.current_lap, 5)
         self.assertEqual((data.position, data.class_position), (8, 3))
         self.assertAlmostEqual(data.predicted_lap_s, 90.8)
 
@@ -83,6 +85,25 @@ class LapTimerTrackerTests(unittest.TestCase):
         with patch("src.widget.lap_timer.lap_timer_tracker.time.monotonic", return_value=200.1):
             tracker.update(session)
             self.assertAlmostEqual(tracker.current_lap_time(), 0.3)
+
+    def test_live_scoring_prevents_stale_rest_lap_and_timer(self) -> None:
+        session = self.session()
+        driver = next(row for row in session.drivers if row.is_player)
+        driver.laps = 3
+        driver.time_into_lap_s = 344.0
+        driver.lap_start_event_time_s = 100.0
+        driver.live_scoring = {
+            "laps": 4,
+            "time_into_lap_s": 26.027,
+            "lap_start_event_time_s": 400.0,
+            "lap_distance_m": 2100.0,
+        }
+        tracker = LapTimerTracker()
+        with patch("src.widget.lap_timer.lap_timer_tracker.time.monotonic", return_value=500.0):
+            data = tracker.update(session)
+        self.assertEqual(data.completed_laps, 4)
+        self.assertEqual(data.current_lap, 5)
+        self.assertAlmostEqual(data.current_lap_s, 26.027)
 
 
 if __name__ == "__main__":

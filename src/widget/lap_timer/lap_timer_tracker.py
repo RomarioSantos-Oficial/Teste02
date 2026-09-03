@@ -14,6 +14,7 @@ class LapTimerData:
     predicted_lap_s: float = 0.0
     theoretical_lap_s: float = 0.0
     completed_laps: int = 0
+    current_lap: int = 0
     estimated_total_laps: float | None = None
     remaining_laps: float | None = None
     position: int = 0
@@ -22,6 +23,78 @@ class LapTimerData:
     class_count: int = 0
     current_invalid: bool = False
     last_invalid: bool = False
+
+
+def displayed_lap_number(
+    completed_laps: int,
+    *,
+    active: bool = True,
+    finish_status: int = 0,
+    maximum_laps: int = 0,
+) -> int:
+    """Converte o contador bruto do LMU para a volta exibida no jogo."""
+    if not active:
+        return 0
+    completed = max(0, int(completed_laps))
+    displayed = completed if int(finish_status) in {1, 2, 3} else completed + 1
+    maximum = int(maximum_laps)
+    if 0 < maximum <= 500:
+        displayed = min(displayed, maximum)
+    return displayed
+
+
+def estimated_total_laps_text(value: float | None) -> str:
+    """Formata o total estimado exatamente como o Lap Timer."""
+    if value is None or not math.isfinite(value):
+        return "--"
+    if abs(value - round(value)) < 0.001:
+        return str(int(round(value)))
+    return f"~{int(math.ceil(value))}"
+
+
+def estimate_laps(
+    session: Any,
+    driver: Any | None,
+    class_rows: list[Any],
+    completed: int,
+    fraction: float,
+) -> tuple[float | None, float | None]:
+    """Calcula total e restante com a regra existente do Lap Timer."""
+    maximum = int(getattr(session, "max_laps", 0) or 0)
+    progress = completed + fraction
+    if 0 < maximum <= 500:
+        return float(maximum), max(0.0, maximum - progress)
+    remaining_s = float(getattr(session, "remaining_time_s", 0.0) or 0.0)
+    if remaining_s <= 0.0 or driver is None:
+        return None, None
+    player_pace = float(getattr(driver, "last_lap_s", 0.0) or 0.0)
+    if player_pace < 3.0:
+        player_pace = float(getattr(driver, "best_lap_s", 0.0) or 0.0)
+    leader = min(
+        class_rows,
+        key=lambda d: int(getattr(d, "position_in_class", 9999) or 9999),
+        default=None,
+    )
+    leader_pace = 0.0
+    if leader is not None:
+        leader_pace = float(getattr(leader, "last_lap_s", 0.0) or 0.0)
+        if leader_pace < 3.0:
+            leader_pace = float(getattr(leader, "best_lap_s", 0.0) or 0.0)
+    if player_pace < 3.0:
+        player_pace = leader_pace
+    if player_pace < 3.0:
+        return None, None
+    # Inclui a volta de bandeirada. O ritmo do lider da categoria determina
+    # quando a corrida encerra; o ritmo do carro de referencia determina
+    # quantas voltas ele completa.
+    finish_window = remaining_s + (
+        leader_pace if leader_pace >= 3.0 else player_pace
+    )
+    remaining = max(0.0, finish_window / player_pace - fraction)
+    total = progress + remaining
+    if not math.isfinite(total) or total > progress + 500.0:
+        return None, None
+    return total, remaining
 
 
 class LapTimerTracker:
@@ -50,6 +123,8 @@ class LapTimerTracker:
     def update(self, session: Any) -> LapTimerData:
         player = getattr(session, "player", None)
         driver = self._player_driver(session)
+        live = getattr(driver, "live_scoring", None) if driver is not None else None
+        live = live if isinstance(live, dict) else {}
         now = time.monotonic()
         key = (
             str(getattr(session, "track_name", "") or ""),
@@ -74,8 +149,28 @@ class LapTimerTracker:
         if event_time > 0.0:
             self._last_event_time = event_time
 
-        observed = float(getattr(driver, "time_into_lap_s", 0.0) or 0.0) if driver else 0.0
-        lap_start = float(getattr(driver, "lap_start_event_time_s", 0.0) or 0.0) if driver else 0.0
+        observed = (
+            float(
+                live.get(
+                    "time_into_lap_s",
+                    getattr(driver, "time_into_lap_s", 0.0),
+                )
+                or 0.0
+            )
+            if driver
+            else 0.0
+        )
+        lap_start = (
+            float(
+                live.get(
+                    "lap_start_event_time_s",
+                    getattr(driver, "lap_start_event_time_s", 0.0),
+                )
+                or 0.0
+            )
+            if driver
+            else 0.0
+        )
         if observed <= 0.0 and driver is not None:
             if event_time > lap_start > 0.0:
                 observed = event_time - lap_start
@@ -85,7 +180,13 @@ class LapTimerTracker:
             and not getattr(session, "telemetry_paused", False)
             and player is not None
         )
-        completed_now = int(getattr(driver, "laps", getattr(player, "lap", 0)) or 0)
+        completed_now = int(
+            live.get(
+                "laps",
+                getattr(driver, "laps", getattr(player, "lap", 0)),
+            )
+            or 0
+        )
         lap_counter_advanced = (
             self._last_completed_laps is not None
             and completed_now > self._last_completed_laps
@@ -114,7 +215,17 @@ class LapTimerTracker:
         class_rows = [d for d in drivers if str(getattr(d, "vehicle_class", "") or "") == class_key]
         completed = completed_now
         track_length = float(getattr(session, "track_length_m", 0.0) or 0.0)
-        lap_distance = float(getattr(driver, "lap_distance_m", 0.0) or 0.0) if driver else 0.0
+        lap_distance = (
+            float(
+                live.get(
+                    "lap_distance_m",
+                    getattr(driver, "lap_distance_m", 0.0),
+                )
+                or 0.0
+            )
+            if driver
+            else 0.0
+        )
         fraction = max(0.0, min(0.999, lap_distance / track_length)) if track_length > 0.0 else 0.0
         estimated_total, remaining = self._lap_estimate(session, driver, class_rows, completed, fraction)
 
@@ -145,6 +256,16 @@ class LapTimerTracker:
             predicted_lap_s=predicted_lap,
             theoretical_lap_s=theoretical,
             completed_laps=completed,
+            current_lap=displayed_lap_number(
+                completed,
+                active=player is not None,
+                finish_status=(
+                    int(getattr(driver, "finish_status", 0) or 0)
+                    if driver is not None
+                    else 0
+                ),
+                maximum_laps=int(getattr(session, "max_laps", 0) or 0),
+            ),
             estimated_total_laps=estimated_total,
             remaining_laps=remaining,
             position=int(getattr(driver, "position", 0) or 0) if driver else 0,
@@ -166,31 +287,4 @@ class LapTimerTracker:
     def _lap_estimate(
         session: Any, driver: Any | None, class_rows: list[Any], completed: int, fraction: float
     ) -> tuple[float | None, float | None]:
-        maximum = int(getattr(session, "max_laps", 0) or 0)
-        progress = completed + fraction
-        if 0 < maximum <= 500:
-            return float(maximum), max(0.0, maximum - progress)
-        remaining_s = float(getattr(session, "remaining_time_s", 0.0) or 0.0)
-        if remaining_s <= 0.0 or driver is None:
-            return None, None
-        player_pace = float(getattr(driver, "last_lap_s", 0.0) or 0.0)
-        if player_pace < 3.0:
-            player_pace = float(getattr(driver, "best_lap_s", 0.0) or 0.0)
-        leader = min(class_rows, key=lambda d: int(getattr(d, "position_in_class", 9999) or 9999), default=None)
-        leader_pace = 0.0
-        if leader is not None:
-            leader_pace = float(getattr(leader, "last_lap_s", 0.0) or 0.0)
-            if leader_pace < 3.0:
-                leader_pace = float(getattr(leader, "best_lap_s", 0.0) or 0.0)
-        if player_pace < 3.0:
-            player_pace = leader_pace
-        if player_pace < 3.0:
-            return None, None
-        # Inclui a volta de bandeirada. O ritmo do lider da categoria determina
-        # quando a corrida encerra; o ritmo do jogador determina quantas ele faz.
-        finish_window = remaining_s + (leader_pace if leader_pace >= 3.0 else player_pace)
-        remaining = max(0.0, finish_window / player_pace - fraction)
-        total = progress + remaining
-        if not math.isfinite(total) or total > progress + 500.0:
-            return None, None
-        return total, remaining
+        return estimate_laps(session, driver, class_rows, completed, fraction)

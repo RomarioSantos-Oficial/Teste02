@@ -1275,7 +1275,7 @@ class StandingsWidget(QWidget):
                 QColor(colors.get("text", "#FFFFFF")),
             )
         elif key == "laps":
-            self._text(painter, rect, f"{row.laps:02d}", 0.70, True)
+            self._text(painter, rect, f"{row.display_lap:02d}", 0.70, True)
         elif key == "pit":
             if not row.pit_status_visible:
                 return

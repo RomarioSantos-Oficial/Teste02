@@ -20,6 +20,10 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any
 
+from ..lap_timer.lap_timer_tracker import (
+    displayed_lap_number,
+    estimate_laps,
+)
 from .delta_history_store import DeltaHistoryStore, SCHEMA_VERSION
 from .standings_assets import detect_manufacturer
 from .standings_models import (
@@ -1014,6 +1018,7 @@ class StandingsLogic:
             getattr(driver, "pitting", False)
         )
         completed_laps = int(_live_scoring_value(driver, "laps", 0) or 0)
+        finish_status = int(getattr(driver, "finish_status", 0) or 0)
         was_in_pits = self._pit_was_inside.get(slot_id, False)
         if in_pits:
             self._pit_started.setdefault(slot_id, now)
@@ -1122,6 +1127,11 @@ class StandingsLogic:
             safety_rank_progress=extra.safety_rank_progress,
             estimated_driver_rank_gain=extra.estimated_driver_rank_gain,
             laps=completed_laps,
+            display_lap=displayed_lap_number(
+                completed_laps,
+                finish_status=finish_status,
+                maximum_laps=int(getattr(session, "max_laps", 0) or 0),
+            ),
             lap_distance_m=float(
                 _live_scoring_value(driver, "lap_distance_m", 0.0) or 0.0
             ),
@@ -1179,9 +1189,7 @@ class StandingsLogic:
                     else ""
                 )
             ),
-            finish_status=int(
-                getattr(driver, "finish_status", 0) or 0
-            ),
+            finish_status=finish_status,
             in_pits=in_pits,
             in_garage=bool(getattr(driver, "in_garage", False)),
             under_yellow=(
@@ -1347,6 +1355,9 @@ class StandingsLogic:
             1,
             min(5, int(self.config.get("other_category_rows", 3))),
         )
+        player_class_rows = (
+            groups.get(player.class_key, []) if player is not None else []
+        )
         for class_key, class_rows in ordered:
             class_rows.sort(key=lambda row: row.class_position or 9999)
             is_player_class = player is not None and class_key == player.class_key
@@ -1363,17 +1374,25 @@ class StandingsLogic:
             class_name = class_rows[0].class_name if class_rows else class_key
             _, _, color = canonical_class(class_key, self.config)
             leader_reference = class_rows[0] if class_rows else None
-            reference = (
-                leader_reference
-                if is_race
-                else (player if is_player_class else leader_reference)
+            # Todos os cabecalhos acompanham a volta do jogador. A coluna VLT
+            # continua individual para mostrar a volta atual de cada piloto.
+            lap_reference = player if player is not None else leader_reference
+            current_lap = lap_reference.display_lap if lap_reference is not None else 0
+            # A previsao da classe do jogador usa o proprio jogador. Nas outras
+            # classes ela usa o lider daquela classe e seu ritmo de referencia.
+            prediction_reference = (
+                player if is_player_class and player is not None else leader_reference
             )
-            current_lap = (reference.laps + 1) if reference is not None else 0
+            prediction_rows = (
+                player_class_rows
+                if is_player_class and player is not None
+                else class_rows
+            )
             if is_race:
                 total_text, total_calc = self._total_laps_info(
-                    leader_reference,
+                    prediction_reference,
                     session,
-                    class_rows,
+                    prediction_rows,
                 )
             else:
                 total_text, total_calc = "--", "session_not_race"
@@ -1669,62 +1688,28 @@ class StandingsLogic:
 
     @staticmethod
     def _total_laps_info(reference: StandingRow | None, session: Any, class_rows: list[StandingRow] | None = None) -> tuple[str, str]:
-        """Retorna (texto, explicacao).
-
-        - texto: valor curto a exibir (ex: '18' ou '18.3' ou '--')
-        - explicacao: string curta explicando a fonte do cálculo
-          (ex: 'ref=leader lap=92.3s rem=600s est=18.3')
-        """
-        maximum = int(getattr(session, "max_laps", 0) or 0)
-        if maximum > 0:
-            # sanity-check para evitar valores absurdos vindos do servidor
-            if maximum < 1 or maximum > 500:
-                return "--", f"bad_fixed:{maximum}"
-            return str(maximum), f"fixo={maximum}"
+        """Retorna o total usando exatamente a regra do Lap Timer."""
         if reference is None:
             return "--", "no_ref"
-        try:
-            remaining = float(getattr(session, "remaining_time_s", 0.0) or 0.0)
-        except (TypeError, ValueError):
-            remaining = 0.0
-        lap_time = reference.last_lap_s if reference.last_lap_s > 0 else reference.best_lap_s
-        if remaining > 0 and lap_time > 0:
-            # Rejeitar voltas de referência impossivelmente curtas (dados corrompidos)
-            if lap_time < 3.0:
-                return "--", f"lap_time_too_small:{lap_time:.3f}s"
-            track_length = float(
-                getattr(session, "track_length_m", 0.0) or 0.0
-            )
-            lap_fraction = (
-                max(0.0, min(0.999, reference.lap_distance_m / track_length))
-                if track_length > 0.0
-                else 0.0
-            )
-            progress = reference.laps + lap_fraction
-            # Estimativa fracionaria usando o progresso dentro da volta e o
-            # tempo restante fornecido diretamente pela API do jogo.
-            estimate = progress + remaining / lap_time
-            # Limites razoáveis para evitar overflow/valores absurdos
-            if estimate < 0 or estimate > progress + 500:
-                return "--", "bad_estimate"
-            # Evitar estimativas muito elevadas por divisão por valores pequenos
-            if remaining / lap_time > 200:
-                return "--", "large_ratio"
-            calc = f"ref={ 'player' if reference.is_player else 'leader' } lap={lap_time:.1f}s rem={int(remaining)}s est={estimate:.1f}"
-            # Se a estimativa parece muito superior ao esperado, tentar usar
-            # a média da classe (quando disponível) como fallback.
-            if estimate > progress + 20 and class_rows:
-                valid = [r.best_lap_s for r in class_rows if r.best_lap_s > 0]
-                if valid:
-                    avg = sum(valid) / len(valid)
-                    if 3.0 <= avg <= 600.0:
-                        alt_est = progress + remaining / avg
-                        if 0 <= alt_est <= progress + 500 and remaining / avg <= 200:
-                            calc = f"ref=class_avg lap={avg:.1f}s rem={int(remaining)}s est={alt_est:.1f}"
-                            return f"{alt_est:.1f}", calc
-            return f"{estimate:.1f}", calc
-        # Sem tempo/volta válida
-        return "--", "no_time"
+        track_length = float(getattr(session, "track_length_m", 0.0) or 0.0)
+        lap_fraction = (
+            max(0.0, min(0.999, reference.lap_distance_m / track_length))
+            if track_length > 0.0
+            else 0.0
+        )
+        estimate, remaining_laps = estimate_laps(
+            session,
+            reference,
+            list(class_rows or [reference]),
+            int(reference.laps),
+            lap_fraction,
+        )
+        if estimate is None:
+            return "--", "lap_timer:no_time"
+        return (
+            f"{estimate:.1f}",
+            f"lap_timer:est={estimate:.3f} rem={remaining_laps or 0.0:.3f}",
+        )
 
     @staticmethod
     def _session_type(number: int) -> str:

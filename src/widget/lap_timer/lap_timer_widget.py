@@ -6,7 +6,11 @@ from PySide6.QtCore import QPoint, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPen
 from PySide6.QtWidgets import QWidget
 
-from .lap_timer_tracker import LapTimerData, LapTimerTracker
+from .lap_timer_tracker import (
+    LapTimerData,
+    LapTimerTracker,
+    estimated_total_laps_text,
+)
 
 
 def format_lap(seconds: float, decimals: int = 3) -> str:
@@ -105,10 +109,8 @@ class LapTimerWidget(QWidget):
         if c.get("show_theoretical", False):
             rows.append(("TEORICA", format_lap(d.theoretical_lap_s, decimals), "theoretical"))
         if c.get("show_laps", True):
-            total = "--" if d.estimated_total_laps is None else f"~{int(math.ceil(d.estimated_total_laps))}"
-            if d.estimated_total_laps is not None and abs(d.estimated_total_laps - round(d.estimated_total_laps)) < 0.001:
-                total = str(int(round(d.estimated_total_laps)))
-            rows.append(("VOLTAS", f"{d.completed_laps} / {total}", "text"))
+            total = estimated_total_laps_text(d.estimated_total_laps)
+            rows.append(("VOLTAS", f"{d.current_lap} / {total}", "text"))
         if c.get("show_remaining", False):
             value = "--" if d.remaining_laps is None else f"~{d.remaining_laps:.1f}"
             rows.append(("RESTANTES", value, "text"))
@@ -203,6 +205,3 @@ class LapTimerWidget(QWidget):
             self._dragging = self._resizing = False
             screen = self.screen().geometry()
             self.geometry_changed.emit(self.widget_id, (self.x() - screen.x()) / screen.width(), (self.y() - screen.y()) / screen.height(), self.width() / screen.width(), self.height() / screen.height())
-
-
-import math

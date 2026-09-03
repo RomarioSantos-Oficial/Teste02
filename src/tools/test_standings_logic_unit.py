@@ -226,8 +226,10 @@ class StandingsLogicUnitTests(unittest.TestCase):
         category = view.categories[0]
         rows = {row.driver_name: row for row in category.rows}
 
-        self.assertEqual(category.current_lap, 13)
-        self.assertEqual(category.total_laps_text, "20.0")
+        self.assertEqual(category.current_lap, 12)
+        self.assertEqual(category.total_laps_text, "19.4")
+        self.assertEqual(rows["Class Leader"].display_lap, 13)
+        self.assertEqual(rows["Player"].display_lap, 12)
         self.assertEqual(rows["Class Leader"].tyre_compound, "Wet")
         self.assertEqual(rows["Player"].tyre_compound, "Soft/Hard")
         self.assertEqual(
@@ -290,6 +292,60 @@ class StandingsLogicUnitTests(unittest.TestCase):
         self.assertTrue(category.show_count)
         self.assertEqual(category.started, 2)
         self.assertEqual(category.total, 2)
+
+    def test_all_headers_follow_player_lap_but_project_each_category(self) -> None:
+        session = SessionData(
+            connected=True,
+            session=10,
+            max_laps=2_147_483_647,
+            remaining_time_s=600.0,
+            track_length_m=5000.0,
+            drivers=[
+                DriverData(
+                    slot_id=1, driver_name="Other Leader",
+                    vehicle_class="LMP2", position=1, position_in_class=1,
+                    laps=8, lap_distance_m=3000.0, last_lap_s=80.0,
+                ),
+                DriverData(
+                    slot_id=2, driver_name="Class Leader",
+                    vehicle_class="Hypercar", position=2, position_in_class=1,
+                    laps=7, lap_distance_m=2500.0, last_lap_s=90.0,
+                ),
+                DriverData(
+                    slot_id=3, driver_name="Player",
+                    vehicle_class="Hypercar", position=3, position_in_class=2,
+                    laps=6, lap_distance_m=1000.0, last_lap_s=92.0,
+                    is_player=True,
+                ),
+            ],
+        )
+        categories = StandingsLogic({"maximum_categories": 3}).build(
+            session, {}, "MEM"
+        ).categories
+        self.assertEqual({category.current_lap for category in categories}, {7})
+        projections = {
+            category.class_key: category.total_laps_text for category in categories
+        }
+        self.assertEqual(projections["HYPERCAR"], "13.5")
+        self.assertEqual(projections["LMP2"], "16.5")
+
+    def test_finished_driver_does_not_gain_nonexistent_next_lap(self) -> None:
+        session = SessionData(
+            connected=True,
+            session=10,
+            max_laps=20,
+            drivers=[
+                DriverData(
+                    slot_id=1, driver_name="Finished", vehicle_class="GT3",
+                    position=1, laps=20, finish_status=1, is_player=True,
+                ),
+            ],
+        )
+        category = StandingsLogic({}).build(session, {}, "MEM").categories[0]
+        row = category.rows[0]
+        self.assertEqual(category.total_laps_text, "20.0")
+        self.assertEqual(row.laps, 20)
+        self.assertEqual(row.display_lap, 20)
 
     def test_qualifying_shows_driver_count(self) -> None:
         session = SessionData(
