@@ -846,22 +846,22 @@
   },
   "genesismagmaracing202617lm": {
     "manufacturer": "Genesis",
-    "model": "WEC 2026, Hypercar, Genesis GMR001",
+    "model": "WEC 2026, Hypercar, Genesis GMR-001",
     "description": "Genesis Magma Racing 2026 #17:LM"
   },
   "genesismagmaracing202617wec": {
     "manufacturer": "Genesis",
-    "model": "WEC 2026, Hypercar, Genesis GMR001",
+    "model": "WEC 2026, Hypercar, Genesis GMR-001",
     "description": "Genesis Magma Racing 2026 #17:WEC"
   },
   "genesismagmaracing202619lm": {
     "manufacturer": "Genesis",
-    "model": "WEC 2026, Hypercar, Genesis GMR001",
+    "model": "WEC 2026, Hypercar, Genesis GMR-001",
     "description": "Genesis Magma Racing 2026 #19:LM"
   },
   "genesismagmaracing202619wec": {
     "manufacturer": "Genesis",
-    "model": "WEC 2026, Hypercar, Genesis GMR001",
+    "model": "WEC 2026, Hypercar, Genesis GMR-001",
     "description": "Genesis Magma Racing 2026 #19:WEC"
   },
   "glickenhausracing708lm": {
@@ -2816,7 +2816,7 @@
   },
   "genesiscustomteam2026397": {
     "manufacturer": "Genesis",
-    "model": "WEC 2026, Hypercar, Genesis GMR001",
+    "model": "WEC 2026, Hypercar, Genesis GMR-001",
     "description": "Genesis Custom Team 2026 #397"
   },
   "9x8wingcustomteam2026397": {
@@ -2828,5 +2828,540 @@
     "manufacturer": "Toyota",
     "model": "WEC 2026, Hypercar, Toyota TR010",
     "description": "Toyota TR010 Custom Team 2026 #397"
+  },
+  "amrgt3elmscustomteam2026397": {
+    "manufacturer": "Aston Martin",
+    "model": "ELMS 2026, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "AMR GT3 ELMS Custom Team 2026 #397"
+  },
+  "racingspiritofléman202659elms": {
+    "manufacturer": "Aston Martin",
+    "model": "ELMS 2026, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "Racing Spirit of Léman 2026 #59:ELMS"
+  },
+  "tfsport202633elms": {
+    "manufacturer": "Corvette",
+    "model": "ELMS 2026, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "TF Sport 2026 #33:ELMS"
+  },
+  "z06gt3relmscustomteam2026397": {
+    "manufacturer": "Corvette",
+    "model": "ELMS 2026, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "Z06GT3R ELMS Custom Team 2026 #397"
+  },
+  "kesselracing202657elms": {
+    "manufacturer": "Ferrari",
+    "model": "ELMS 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "Kessel Racing 2026 #57:ELMS"
+  },
+  "spiritofrace202655elms": {
+    "manufacturer": "Ferrari",
+    "model": "ELMS 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "Spirit of Race 2026 #55:ELMS"
+  },
+  "afcorse202651elms": {
+    "manufacturer": "Ferrari",
+    "model": "ELMS 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "AF Corse 2026 #51:ELMS"
+  },
+  "richardmilleafcorse202650elms": {
+    "manufacturer": "Ferrari",
+    "model": "ELMS 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "Richard Mille AF Corse 2026 #50:ELMS"
+  },
+  "grracing202686elms": {
+    "manufacturer": "Ferrari",
+    "model": "ELMS 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "GR Racing 2026 #86:ELMS"
+  },
+  "296gt3elmscustomteam2026397": {
+    "manufacturer": "Ferrari",
+    "model": "ELMS 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "296GT3 ELMS Custom Team 2026 #397"
+  },
+  "kesselracing202674elms": {
+    "manufacturer": "Ferrari",
+    "model": "ELMS 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "Kessel Racing 2026 #74:ELMS"
+  },
+  "mclarenelmscustomteam2026397": {
+    "manufacturer": "McLaren",
+    "model": "ELMS 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "McLaren ELMS Custom Team 2026 #397"
+  },
+  "unitedautosports202623elms": {
+    "manufacturer": "McLaren",
+    "model": "ELMS 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "United Autosports 2026 #23:ELMS"
+  },
+  "ironlynx202663elms": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "ELMS 2026, GT3, Mercedes-AMG LMGT3",
+    "description": "Iron Lynx 2026 #63:ELMS"
+  },
+  "teamqatarbyironlynx202662elms": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "ELMS 2026, GT3, Mercedes-AMG LMGT3",
+    "description": "Team Qatar by Iron Lynx 2026 #62:ELMS"
+  },
+  "mercedesamgelmscustomteam2026397": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "ELMS 2026, GT3, Mercedes-AMG LMGT3",
+    "description": "Mercedes AMG ELMS Custom Team 2026 #397"
+  },
+  "teamqatarbyironlynx202662elms2": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "ELMS 2026, GT3, Mercedes-AMG LMGT3",
+    "description": "Team Qatar by Iron Lynx 2026 #62:ELMS2"
+  },
+  "highclassracing202654elms2": {
+    "manufacturer": "Porsche",
+    "model": "ELMS 2026, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "High Class Racing 2026 #54:ELMS2"
+  },
+  "protoncompetition202675elms": {
+    "manufacturer": "Porsche",
+    "model": "ELMS 2026, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "Proton Competition 2026 #75:ELMS"
+  },
+  "protoncompetition202677elms": {
+    "manufacturer": "Porsche",
+    "model": "ELMS 2026, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "Proton Competition 2026 #77:ELMS"
+  },
+  "protoncompetition202677elms2": {
+    "manufacturer": "Porsche",
+    "model": "ELMS 2026, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "Proton Competition 2026 #77:ELMS2"
+  },
+  "911gt3relmscustomteam2026397": {
+    "manufacturer": "Porsche",
+    "model": "ELMS 2026, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "911GT3R ELMS Custom Team 2026 #397"
+  },
+  "highclassracing202654elms": {
+    "manufacturer": "Porsche",
+    "model": "ELMS 2026, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "High Class Racing 2026 #54:ELMS"
+  },
+  "dkrengineering3elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "DKR Engineering #3:ELMS26"
+  },
+  "intereuropolcompetition34elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "Inter Europol Competition #34:ELMS26"
+  },
+  "algarveproracing20elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "Algarve Pro Racing #20:ELMS26"
+  },
+  "clxmotorsport47elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "CLX Motorsport #47:ELMS26"
+  },
+  "rossaracingbyvirage19elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "Rossa Racing by Virage #19:ELMS26"
+  },
+  "idecsport18elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "IDEC Sport #18:ELMS26"
+  },
+  "forestierracingbypanis29elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "Forestier Racing by Panis #29:ELMS26"
+  },
+  "unitedautosports22elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "United Autosports #22:ELMS26"
+  },
+  "tdsracing14elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "TDS Racing #14:ELMS26"
+  },
+  "oreca07elmscustomteam2026397": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "Oreca 07 ELMS Custom Team 2026 #397"
+  },
+  "vectorsport10elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "Vector Sport #10:ELMS26"
+  },
+  "duqueineteam30elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "Duqueine Team #30:ELMS26"
+  },
+  "aobytf99elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "AO by TF #99:ELMS26"
+  },
+  "afcorse83elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "AF Corse #83:ELMS26"
+  },
+  "protoncompetition88elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "Proton Competition #88:ELMS26"
+  },
+  "clxmotorsport37elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "CLX Motorsport #37:ELMS26"
+  },
+  "nielsenracing27elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "Nielsen Racing #27:ELMS26"
+  },
+  "algarveproracing25elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "Algarve Pro Racing #25:ELMS26"
+  },
+  "vectorsport10elms2": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "Vector Sport #10:ELMS2"
+  },
+  "protoncompetition9elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "Proton Competition #9:ELMS26"
+  },
+  "idecsport28elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "IDEC Sport #28:ELMS26"
+  },
+  "nielsenracing24elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "Nielsen Racing #24:ELMS26"
+  },
+  "vectorsport7elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "Vector Sport #7:ELMS26"
+  },
+  "unitedautosports21elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "United Autosports #21:ELMS26"
+  },
+  "intereuropolcompetition43elms26": {
+    "manufacturer": "Oreca",
+    "model": "ELMS 2026, LMP2_ELMS, Oreca 07",
+    "description": "Inter Europol Competition #43:ELMS26"
+  },
+  "adessad25lmp3customteam2026397": {
+    "manufacturer": "ADESS",
+    "model": "ELMS 2026, LMP3, ADESS AD25 LMP3",
+    "description": "ADESS AD25 LMP3 Custom Team 2026 #397"
+  },
+  "racegp202685elms": {
+    "manufacturer": "Duqueine",
+    "model": "ELMS 2026, LMP3, Duqueine D09 P3",
+    "description": "R-ace GP 2026 #85:ELMS"
+  },
+  "duqueined09p3customteam2026397": {
+    "manufacturer": "Duqueine",
+    "model": "ELMS 2026, LMP3, Duqueine D09 P3",
+    "description": "Duqueine D09 P3 Custom Team 2026 #397"
+  },
+  "ginettag61ltp3customteam397": {
+    "manufacturer": "Ginetta",
+    "model": "ELMS 2026, LMP3, Ginetta G61-LT-P325 Evo",
+    "description": "Ginetta G61-LT-P3 Custom Team #397"
+  },
+  "dkrengineering4elms26": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2026, LMP3, Ligier JS P325",
+    "description": "DKR Engineering #4:ELMS26"
+  },
+  "rinaldiracing5elms26": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2026, LMP3, Ligier JS P325",
+    "description": "Rinaldi Racing #5:ELMS26"
+  },
+  "ligierjsp325customteam2026397": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2026, LMP3, Ligier JS P325",
+    "description": "Ligier JS P325 Custom Team 2026 #397"
+  },
+  "eurointernational11elms26": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2026, LMP3, Ligier JS P325",
+    "description": "EuroInternational #11:ELMS26"
+  },
+  "clxmotorsport17elms26": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2026, LMP3, Ligier JS P325",
+    "description": "CLX Motorsport #17:ELMS26"
+  },
+  "ultimate35elms26": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2026, LMP3, Ligier JS P325",
+    "description": "Ultimate #35:ELMS26"
+  },
+  "intereuropolcompetition13elms26": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2026, LMP3, Ligier JS P325",
+    "description": "Inter Europol Competition #13:ELMS26"
+  },
+  "racingspiritofléman31elms26": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2026, LMP3, Ligier JS P325",
+    "description": "Racing Spirit of Léman #31:ELMS26"
+  },
+  "teamvirage8elms26": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2026, LMP3, Ligier JS P325",
+    "description": "Team Virage #8:ELMS26"
+  },
+  "mracing68elms26": {
+    "manufacturer": "Ligier",
+    "model": "ELMS 2026, LMP3, Ligier JS P325",
+    "description": "M Racing #68:ELMS26"
+  },
+  "racingspiritofléman202659lm": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2026, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "Racing Spirit of Léman  2026 #59:LM"
+  },
+  "heartofracingteam202623lm": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2026, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "Heart of Racing Team 2026 #23:LM"
+  },
+  "heartofracingteam202627lm": {
+    "manufacturer": "Aston Martin",
+    "model": "WEC 2026, GT3, Aston Martin Vantage AMR LMGT3",
+    "description": "Heart of Racing Team 2026 #27:LM"
+  },
+  "teamwrt202669spa": {
+    "manufacturer": "BMW",
+    "model": "WEC 2026, GT3, BMW M4 LMGT3",
+    "description": "Team WRT 2026 #69:Spa"
+  },
+  "teamwrt202632lm": {
+    "manufacturer": "BMW",
+    "model": "WEC 2026, GT3, BMW M4 LMGT3",
+    "description": "Team WRT 2026 #32:LM"
+  },
+  "teamwrt202669lp": {
+    "manufacturer": "BMW",
+    "model": "WEC 2026, GT3, BMW M4 LMGT3",
+    "description": "Team WRT 2026 #69:LP"
+  },
+  "teamwrt202669lm": {
+    "manufacturer": "BMW",
+    "model": "WEC 2026, GT3, BMW M4 LMGT3",
+    "description": "Team WRT 2026 #69:LM"
+  },
+  "racingteamturkeybytf202634lm": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2026, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "Racing Team Turkey by TF 2026 #34:LM"
+  },
+  "tfsport202633lm": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2026, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "TF Sport 2026 #33:LM"
+  },
+  "13autosport202613lm": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2026, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "13 Autosport 2026 #13:LM"
+  },
+  "tfsport20262lm": {
+    "manufacturer": "Corvette",
+    "model": "WEC 2026, GT3, Chevrolet Corvette Z06 LMGT3.R",
+    "description": "TF Sport 2026 #2:LM"
+  },
+  "richardmilleafcorse2026150lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "Richard Mille AF Corse 2026 #150:LM"
+  },
+  "kesselracing202657lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "Kessel Racing 2026 #57:LM"
+  },
+  "vistaafcorsa202621lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "Vista AF Corsa 2026 #21:LM"
+  },
+  "kesselracing202674lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "Kessel Racing 2026 #74:LM"
+  },
+  "vistaafcorsa202654lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "Vista AF Corsa 2026 #54:LM"
+  },
+  "protoncompetition202677lm": {
+    "manufacturer": "Ford",
+    "model": "WEC 2026, GT3, Ford Mustang LMGT3",
+    "description": "Proton Competition 2026 #77:LM"
+  },
+  "protoncompetition202688lm": {
+    "manufacturer": "Ford",
+    "model": "WEC 2026, GT3, Ford Mustang LMGT3",
+    "description": "Proton Competition 2026 #88:LM"
+  },
+  "akkodisaspteam202687lm": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2026, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2026 #87:LM"
+  },
+  "akkodisaspteam202678lm": {
+    "manufacturer": "Lexus",
+    "model": "WEC 2026, GT3, Lexus RCF LMGT3",
+    "description": "Akkodis ASP Team 2026 #78:LM"
+  },
+  "garage59202658lm": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Garage 59 2026 #58:LM"
+  },
+  "garage59202610lm": {
+    "manufacturer": "McLaren",
+    "model": "WEC 2026, GT3, McLaren 720S LMGT3 Evo",
+    "description": "Garage 59 2026 #10:LM"
+  },
+  "ironlynx202679spa": {
+    "manufacturer": "Mercedes-AMG",
+    "model": "WEC 2026, GT3, Mercedes-AMG LMGT3",
+    "description": "Iron Lynx 2026 #79:Spa"
+  },
+  "mantheydkengineering202691lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2026, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "Manthey DK Engineering 2026 #91:LM"
+  },
+  "thebendmanthey202692lm": {
+    "manufacturer": "Porsche",
+    "model": "WEC 2026, GT3, Porsche 911 GT3 R LMGT3",
+    "description": "The Bend Manthey 2026 #92:LM"
+  },
+  "intereuropolcompetition2026343lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "Inter Europol Competition 2026 #343:LM"
+  },
+  "algarveproracing202625lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "Algarve Pro Racing 2026 #25:LM"
+  },
+  "clxmotorsport202637lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "CLX Motorsport 2026 #37:LM"
+  },
+  "nielsenracing202624lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "Nielsen Racing 2026 #24:LM"
+  },
+  "oreca07customteam2026397": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "Oreca 07 Custom Team 2026 #397"
+  },
+  "afcorse2026183lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "AF Corse 2026 #183:LM"
+  },
+  "idecsport202628lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "IDEC Sport 2026 #28:LM"
+  },
+  "tdsracing202614lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "TDS Racing 2026 #14:LM"
+  },
+  "protoncompetition20269lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "Proton Competition 2026 #9:LM"
+  },
+  "aobytf202699lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "AO by TF 2026 #99:LM"
+  },
+  "crowdstrikeracingbyapr20264lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "CrowdStrike Racing by APR 2026 #4:LM"
+  },
+  "dkrengineering20263lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "DKR Engineering 2026 #3:LM"
+  },
+  "intereuropolcompetition202643lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "Inter Europol Competition 2026 #43:LM"
+  },
+  "vectorsport202626lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "Vector Sport 2026 #26:LM"
+  },
+  "forestierracingbypanis202629lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "Forestier Racing by Panis 2026 #29:LM"
+  },
+  "unitedautosports202622lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "United Autosports 2026 #22:LM"
+  },
+  "rdlimited202648lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "RD Limited 2026 #48:LM"
+  },
+  "unitedautosports2026222lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "United Autosports 2026 #222:LM"
+  },
+  "duqueineteam202630lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "Duqueine Team 2026 #30:LM"
+  },
+  "protoncompetition202644lm": {
+    "manufacturer": "Oreca",
+    "model": "WEC 2026, LMP2, Oreca 07",
+    "description": "Proton Competition 2026 #44:LM"
   }
 }
