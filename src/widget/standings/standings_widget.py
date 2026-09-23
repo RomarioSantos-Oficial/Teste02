@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 
+import copy
 import re
 import time
 from pathlib import Path
@@ -132,6 +133,9 @@ class StandingsWidget(QWidget):
         self._drawing_driver_row = False
         self.preview_mode = False
         self._last_build = 0.0
+        self._last_categories: list[CategoryBlock] = []
+        self._last_categories_at = 0.0
+        self._header_value_cache: dict[str, tuple[str, float]] = {}
         self._scale = 1.0
         self._dragging = False
         self._resizing = False
@@ -434,6 +438,9 @@ class StandingsWidget(QWidget):
         if self._owns_online_client:
             self.online_client.reset()
         self.view = StandingsView()
+        self._last_categories = []
+        self._last_categories_at = 0.0
+        self._header_value_cache.clear()
         self.update()
 
     def closeEvent(self, event) -> None:
@@ -473,12 +480,29 @@ class StandingsWidget(QWidget):
         metadata = self._merge_online_metadata(drivers, metadata)
         if snapshot.cloud_available:
             source = "RACECONTROL"
-        self.view = self.logic.build(
+        view = self.logic.build(
             self.session,
             metadata,
             source,
             self.enrichment.vehicle_catalog(vehicle_names),
         )
+        hold_seconds = max(
+            0.0,
+            float(self.config.get("standings_data_hold_seconds", 2.0)),
+        )
+        if view.categories:
+            self._last_categories = copy.deepcopy(view.categories)
+            self._last_categories_at = now
+        elif (
+            self._last_categories
+            and now - self._last_categories_at <= hold_seconds
+        ):
+            # O LMU pode publicar um quadro vazio entre duas atualizacoes ou
+            # durante a troca de estado da sessao. Manter somente por um curto
+            # periodo evita o piscar/recolhimento sem exibir dados antigos por
+            # tempo indefinido.
+            view.categories = copy.deepcopy(self._last_categories)
+        self.view = view
         split_allowed = self.online_client.split_allowed_for_session(
             self.session,
             snapshot.session_online,
@@ -619,6 +643,7 @@ class StandingsWidget(QWidget):
 
     def _header_items(self) -> list[tuple[str, float, str]]:
         if not bool(self.config.get("show_global_header", True)):
+            self._header_value_cache.clear()
             return []
         definitions = (
             ("show_header_session_type", self.view.session_type, 0.085, ""),
@@ -630,11 +655,39 @@ class StandingsWidget(QWidget):
             ("show_header_split", self._split_text(), 0.13, ""),
             ("show_header_source", self.view.source_text, 0.115, ""),
         )
-        return [
-            (str(text), fraction, icon)
-            for key, text, fraction, icon in definitions
-            if bool(self.config.get(key, True)) and str(text).strip()
-        ]
+        now = time.monotonic()
+        hold_seconds = max(
+            0.0,
+            float(self.config.get("standings_data_hold_seconds", 2.0)),
+        )
+        items: list[tuple[str, float, str]] = []
+        for key, text, fraction, icon in definitions:
+            if not bool(self.config.get(key, True)):
+                continue
+            value = str(text).strip()
+            placeholders = {
+                "show_header_session_type": {"", "AGUARDANDO"},
+                "show_header_session_time": {"", "--:--"},
+                "show_header_server_time": {"", "--:--"},
+                "show_header_local_time": {"", "--:--"},
+                "show_header_grip": {"", "--"},
+                "show_header_track_limits": {"", "-- / --"},
+                "show_header_split": {""},
+                "show_header_source": {"", "MEM"},
+            }
+            is_placeholder = value in placeholders.get(key, {""})
+            if value and not is_placeholder:
+                self._header_value_cache[key] = (value, now)
+            elif is_placeholder:
+                cached = self._header_value_cache.get(key)
+                if cached is not None and now - cached[1] <= hold_seconds:
+                    value = cached[0]
+            # Split so existe quando a sessao realmente o fornece. Os demais
+            # campos configurados conservam a celula e usam marcador neutro.
+            if not value and key == "show_header_split":
+                continue
+            items.append((value or "--", fraction, icon))
+        return items
 
     def _split_text(self) -> str:
         value = str(self.view.split_label or "").strip()

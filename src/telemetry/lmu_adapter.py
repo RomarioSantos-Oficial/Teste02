@@ -287,6 +287,13 @@ class LMUAdapter:
                         steam_id=str(steam_id) if steam_id > 0 else "",
                         driver_name=decode_text(score.mDriverName),
                         vehicle_name=decode_text(score.mVehicleName),
+                        vehicle_model=(
+                            decode_text(
+                                getattr(raw_vehicle, "mVehicleModel", b"")
+                            )
+                            if raw_vehicle is not None
+                            else ""
+                        ),
                         vehicle_filename=decode_text(
                             getattr(score, "mVehFilename", b"")
                         ),

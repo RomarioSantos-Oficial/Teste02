@@ -232,7 +232,12 @@ class LocalStandingsEnrichment:
         self._last_error = ""
         self._raw: dict[str, Any] = {}
         self._vehicle_catalog = self._load_vehicle_catalog()
-        self._vehicle_catalog_refreshed = bool(self._vehicle_catalog)
+        # Um arquivo existente pode ter sido gerado por uma versao anterior
+        # do jogo. Sempre tente mescla-lo com a API ao iniciar e uma vez em
+        # cada nova sessao, em vez de considerar o cache definitivo.
+        self._vehicle_catalog_refreshed = False
+        self._vehicle_catalog_session_id = ""
+        self._last_session_elapsed_s: float | None = None
         self._test_mode = False
         # Estado para detectar transições de sessão/conexão e gerar logs
         self._last_connected = False
@@ -459,6 +464,21 @@ class LocalStandingsEnrichment:
                 server = str(_first(sess_values, "serverName", "server") or "").strip()
                 session_name = str(_first(sess_values, "session", "sessionName") or "").strip()
                 session_id = f"{server}|{session_name}"
+                previous_elapsed = self._last_session_elapsed_s
+                session_restarted = bool(
+                    sess_time is not None
+                    and previous_elapsed is not None
+                    and sess_time + 5.0 < previous_elapsed
+                )
+                catalog_session_changed = bool(
+                    self._vehicle_catalog_session_id
+                    and session_id
+                    and session_id != self._vehicle_catalog_session_id
+                )
+                if session_restarted or catalog_session_changed:
+                    self._vehicle_catalog_refreshed = False
+                if sess_time is not None:
+                    self._last_session_elapsed_s = sess_time
                 if sess_time is not None and sess_time < 15.0:
                     return metadata, "LMU REST", "aguardando 15s de sessão", {}
         except Exception:
@@ -488,6 +508,7 @@ class LocalStandingsEnrichment:
                         with self._lock:
                             self._vehicle_catalog.update(catalog)
                             self._vehicle_catalog_refreshed = True
+                            self._vehicle_catalog_session_id = session_id
                         self._save_vehicle_catalog()
                         raw[endpoint] = data
                         connected = True

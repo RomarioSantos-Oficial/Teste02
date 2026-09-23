@@ -759,6 +759,27 @@ class StandingsLogicUnitTests(unittest.TestCase):
         self.assertEqual(row.rolling_delta_text, "+2.0")
         self.assertNotEqual(row.rolling_delta_text, row.interval_text)
 
+    def test_native_vehicle_model_identifies_opponent_without_catalog(self) -> None:
+        session = SessionData(
+            connected=True,
+            session=10,
+            drivers=[
+                DriverData(
+                    slot_id=17,
+                    driver_name="Opponent",
+                    vehicle_name="Genesis Magma Racing 2026 #17:LM",
+                    vehicle_model="Genesis GMR-001",
+                    vehicle_class="Hyper",
+                    position=1,
+                )
+            ],
+        )
+
+        row = StandingsLogic({}).build(session, {}, "MEM", {}).categories[0].rows[0]
+
+        self.assertEqual(row.vehicle_model, "Genesis GMR-001")
+        self.assertEqual(row.manufacturer, "Genesis")
+
 
 if __name__ == "__main__":
     unittest.main()

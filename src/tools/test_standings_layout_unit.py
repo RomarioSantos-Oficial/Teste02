@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import unittest
+import time
 
 from PySide6.QtCore import QRectF
 
 from src.ui.overlay_manager import OverlayManager
 from src.widget.relative.relative_widget import RelativeWidget
-from src.widget.standings.standings_models import StandingRow
+from src.widget.standings.standings_models import StandingRow, StandingsView
 from src.widget.standings.standings_widget import (
     StandingsWidget,
     tyre_icon_fill,
@@ -15,6 +16,17 @@ from src.widget.standings.standings_widget import (
 
 
 class StandingsLayoutUnitTests(unittest.TestCase):
+    class HeaderWidgetProbe:
+        _split_text = StandingsWidget._split_text
+
+        def __init__(self, view: StandingsView | None = None) -> None:
+            self.config = {
+                "show_global_header": True,
+                "standings_data_hold_seconds": 2.0,
+            }
+            self.view = view or StandingsView()
+            self._header_value_cache: dict[str, tuple[str, float]] = {}
+
     class PainterProbe:
         def __init__(self) -> None:
             self.ellipses: list[QRectF] = []
@@ -42,6 +54,29 @@ class StandingsLayoutUnitTests(unittest.TestCase):
             tyre_position_tokens(["Soft", "", "Hard", "Wet"]),
             ("S", "", "H", "W"),
         )
+
+    def test_global_header_keeps_configured_cells_when_data_is_empty(self) -> None:
+        probe = self.HeaderWidgetProbe()
+
+        items = StandingsWidget._header_items(probe)
+
+        self.assertTrue(items)
+        self.assertNotIn("SPLIT --", [text for text, _width, _icon in items])
+        self.assertIn("AGUARDANDO", [text for text, _width, _icon in items])
+
+    def test_global_header_holds_last_value_across_short_gap(self) -> None:
+        probe = self.HeaderWidgetProbe(StandingsView(session_type="Race"))
+        first = StandingsWidget._header_items(probe)
+        probe.view = StandingsView()
+        probe._header_value_cache["show_header_session_type"] = (
+            "Race",
+            time.monotonic(),
+        )
+
+        second = StandingsWidget._header_items(probe)
+
+        self.assertIn("Race", [text for text, _width, _icon in first])
+        self.assertIn("Race", [text for text, _width, _icon in second])
 
     def test_tyre_icon_editor_scale_changes_visible_fill(self) -> None:
         small = tyre_icon_fill(0.70)

@@ -48,6 +48,10 @@ class DriverData:
     steam_id: str = ""
     driver_name: str = ""
     vehicle_name: str = ""
+    # Modelo real publicado pela telemetria de cada carro. `vehicle_name`
+    # normalmente contem equipe/livery no LMU e nao deve ser usado como
+    # fonte principal para identificar fabricante e modelo.
+    vehicle_model: str = ""
 
     # Identificador do arquivo VEH e grupo de boxes. Esses campos são
     # muito mais úteis quando mVehicleName contém equipe/livery em vez

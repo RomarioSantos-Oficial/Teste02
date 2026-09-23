@@ -1058,6 +1058,7 @@ class StandingsLogic:
                 (
                     vehicle_name,
                     vehicle_filename,
+                    str(getattr(driver, "vehicle_model", "") or ""),
                     extra.vehicle_model,
                     str(catalog_entry.get("manufacturer", "") or ""),
                 )
@@ -1102,8 +1103,12 @@ class StandingsLogic:
             or str(getattr(driver, "car_number", "") or "")
             or extract_car_number(vehicle_name, name, slot_id)
         )
+        # A telemetria nativa fornece o modelo de cada carro e acompanha
+        # imediatamente alteracoes feitas pelo LMU. REST/catalogo continuam
+        # como fallback para mapas antigos que nao publicam esse campo.
         vehicle_model = (
-            extra.vehicle_model
+            str(getattr(driver, "vehicle_model", "") or "")
+            or extra.vehicle_model
             or str(catalog_entry.get("model", "") or "")
         )
         player_model = ""

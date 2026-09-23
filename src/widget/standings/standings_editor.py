@@ -117,7 +117,7 @@ class StandingsEditor(QDialog):
         form.addRow("Linhas das outras categorias:", other_rows)
         for key, label, default in (
             ("show_global_header", "Cabeçalho global:", True),
-            ("show_column_legend", "Legenda das colunas:", False),
+            ("show_column_legend", "Legenda das colunas:", True),
             ("position_change_in_class", "Mudança na categoria:", True),
         ):
             check = QCheckBox()
