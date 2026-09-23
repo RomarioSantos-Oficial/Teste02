@@ -46,7 +46,7 @@
   "font_size": 14,
   "mapping_sample_distance_m": 18.0,
   "minimum_mapping_points": 120,
-  "minimum_mapping_coverage": 0.82,
+  "minimum_mapping_coverage": 0.95,
   "maximum_mapping_path_lateral_m": 35.0,
   "loop_close_distance_m": 500.0,
   "save_map_cache": true,

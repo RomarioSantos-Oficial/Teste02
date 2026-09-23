@@ -54,6 +54,11 @@ class TrackMapBuilder:
         self.current_sector_points: list[MapPoint] = []
         self.last_sector: int | None = None
         self.last_distance_m: float | None = None
+        self.current_lap_rejected = False
+        self.pending_points: list[MapPoint] = []
+        self.pending_sector_points: list[MapPoint] = []
+        self.pending_started_s: float | None = None
+        self.pending_validation_reads = 0
         self.loaded_data: TrackMapData | None = None
 
     def clear_cache(
@@ -78,6 +83,8 @@ class TrackMapBuilder:
         self.current_lap = None
         self.last_sector = None
         self.last_distance_m = None
+        self.current_lap_rejected = False
+        self._clear_pending()
 
     def update(
         self,
@@ -108,6 +115,14 @@ class TrackMapBuilder:
 
         if player_row is None:
             return self._current_data()
+
+        validated = self._validate_pending_lap(
+            session,
+            player_row,
+        )
+        if validated is not None:
+            self.loaded_data = validated
+            return validated
 
         if (
             bool(getattr(player_row, "in_pits", False))
@@ -166,19 +181,37 @@ class TrackMapBuilder:
         )
 
         if lap_changed or wrapped:
-            saved = self._finalize_lap()
-
-            if saved is not None:
-                self.loaded_data = saved
-                return saved
+            self._stage_completed_lap(session)
 
             self.current_points = []
             self.current_sector_points = []
             self.last_sector = None
             self.last_distance_m = None
+            self.current_lap_rejected = False
 
         if self.current_lap is None or lap_changed:
             self.current_lap = lap
+
+        current_invalid = bool(
+            getattr(player, "current_lap_invalidated", False)
+            or getattr(
+                player_row,
+                "current_lap_invalidated",
+                False,
+            )
+        )
+        if current_invalid:
+            # Uma volta invalidada nunca pode fornecer nem mesmo uma prévia
+            # do traçado. Continue aguardando a próxima passagem pela linha.
+            self.current_lap_rejected = True
+            self.current_points = []
+            self.current_sector_points = []
+            self.last_sector = None
+            self.last_distance_m = None
+            return self._current_data()
+
+        if self.current_lap_rejected:
+            return self._current_data()
 
         point = MapPoint(
             distance_m=distance_m,
@@ -250,6 +283,11 @@ class TrackMapBuilder:
             return True
 
         previous = self.current_points[-1]
+        # O TinyPedal só aceita coordenadas quando a distância da volta
+        # avança. Isso elimina ré, teleporte, retorno aos boxes e quadros
+        # fora de ordem que poderiam cruzar o desenho do circuito.
+        if point.distance_m <= previous.distance_m:
+            return False
         min_distance = max(
             2.0,
             float(
@@ -272,11 +310,100 @@ class TrackMapBuilder:
             or spatial >= min_distance
         )
 
+    def _stage_completed_lap(
+        self,
+        session: Any,
+    ) -> None:
+        if (
+            self.pending_points
+            or self.current_lap_rejected
+            or not self.current_points
+        ):
+            return
+
+        self.pending_points = list(self.current_points)
+        self.pending_sector_points = list(
+            self.current_sector_points
+        )
+        now = self._float(session, "current_time_s")
+        self.pending_started_s = now if now > 0.0 else None
+        self.pending_validation_reads = 0
+
+    def _validate_pending_lap(
+        self,
+        session: Any,
+        player_row: Any,
+    ) -> TrackMapData | None:
+        if not self.pending_points:
+            return None
+
+        self.pending_validation_reads += 1
+        now = self._float(session, "current_time_s")
+        elapsed = (
+            now - self.pending_started_s
+            if (
+                self.pending_started_s is not None
+                and now >= self.pending_started_s
+            )
+            else 0.0
+        )
+        player = getattr(session, "player", None)
+        last_invalid = bool(
+            getattr(player, "last_lap_invalidated", False)
+            or getattr(
+                player_row,
+                "last_lap_invalidated",
+                False,
+            )
+        )
+
+        if last_invalid:
+            self._clear_pending()
+            return None
+
+        # Igual ao TinyPedal: aguarde a atualização do tempo da última
+        # volta. Antes disso o valor ainda pode pertencer à volta anterior.
+        ready = (
+            elapsed >= 1.0
+            if self.pending_started_s is not None
+            else self.pending_validation_reads >= 20
+        )
+        if not ready:
+            return None
+
+        last_lap_s = self._float(player_row, "last_lap_s")
+        if last_lap_s > 0.0:
+            saved = self._finalize_lap(
+                self.pending_points,
+                self.pending_sector_points,
+            )
+            self._clear_pending()
+            return saved
+
+        expired = (
+            elapsed >= 8.0
+            if self.pending_started_s is not None
+            else self.pending_validation_reads >= 160
+        )
+        if expired:
+            self._clear_pending()
+        return None
+
+    def _clear_pending(self) -> None:
+        self.pending_points = []
+        self.pending_sector_points = []
+        self.pending_started_s = None
+        self.pending_validation_reads = 0
+
     def _finalize_lap(
         self,
+        source_points: list[MapPoint] | None = None,
+        source_sector_points: list[MapPoint] | None = None,
     ) -> TrackMapData | None:
         points = sorted(
-            self.current_points,
+            source_points
+            if source_points is not None
+            else self.current_points,
             key=lambda item: item.distance_m,
         )
         minimum_points = max(
@@ -308,7 +435,7 @@ class TrackMapBuilder:
             ),
         )
         required_coverage = max(
-            0.50,
+            0.95,
             min(
                 0.98,
                 float(
@@ -321,17 +448,44 @@ class TrackMapBuilder:
         )
         starts_near_line = (
             minimum_distance
-            <= track_length * 0.10
+            <= track_length * 0.05
         )
         ends_near_line = (
             maximum_distance
-            >= track_length * 0.80
+            >= track_length * 0.95
+        )
+        maximum_distance_gap = max(
+            100.0,
+            track_length * 0.04,
+        )
+        continuous_distance = all(
+            current.distance_m - previous.distance_m
+            <= maximum_distance_gap
+            for previous, current in zip(points, points[1:])
+        )
+        close_threshold = max(
+            10.0,
+            float(
+                self.config.get(
+                    "loop_close_distance_m",
+                    500.0,
+                )
+            ),
+        )
+        closes_loop = (
+            math.hypot(
+                points[-1].world_x - points[0].world_x,
+                points[-1].world_y - points[0].world_y,
+            )
+            <= close_threshold
         )
 
         if (
             coverage < required_coverage
             or not starts_near_line
             or not ends_near_line
+            or not continuous_distance
+            or not closes_loop
         ):
             return None
 
@@ -341,7 +495,9 @@ class TrackMapBuilder:
             track_length_m=track_length,
             points=points,
             sector_points=list(
-                self.current_sector_points
+                source_sector_points
+                if source_sector_points is not None
+                else self.current_sector_points
             ),
             complete=True,
             loaded_from_cache=False,
@@ -359,24 +515,27 @@ class TrackMapBuilder:
         return data
 
     def _current_data(self) -> TrackMapData:
-        points = sorted(
+        # A volta em gravação não é publicada. O mapa só aparece depois da
+        # passagem pela linha e da confirmação de uma volta válida.
+        points: list[MapPoint] = []
+        recorded = sorted(
             self.current_points,
             key=lambda item: item.distance_m,
         )
         length = max(
             self.track_length_m,
-            points[-1].distance_m if points else 0.0,
+            recorded[-1].distance_m if recorded else 0.0,
             1.0,
         )
 
-        if points:
+        if recorded:
             coverage = max(
                 0.0,
                 min(
                     1.0,
                     (
-                        points[-1].distance_m
-                        - points[0].distance_m
+                        recorded[-1].distance_m
+                        - recorded[0].distance_m
                     )
                     / length,
                 ),
@@ -389,9 +548,7 @@ class TrackMapBuilder:
             track_name=self.track_name,
             track_length_m=self.track_length_m,
             points=points,
-            sector_points=list(
-                self.current_sector_points
-            ),
+            sector_points=[],
             complete=False,
             loaded_from_cache=False,
             coverage=coverage,
@@ -407,7 +564,7 @@ class TrackMapBuilder:
         )
         path = self.cache_dir / f"{data.track_key}.json"
         payload = {
-            "version": 1,
+            "version": 2,
             "track_key": data.track_key,
             "track_name": data.track_name,
             "track_length_m": data.track_length_m,
@@ -462,6 +619,8 @@ class TrackMapBuilder:
                     encoding="utf-8"
                 )
             )
+            if int(payload.get("version", 0) or 0) != 2:
+                return None
             points = [
                 MapPoint(
                     distance_m=float(item["distance_m"]),

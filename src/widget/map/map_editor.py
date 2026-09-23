@@ -312,7 +312,7 @@ class MapEditor(QDialog):
 
         coverage = QDoubleSpinBox()
         coverage.setRange(
-            50.0,
+            95.0,
             98.0,
         )
         coverage.setSuffix(" %")
@@ -320,7 +320,7 @@ class MapEditor(QDialog):
             float(
                 self.config.get(
                     "minimum_mapping_coverage",
-                    0.82,
+                    0.95,
                 )
             )
             * 100.0
