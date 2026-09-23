@@ -966,8 +966,8 @@ class StandingsWidget(QWidget):
             "position": "P", "change": "+/-", "flag": "PAÍS", "badge": "BADGE",
             "dr": "DR", "sr": "SR", "gain_dr": "ΔDR",
             "driver": "PILOTO", "brand": "MAR", "number": "#", "laps": "VLT",
-            "pit": "PIT", "best": "BEST", "last": "LAST", "interval": "INT", "delta": "DELTA", "gap": "GAP", "track_limits": "LIM",
-            "penalty": "STS" if self.FINISH_FLAG_IN_STATUS_COLUMN else "PEN",
+            "pit": "PIT", "best": "BEST", "last": "LAST", "interval": "INT", "delta": "DELTA", "gap": "GAP", "track_limits": "PEN",
+            "penalty": "INFO",
             "tyre": "TYR",
             "energy": "VE/FUEL", "damage": "DMG",
         }

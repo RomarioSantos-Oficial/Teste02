@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from statistics import fmean
 from typing import Any
 
+from src.widget.lap_projection import project_race_laps
+
 
 @dataclass(slots=True)
 class FuelTimeData:
@@ -92,18 +94,20 @@ class FuelTimeTracker:
             len(self._fuel_samples), reference)
 
     def _remaining_laps(self, session: Any, driver: Any | None) -> tuple[float | None, str]:
-        length = float(getattr(session, "track_length_m", 0.0) or 0.0)
-        progress = max(0.0, min(.999, float(getattr(driver, "lap_distance_m", 0.0) or 0.0)/length)) if driver is not None and length > 0 else 0.0
-        completed = float(getattr(driver, "laps", getattr(getattr(session, "player", None), "lap", 0)) or 0)
-        max_laps = int(getattr(session, "max_laps", 0) or 0)
-        if max_laps > 0: return max(0.0, max_laps-completed-progress), "limite de voltas da API"
-        remaining_s = float(getattr(session, "remaining_time_s", 0.0) or 0.0)
-        if remaining_s <= 0: return None, "sem duracao da sessao"
-        valid = [d for d in list(getattr(session, "drivers", []) or []) if float(getattr(d, "best_lap_s", 0.0) or 0.0) > 20]
-        fastest = min(valid, key=lambda d: float(getattr(d, "best_lap_s", 0.0))) if valid else None
-        leader_lap = float(getattr(fastest, "best_lap_s", 0.0) or 0.0) if fastest else 0.0
-        player_lap = float(getattr(driver, "last_lap_s", 0.0) or 0.0) if driver else 0.0
-        if player_lap <= 20 and driver is not None: player_lap = float(getattr(driver, "best_lap_s", 0.0) or 0.0)
-        if player_lap <= 20: player_lap = leader_lap
-        if player_lap <= 20: return None, "aguardando tempo de volta"
-        return max(0.0, (remaining_s + (leader_lap or player_lap))/player_lap-progress), "tempo + classe mais rapida"
+        if driver is None:
+            return None, "aguardando jogador"
+        vehicle_class = str(getattr(driver, "vehicle_class", "") or "")
+        class_rows = [
+            row
+            for row in list(getattr(session, "drivers", []) or [])
+            if str(getattr(row, "vehicle_class", "") or "") == vehicle_class
+        ]
+        projection = project_race_laps(session, driver, class_rows)
+        if projection is None:
+            return None, "aguardando lideres e tempos de volta"
+        reference = (
+            "limite de voltas da API"
+            if projection.reference == "fixed_laps"
+            else "bandeirada do lider geral + lider da categoria"
+        )
+        return projection.finish_remaining_laps, reference

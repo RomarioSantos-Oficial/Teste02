@@ -109,6 +109,28 @@ class TrackMapBuilderValidityTest(unittest.TestCase):
         self.assertEqual(self.builder.pending_points, [])
         self.assertFalse((self.root / "maps").exists())
 
+    def test_waits_for_official_validity_instead_of_discarding_first_frame(self) -> None:
+        self._record_complete_lap()
+        self._cross_finish_line()
+
+        # Primeiro quadro do LMU: mLastLapTime ainda está zerado e o fallback
+        # do scoring marca a volta provisoriamente como inválida.
+        self.player.last_lap_invalidated = True
+        self.driver.last_lap_invalidated = True
+        self.driver.last_lap_s = 0.0
+        self.session.current_time_s = 10.2
+        waiting = self.builder.update(self.session)
+        self.assertFalse(waiting.complete)
+        self.assertTrue(self.builder.pending_points)
+
+        # Após a janela de confirmação chega o tempo oficial válido.
+        self.player.last_lap_invalidated = False
+        self.driver.last_lap_invalidated = False
+        self.driver.last_lap_s = 60.0
+        self.session.current_time_s = 11.2
+        completed = self.builder.update(self.session)
+        self.assertTrue(completed.complete)
+
     def test_invalid_current_lap_is_removed_from_recording(self) -> None:
         self._record_complete_lap()
         self.player.current_lap_invalidated = True

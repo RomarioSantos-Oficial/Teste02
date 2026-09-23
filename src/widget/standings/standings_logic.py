@@ -1414,9 +1414,6 @@ class StandingsLogic:
             1,
             min(5, int(self.config.get("other_category_rows", 3))),
         )
-        player_class_rows = (
-            groups.get(player.class_key, []) if player is not None else []
-        )
         for class_key, class_rows in ordered:
             class_rows.sort(key=lambda row: row.class_position or 9999)
             is_player_class = player is not None and class_key == player.class_key
@@ -1433,20 +1430,24 @@ class StandingsLogic:
             class_name = class_rows[0].class_name if class_rows else class_key
             _, _, color = canonical_class(class_key, self.config)
             leader_reference = class_rows[0] if class_rows else None
-            # Todos os cabecalhos acompanham a volta do jogador. A coluna VLT
-            # continua individual para mostrar a volta atual de cada piloto.
-            lap_reference = player if player is not None else leader_reference
+            # Cada cabecalho mostra o maior contador observado dentro da sua
+            # propria categoria. Isso evita repetir a volta do jogador em
+            # todas as classes e tolera uma ordenacao momentaneamente atrasada.
+            lap_reference = max(
+                class_rows,
+                key=lambda row: (
+                    row.display_lap,
+                    row.laps,
+                    row.lap_distance_m,
+                ),
+                default=leader_reference,
+            )
             current_lap = lap_reference.display_lap if lap_reference is not None else 0
-            # A previsao da classe do jogador usa o proprio jogador. Nas outras
-            # classes ela usa o lider daquela classe e seu ritmo de referencia.
-            prediction_reference = (
-                player if is_player_class and player is not None else leader_reference
-            )
-            prediction_rows = (
-                player_class_rows
-                if is_player_class and player is not None
-                else class_rows
-            )
+            # O total do cabecalho pertence a categoria e, portanto, usa o
+            # lider da classe. O Lap Timer calcula separadamente o total do
+            # jogador e desconta as voltas confirmadas que ele perdeu.
+            prediction_reference = leader_reference
+            prediction_rows = class_rows
             if is_race:
                 total_text, total_calc = self._total_laps_info(
                     prediction_reference,

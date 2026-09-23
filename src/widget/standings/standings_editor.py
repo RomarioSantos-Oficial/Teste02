@@ -43,12 +43,12 @@ class StandingsEditor(QDialog):
         ("last", "Última volta", 140.0),
         ("interval", "Intervalo da categoria", 100.0),
         ("delta", "Delta acumulado", 90.0),
-        ("gap", "Gap/intervalo", 100.0),
+        ("gap", "Gap", 100.0),
         ("tyre", "Pneus", 76.0),
         ("energy", "Energia", 105.0),
         ("damage", "Danos", 80.0),
-        ("track_limits", "Limites de pista", 88.0),
-        ("penalty", "Punição", 90.0),
+        ("track_limits", "Punição", 88.0),
+        ("penalty", "Informação", 90.0),
     )
 
     def __init__(self, config: dict[str, Any], parent: QWidget | None = None) -> None:
@@ -169,13 +169,13 @@ class StandingsEditor(QDialog):
             ("show_last_lap", "Última volta (LAST):", True),
             ("show_interval", "Intervalo da categoria (INT):", True),
             ("show_delta", "Delta acumulado (DELTA):", False),
-            ("show_gap", "Gap/intervalo:", True),
+            ("show_gap", "Gap:", True),
             ("show_tyre", "Pneu:", True),
             ("show_invalid_lap_status", "Volta inválida:", True),
             ("show_pit_status", "Tempo/status do pit:", True),
-            ("show_track_limits_column", "Coluna de limites de pista:", True),
-            ("show_penalty_column", "Coluna de punição automática:", True),
-            ("detach_penalty_column", "Punições fora do bloco:", True),
+            ("show_track_limits_column", "Coluna de punição:", True),
+            ("show_penalty_column", "Coluna de informação:", True),
+            ("detach_penalty_column", "Informação fora do bloco:", True),
             ("show_energy", "Bateria/Energia:", True),
             ("show_damage", "Dano:", True),
         )

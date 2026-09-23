@@ -49,11 +49,33 @@ class StandingsLayoutUnitTests(unittest.TestCase):
             self.config = {"tyre_icon_scale": scale, "colors": {}}
             self._scale = 1.0
 
+    class ColumnsWidgetProbe:
+        def __init__(self, *, gap: bool, interval: bool) -> None:
+            self.config = {
+                "show_gap": gap,
+                "show_interval": interval,
+                "relative_mode": False,
+            }
+            self.view = StandingsView(session_type="Race")
+
     def test_tyre_tokens_keep_fl_fr_rl_rr_positions(self) -> None:
         self.assertEqual(
             tyre_position_tokens(["Soft", "", "Hard", "Wet"]),
             ("S", "", "H", "W"),
         )
+
+    def test_gap_and_interval_can_be_enabled_independently(self) -> None:
+        gap_only = StandingsWidget._enabled_columns(
+            self.ColumnsWidgetProbe(gap=True, interval=False)
+        )
+        interval_only = StandingsWidget._enabled_columns(
+            self.ColumnsWidgetProbe(gap=False, interval=True)
+        )
+
+        self.assertTrue(gap_only["gap"])
+        self.assertFalse(gap_only["interval"])
+        self.assertFalse(interval_only["gap"])
+        self.assertTrue(interval_only["interval"])
 
     def test_global_header_keeps_configured_cells_when_data_is_empty(self) -> None:
         probe = self.HeaderWidgetProbe()

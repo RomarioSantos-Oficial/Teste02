@@ -17,12 +17,12 @@ class RelativeEditor(StandingsEditor):
         ("pit", "Tempo do pit", 90.0),
         ("interval", "Intervalo da categoria", 100.0),
         ("delta", "Delta acumulado", 90.0),
-        ("gap", "Gap/intervalo", 100.0),
+        ("gap", "Gap", 100.0),
         ("tyre", "Pneus", 76.0),
         ("energy", "Energia", 105.0),
         ("damage", "Danos", 80.0),
-        ("track_limits", "Limites de pista", 88.0),
-        ("penalty", "Punição", 90.0),
+        ("track_limits", "Punição", 88.0),
+        ("penalty", "Informação", 90.0),
     )
 
     def __init__(self, config, parent=None):
@@ -93,8 +93,8 @@ class RelativeEditor(StandingsEditor):
             ("show_tyre", "Pneu:", True),
             ("show_invalid_lap_status", "Volta inválida:", True),
             ("show_pit_status", "Tempo/status do pit:", True),
-            ("show_track_limits_column", "Limites de pista:", True),
-            ("show_penalty_column", "Punição automática:", True),
+            ("show_track_limits_column", "Punição:", True),
+            ("show_penalty_column", "Informação:", True),
             ("show_energy", "Bateria/Energia:", True),
             ("show_damage", "Dano:", True),
         )

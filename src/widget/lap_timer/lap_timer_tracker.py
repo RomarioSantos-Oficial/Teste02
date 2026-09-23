@@ -5,6 +5,8 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+from src.widget.lap_projection import project_race_laps
+
 
 @dataclass(slots=True)
 class LapTimerData:
@@ -57,42 +59,17 @@ def estimate_laps(
     completed: int,
     fraction: float,
 ) -> tuple[float | None, float | None]:
-    """Calcula total e restante com a regra existente do Lap Timer."""
-    maximum = int(getattr(session, "max_laps", 0) or 0)
-    progress = completed + fraction
-    if 0 < maximum <= 500:
-        return float(maximum), max(0.0, maximum - progress)
-    remaining_s = float(getattr(session, "remaining_time_s", 0.0) or 0.0)
-    if remaining_s <= 0.0 or driver is None:
-        return None, None
-    player_pace = float(getattr(driver, "last_lap_s", 0.0) or 0.0)
-    if player_pace < 3.0:
-        player_pace = float(getattr(driver, "best_lap_s", 0.0) or 0.0)
-    leader = min(
+    """Calcula a chegada pela bandeirada única definida pelo líder geral."""
+    projection = project_race_laps(
+        session,
+        driver,
         class_rows,
-        key=lambda d: int(getattr(d, "position_in_class", 9999) or 9999),
-        default=None,
+        target_completed_laps=completed,
+        target_lap_fraction=fraction,
     )
-    leader_pace = 0.0
-    if leader is not None:
-        leader_pace = float(getattr(leader, "last_lap_s", 0.0) or 0.0)
-        if leader_pace < 3.0:
-            leader_pace = float(getattr(leader, "best_lap_s", 0.0) or 0.0)
-    if player_pace < 3.0:
-        player_pace = leader_pace
-    if player_pace < 3.0:
+    if projection is None:
         return None, None
-    # Inclui a volta de bandeirada. O ritmo do lider da categoria determina
-    # quando a corrida encerra; o ritmo do carro de referencia determina
-    # quantas voltas ele completa.
-    finish_window = remaining_s + (
-        leader_pace if leader_pace >= 3.0 else player_pace
-    )
-    remaining = max(0.0, finish_window / player_pace - fraction)
-    total = progress + remaining
-    if not math.isfinite(total) or total > progress + 500.0:
-        return None, None
-    return total, remaining
+    return projection.final_laps, projection.remaining_laps
 
 
 class LapTimerTracker:

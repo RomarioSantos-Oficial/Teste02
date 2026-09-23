@@ -357,10 +357,6 @@ class TrackMapBuilder:
             )
         )
 
-        if last_invalid:
-            self._clear_pending()
-            return None
-
         # Igual ao TinyPedal: aguarde a atualização do tempo da última
         # volta. Antes disso o valor ainda pode pertencer à volta anterior.
         ready = (
@@ -369,6 +365,13 @@ class TrackMapBuilder:
             else self.pending_validation_reads >= 20
         )
         if not ready:
+            return None
+
+        # O scoring do LMU pode marcar provisoriamente a volta como inválida
+        # no primeiro quadro após a linha, enquanto mLastLapTime ainda está
+        # zerado. Só aceite essa invalidação depois da janela de confirmação.
+        if last_invalid:
+            self._clear_pending()
             return None
 
         last_lap_s = self._float(player_row, "last_lap_s")

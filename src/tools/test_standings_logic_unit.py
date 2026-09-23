@@ -226,8 +226,8 @@ class StandingsLogicUnitTests(unittest.TestCase):
         category = view.categories[0]
         rows = {row.driver_name: row for row in category.rows}
 
-        self.assertEqual(category.current_lap, 12)
-        self.assertEqual(category.total_laps_text, "19.4")
+        self.assertEqual(category.current_lap, 13)
+        self.assertEqual(category.total_laps_text, "21.0")
         self.assertEqual(rows["Class Leader"].display_lap, 13)
         self.assertEqual(rows["Player"].display_lap, 12)
         self.assertEqual(rows["Class Leader"].tyre_compound, "Wet")
@@ -263,7 +263,7 @@ class StandingsLogicUnitTests(unittest.TestCase):
         row = StandingsLogic({}).build(session, {}, "MEM").categories[0].rows[0]
         self.assertEqual(row.tyre_compounds, ("Soft", "", "Hard", "Wet"))
 
-    def test_practice_uses_player_lap_for_player_class(self) -> None:
+    def test_practice_uses_highest_lap_in_category_header(self) -> None:
         session = SessionData(
             connected=True,
             session=1,
@@ -287,13 +287,13 @@ class StandingsLogicUnitTests(unittest.TestCase):
         )
 
         category = StandingsLogic({}).build(session, {}, "MEM").categories[0]
-        self.assertEqual(category.current_lap, 4)
+        self.assertEqual(category.current_lap, 9)
         self.assertEqual(category.total_laps_text, "--")
         self.assertTrue(category.show_count)
         self.assertEqual(category.started, 2)
         self.assertEqual(category.total, 2)
 
-    def test_all_headers_follow_player_lap_but_project_each_category(self) -> None:
+    def test_each_header_uses_highest_lap_and_projects_its_category(self) -> None:
         session = SessionData(
             connected=True,
             session=10,
@@ -322,12 +322,16 @@ class StandingsLogicUnitTests(unittest.TestCase):
         categories = StandingsLogic({"maximum_categories": 3}).build(
             session, {}, "MEM"
         ).categories
-        self.assertEqual({category.current_lap for category in categories}, {7})
+        current_laps = {
+            category.class_key: category.current_lap for category in categories
+        }
+        self.assertEqual(current_laps["HYPERCAR"], 8)
+        self.assertEqual(current_laps["LMP2"], 9)
         projections = {
             category.class_key: category.total_laps_text for category in categories
         }
-        self.assertEqual(projections["HYPERCAR"], "13.5")
-        self.assertEqual(projections["LMP2"], "16.5")
+        self.assertEqual(projections["HYPERCAR"], "15.0")
+        self.assertEqual(projections["LMP2"], "17.0")
 
     def test_finished_driver_does_not_gain_nonexistent_next_lap(self) -> None:
         session = SessionData(
