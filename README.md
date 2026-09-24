@@ -121,7 +121,7 @@ powershell -NoProfile -Command "Get-FileHash '.\SectorFlow_Setup_0.0.7.exe' -Alg
 SHA-256 do instalador 0.0.7:
 
 ```text
-13CDA1EFE9BF3F4C56098FE1E1AC40E28D500F163FCBF4D6D349253445A4AD88
+A2862BE7A17BB40360AD551F7FACD88EF89D5734F0BAD13166A16DF2D047CA00
 ```
 
 Se o valor for diferente, confirme a origem antes de executar.
