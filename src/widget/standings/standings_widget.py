@@ -125,6 +125,7 @@ class StandingsWidget(QWidget):
         self._finish_flag_loaded = False
         self._finish_flag_source: QPixmap | None = None
         self._finish_flag_pixmaps: dict[tuple[int, int], QPixmap] = {}
+        self._static_icon_pixmaps: dict[tuple[str, int, int], QPixmap] = {}
         self.view = StandingsView()
         self.session: Any | None = None
         self.edit_mode = False
@@ -463,6 +464,8 @@ class StandingsWidget(QWidget):
     def _rebuild(self, force: bool = False) -> None:
         now = time.monotonic()
         interval = max(0.05, float(self.config.get("render_interval_seconds", 0.20)))
+        driver_count = len(getattr(self.session, "drivers", []) or [])
+        interval = self._adaptive_render_interval(interval, driver_count)
         if not force and now - self._last_build < interval:
             return
         self._last_build = now
@@ -522,6 +525,18 @@ class StandingsWidget(QWidget):
         self._update_scale()
         self._fit_height_to_content()
         self.update()
+
+    @staticmethod
+    def _adaptive_render_interval(base_interval: float, driver_count: int) -> float:
+        """Mantém grids grandes legíveis sem reconstruções visuais excessivas."""
+        interval = max(0.05, float(base_interval))
+        # Em grids grandes, 4 ou 5 reconstruções completas por segundo não
+        # melhoram a leitura do STR/Relative e competem com o jogo pela CPU.
+        if driver_count > 50:
+            return max(interval, 0.30)
+        if driver_count > 30:
+            return max(interval, 0.25)
+        return interval
 
     def _merge_online_metadata(
         self,
@@ -766,25 +781,28 @@ class StandingsWidget(QWidget):
             icon_path = PROJECT_ROOT / "images" / "incos01" / icon
             if icon and icon_path.is_file():
                 icon_size = min(target.height() * 0.70, target.width() * 0.24)
-                pixmap = QPixmap(str(icon_path)).scaled(
-                    max(1, int(icon_size)), max(1, int(icon_size)),
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation,
+                pixmap = self._static_icon_pixmap(
+                    icon_path,
+                    max(1, int(icon_size)),
+                    max(1, int(icon_size)),
                 )
-                label = text
-                text_width = QFontMetrics(painter.font()).horizontalAdvance(label)
-                group_width = min(
-                    target.width(),
-                    pixmap.width() + 4 * self._scale + text_width,
-                )
-                group_left = target.center().x() - group_width / 2.0
-                painter.drawPixmap(
-                    int(group_left),
-                    int(target.center().y() - pixmap.height() / 2),
-                    pixmap,
-                )
-                target.setLeft(group_left + pixmap.width() + 4 * self._scale)
-                target.setRight(min(cell.right() - 3 * self._scale, target.left() + text_width))
+                if pixmap is not None:
+                    label = text
+                    text_width = QFontMetrics(painter.font()).horizontalAdvance(label)
+                    group_width = min(
+                        target.width(),
+                        pixmap.width() + 4 * self._scale + text_width,
+                    )
+                    group_left = target.center().x() - group_width / 2.0
+                    painter.drawPixmap(
+                        int(group_left),
+                        int(target.center().y() - pixmap.height() / 2),
+                        pixmap,
+                    )
+                    target.setLeft(group_left + pixmap.width() + 4 * self._scale)
+                    target.setRight(min(cell.right() - 3 * self._scale, target.left() + text_width))
+                else:
+                    label = text
             else:
                 label = f"{icon}  {text}".strip()
             font = painter.font()
@@ -899,10 +917,13 @@ class StandingsWidget(QWidget):
             painter.setPen(QColor("#FFFFFF"))
             target = box.adjusted(8 * self._scale, 0, -8 * self._scale, 0)
             if category.show_count and text == f"{category.started}/{category.total}":
-                pixmap = QPixmap(str(PROJECT_ROOT / "images" / "incos01" / "piloto.png"))
-                if not pixmap.isNull():
-                    size = min(target.height() * .68, target.width() * .26)
-                    pixmap = pixmap.scaled(max(1, int(size)), max(1, int(size)), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                size = min(target.height() * .68, target.width() * .26)
+                pixmap = self._static_icon_pixmap(
+                    PROJECT_ROOT / "images" / "incos01" / "piloto.png",
+                    max(1, int(size)),
+                    max(1, int(size)),
+                )
+                if pixmap is not None:
                     painter.drawPixmap(int(target.left()), int(target.center().y() - pixmap.height() / 2), pixmap)
                     target.setLeft(target.left() + size + 3 * self._scale)
             font = painter.font()
@@ -1611,6 +1632,33 @@ class StandingsWidget(QWidget):
         if len(self._finish_flag_pixmaps) >= 32:
             self._finish_flag_pixmaps.clear()
         self._finish_flag_pixmaps[key] = pixmap
+        return pixmap
+
+    def _static_icon_pixmap(
+        self,
+        path: Path,
+        width: int,
+        height: int,
+    ) -> QPixmap | None:
+        """Carrega e redimensiona ícones fixos uma única vez por tamanho."""
+        width = max(1, int(width))
+        height = max(1, int(height))
+        key = (str(path), width, height)
+        cached = self._static_icon_pixmaps.get(key)
+        if cached is not None:
+            return cached
+        source = QPixmap(str(path))
+        if source.isNull():
+            return None
+        pixmap = source.scaled(
+            width,
+            height,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        if len(self._static_icon_pixmaps) >= 64:
+            self._static_icon_pixmaps.clear()
+        self._static_icon_pixmaps[key] = pixmap
         return pixmap
 
     def _draw_driver_status(self, painter: QPainter, rect: QRectF, row: StandingRow) -> None:

@@ -142,15 +142,20 @@ class SectorFlowApplication:
         )
         self.session_bus = SharedSessionBus()
         self.driver_panel_process = DriverPanelProcessController(config_path)
-        self.isolated_widget_processes = {
-            widget_id: IsolatedWidgetProcessController(
-                config_path,
-                widget_id,
-                self.session_bus,
-                interval,
-            )
-            for widget_id, interval in ISOLATED_SESSION_WIDGET_INTERVALS.items()
-        }
+        self.isolated_widget_processes: dict[
+            str,
+            IsolatedWidgetProcessController,
+        ] = {}
+        configured_widgets = self.overlay_manager.config_data.get(
+            "widgets",
+            {},
+        )
+        for widget_id in ISOLATED_SESSION_WIDGET_INTERVALS:
+            config = configured_widgets.get(widget_id, {})
+            if bool(config.get("enabled", False)):
+                self.isolated_widget_processes[widget_id] = (
+                    self._create_isolated_widget_process(widget_id)
+                )
         self.widget_processes = [
             self.driver_panel_process,
             *self.isolated_widget_processes.values(),
@@ -170,6 +175,9 @@ class SectorFlowApplication:
             self.edit_manager.edit_mode_changed.connect(
                 controller.set_edit_mode
             )
+        self.overlay_manager.config_saved.connect(
+            self._sync_isolated_widget_processes
+        )
         self.overlay_manager.create_enabled_widgets()
         self.overlays_enabled = True
         self.tray: QSystemTrayIcon | None = None
@@ -200,6 +208,54 @@ class SectorFlowApplication:
         # O callback principal consome apenas o snapshot da sessao. Telemetry
         # e os widgets visuais mais sensiveis vivem em processos isolados.
         self.timer.start(16)
+
+    def _create_isolated_widget_process(
+        self,
+        widget_id: str,
+    ) -> IsolatedWidgetProcessController:
+        return IsolatedWidgetProcessController(
+            self.overlay_manager.config_path,
+            widget_id,
+            self.session_bus,
+            ISOLATED_SESSION_WIDGET_INTERVALS[widget_id],
+        )
+
+    def _sync_isolated_widget_processes(
+        self,
+        _config_path: Path | None = None,
+    ) -> None:
+        """Mantém processos somente para overlays isolados habilitados."""
+        configured = self.overlay_manager.config_data.get("widgets", {})
+        enabled_ids = {
+            widget_id
+            for widget_id in ISOLATED_SESSION_WIDGET_INTERVALS
+            if bool(configured.get(widget_id, {}).get("enabled", False))
+        }
+        current_ids = set(self.isolated_widget_processes)
+
+        for widget_id in sorted(current_ids - enabled_ids):
+            controller = self.isolated_widget_processes.pop(widget_id)
+            for geometry in controller.pending_geometry():
+                self.overlay_manager._save_widget_geometry(*geometry)
+            controller.close()
+
+        for widget_id in sorted(enabled_ids - current_ids):
+            controller = self._create_isolated_widget_process(widget_id)
+            self.isolated_widget_processes[widget_id] = controller
+            self.overlay_manager.session_active_changed.connect(
+                controller.set_session_active
+            )
+            self.edit_manager.edit_mode_changed.connect(
+                controller.set_edit_mode
+            )
+            controller.set_session_active(self.overlay_manager.session_active)
+            controller.set_edit_mode(self.overlay_manager.edit_mode)
+            controller.start()
+
+        self.widget_processes = [
+            self.driver_panel_process,
+            *self.isolated_widget_processes.values(),
+        ]
 
     def show(self) -> None:
         self.menu.show()

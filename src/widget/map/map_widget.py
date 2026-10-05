@@ -106,6 +106,12 @@ class TrackMapWidget(QWidget):
         self._resize_start_global = QPoint()
         self._resize_start_size = 0
         self._responsive_scale = 1.0
+        self._map_geometry_cache_key: tuple[Any, ...] | None = None
+        self._map_geometry_cache: tuple[
+            MapProjection,
+            QPainterPath,
+            bool,
+        ] | None = None
 
         self.setWindowTitle(
             "Sector Flow Drive - Track Map"
@@ -143,6 +149,7 @@ class TrackMapWidget(QWidget):
                 self.map_data.track_length_m,
             )
             self.map_data = TrackMapData()
+            self._clear_map_geometry_cache()
 
         self.setWindowOpacity(
             max(
@@ -279,7 +286,12 @@ class TrackMapWidget(QWidget):
         self.builder.reset()
         self.map_data = TrackMapData()
         self.session = None
+        self._clear_map_geometry_cache()
         self.update()
+
+    def _clear_map_geometry_cache(self) -> None:
+        self._map_geometry_cache_key = None
+        self._map_geometry_cache = None
 
     def resizeEvent(
         self,
@@ -599,22 +611,6 @@ class TrackMapWidget(QWidget):
         data: TrackMapData,
         rect: QRectF,
     ) -> MapProjection:
-        projection = self._projection(
-            data.points,
-            rect,
-        )
-        path = QPainterPath()
-        screen_points = [
-            projection.project(
-                point.world_x,
-                point.world_y,
-            )
-            for point in data.points
-        ]
-
-        path.moveTo(
-            screen_points[0]
-        )
         detail = max(
             0,
             int(
@@ -628,17 +624,6 @@ class TrackMapWidget(QWidget):
             1,
             5 - min(4, detail)
         )
-
-        for index, point in enumerate(
-            screen_points[1:],
-            start=1,
-        ):
-            if (
-                index == len(screen_points) - 1
-                or index % skip == 0
-            ):
-                path.lineTo(point)
-
         close_threshold = max(
             10.0,
             float(
@@ -648,19 +633,66 @@ class TrackMapWidget(QWidget):
                 )
             ),
         )
-        first = data.points[0]
-        last = data.points[-1]
-        circular = (
-            data.complete
-            or math.hypot(
-                last.world_x - first.world_x,
-                last.world_y - first.world_y,
-            )
-            <= close_threshold
+        cache_key = (
+            id(data.points),
+            len(data.points),
+            round(rect.left(), 2),
+            round(rect.top(), 2),
+            round(rect.width(), 2),
+            round(rect.height(), 2),
+            detail,
+            round(close_threshold, 2),
         )
+        cached = (
+            self._map_geometry_cache
+            if data.complete and cache_key == self._map_geometry_cache_key
+            else None
+        )
+        if cached is not None:
+            projection, path, circular = cached
+        else:
+            projection = self._projection(
+                data.points,
+                rect,
+            )
+            path = QPainterPath()
+            screen_points = [
+                projection.project(
+                    point.world_x,
+                    point.world_y,
+                )
+                for point in data.points
+            ]
+            path.moveTo(screen_points[0])
+            for index, point in enumerate(
+                screen_points[1:],
+                start=1,
+            ):
+                if (
+                    index == len(screen_points) - 1
+                    or index % skip == 0
+                ):
+                    path.lineTo(point)
 
-        if circular:
-            path.closeSubpath()
+            first = data.points[0]
+            last = data.points[-1]
+            circular = (
+                data.complete
+                or math.hypot(
+                    last.world_x - first.world_x,
+                    last.world_y - first.world_y,
+                )
+                <= close_threshold
+            )
+            if circular:
+                path.closeSubpath()
+            if data.complete:
+                self._map_geometry_cache_key = cache_key
+                self._map_geometry_cache = (
+                    projection,
+                    path,
+                    circular,
+                )
 
         colors = self.config.get(
             "colors",

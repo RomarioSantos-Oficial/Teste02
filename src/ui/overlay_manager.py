@@ -101,6 +101,8 @@ class OverlayManager(QObject):
         # O log temporário acompanha a raiz empacotada e é removido ao sair.
         project_root = Path(__file__).resolve().parents[2]
         self._overlay_check_log = project_root / "data" / "online_debug" / "overlay_checks.log"
+        self._last_overlay_log_signature: tuple[Any, ...] | None = None
+        self._last_overlay_log_at = 0.0
 
     @property
     def active_profile_id(self) -> str:
@@ -1178,6 +1180,28 @@ class OverlayManager(QObject):
 
     def _log_overlay_decision(self, session: Any, allowed: bool, reason: str, extra: dict | None = None) -> None:
         try:
+            now = time.monotonic()
+            signature = (
+                bool(allowed),
+                str(reason),
+                bool(getattr(session, "connected", False)),
+                getattr(session, "session", None),
+                getattr(session, "game_phase", None),
+                str(getattr(session, "navigation_state", "") or ""),
+                bool(getattr(session, "in_monitor", False)),
+                bool(getattr(session, "player_vehicle_loaded", False)),
+                bool(getattr(session, "race_finished", False)),
+            )
+            # Esse log é diagnóstico de transição, não telemetria. Gravar o
+            # mesmo estado 20 vezes por segundo causava I/O contínuo durante
+            # corridas longas. Mantemos mudanças imediatas e um heartbeat.
+            if (
+                signature == self._last_overlay_log_signature
+                and now - self._last_overlay_log_at < 10.0
+            ):
+                return
+            self._last_overlay_log_signature = signature
+            self._last_overlay_log_at = now
             self._overlay_check_log.parent.mkdir(parents=True, exist_ok=True)
             entry = {
                 "ts": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),

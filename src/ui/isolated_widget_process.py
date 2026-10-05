@@ -225,7 +225,9 @@ class _IsolatedWidgetHost:
         self.timer.setTimerType(Qt.TimerType.PreciseTimer)
         self.timer.timeout.connect(self._tick)
         self._apply_config(force_geometry=True)
-        self.timer.start(16)
+        # Processos desativados não precisam acordar a 60 Hz. O intervalo é
+        # reduzido dinamicamente em ``_tick`` quando o widget entra em uso.
+        self.timer.start(250)
 
     def _read_config(self) -> dict[str, Any] | None:
         try:
@@ -340,6 +342,20 @@ class _IsolatedWidgetHost:
         driving = bool(self.session_active.value)
         enabled = bool(self.config.get("enabled", False))
 
+        if editing:
+            tick_interval_ms = 33
+        elif driving and enabled:
+            # Não há benefício em consultar o barramento mais rápido que a
+            # frequência real configurada para este widget.
+            tick_interval_ms = max(
+                16,
+                min(100, round(self.update_interval_s * 1000.0)),
+            )
+        else:
+            tick_interval_ms = 250
+        if self.timer.interval() != tick_interval_ms:
+            self.timer.setInterval(tick_interval_ms)
+
         if driving != self._last_driving and hasattr(
             self.widget,
             "set_session_active",
@@ -359,7 +375,13 @@ class _IsolatedWidgetHost:
             if not self.widget.isVisible():
                 self.widget.show()
 
-        if driving and enabled:
+        if (
+            driving
+            and enabled
+            and now - self._last_data_update >= self.update_interval_s
+        ):
+            # Antes todos os filhos desserializavam o grid completo a cada
+            # quadro novo (20 Hz), mesmo quando o widget era de 10 Hz.
             self._read_latest_session()
             self._apply_pending_session(now)
 

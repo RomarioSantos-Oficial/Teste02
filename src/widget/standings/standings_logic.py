@@ -186,6 +186,8 @@ class StandingsLogic:
         self._delta_restore_attempted = False
         self._delta_player_class = ""
         self._delta_menu_since: float | None = None
+        self._estimated_dr_signature: tuple[tuple[Any, ...], ...] | None = None
+        self._estimated_dr_values: dict[int, float] = {}
         if self._delta_history_store is not None and not self._delta_config_enabled:
             self._delta_history_store.delete()
             self._delta_store_empty = True
@@ -224,6 +226,8 @@ class StandingsLogic:
         self._delta_restore_attempted = False
         self._delta_player_class = ""
         self._delta_menu_since = None
+        self._estimated_dr_signature = None
+        self._estimated_dr_values.clear()
 
     def close(self) -> None:
         if self._delta_history_store is not None:
@@ -268,7 +272,10 @@ class StandingsLogic:
             bool(self.config.get("show_estimated_driver_rank_gain", False))
             and 10 <= int(getattr(session, "session", 0) or 0) <= 13
         ):
-            self._estimate_driver_rank_gains(rows)
+            self._apply_cached_driver_rank_gains(rows)
+        else:
+            self._estimated_dr_signature = None
+            self._estimated_dr_values.clear()
         self._apply_lap_states(rows, now)
         session_number = int(getattr(session, "session", 0) or 0)
         player = next((row for row in rows if row.is_player), None)
@@ -1563,6 +1570,45 @@ class StandingsLogic:
                         actual_total / comparisons - expected_total / comparisons
                     )
                     row.estimated_driver_rank_gain = max(-6.0, min(6.0, delta))
+
+    def _apply_cached_driver_rank_gains(
+        self,
+        rows: list[StandingRow],
+    ) -> None:
+        """Evita repetir a comparação quadrática enquanto o grid não muda."""
+        signature = tuple(
+            (
+                row.slot_id,
+                row.class_key,
+                row.class_position,
+                str(row.driver_rank or ""),
+                None
+                if row.driver_rank_progress is None
+                else round(float(row.driver_rank_progress), 3),
+                None
+                if row.estimated_driver_rank_gain is None
+                else round(float(row.estimated_driver_rank_gain), 3),
+            )
+            for row in rows
+        )
+        if signature == self._estimated_dr_signature:
+            for row in rows:
+                if (
+                    row.estimated_driver_rank_gain is None
+                    and row.slot_id in self._estimated_dr_values
+                ):
+                    row.estimated_driver_rank_gain = self._estimated_dr_values[
+                        row.slot_id
+                    ]
+            return
+
+        self._estimate_driver_rank_gains(rows)
+        self._estimated_dr_signature = signature
+        self._estimated_dr_values = {
+            row.slot_id: float(row.estimated_driver_rank_gain)
+            for row in rows
+            if row.estimated_driver_rank_gain is not None
+        }
 
     @staticmethod
     def _driver_rank_value(row: StandingRow) -> float | None:

@@ -1,0 +1,8 @@
+{
+  "enabled": false,
+  "mode": "OBSERVE",
+  "recording_enabled": true,
+  "recording_path": "data/autonomous/observe.jsonl",
+  "update_hz": 20,
+  "control_output_enabled": false
+}

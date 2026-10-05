@@ -16,6 +16,24 @@ from src.widget.standings.standings_widget import (
 
 
 class StandingsLayoutUnitTests(unittest.TestCase):
+    def test_large_grids_use_adaptive_render_interval(self) -> None:
+        self.assertEqual(
+            StandingsWidget._adaptive_render_interval(0.20, 30),
+            0.20,
+        )
+        self.assertEqual(
+            StandingsWidget._adaptive_render_interval(0.20, 31),
+            0.25,
+        )
+        self.assertEqual(
+            StandingsWidget._adaptive_render_interval(0.20, 51),
+            0.30,
+        )
+        self.assertEqual(
+            StandingsWidget._adaptive_render_interval(0.40, 60),
+            0.40,
+        )
+
     class HeaderWidgetProbe:
         _split_text = StandingsWidget._split_text
 
