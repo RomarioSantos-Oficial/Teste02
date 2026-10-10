@@ -72,6 +72,7 @@ ISOLATED_SESSION_WIDGET_INTERVALS = {
     "radar": 0.050,
     "flags": 0.100,
 }
+LOW_POWER_INTERVAL_MULTIPLIER = 2.0
 EXTERNAL_WIDGET_IDS = {"driver_panel", *ISOLATED_SESSION_WIDGET_INTERVALS}
 
 
@@ -140,8 +141,9 @@ class SectorFlowApplication:
             config_path,
             external_widget_ids=EXTERNAL_WIDGET_IDS,
         )
-        self.session_bus = SharedSessionBus()
-        self.driver_panel_process = DriverPanelProcessController(config_path)
+        self.session_bus: SharedSessionBus | None = None
+        self.session_bus_publisher: SessionBusPublisher | None = None
+        self.driver_panel_process: DriverPanelProcessController | None = None
         self.isolated_widget_processes: dict[
             str,
             IsolatedWidgetProcessController,
@@ -150,31 +152,31 @@ class SectorFlowApplication:
             "widgets",
             {},
         )
+        if any(
+            bool(configured_widgets.get(widget_id, {}).get("enabled", False))
+            for widget_id in ISOLATED_SESSION_WIDGET_INTERVALS
+        ):
+            self.session_bus = SharedSessionBus()
         for widget_id in ISOLATED_SESSION_WIDGET_INTERVALS:
             config = configured_widgets.get(widget_id, {})
             if bool(config.get("enabled", False)):
                 self.isolated_widget_processes[widget_id] = (
                     self._create_isolated_widget_process(widget_id)
                 )
-        self.widget_processes = [
-            self.driver_panel_process,
-            *self.isolated_widget_processes.values(),
-        ]
-        self.driver_panel_process.start()
-        for controller in self.isolated_widget_processes.values():
-            controller.start()
-        for controller in self.widget_processes:
-            self.overlay_manager.session_active_changed.connect(
-                controller.set_session_active
-            )
         self.menu = MainMenuWindow(self.overlay_manager, None)
         self.edit_manager = EditModeManager(self.menu)
         self.menu.edit_mode_manager = self.edit_manager
         self.edit_manager.edit_mode_changed.connect(self.overlay_manager.set_edit_mode)
+        self._sync_driver_panel_process()
+        self.widget_processes = self._active_widget_processes()
         for controller in self.widget_processes:
+            if controller is not self.driver_panel_process:
+                self.overlay_manager.session_active_changed.connect(controller.set_session_active)
             self.edit_manager.edit_mode_changed.connect(
                 controller.set_edit_mode
             )
+            if controller is not self.driver_panel_process:
+                controller.start()
         self.overlay_manager.config_saved.connect(
             self._sync_isolated_widget_processes
         )
@@ -193,21 +195,56 @@ class SectorFlowApplication:
                 self._refresh_tray_translations
             )
 
-        self.session_telemetry = SessionTelemetryWorker(interval_s=0.050)
+        self.low_power_mode = self._is_low_power_mode()
+        self.session_telemetry = SessionTelemetryWorker(
+            interval_s=0.100 if self.low_power_mode else 0.050
+        )
         self._last_session_sequence = -1
         self.session_telemetry.start()
-        self.session_bus_publisher = SessionBusPublisher(
-            self.session_telemetry,
-            self.session_bus,
-        )
-        self.session_bus_publisher.start()
+        self._ensure_session_bus()
         self.session_tracker = SessionActivityTracker()
         self.timer = QTimer(self.menu)
         self.timer.setTimerType(Qt.TimerType.PreciseTimer)
         self.timer.timeout.connect(self.update_lmu)
         # O callback principal consome apenas o snapshot da sessao. Telemetry
         # e os widgets visuais mais sensiveis vivem em processos isolados.
-        self.timer.start(16)
+        self.timer.start(32 if self.low_power_mode else 16)
+
+    def _is_low_power_mode(self) -> bool:
+        return str(self.overlay_manager.config_data.get("performance_profile", "standard")) == "low"
+
+    def _active_widget_processes(self) -> list:
+        return ([self.driver_panel_process] if self.driver_panel_process is not None else []) + list(self.isolated_widget_processes.values())
+
+    def _ensure_session_bus(self) -> None:
+        if not self.isolated_widget_processes:
+            if self.session_bus_publisher is not None:
+                self.session_bus_publisher.close()
+                self.session_bus_publisher = None
+            self.session_bus = None
+            return
+        if self.session_bus is None:
+            self.session_bus = SharedSessionBus()
+        if self.session_bus_publisher is None:
+            self.session_bus_publisher = SessionBusPublisher(
+                self.session_telemetry,
+                self.session_bus,
+                interval_s=0.050 if self._is_low_power_mode() else 0.010,
+            )
+            self.session_bus_publisher.start()
+
+    def _sync_driver_panel_process(self) -> None:
+        enabled = bool(self.overlay_manager.config_data.get("widgets", {}).get("driver_panel", {}).get("enabled", False))
+        if enabled and self.driver_panel_process is None:
+            self.driver_panel_process = DriverPanelProcessController(self.overlay_manager.config_path)
+            self.overlay_manager.session_active_changed.connect(self.driver_panel_process.set_session_active)
+            self.edit_manager.edit_mode_changed.connect(self.driver_panel_process.set_edit_mode)
+            self.driver_panel_process.set_session_active(self.overlay_manager.session_active)
+            self.driver_panel_process.set_edit_mode(self.overlay_manager.edit_mode)
+            self.driver_panel_process.start()
+        elif not enabled and self.driver_panel_process is not None:
+            self.driver_panel_process.close()
+            self.driver_panel_process = None
 
     def _create_isolated_widget_process(
         self,
@@ -217,7 +254,8 @@ class SectorFlowApplication:
             self.overlay_manager.config_path,
             widget_id,
             self.session_bus,
-            ISOLATED_SESSION_WIDGET_INTERVALS[widget_id],
+            ISOLATED_SESSION_WIDGET_INTERVALS[widget_id]
+            * (LOW_POWER_INTERVAL_MULTIPLIER if self._is_low_power_mode() else 1.0),
         )
 
     def _sync_isolated_widget_processes(
@@ -240,6 +278,8 @@ class SectorFlowApplication:
             controller.close()
 
         for widget_id in sorted(enabled_ids - current_ids):
+            if self.session_bus is None:
+                self.session_bus = SharedSessionBus()
             controller = self._create_isolated_widget_process(widget_id)
             self.isolated_widget_processes[widget_id] = controller
             self.overlay_manager.session_active_changed.connect(
@@ -252,10 +292,34 @@ class SectorFlowApplication:
             controller.set_edit_mode(self.overlay_manager.edit_mode)
             controller.start()
 
-        self.widget_processes = [
-            self.driver_panel_process,
-            *self.isolated_widget_processes.values(),
-        ]
+        self._sync_driver_panel_process()
+        self._ensure_session_bus()
+        self.widget_processes = self._active_widget_processes()
+        self._apply_performance_profile()
+
+    def _apply_performance_profile(self) -> None:
+        low = self._is_low_power_mode()
+        self.session_telemetry.interval_s = 0.100 if low else 0.050
+        self.timer.start(32 if low else 16)
+        if self.session_bus_publisher is not None:
+            self.session_bus_publisher.interval_s = 0.050 if low else 0.010
+        for widget_id, controller in self.isolated_widget_processes.items():
+            # Controllers run in independent processes, so apply timing changes
+            # by restarting only when the selected profile actually changed.
+            desired = ISOLATED_SESSION_WIDGET_INTERVALS[widget_id] * (LOW_POWER_INTERVAL_MULTIPLIER if low else 1.0)
+            if abs(controller.update_interval_s - desired) > 0.001:
+                for geometry in controller.pending_geometry():
+                    self.overlay_manager._save_widget_geometry(*geometry)
+                controller.close()
+                replacement = self._create_isolated_widget_process(widget_id)
+                replacement.set_session_active(self.overlay_manager.session_active)
+                replacement.set_edit_mode(self.overlay_manager.edit_mode)
+                replacement.start()
+                self.isolated_widget_processes[widget_id] = replacement
+                self.overlay_manager.session_active_changed.connect(replacement.set_session_active)
+                self.edit_manager.edit_mode_changed.connect(replacement.set_edit_mode)
+        self.widget_processes = self._active_widget_processes()
+        self.low_power_mode = low
 
     def show(self) -> None:
         self.menu.show()
@@ -422,7 +486,8 @@ class SectorFlowApplication:
             return
         self._closed = True
         self.timer.stop()
-        self.session_bus_publisher.close()
+        if self.session_bus_publisher is not None:
+            self.session_bus_publisher.close()
         self.session_telemetry.close()
         for controller in self.widget_processes:
             controller.close()

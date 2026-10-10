@@ -50,9 +50,10 @@ class SharedSessionBus:
 class SessionBusPublisher:
     """Copia o snapshot pronto e inclui metadados destinados a outros processos."""
 
-    def __init__(self, source: Any, bus: SharedSessionBus) -> None:
+    def __init__(self, source: Any, bus: SharedSessionBus, interval_s: float = 0.010) -> None:
         self.source = source
         self.bus = bus
+        self.interval_s = max(0.010, float(interval_s))
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -69,7 +70,7 @@ class SessionBusPublisher:
 
     def _run(self) -> None:
         last_sequence = -1
-        while not self._stop.wait(0.010):
+        while not self._stop.wait(self.interval_s):
             sequence, session = self.source.snapshot()
             if sequence == last_sequence:
                 continue
@@ -97,6 +98,7 @@ class IsolatedWidgetProcessController:
     ) -> None:
         context = multiprocessing.get_context("spawn")
         self.widget_id = str(widget_id)
+        self.update_interval_s = max(0.016, float(update_interval_s))
         self._session_active = context.Value("b", False, lock=False)
         self._edit_mode = context.Value("b", False, lock=False)
         self._stop = context.Event()
@@ -106,7 +108,7 @@ class IsolatedWidgetProcessController:
             args=(
                 str(config_path),
                 self.widget_id,
-                max(0.016, float(update_interval_s)),
+                self.update_interval_s,
                 bus.buffer,
                 bus.length,
                 bus.sequence,

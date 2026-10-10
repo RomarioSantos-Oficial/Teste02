@@ -327,6 +327,11 @@ class WeatherEditor(QDialog):
         interval = QSpinBox()
         interval.setRange(1, 30)
         interval.setSuffix(" min")
+        interval.setToolTip(
+            "Define o horizonte dos cartões (por exemplo, 5, 10, 15 minutos). "
+            "Com agenda oficial, cada cartão usa o nó de clima do LMU mais próximo desse horário; "
+            "sem agenda, usa uma tendência estimada."
+        )
         interval.setValue(
             int(
                 self.config.get(
@@ -369,11 +374,11 @@ class WeatherEditor(QDialog):
         )
 
         form.addRow(
-            "Quantidade de blocos:",
+            "Quantidade de previsões:",
             count,
         )
         form.addRow(
-            "Intervalo:",
+            "Intervalo da previsão:",
             interval,
         )
         form.addRow(

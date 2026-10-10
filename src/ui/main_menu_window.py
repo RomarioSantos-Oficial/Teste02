@@ -272,6 +272,15 @@ class MainMenuWindow(QMainWindow):
         save = QPushButton("Salvar layout")
         save.clicked.connect(self.overlay_manager.save_config)
         layout.addWidget(save)
+        layout.addWidget(QLabel("Desempenho:"))
+        self.performance_combo = QComboBox()
+        self.performance_combo.addItem("Padrão", "standard")
+        self.performance_combo.addItem("Baixo consumo", "low")
+        profile = str(self.overlay_manager.config_data.get("performance_profile", "standard"))
+        self.performance_combo.setCurrentIndex(max(0, self.performance_combo.findData(profile)))
+        self.performance_combo.setToolTip("Reduz a frequência de leitura e atualização dos overlays.")
+        self.performance_combo.currentIndexChanged.connect(self._set_performance_profile)
+        layout.addWidget(self.performance_combo)
         layout.addWidget(QLabel("Idioma:"))
         self.language_combo = QComboBox()
         for code, label in LANGUAGES.items():
@@ -283,6 +292,11 @@ class MainMenuWindow(QMainWindow):
         layout.addWidget(self.language_combo)
         layout.addStretch()
         return box
+
+    def _set_performance_profile(self, index: int) -> None:
+        selected = str(self.performance_combo.itemData(index) or "standard")
+        self.overlay_manager.config_data["performance_profile"] = selected
+        self.overlay_manager.save_config()
 
     def _change_language(self, index: int) -> None:
         language = str(self.language_combo.itemData(index) or "pt_BR")

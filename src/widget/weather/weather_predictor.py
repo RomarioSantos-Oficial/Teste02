@@ -73,6 +73,23 @@ class WeatherTrendPredictor:
             self.reset()
             self._session_key = session_key
 
+        rain = self._clamp01(
+            self._float(
+                session,
+                "raining",
+            )
+        )
+        raw_cloud_coverage = max(
+            0,
+            min(
+                10,
+                self._int(
+                    session,
+                    "cloud_coverage",
+                ),
+            ),
+        )
+
         sample = WeatherSample(
             timestamp_s=now,
             track_temp_c=self._float(
@@ -83,12 +100,7 @@ class WeatherTrendPredictor:
                 session,
                 "ambient_temp_c",
             ),
-            rain=self._clamp01(
-                self._float(
-                    session,
-                    "raining",
-                )
-            ),
+            rain=rain,
             wetness=self._clamp01(
                 self._float(
                     session,
@@ -101,15 +113,9 @@ class WeatherTrendPredictor:
                     "dark_cloud",
                 )
             ),
-            cloud_coverage=max(
-                0,
-                min(
-                    10,
-                    self._int(
-                        session,
-                        "cloud_coverage",
-                    ),
-                ),
+            cloud_coverage=self._current_sky_type(
+                rain,
+                raw_cloud_coverage,
             ),
             time_of_day_s=max(
                 0.0,
@@ -225,7 +231,12 @@ class WeatherTrendPredictor:
         count: int = 5,
         interval_minutes: int = 5,
     ) -> list[WeatherForecast] | None:
-        """Converte a agenda oficial da API REST do LMU em tempos futuros."""
+        """Reamostra a agenda oficial nos horizontes configurados.
+
+        Em cada horizonte, usa o nó oficial mais próximo no tempo, como a
+        previsão discreta do TinyPedal. Os valores dos nós não são interpolados;
+        ``interval_minutes`` define os horizontes (5, 10, 15... min) exibidos.
+        """
         schedule = getattr(
             session,
             "weather_schedule",
@@ -237,9 +248,9 @@ class WeatherTrendPredictor:
         )
         if 1 <= session_code <= 4:
             session_name = "PRACTICE"
-        elif 5 <= session_code <= 9:
+        elif 5 <= session_code <= 8:
             session_name = "QUALIFY"
-        elif 10 <= session_code <= 13:
+        elif 9 <= session_code <= 13:
             session_name = "RACE"
         else:
             return None
@@ -249,12 +260,16 @@ class WeatherTrendPredictor:
             if isinstance(schedule, dict)
             else {}
         )
+        # The API exposes five equally spaced weather blocks. Follow
+        # TinyPedal's mapping (0, .2, .4, .6, .8); the node names are labels,
+        # not interpolation coordinates. Sky and rain chance are categorical/
+        # scheduled values, so do not blend a rainy block into the next dry one.
         positions = (
             (0.0, "START"),
-            (0.25, "NODE_25"),
-            (0.50, "NODE_50"),
-            (0.75, "NODE_75"),
-            (1.0, "FINISH"),
+            (0.2, "NODE_25"),
+            (0.4, "NODE_50"),
+            (0.6, "NODE_75"),
+            (0.8, "FINISH"),
         )
         if not all(
             isinstance(nodes.get(name), dict)
@@ -275,53 +290,50 @@ class WeatherTrendPredictor:
             return None
 
         count = max(1, min(8, int(count)))
-        interval_minutes = max(1, min(30, int(interval_minutes)))
         result: list[WeatherForecast] = []
 
+        interval_minutes = max(1, min(30, int(interval_minutes)))
         for index in range(count):
             minutes = (index + 1) * interval_minutes
-            progress = max(
-                0.0,
-                min(
-                    1.0,
-                    (current_time + minutes * 60.0)
-                    / total_time,
-                ),
+            target_progress = min(
+                1.0,
+                (current_time + minutes * 60.0) / total_time,
             )
-            lower_pos, lower_name = positions[0]
-            upper_pos, upper_name = positions[-1]
-            for node_index in range(1, len(positions)):
-                if progress <= positions[node_index][0]:
-                    lower_pos, lower_name = positions[node_index - 1]
-                    upper_pos, upper_name = positions[node_index]
-                    break
-
-            span = max(0.0001, upper_pos - lower_pos)
-            ratio = max(0.0, min(1.0, (progress - lower_pos) / span))
-            lower = nodes[lower_name]
-            upper = nodes[upper_name]
+            # The game/TinyPedal forecast is a set of discrete nodes. Pick the
+            # nearest node for each requested horizon; floor-bucketing kept a
+            # past rainy node active even when the game's closest node was dry.
+            _, node_name = min(
+                positions,
+                key=lambda item: abs(item[0] - target_progress),
+            )
+            node = nodes[node_name]
             air_temp = self._schedule_value(
-                lower,
-                upper,
+                node,
+                node,
                 "WNV_TEMPERATURE",
-                ratio,
+                0.0,
                 current.air_temp_c,
             )
             rain = self._schedule_value(
-                lower,
-                upper,
+                node,
+                node,
                 "WNV_RAIN_CHANCE",
-                ratio,
+                0.0,
                 0.0,
             ) / 100.0
-            sky = self._schedule_value(
-                lower,
-                upper,
-                "WNV_SKY",
-                ratio,
-                float(current.cloud_coverage),
+            cloud_coverage = max(
+                0,
+                min(
+                    10,
+                    int(round(self._schedule_value(
+                        node,
+                        node,
+                        "WNV_SKY",
+                        0.0,
+                        float(current.cloud_coverage),
+                    ))),
+                ),
             )
-            cloud_coverage = max(0, min(10, int(round(sky))))
             future_time = (
                 current.time_of_day_s + minutes * 60.0
             ) % 86400.0
@@ -335,10 +347,10 @@ class WeatherTrendPredictor:
                     cloud_coverage=cloud_coverage,
                     time_of_day_s=future_time,
                     weather_state=self.weather_state(
-                        # RainChance pertence ao proprio no futuro. Usar a
-                        # chuva atual aqui fazia todos os icones repetirem o
-                        # clima presente, mesmo quando o LMU previa chuva.
-                        rain=max(0.0, min(1.0, rain)),
+                        # RainChance é probabilidade, não chuva observada.
+                        # O ícone futuro vem da categoria WNV_SKY; a chance
+                        # continua disponível separadamente em forecast.rain.
+                        rain=0.0,
                         wetness=current.wetness,
                         dark_cloud=cloud_coverage / 10.0,
                         cloud_coverage=cloud_coverage,
@@ -380,11 +392,10 @@ class WeatherTrendPredictor:
     ) -> str:
         is_day = cls.is_day(time_of_day_s)
 
-        # A agua acumulada descreve a pista, nao o ceu. Uma pista pode
-        # continuar molhada depois que a chuva terminou; nesse caso o
-        # aviso de pista molhada permanece, mas o icone nao deve indicar
-        # chuva. No LMU, cobertura 5 a 10 representa de garoa a tempestade.
-        if rain >= 0.01 or cloud_coverage >= 5:
+        # No LMU, os índices 0..4 são estados secos/nublados e 5..10
+        # representam precipitação. A chuva atual vem de mRaining; a
+        # probabilidade futura não deve ser passada neste argumento.
+        if rain > 0.0 or cloud_coverage >= 5:
             return "Chuva"
 
         if (
@@ -398,6 +409,28 @@ class WeatherTrendPredictor:
             )
 
         return "Sol" if is_day else "noite"
+
+    @staticmethod
+    def _current_sky_type(rain: float, cloud_coverage: int) -> int:
+        """Normaliza o céu atual como o TinyPedal: sem chuva, só céu 0..4.
+
+        mCloudCoverage pode conter um índice de chuva antigo/de categoria
+        (5..10); mRaining é a leitura decisiva para chuva observada.
+        Quando chove, converte a severidade em um dos índices 5..10.
+        """
+        if rain <= 0.0:
+            return max(0, min(4, int(cloud_coverage)))
+        if rain <= 0.10:
+            return 5
+        if rain <= 0.15:
+            return 6
+        if rain <= 0.20:
+            return 7
+        if rain <= 0.40:
+            return 8
+        if rain <= 0.60:
+            return 9
+        return 10
 
     @staticmethod
     def is_day(

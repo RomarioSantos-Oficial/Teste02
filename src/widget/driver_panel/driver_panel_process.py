@@ -25,6 +25,7 @@ class DriverPanelProcessController:
     def __init__(self, config_path: str | Path) -> None:
         context = multiprocessing.get_context("spawn")
         self.config_path = Path(config_path)
+        self.performance_profile = "standard"
         self._session_active = context.Value("b", False, lock=False)
         self._edit_mode = context.Value("b", False, lock=False)
         self._stop = context.Event()
@@ -99,7 +100,7 @@ class _DriverPanelHost:
             deepcopy(self.config),
         )
         self.widget.geometry_changed.connect(self._publish_geometry)
-        self.fast_telemetry = FastTelemetryWorker(interval_s=0.010)
+        self.fast_telemetry = FastTelemetryWorker(interval_s=0.016)
         self._last_fast_sequence = -1
         self._last_edit_mode = False
         self._last_config_check = 0.0
@@ -111,12 +112,14 @@ class _DriverPanelHost:
         self.timer.timeout.connect(self._tick)
 
         self._apply_config(force_geometry=True)
-        self.fast_telemetry.start()
-        self.timer.start(16)
+        self._apply_performance_profile()
+        if bool(self.config.get("enabled", False)):
+            self.fast_telemetry.start()
 
     def _read_config(self) -> dict[str, Any] | None:
         try:
             root = json.loads(self.config_path.read_text(encoding="utf-8"))
+            self.performance_profile = str(root.get("performance_profile", "standard"))
             config = root.get("widgets", {}).get("driver_panel", {})
             if isinstance(config, dict):
                 return deepcopy(config)
@@ -148,6 +151,16 @@ class _DriverPanelHost:
             )
             self.config = config
             self._apply_config(force_geometry=geometry_changed)
+            if bool(self.config.get("enabled", False)):
+                self.fast_telemetry.start()
+            else:
+                self.fast_telemetry.close()
+        self._apply_performance_profile()
+
+    def _apply_performance_profile(self) -> None:
+        low = self.performance_profile == "low"
+        self.fast_telemetry.interval_s = 0.032 if low else 0.016
+        self.timer.start(32 if low else 16)
 
     def _apply_config(self, *, force_geometry: bool) -> None:
         self.widget.update_config(deepcopy(self.config))

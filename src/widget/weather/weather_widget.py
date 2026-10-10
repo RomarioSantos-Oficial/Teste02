@@ -796,7 +796,15 @@ class WeatherWidget(QWidget):
                 continue
 
             forecast = forecasts[index]
-            card["time"].setText(str(forecast.minutes_ahead))
+            estimated_prefix = "~" if forecast.estimated else ""
+            card["time"].setText(
+                f"{estimated_prefix}{forecast.minutes_ahead}"
+            )
+            card["time"].setToolTip(
+                "Tendência estimada; a API do LMU não forneceu agenda de clima."
+                if forecast.estimated
+                else "Tempo até o próximo bloco de clima informado pelo LMU."
+            )
             card["temp"].setText(
                 f"{self._temperature(forecast.air_temp_c):.1f}"
             )
@@ -808,7 +816,12 @@ class WeatherWidget(QWidget):
 
             if show_forecast_rain:
                 card["rain"].setText(
-                    f"{round(forecast.rain * 100)}%"
+                    f"{estimated_prefix}{round(forecast.rain * 100)}%"
+                )
+                card["rain"].setToolTip(
+                    "Estimativa da intensidade atual, não probabilidade oficial de chuva."
+                    if forecast.estimated
+                    else "Probabilidade de chuva informada pela previsão do LMU."
                 )
                 card["rain"].show()
             else:

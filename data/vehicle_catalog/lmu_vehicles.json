@@ -3363,5 +3363,30 @@
     "manufacturer": "Oreca",
     "model": "WEC 2026, LMP2, Oreca 07",
     "description": "Proton Competition 2026 #44:LM"
+  },
+  "adessracingteam202646elms": {
+    "manufacturer": "ADESS",
+    "model": "ELMS 2026, LMP3, ADESS AD25 LMP3",
+    "description": "ADESS Racing Team 2026 #46:ELMS"
+  },
+  "adessracingteam202646lmu1": {
+    "manufacturer": "ADESS",
+    "model": "ELMS 2026, LMP3, ADESS AD25 LMP3",
+    "description": "ADESS Racing Team 2026 #46:LMU1"
+  },
+  "adessracingteam202646lmu2": {
+    "manufacturer": "ADESS",
+    "model": "ELMS 2026, LMP3, ADESS AD25 LMP3",
+    "description": "ADESS Racing Team 2026 #46:LMU2"
+  },
+  "vistaafcorse202621lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "Vista AF Corse 2026 #21:LM"
+  },
+  "vistaafcorse202654lm": {
+    "manufacturer": "Ferrari",
+    "model": "WEC 2026, GT3, Ferrari 296 LMGT3 Evo",
+    "description": "Vista AF Corse 2026 #54:LM"
   }
 }
