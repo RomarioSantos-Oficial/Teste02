@@ -29,22 +29,33 @@ class RadarWidgetTests(unittest.TestCase):
             is_player=True,
             in_garage=False,
             api_spatial_position=False,
-            relative_rotated_x_m=0.0,
-            relative_rotated_y_m=0.0,
+            radar_position_valid=True,
+            radar_longitudinal_m=0.0,
+            radar_lateral_m=0.0,
+            radar_orientation_yaw_rad=0.0,
+            radar_elapsed_time_s=1.0,
         )
         far = SimpleNamespace(
             is_player=False,
             in_garage=False,
             api_spatial_position=False,
-            relative_rotated_x_m=30.0,
-            relative_rotated_y_m=30.0,
+            radar_position_valid=True,
+            radar_longitudinal_m=-30.0,
+            radar_lateral_m=-30.0,
+            radar_orientation_yaw_rad=0.0,
+            radar_elapsed_time_s=1.0,
+            slot_id=3,
         )
         near = SimpleNamespace(
             is_player=False,
             in_garage=False,
             api_spatial_position=False,
-            relative_rotated_x_m=2.0,
-            relative_rotated_y_m=-5.0,
+            radar_position_valid=True,
+            radar_longitudinal_m=-2.0,
+            radar_lateral_m=5.0,
+            radar_orientation_yaw_rad=0.0,
+            radar_elapsed_time_s=1.0,
+            slot_id=2,
         )
 
         widget.update_from_session(
@@ -60,7 +71,52 @@ class RadarWidgetTests(unittest.TestCase):
         )
         self.assertTrue(widget.isVisible())
         self.assertEqual(len(widget.targets), 1)
-        self.assertEqual(widget.targets[0][1:3], (2.0, -5.0))
+        self.assertAlmostEqual(widget.targets[0][1], 2.0)
+        self.assertAlmostEqual(widget.targets[0][2], -5.0)
+        widget.close()
+
+    def test_api_fallback_requires_both_lap_and_lateral_positions(self) -> None:
+        widget = RadarWidget("radar", {"radar_radius_m": 15.0, "colors": {}})
+        player = SimpleNamespace(
+            spatial_position_valid=False,
+            api_spatial_position=True,
+            api_lateral_position=False,
+            lap_distance_m=100.0,
+            path_lateral_m=0.0,
+        )
+        other = SimpleNamespace(
+            spatial_position_valid=False,
+            api_spatial_position=True,
+            api_lateral_position=False,
+            lap_distance_m=105.0,
+            path_lateral_m=10.0,
+        )
+        self.assertEqual(widget._relative_position(player, other, 1000.0), (0.0, 0.0, "INVALID"))
+        player.api_lateral_position = other.api_lateral_position = True
+        self.assertEqual(widget._relative_position(player, other, 1000.0), (10.0, -5.0, "API"))
+
+    def test_shared_memory_radar_matches_tinypedal_coordinate_rotation(self) -> None:
+        widget = RadarWidget("radar", {"radar_radius_m": 15.0, "colors": {}})
+        player = SimpleNamespace(
+            radar_position_valid=True,
+            radar_longitudinal_m=100.0,
+            radar_lateral_m=200.0,
+            radar_orientation_yaw_rad=0.0,
+        )
+        other = SimpleNamespace(
+            radar_position_valid=True,
+            radar_longitudinal_m=103.0,
+            radar_lateral_m=204.0,
+            radar_orientation_yaw_rad=0.25,
+            radar_elapsed_time_s=2.0,
+            slot_id=2,
+        )
+        # TinyPedal rotates the delta by player_yaw - pi and draws this raw
+        # y coordinate directly (it does not invert it a second time).
+        x, y, source = widget._relative_position(player, other, 5000.0, 2.0)
+        self.assertEqual(source, "MEM")
+        self.assertAlmostEqual(x, -3.0)
+        self.assertAlmostEqual(y, -4.0)
         widget.close()
 
 

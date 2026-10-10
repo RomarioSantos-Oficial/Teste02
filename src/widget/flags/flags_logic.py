@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import time
 from typing import Any
 
@@ -171,13 +172,17 @@ class FlagsLogic:
                 if distance >= 0.0 and closing_speed_ms > 0.1
                 else 0.0
             )
+            radar_x, radar_y, radar_orientation = self._flag_radar_pose(
+                player, row, distance
+            )
             candidates.append(
                 self._to_flag_car(
                     row,
                     distance=distance,
                     tempo_gap=tempo_gap,
-                    raw_pos_x=self._relative_lateral(player, row),
-                    raw_pos_y=-distance,
+                    raw_pos_x=radar_x,
+                    raw_pos_y=radar_y,
+                    relative_orientation_rad=radar_orientation,
                     is_blue=False,
                 )
             )
@@ -231,6 +236,9 @@ class FlagsLogic:
 
             row_speed = max(0.0, self._float(row, "speed_kmh"))
             closing_speed_ms = (row_speed - player_speed) / 3.6
+            radar_x, radar_y, radar_orientation = self._flag_radar_pose(
+                player, row, distance
+            )
             candidates.append(
                 self._to_flag_car(
                     row,
@@ -240,8 +248,9 @@ class FlagsLogic:
                         if closing_speed_ms > 0.1
                         else 0.0
                     ),
-                    raw_pos_x=self._relative_lateral(player, row),
-                    raw_pos_y=-distance,
+                    raw_pos_x=radar_x,
+                    raw_pos_y=radar_y,
+                    relative_orientation_rad=radar_orientation,
                     is_blue=True,
                 )
             )
@@ -342,6 +351,36 @@ class FlagsLogic:
             player, "path_lateral_m"
         )
 
+    def _flag_radar_pose(
+        self, player: Any, row: Any, track_distance: float
+    ) -> tuple[float, float, float]:
+        """Misma rotación de mPos/mOri del radar TinyPedal, para autos con bandera."""
+        orientation = (
+            self._float(row, "radar_orientation_yaw_rad")
+            - self._float(player, "radar_orientation_yaw_rad")
+        )
+        if (
+            self._bool(player, "radar_position_valid")
+            and self._bool(row, "radar_position_valid")
+            and abs(track_distance) <= 140.0
+        ):
+            delta_x = self._float(row, "radar_longitudinal_m") - self._float(
+                player, "radar_longitudinal_m"
+            )
+            delta_y = self._float(row, "radar_lateral_m") - self._float(
+                player, "radar_lateral_m"
+            )
+            yaw = self._float(player, "radar_orientation_yaw_rad") - 3.141592653589793
+            cos_yaw, sin_yaw = math.cos(yaw), math.sin(yaw)
+            return (
+                cos_yaw * delta_x - sin_yaw * delta_y,
+                cos_yaw * delta_y + sin_yaw * delta_x,
+                orientation,
+            )
+        # Mantém o alcance maior usado pelos alertas de bandeira; para carros
+        # fora do radar físico (140 m), conserva a posição por gap da pista.
+        return self._relative_lateral(player, row), -track_distance, orientation
+
     def _update_green(self, session: Any, now: float) -> bool:
         if not bool(self.config.get("show_startlights", True)):
             return False
@@ -372,6 +411,7 @@ class FlagsLogic:
         raw_pos_x: float,
         raw_pos_y: float,
         is_blue: bool,
+        relative_orientation_rad: float = 0.0,
     ) -> FlagCar:
         driver_name = str(getattr(row, "driver_name", "") or "").strip()
         parts = driver_name.split()
@@ -391,6 +431,7 @@ class FlagsLogic:
             tempo_gap=round(tempo_gap, 1),
             raw_pos_x=raw_pos_x,
             raw_pos_y=raw_pos_y,
+            relative_orientation_rad=relative_orientation_rad,
             speed_kmh=self._float(row, "speed_kmh"),
             is_blue_context=is_blue,
         )

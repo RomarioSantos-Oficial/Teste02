@@ -253,6 +253,9 @@ class LMUAdapter:
                 right = score_ori[0] if score_ori is not None else None
                 forward = score_ori[2] if score_ori is not None else None
                 raw_vehicle = telemetry_by_slot.get(slot_id)
+                radar_pos = getattr(raw_vehicle, "mPos", None) if raw_vehicle is not None else None
+                radar_ori = getattr(raw_vehicle, "mOri", None) if raw_vehicle is not None else None
+                radar_forward = radar_ori[2] if radar_ori is not None else None
                 tire_compounds: list[str] = []
                 damage_percent: float | None = None
                 if raw_vehicle is not None:
@@ -394,6 +397,41 @@ class LMUAdapter:
                         forward_x=safe_float(forward.x) if forward is not None else 0.0,
                         forward_y=safe_float(forward.y) if forward is not None else 0.0,
                         forward_z=safe_float(forward.z) if forward is not None else 0.0,
+                        spatial_position_valid=(
+                            score_pos is not None
+                            and right is not None
+                            and forward is not None
+                            and math.sqrt(
+                                safe_float(right.x) ** 2
+                                + safe_float(right.y) ** 2
+                                + safe_float(right.z) ** 2
+                            ) > 0.5
+                            and math.sqrt(
+                                safe_float(forward.x) ** 2
+                                + safe_float(forward.y) ** 2
+                                + safe_float(forward.z) ** 2
+                            ) > 0.5
+                        ),
+                        radar_longitudinal_m=(
+                            safe_float(radar_pos.x) if radar_pos is not None else 0.0
+                        ),
+                        radar_lateral_m=(
+                            -safe_float(radar_pos.z) if radar_pos is not None else 0.0
+                        ),
+                        radar_orientation_yaw_rad=(
+                            math.atan2(
+                                safe_float(radar_forward.x),
+                                safe_float(radar_forward.z),
+                            )
+                            if radar_forward is not None else 0.0
+                        ),
+                        radar_elapsed_time_s=(
+                            safe_float(getattr(raw_vehicle, "mElapsedTime", 0.0))
+                            if raw_vehicle is not None else 0.0
+                        ),
+                        radar_position_valid=(
+                            radar_pos is not None and radar_forward is not None
+                        ),
                         is_player=bool(score.mIsPlayer),
                     )
                 )
@@ -428,6 +466,11 @@ class LMUAdapter:
                         + delta_y * player_row.forward_y
                         + delta_z * player_row.forward_z
                     )
+                    if driver is not player_row:
+                        driver.relative_orientation_rad = (
+                            driver.radar_orientation_yaw_rad
+                            - player_row.radar_orientation_yaw_rad
+                        )
 
             player = None
             player_index = safe_int(telemetry.playerVehicleIdx, -1)

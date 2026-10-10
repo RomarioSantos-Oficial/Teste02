@@ -107,6 +107,7 @@ class DriverData:
     lap_start_event_time_s: float = 0.0
     path_lateral_m: float = 0.0
     track_edge_m: float = 0.0
+    api_lateral_position: bool = False
     speed_kmh: float = 0.0
     pit_state: int = 0
     individual_phase: int = 0
@@ -143,6 +144,13 @@ class DriverData:
     relative_rotated_x_m: float = 0.0
     relative_rotated_y_m: float = 0.0
     api_spatial_position: bool = False
+    spatial_position_valid: bool = False
+    relative_orientation_rad: float = 0.0
+    radar_longitudinal_m: float = 0.0
+    radar_lateral_m: float = 0.0
+    radar_orientation_yaw_rad: float = 0.0
+    radar_elapsed_time_s: float = 0.0
+    radar_position_valid: bool = False
     is_player: bool = False
 
 

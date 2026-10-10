@@ -13,6 +13,7 @@ class FlagCar:
     tempo_gap: float = 0.0
     raw_pos_x: float = 0.0
     raw_pos_y: float = 0.0
+    relative_orientation_rad: float = 0.0
     speed_kmh: float = 0.0
     is_blue_context: bool = False
 

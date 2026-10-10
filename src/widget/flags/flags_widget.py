@@ -7,6 +7,7 @@ from typing import Any
 
 from PySide6.QtCore import (
     QPoint,
+    QPointF,
     QRectF,
     QSize,
     Qt,
@@ -20,6 +21,7 @@ from PySide6.QtGui import (
     QPaintEvent,
     QPainter,
     QPen,
+    QPolygonF,
     QResizeEvent,
 )
 from PySide6.QtWidgets import (
@@ -299,16 +301,33 @@ class RadarWidget(QWidget):
             painter.setPen(
                 Qt.PenStyle.NoPen
             )
+            painter.save()
+            painter.translate(pos_x, pos_y)
+            painter.rotate(
+                -float(car.relative_orientation_rad) * 180.0 / 3.141592653589793
+            )
             painter.drawRoundedRect(
                 QRectF(
-                    pos_x - car_width / 2,
-                    pos_y - car_height / 2,
+                    -car_width / 2,
+                    -car_height / 2,
                     car_width,
                     car_height,
                 ),
                 car_radius,
                 car_radius,
             )
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QBrush(QColor(255, 255, 255, 230)))
+            painter.drawPolygon(
+                QPolygonF(
+                    (
+                        QPointF(-car_width * 0.28, -car_height * 0.22),
+                        QPointF(0, -car_height * 0.48),
+                        QPointF(car_width * 0.28, -car_height * 0.22),
+                    )
+                )
+            )
+            painter.restore()
 
 
 class FlagsWidget(QWidget):

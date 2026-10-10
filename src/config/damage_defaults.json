@@ -7,17 +7,17 @@
   "always_on_top": true,
   "click_through": true,
   "show_integrity": true,
-  "show_suspension_links": true,
+  "show_suspension_links": false,
   "show_last_impact": true,
   "impact_duration_s": 5.0,
   "susp_light_threshold": 0.005,
   "susp_heavy_threshold": 0.4,
   "susp_totaled_threshold": 0.8,
   "colors": {
-    "background": "#0B1018E8", "border": "#384553", "outline": "#8C98A7",
-    "text": "#FFFFFF", "body_ok": "#2C3845", "body_light": "#FFD43B",
-    "body_heavy": "#FF7A22", "susp_ok": "#43E1B2", "susp_light": "#FFD43B",
-    "susp_heavy": "#FF7A22", "detached": "#F22D3D", "impact": "#FF8A00",
+    "background": "#88000000", "border": "#555555", "outline": "#888888",
+    "text": "#FFFFFF", "body_ok": "#888888", "body_light": "#FFFF00",
+    "body_heavy": "#FF0000", "susp_ok": "#44CC00", "susp_light": "#FFFF00",
+    "susp_medium": "#FF6600", "susp_heavy": "#FF00FF", "susp_totaled": "#0000FF", "detached": "#000000", "impact": "#FF0000",
     "edit_border": "#8B5CF6"
   }
 }

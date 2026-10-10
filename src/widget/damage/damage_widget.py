@@ -61,42 +61,47 @@ class DamageWidget(QWidget):
         c = self.config.get("colors", {})
         p.setPen(QPen(QColor(c.get("border", "#384553")), 1.2))
         p.setBrush(QColor(c.get("background", "#0B1018")))
-        p.drawRoundedRect(QRectF(1, 1, self.width()-2, self.height()-2), 8, 8)
+        p.drawRect(QRectF(1, 1, self.width()-2, self.height()-2))
 
         margin = max(6.0, min(self.width(), self.height()) * .07)
         area = QRectF(margin, margin, self.width()-2*margin, self.height()-2*margin)
-        cx = area.center().x()
-        # Mesma construção 3 x 3 do TinyPedal: oito peças formam o
-        # contorno e o centro fica vazado para o chassi/suspensões.
-        body_w, body_h = area.width()*.72, area.height()*.78
-        body = QRectF(cx-body_w/2, area.top()+area.height()*.06, body_w, body_h)
+        # O TinyPedal mostra o carro como uma grade 3x3: frente e traseira
+        # completas, laterais no meio e o centro vazado. Reserva-se o rodapé
+        # para a leitura de integridade.
+        body_w = area.width() * .88
+        body_h = area.height() * .78
+        body = QRectF(area.center().x()-body_w/2, area.top(), body_w, body_h)
 
         raw = list(getattr(self.player, "body_damage", []) or [])
         visual = [raw[i] if i < len(raw) else 0 for i in self.LMU_TO_VISUAL]
         if bool(getattr(self.player, "body_detached", False)):
             visual[6] = 3
         gap = max(1.0, min(body.width(), body.height()) * .025)
-        top_h, side_w = body.height()*.25, body.width()*.23
+        row_h = (body.height()-2*gap)/3
+        side_w = (body.width()-2*gap)*.28
+        center_w = body.width()-2*side_w-2*gap
         parts = (
-            QRectF(body.left(), body.top(), side_w, top_h),
-            QRectF(body.left()+side_w+gap, body.top(), body.width()-2*side_w-2*gap, top_h),
-            QRectF(body.right()-side_w, body.top(), side_w, top_h),
-            QRectF(body.left(), body.top()+top_h+gap, side_w, body.height()-2*top_h-2*gap),
-            QRectF(body.right()-side_w, body.top()+top_h+gap, side_w, body.height()-2*top_h-2*gap),
-            QRectF(body.left(), body.bottom()-top_h, side_w, top_h),
-            QRectF(body.left()+side_w+gap, body.bottom()-top_h, body.width()-2*side_w-2*gap, top_h),
-            QRectF(body.right()-side_w, body.bottom()-top_h, side_w, top_h),
+            QRectF(body.left(), body.top(), side_w, row_h),
+            QRectF(body.left()+side_w+gap, body.top(), center_w, row_h),
+            QRectF(body.right()-side_w, body.top(), side_w, row_h),
+            QRectF(body.left(), body.top()+row_h+gap, side_w, row_h),
+            QRectF(body.right()-side_w, body.top()+row_h+gap, side_w, row_h),
+            QRectF(body.left(), body.bottom()-row_h, side_w, row_h),
+            QRectF(body.left()+side_w+gap, body.bottom()-row_h, center_w, row_h),
+            QRectF(body.right()-side_w, body.bottom()-row_h, side_w, row_h),
         )
         for rect, severity in zip(parts, visual):
             p.fillRect(rect.adjusted(1, 1, -1, -1), self._damage_color(severity))
 
         wheels = list(getattr(self.player, "wheels", []) or [])
         susp = list(getattr(self.player, "suspension_damage", []) or [])
-        wheel_w, wheel_h = body.width()*.15, body.height()*.23
-        x_left = body.left()+side_w+gap*2
-        x_right = body.right()-side_w-gap*2-wheel_w
-        y_front = body.top()+top_h+gap*2
-        y_rear = body.bottom()-top_h-gap*2-wheel_h
+        wheel_w, wheel_h = side_w*.48, row_h*.68
+        # Rodas nos quatro cantos internos, como no TinyPedal; os elos de
+        # suspensão terminam junto ao centro das laterais, sem cruzar o carro.
+        x_left = body.left()+side_w-wheel_w*.35
+        x_right = body.right()-side_w-wheel_w*.65
+        y_front = body.top()+row_h-wheel_h*.45
+        y_rear = body.bottom()-row_h-wheel_h*.55
         for i, (x, y) in enumerate(((x_left,y_front),(x_right,y_front),(x_left,y_rear),(x_right,y_rear))):
             detached = i < len(wheels) and bool(getattr(wheels[i], "detached", False))
             damage = float(susp[i]) if i < len(susp) else 0.0
@@ -106,16 +111,12 @@ class DamageWidget(QWidget):
             # esquerda/direita pareçam apenas duas linhas contínuas.
             is_left = i % 2 == 0
             is_front = i < 2
-            chassis_x = body.center().x() + (-body.width()*.10 if is_left else body.width()*.10)
-            chassis_y = body.center().y() + (-body.height()*.13 if is_front else body.height()*.13)
+            chassis_x = body.left()+side_w+gap*.5 if is_left else body.right()-side_w-gap*.5
+            chassis_y = body.top()+row_h+gap*.5 if is_front else body.bottom()-row_h-gap*.5
             if bool(self.config.get("show_suspension_links", True)):
                 p.setPen(QPen(color.lighter(135), max(1.0, area.width()*.012)))
                 p.drawLine(wheel_center, QPointF(chassis_x, chassis_y))
             p.fillRect(QRectF(x, y, wheel_w, wheel_h), color)
-
-        p.setBrush(Qt.BrushStyle.NoBrush)
-        p.setPen(QPen(QColor(c.get("outline", "#8C98A7")), max(1.0, area.width()*.012)))
-        p.drawRoundedRect(body, body_w*.35, body_w*.35)
 
         impact = tuple(getattr(self.player, "last_impact_position", (0.0, 0.0)) or (0.0,0.0))
         impact_age = (
@@ -155,10 +156,16 @@ class DamageWidget(QWidget):
 
     def _suspension_color(self, damage: float, detached: bool) -> QColor:
         c = self.config.get("colors", {})
-        if detached or damage >= float(self.config.get("susp_totaled_threshold", .8)): return QColor(c.get("detached", "#F22D3D"))
-        if damage >= float(self.config.get("susp_heavy_threshold", .4)): return QColor(c.get("susp_heavy", "#FF7A22"))
-        if damage >= float(self.config.get("susp_light_threshold", .005)): return QColor(c.get("susp_light", "#FFD43B"))
-        return QColor(c.get("susp_ok", "#43E1B2"))
+        if detached: return QColor(c.get("detached", "#000000"))
+        if damage >= float(self.config.get("susp_totaled_threshold", .8)):
+            return QColor(c.get("susp_totaled", "#0000FF"))
+        if damage >= float(self.config.get("susp_heavy_threshold", .4)):
+            return QColor(c.get("susp_heavy", "#FF00FF"))
+        if damage >= .15:
+            return QColor(c.get("susp_medium", "#FF6600"))
+        if damage >= float(self.config.get("susp_light_threshold", .005)):
+            return QColor(c.get("susp_light", "#FFFF00"))
+        return QColor(c.get("susp_ok", "#44CC00"))
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if self.edit_mode and event.button() == Qt.MouseButton.LeftButton:

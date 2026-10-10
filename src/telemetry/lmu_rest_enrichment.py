@@ -381,6 +381,7 @@ def _merge_driver(driver: DriverData, record: dict[str, Any]) -> None:
     )
     if api_path_lateral is not None:
         driver.path_lateral_m = api_path_lateral
+        driver.api_lateral_position = True
     api_track_edge = _number(_first_present(record, "trackEdge", "trackEdgeMeters"))
     if api_track_edge is not None:
         driver.track_edge_m = api_track_edge

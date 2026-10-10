@@ -20,8 +20,8 @@
   "show_marks": true,
   "colors": {
     "background": "#080D15E6", "border": "#344155", "marks": "#58677A80",
-    "player": "#FFFFFF", "same_lap": "#23A8FF", "laps_ahead": "#9B5CFF",
-    "laps_behind": "#687384", "in_pit": "#59616D", "yellow": "#FFC400",
+    "player": "#FF4422", "leader": "#88FF00", "same_lap": "#FFFFFF", "laps_ahead": "#FF44CC",
+    "laps_behind": "#00AAFF", "in_pit": "#888888", "yellow": "#FFFF00",
     "vehicle_outline": "#050505", "nearby": "#FFC400", "critical": "#FF2638",
     "edit_border": "#8B5CF6"
   }

@@ -136,6 +136,28 @@ class FlagsLogicUnitTests(unittest.TestCase):
         self.assertEqual(alert.distance, -100.0)
         self.assertAlmostEqual(alert.tempo_gap, 3.6)
 
+    def test_flag_radar_uses_tinypedal_pose_and_relative_orientation(self) -> None:
+        logic = FlagsLogic({})
+        player = DriverData(
+            is_player=True,
+            radar_position_valid=True,
+            radar_longitudinal_m=100.0,
+            radar_lateral_m=200.0,
+            radar_orientation_yaw_rad=0.0,
+        )
+        car = DriverData(
+            radar_position_valid=True,
+            radar_longitudinal_m=103.0,
+            radar_lateral_m=204.0,
+            radar_orientation_yaw_rad=0.25,
+        )
+
+        x, y, orientation = logic._flag_radar_pose(player, car, 4.0)
+
+        self.assertAlmostEqual(x, -3.0)
+        self.assertAlmostEqual(y, -4.0)
+        self.assertAlmostEqual(orientation, 0.25)
+
     def test_clear_track_does_not_create_yellow_from_a_running_car(self) -> None:
         alert = FlagsLogic({}).get_yellow_flag_car_info(self._session())
 
