@@ -226,7 +226,7 @@ class FlagsEditor(QDialog):
                 1.0,
                 20.0,
                 0.5,
-                10.0,
+                12.0,
                 " s",
             ),
             (

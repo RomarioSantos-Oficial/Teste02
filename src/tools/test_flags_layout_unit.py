@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QApplication
 from src.telemetry.models import DriverData, SessionData
 from src.ui.overlay_manager import OverlayManager
 from src.widget.flags.flags_widget import FlagsWidget
+from src.widget.flags.flags_models import FlagAlert, FlagCar, FlagsSnapshot
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -118,6 +119,42 @@ class FlagsLayoutUnitTests(unittest.TestCase):
 
         self.assertTrue(widget.yellow_ativa)
         self.assertTrue(widget.isVisible())
+        widget.close()
+
+    def test_simultaneous_yellow_and_blue_use_one_mixed_color_radar(self) -> None:
+        widget = FlagsWidget("flags", self._config())
+        yellow_car = FlagCar(driver="YELLOW", category="LMGT3", raw_pos_y=-20.0)
+        blue_car = FlagCar(
+            driver="BLUE",
+            category="HYPER",
+            raw_pos_y=25.0,
+            is_blue_context=True,
+        )
+        widget.snapshot = FlagsSnapshot(
+            yellow=FlagAlert(
+                active=True,
+                driver="YELLOW",
+                category="LMGT3",
+                distance=100.0,
+                tempo_gap=2.0,
+                cars=[yellow_car],
+            ),
+            blue=FlagAlert(
+                active=True,
+                driver="BLUE",
+                category="HYPER",
+                distance=-50.0,
+                tempo_gap=1.5,
+                cars=[blue_car],
+            ),
+        )
+
+        widget._render_snapshot()
+
+        self.assertFalse(widget.yellow_card.isHidden())
+        self.assertTrue(widget.blue_card.isHidden())
+        self.assertEqual(widget.yellow_radar.cars_data, [yellow_car, blue_car])
+        self.assertTrue(widget.blue_ativa)
         widget.close()
 
     def test_compact_distance_panel_keeps_width_and_self_hazard_values(self) -> None:

@@ -135,30 +135,31 @@ class FlagsLogicUnitTests(unittest.TestCase):
         session.drivers[0].speed_kmh = 150.0
         session.drivers[1].position = 3
         session.drivers[1].speed_kmh = 250.0
-        session.drivers[1].lap_distance_m = 900.0
+        session.drivers[1].lap_distance_m = 920.0
 
         alert = FlagsLogic({}).get_blue_flag_car_info(session)
 
         self.assertTrue(alert.active)
-        self.assertEqual(alert.distance, -100.0)
-        self.assertAlmostEqual(alert.tempo_gap, 3.6)
+        self.assertEqual(alert.distance, -80.0)
+        self.assertAlmostEqual(alert.tempo_gap, 2.9)
 
     def test_blue_radar_includes_faster_car_slightly_ahead_at_flag_onset(self) -> None:
         session = self._session()
         session.drivers[0].flag = 6
+        session.drivers[0].speed_kmh = 150.0
         session.drivers[0].position = 8
         session.drivers[1].position = 2
         session.drivers[1].speed_kmh = 250.0
-        session.drivers[1].lap_distance_m = 1100.0
+        session.drivers[1].lap_distance_m = 1080.0
 
         alert = FlagsLogic({}).get_blue_flag_car_info(session)
 
         self.assertTrue(alert.active)
         self.assertEqual(len(alert.cars), 1)
         self.assertEqual(alert.cars[0].driver, "CAR")
-        self.assertEqual(alert.cars[0].distance, 100.0)
+        self.assertEqual(alert.cars[0].distance, 80.0)
 
-    def test_blue_flag_falls_back_to_nearby_better_ranked_car(self) -> None:
+    def test_blue_radar_excludes_car_outside_three_second_window(self) -> None:
         session = self._session()
         session.drivers[0].flag = 6
         session.drivers[0].position = 8
@@ -168,21 +169,30 @@ class FlagsLogicUnitTests(unittest.TestCase):
         alert = FlagsLogic({}).get_blue_flag_car_info(session)
 
         self.assertTrue(alert.active)
-        self.assertEqual(alert.driver, "CAR")
-        self.assertEqual(alert.category, "LMGT3")
-        self.assertEqual(alert.cars[0].distance, 800.0)
+        self.assertEqual(alert.driver, "BANDEIRA AZUL")
+        self.assertEqual(alert.cars, [])
 
     def test_flagged_yellow_car_is_not_dropped_by_nearby_alert_window(self) -> None:
         session = self._session(sector_flags=(1, 0, 0))
         session.drivers[1].under_yellow = True
         session.drivers[1].speed_kmh = 180.0
-        session.drivers[1].lap_distance_m = 1800.0
+        session.drivers[1].lap_distance_m = 1500.0
 
         alert = FlagsLogic({}).get_yellow_flag_car_info(session)
 
         self.assertTrue(alert.active)
         self.assertEqual(alert.driver, "CAR")
         self.assertEqual(alert.category, "LMGT3")
+
+    def test_yellow_radar_excludes_car_outside_twelve_second_window(self) -> None:
+        session = self._session(sector_flags=(1, 0, 0))
+        session.drivers[1].under_yellow = True
+        session.drivers[1].speed_kmh = 180.0
+        session.drivers[1].lap_distance_m = 1700.0
+
+        alert = FlagsLogic({}).get_yellow_flag_car_info(session)
+
+        self.assertFalse(alert.active)
 
     def test_flag_radar_uses_tinypedal_pose_and_relative_orientation(self) -> None:
         logic = FlagsLogic({})
@@ -219,7 +229,7 @@ class FlagsLogicUnitTests(unittest.TestCase):
                     position=slot,
                     position_in_class=slot,
                     speed_kmh=5.0,
-                    lap_distance_m=1100.0 + slot,
+                    lap_distance_m=1050.0 + slot,
                     under_yellow=True,
                     path_lateral_m=7.0 if slot == 2 else 1.0,
                     track_edge_m=6.0,

@@ -1199,9 +1199,8 @@ class FlagsWidget(QWidget):
         yellow = self.snapshot.yellow
         blue = self.snapshot.blue
 
-        # Caso 1: amarelo tem prioridade.
+        # Os painéis de amarela e azul podem ficar visíveis ao mesmo tempo.
         if yellow.active:
-            self.blue_card.hide()
 
             self.yellow_category.setText(
                 yellow.category
@@ -1239,7 +1238,7 @@ class FlagsWidget(QWidget):
                 )
 
             self.yellow_radar.update_radar_data(
-                yellow.cars
+                yellow.cars + (blue.cars if blue.active else [])
             )
             self.yellow_card.show()
             self.yellow_ativa = True
@@ -1295,9 +1294,7 @@ class FlagsWidget(QWidget):
                 self.blue_ativa = False
 
         # Caso 2: somente azul.
-        elif blue.active:
-            self.yellow_card.hide()
-            self.yellow_ativa = False
+        if blue.active and not yellow.active:
 
             self.blue_category.setText(
                 blue.category
@@ -1325,10 +1322,8 @@ class FlagsWidget(QWidget):
 
         # Caso 3: pista limpa.
         else:
-            self.yellow_card.hide()
             self.blue_card.hide()
-            self.yellow_ativa = False
-            self.blue_ativa = False
+            self.blue_ativa = blue.active
 
         if self.snapshot.green_active:
             self.green_flag.show()
