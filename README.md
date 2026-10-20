@@ -2,7 +2,7 @@
 
 Overlay de telemetria para **Le Mans Ultimate (LMU)** no Windows. O SectorFlow lê dados locais do jogo, apresenta informações da corrida em janelas transparentes e permite configurar cada elemento pelo menu principal.
 
-> Versão atual: **0.0.7**<br>
+> Versão atual: **1.0**<br>
 > Plataforma: **Windows 10/11 x64**<br>
 > O programa permite somente uma instância por usuário.
 
@@ -25,7 +25,7 @@ Python, PySide6 e Inno Setup **não são necessários** no computador do usuári
 
 ## Instalação normal
 
-1. Copie `SectorFlow_Setup_0.0.7.exe` para o computador.
+1. Copie `SectorFlow_Setup_1.0.exe` para o computador.
 2. Feche versões antigas pela bandeja: botão direito no ícone e **Sair**.
 3. Execute o instalador.
 4. Escolha **Português Brasileiro** ou **English**.
@@ -53,19 +53,19 @@ Abra o **Prompt de Comando** na pasta do instalador.
 Assistente visual:
 
 ```bat
-SectorFlow_Setup_0.0.7.exe
+SectorFlow_Setup_1.0.exe
 ```
 
 Instalação silenciosa:
 
 ```bat
-SectorFlow_Setup_0.0.7.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS
+SectorFlow_Setup_1.0.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS
 ```
 
 Instalação silenciosa com log:
 
 ```bat
-SectorFlow_Setup_0.0.7.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /LOG="%TEMP%\SectorFlow-install.log"
+SectorFlow_Setup_1.0.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /LOG="%TEMP%\SectorFlow-install.log"
 ```
 
 Verifique o resultado:
@@ -115,16 +115,10 @@ SectorFlow_Setup_NOVA_VERSAO.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSE
 ## Verificação do arquivo
 
 ```bat
-powershell -NoProfile -Command "Get-FileHash '.\SectorFlow_Setup_0.0.7.exe' -Algorithm SHA256"
+powershell -NoProfile -Command "Get-FileHash '.\SectorFlow_Setup_1.0.exe' -Algorithm SHA256"
 ```
 
-SHA-256 do instalador 0.0.7:
-
-```text
-A2862BE7A17BB40360AD551F7FACD88EF89D5734F0BAD13166A16DF2D047CA00
-```
-
-Se o valor for diferente, confirme a origem antes de executar.
+O hash do instalador 1.0 deve ser comparado com o valor publicado junto ao pacote de distribuição. O hash registrado para 0.0.7 é histórico e não valida o novo instalador.
 
 ## Primeira utilização
 
@@ -154,7 +148,7 @@ A configuração pessoal pode permanecer em `%LOCALAPPDATA%\SectorFlow` para per
 
 ## Usar uma versão pelo Git
 
-Esta seção é para quem deseja executar o programa diretamente pelo código-fonte. Quem usa `SectorFlow_Setup_0.0.7.exe` não precisa instalar Git, Python nem criar `.venv`.
+Esta seção é para quem deseja executar o programa diretamente pelo código-fonte. Quem usa `SectorFlow_Setup_1.0.exe` não precisa instalar Git, Python nem criar `.venv`.
 
 ### 1. Instalar as ferramentas
 

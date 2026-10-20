@@ -120,7 +120,7 @@ class MainMenuWindow(QMainWindow):
     @staticmethod
     def _load_header_config() -> dict[str, str]:
         defaults = {
-            "version": "0.0.7",
+            "version": "1.0",
             "update_note": "Novidades e correções da versão atual.",
             "update_note_key": "",
             "update_note_addendum": "",
@@ -308,8 +308,13 @@ class MainMenuWindow(QMainWindow):
 
     def _refresh_dynamic_translations(self) -> None:
         """Reaplica textos que mudam depois que a janela foi traduzida."""
-        version = str(self.version_label.property("sectorflowVersion") or "0.0.7")
+        version = str(self.version_label.property("sectorflowVersion") or "1.0")
         self.version_label.setText(f"{tr('Versão')} {version}")
+        if hasattr(self, "discord_button"):
+            self.discord_button.setToolTip(tr("Abrir servidor do Discord"))
+        if hasattr(self, "releases_button"):
+            self.releases_button.setText(tr("Atualizações"))
+            self.releases_button.setToolTip(tr("Ver atualizações do SectorFlow"))
         self._reload_profiles()
         self.edit_mode_button.setText(
             tr("Modo edição: LIGADO")
@@ -468,26 +473,26 @@ class MainMenuWindow(QMainWindow):
         box = QFrame()
         box.setObjectName("footerBox")
         layout = QHBoxLayout(box)
+        # Status do LMU seguido dos links e do atalho.
         self.discord_button = QPushButton("Discord")
         self.discord_button.setObjectName("communityLinkButton")
         self.discord_button.setToolTip(tr("Abrir servidor do Discord"))
         self.discord_button.clicked.connect(
             lambda: QDesktopServices.openUrl(QUrl(self.DISCORD_URL))
         )
-        layout.addWidget(self.discord_button)
-
-        self.releases_button = QPushButton("GitHub Releases")
+        self.releases_button = QPushButton(tr("Atualizações"))
         self.releases_button.setObjectName("communityLinkButton")
         self.releases_button.setToolTip(tr("Ver atualizações do SectorFlow"))
         self.releases_button.clicked.connect(
             lambda: QDesktopServices.openUrl(QUrl(self.RELEASES_URL))
         )
-        layout.addWidget(self.releases_button)
         self.connection_label = QLabel("LMU: aguardando conexão")
         self.connection_label.setObjectName("connectionLabel")
         self.connection_label.setText(tr("LMU: Desconectado"))
         self.connection_label.setProperty("connected", False)
         layout.addWidget(self.connection_label)
+        layout.addWidget(self.discord_button)
+        layout.addWidget(self.releases_button)
         layout.addStretch()
         layout.addWidget(QLabel("F12 alterna o modo de edição"))
         return box
@@ -703,7 +708,7 @@ class MainMenuWindow(QMainWindow):
             QLabel#connectionLabel { color: #F1B84B; font-weight: 600; }
             QLabel#connectionLabel[connected="true"] { color: #3EDB91; }
             QLabel#connectionLabel[connected="false"] { color: #FF6268; }
-            QPushButton#communityLinkButton { background: #202D42; border-color: #40516C; color: #8CC6FF; }
+            QPushButton#communityLinkButton { background: #202D42; border-color: #40516C; color: #8CC6FF; padding: 4px 9px; min-height: 20px; font-size: 12px; }
             QScrollArea { border: none; background: transparent; }
             """
         )

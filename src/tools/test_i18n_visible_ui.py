@@ -140,6 +140,7 @@ class VisibleUiTranslationTests(unittest.TestCase):
 
     def test_release_notes_keep_all_translation_keys(self) -> None:
         config = MainMenuWindow._load_header_config()
+        self.assertEqual(config["version"], "1.0")
         fields = (
             "update_note_key",
             "update_note_addendum_key",
@@ -154,11 +155,13 @@ class VisibleUiTranslationTests(unittest.TestCase):
                 self.assertTrue(key, field)
                 self.assertIn(key, catalog, f"{language}: {key}")
                 self.assertNotEqual(catalog[key], key)
+                self.assertNotIn("0.0.7", catalog[key])
 
     def test_connection_status_and_community_links_are_translated(self) -> None:
         required = {
             "LMU: Ativo",
             "LMU: Desconectado",
+            "Atualizações",
             "Abrir servidor do Discord",
             "Ver atualizações do SectorFlow",
         }
@@ -189,8 +192,19 @@ class VisibleUiTranslationTests(unittest.TestCase):
             window.releases_button.toolTip(),
             tr("Ver atualizações do SectorFlow"),
         )
+        self.assertEqual(window.releases_button.text(), tr("Atualizações"))
         self.assertEqual(window.DISCORD_URL, "https://discord.gg/pVShUkfbtN")
         self.assertTrue(window.RELEASES_URL.endswith("/releases/"))
+        footer_widgets = [
+            footer.layout().itemAt(index).widget()
+            for index in range(footer.layout().count())
+            if footer.layout().itemAt(index).widget() is not None
+        ]
+        self.assertEqual(
+            footer_widgets[:3],
+            [window.connection_label, window.discord_button, window.releases_button],
+        )
+        self.assertEqual(footer_widgets[-1].text(), tr("F12 alterna o modo de edição"))
 
         window.set_lmu_status(False, "telemetria indisponível")
         self.assertEqual(window.connection_label.text(), tr("LMU: Desconectado"))
