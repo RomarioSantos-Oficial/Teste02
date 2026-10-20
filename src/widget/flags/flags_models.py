@@ -14,6 +14,10 @@ class FlagCar:
     raw_pos_x: float = 0.0
     raw_pos_y: float = 0.0
     relative_orientation_rad: float = 0.0
+    path_lateral_m: float = 0.0
+    track_edge_m: float = 0.0
+    player_path_lateral_m: float = 0.0
+    player_track_edge_m: float = 0.0
     speed_kmh: float = 0.0
     is_blue_context: bool = False
 

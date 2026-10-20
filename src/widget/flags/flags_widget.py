@@ -134,8 +134,10 @@ class RadarWidget(QWidget):
         scale = self.ui_scale
         max_radar_distance = 140.0
 
-        left_lane = width * 0.25
-        right_lane = width * 0.75
+        # Deixa a faixa da pista mais larga e reserva uma margem visível para
+        # carros que ultrapassaram a borda (LS/RS).
+        left_lane = width * 0.20
+        right_lane = width * 0.80
 
         painter.setPen(
             QPen(
@@ -246,11 +248,10 @@ class RadarWidget(QWidget):
             raw_pos_x = float(car.raw_pos_x)
             raw_pos_y = float(car.raw_pos_y)
 
-            if (
-                abs(raw_pos_x) < 0.001
-                and abs(raw_pos_y) < 0.001
-            ):
-                continue
+            if abs(raw_pos_x) < 0.001 and abs(raw_pos_y) < 0.001:
+                # A memória física pode ainda estar em zero na primeira
+                # amostra, mas o gap da pista já permite colocar o carro.
+                raw_pos_y = -float(car.distance)
 
             pos_y = (
                 center_y
@@ -260,23 +261,36 @@ class RadarWidget(QWidget):
                     / max_radar_distance
                 )
             )
-            pos_x = (
-                center_x
-                + raw_pos_x
-                * 5.2
-                * scale
+            # Usa a posição lateral relativa à linha central da pista. Para
+            # carros sem esses campos (ex.: preview antigo), mantém o radar
+            # físico local como fallback.
+            has_track_position = (
+                abs(car.path_lateral_m) > 0.001
+                or abs(car.track_edge_m) > 0.001
+                or abs(car.player_path_lateral_m) > 0.001
             )
+            lateral = (
+                car.path_lateral_m - car.player_path_lateral_m
+                if has_track_position
+                else raw_pos_x
+            )
+            edge = max(
+                3.0,
+                abs(car.track_edge_m),
+                abs(car.player_track_edge_m),
+            )
+            # Um lado da pista ocupa 30% da largura; fora da borda o ícone
+            # continua além da linha, sem ser preso dentro do asfalto.
+            lateral_px = lateral * (width * 0.30 / edge)
+            if has_track_position and abs(car.path_lateral_m) > max(0.5, abs(car.track_edge_m)):
+                side = 1.0 if car.path_lateral_m >= 0 else -1.0
+                outside_m = abs(car.path_lateral_m) - abs(car.track_edge_m)
+                lateral_px = side * (width * 0.30 + min(width * 0.12, outside_m * width * 0.025))
+            pos_x = center_x + lateral_px
 
-            horizontal_margin = max(
-                car_width / 2 + 1,
-                width * 0.38,
-            )
             pos_x = max(
-                horizontal_margin,
-                min(
-                    width - horizontal_margin,
-                    pos_x,
-                ),
+                car_width / 2 + 1,
+                min(width - car_width / 2 - 1, pos_x),
             )
             pos_y = max(
                 car_height / 2,
