@@ -44,6 +44,9 @@ from src.widget.radar.radar_editor import RadarEditor
 
 
 class MainMenuWindow(QMainWindow):
+    DISCORD_URL = "https://discord.gg/pVShUkfbtN"
+    RELEASES_URL = "https://github.com/RomarioSantos-Oficial/Teste02/releases/"
+
     def __init__(self, overlay_manager, edit_mode_manager, parent=None) -> None:
         super().__init__(parent)
         self.overlay_manager = overlay_manager
@@ -465,8 +468,25 @@ class MainMenuWindow(QMainWindow):
         box = QFrame()
         box.setObjectName("footerBox")
         layout = QHBoxLayout(box)
+        self.discord_button = QPushButton("Discord")
+        self.discord_button.setObjectName("communityLinkButton")
+        self.discord_button.setToolTip(tr("Abrir servidor do Discord"))
+        self.discord_button.clicked.connect(
+            lambda: QDesktopServices.openUrl(QUrl(self.DISCORD_URL))
+        )
+        layout.addWidget(self.discord_button)
+
+        self.releases_button = QPushButton("GitHub Releases")
+        self.releases_button.setObjectName("communityLinkButton")
+        self.releases_button.setToolTip(tr("Ver atualizações do SectorFlow"))
+        self.releases_button.clicked.connect(
+            lambda: QDesktopServices.openUrl(QUrl(self.RELEASES_URL))
+        )
+        layout.addWidget(self.releases_button)
         self.connection_label = QLabel("LMU: aguardando conexão")
         self.connection_label.setObjectName("connectionLabel")
+        self.connection_label.setText(tr("LMU: Desconectado"))
+        self.connection_label.setProperty("connected", False)
         layout.addWidget(self.connection_label)
         layout.addStretch()
         layout.addWidget(QLabel("F12 alterna o modo de edição"))
@@ -475,10 +495,7 @@ class MainMenuWindow(QMainWindow):
     def set_lmu_status(self, connected: bool, text: str = "") -> None:
         self._lmu_connected = bool(connected)
         self._lmu_status_text = text
-        message = (
-            (tr("LMU: conectado ") if connected else tr("LMU: aguardando "))
-            + tr(text)
-        )
+        message = tr("LMU: Ativo") if connected else tr("LMU: Desconectado")
         if self.connection_label.text() != message:
             self.connection_label.setText(message)
 
@@ -685,6 +702,8 @@ class MainMenuWindow(QMainWindow):
             QCheckBox::indicator:checked { image: none; background: #14B86E; border-radius: 11px; }
             QLabel#connectionLabel { color: #F1B84B; font-weight: 600; }
             QLabel#connectionLabel[connected="true"] { color: #3EDB91; }
+            QLabel#connectionLabel[connected="false"] { color: #FF6268; }
+            QPushButton#communityLinkButton { background: #202D42; border-color: #40516C; color: #8CC6FF; }
             QScrollArea { border: none; background: transparent; }
             """
         )

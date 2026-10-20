@@ -1,5 +1,8 @@
 {
   "en": {
+    "Quantidade de previsões:": "Number of forecasts:",
+    "Intervalo da previsão:": "Forecast interval:",
+    "Define o horizonte dos cartões (por exemplo, 5, 10, 15 minutos). Com agenda oficial, cada cartão usa o nó de clima do LMU mais próximo desse horário; sem agenda, usa uma tendência estimada.": "Sets the forecast horizon for the cards (for example, 5, 10, 15 minutes). With an official schedule, each card uses the LMU weather node closest to that time; without one, it uses an estimated trend.",
     "Ajuste fino:": "Fine adjustment:",
     "Ativar automaticamente no GT3:": "Enable automatically for GT3:",
     "Temperatura especial — GT3": "Special temperature — GT3",
@@ -134,6 +137,9 @@
     "Última volta:": "Last lap:"
   },
   "es": {
+    "Quantidade de previsões:": "Cantidad de previsiones:",
+    "Intervalo da previsão:": "Intervalo de previsión:",
+    "Define o horizonte dos cartões (por exemplo, 5, 10, 15 minutos). Com agenda oficial, cada cartão usa o nó de clima do LMU mais próximo desse horário; sem agenda, usa uma tendência estimada.": "Define el horizonte de las tarjetas (por ejemplo, 5, 10, 15 minutos). Con un horario oficial, cada tarjeta usa el dato meteorológico de LMU más cercano a esa hora; sin horario, usa una tendencia estimada.",
     "Ajuste fino:": "Ajuste fino:",
     "Ativar automaticamente no GT3:": "Activar automáticamente en GT3:",
     "Temperatura especial — GT3": "Temperatura especial — GT3",
@@ -268,6 +274,9 @@
     "Última volta:": "Última vuelta:"
   },
   "fr": {
+    "Quantidade de previsões:": "Nombre de prévisions :",
+    "Intervalo da previsão:": "Intervalle de prévision :",
+    "Define o horizonte dos cartões (por exemplo, 5, 10, 15 minutos). Com agenda oficial, cada cartão usa o nó de clima do LMU mais próximo desse horário; sem agenda, usa uma tendência estimada.": "Définit l’horizon des cartes (par exemple 5, 10 ou 15 minutes). Avec un programme officiel, chaque carte utilise la donnée météo LMU la plus proche de cet horaire ; sinon, elle utilise une tendance estimée.",
     "Ajuste fino:": "Réglage fin :",
     "Ativar automaticamente no GT3:": "Activer automatiquement pour GT3 :",
     "Temperatura especial — GT3": "Température spéciale — GT3",
@@ -402,6 +411,9 @@
     "Última volta:": "Dernier tour :"
   },
   "it": {
+    "Quantidade de previsões:": "Numero di previsioni:",
+    "Intervalo da previsão:": "Intervallo di previsione:",
+    "Define o horizonte dos cartões (por exemplo, 5, 10, 15 minutos). Com agenda oficial, cada cartão usa o nó de clima do LMU mais próximo desse horário; sem agenda, usa uma tendência estimada.": "Definisce l’orizzonte delle schede (ad esempio 5, 10 o 15 minuti). Con un programma ufficiale, ogni scheda usa il dato meteo LMU più vicino a quell’orario; senza programma, usa una tendenza stimata.",
     "Ajuste fino:": "Regolazione fine:",
     "Ativar automaticamente no GT3:": "Attiva automaticamente per GT3:",
     "Temperatura especial — GT3": "Temperatura speciale — GT3",
@@ -536,6 +548,9 @@
     "Última volta:": "Ultimo giro:"
   },
   "de": {
+    "Quantidade de previsões:": "Anzahl der Vorhersagen:",
+    "Intervalo da previsão:": "Vorhersageintervall:",
+    "Define o horizonte dos cartões (por exemplo, 5, 10, 15 minutos). Com agenda oficial, cada cartão usa o nó de clima do LMU mais próximo desse horário; sem agenda, usa uma tendência estimada.": "Legt den Vorhersagezeitraum der Karten fest (zum Beispiel 5, 10 oder 15 Minuten). Mit offiziellem Zeitplan verwendet jede Karte den nächstgelegenen LMU-Wetterwert; ohne Zeitplan wird ein geschätzter Trend verwendet.",
     "Ajuste fino:": "Feineinstellung:",
     "Ativar automaticamente no GT3:": "Automatisch für GT3 aktivieren:",
     "Temperatura especial — GT3": "Spezialtemperatur — GT3",
@@ -670,6 +685,9 @@
     "Última volta:": "Letzte Runde:"
   },
   "pl": {
+    "Quantidade de previsões:": "Liczba prognoz:",
+    "Intervalo da previsão:": "Interwał prognozy:",
+    "Define o horizonte dos cartões (por exemplo, 5, 10, 15 minutos). Com agenda oficial, cada cartão usa o nó de clima do LMU mais próximo desse horário; sem agenda, usa uma tendência estimada.": "Określa horyzont kart (na przykład 5, 10 lub 15 minut). Przy oficjalnym harmonogramie każda karta używa najbliższej czasowo prognozy pogody LMU; bez harmonogramu używany jest szacowany trend.",
     "Ajuste fino:": "Dokładna regulacja:",
     "Ativar automaticamente no GT3:": "Włącz automatycznie dla GT3:",
     "Temperatura especial — GT3": "Temperatura specjalna — GT3",
@@ -804,6 +822,9 @@
     "Última volta:": "Ostatnie okrążenie:"
   },
   "ko": {
+    "Quantidade de previsões:": "예보 개수:",
+    "Intervalo da previsão:": "예보 간격:",
+    "Define o horizonte dos cartões (por exemplo, 5, 10, 15 minutos). Com agenda oficial, cada cartão usa o nó de clima do LMU mais próximo desse horário; sem agenda, usa uma tendência estimada.": "카드의 예보 범위를 설정합니다(예: 5, 10, 15분). 공식 일정이 있으면 각 카드는 해당 시간에 가장 가까운 LMU 날씨 데이터를 사용하고, 없으면 추정 추세를 사용합니다.",
     "Ajuste fino:": "미세 조정:",
     "Ativar automaticamente no GT3:": "GT3에 자동 적용:",
     "Temperatura especial — GT3": "특수 온도 — GT3",
@@ -938,6 +959,9 @@
     "Última volta:": "마지막 랩:"
   },
   "zh_CN": {
+    "Quantidade de previsões:": "预报数量：",
+    "Intervalo da previsão:": "预报间隔：",
+    "Define o horizonte dos cartões (por exemplo, 5, 10, 15 minutos). Com agenda oficial, cada cartão usa o nó de clima do LMU mais próximo desse horário; sem agenda, usa uma tendência estimada.": "设置卡片的预报时间范围（例如 5、10、15 分钟）。有官方时间表时，每张卡片使用最接近该时间的 LMU 天气数据；没有时间表时则使用估算趋势。",
     "Ajuste fino:": "微调：",
     "Ativar automaticamente no GT3:": "自动应用于 GT3：",
     "Temperatura especial — GT3": "特殊温度 — GT3",

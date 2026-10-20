@@ -475,10 +475,7 @@ class SectorFlowApplication:
             self.menu.set_lmu_status(True, "— aguardando veículo")
             return
 
-        self.menu.set_lmu_status(
-            True,
-            f"— {session.track_name} — {session.player.speed_kmh:.0f} km/h",
-        )
+        self.menu.set_lmu_status(True)
         self.overlay_manager.update_session_data(session)
 
     def close(self) -> None:

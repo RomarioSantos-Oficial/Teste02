@@ -48,22 +48,30 @@ def app_language() -> str:
 
 
 def _load_catalog(language: str) -> dict[str, str]:
-    if language == "pt_BR":
-        return {}
     catalog: dict[str, str] = {}
+    if language != "pt_BR":
+        try:
+            catalog.update(
+                json.loads(_catalog_path(language).read_text(encoding="utf-8"))
+            )
+        except (OSError, ValueError, TypeError):
+            pass
+        try:
+            supplemental = json.loads(
+                (_catalog_path(language).parent / "ui_supplement.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            catalog.update(supplemental.get(language, {}))
+        except (OSError, ValueError, TypeError, AttributeError):
+            pass
     try:
-        catalog.update(
-            json.loads(_catalog_path(language).read_text(encoding="utf-8"))
-        )
-    except (OSError, ValueError, TypeError):
-        pass
-    try:
-        supplemental = json.loads(
-            (_catalog_path(language).parent / "ui_supplement.json").read_text(
+        release_notes = json.loads(
+            (_catalog_path(language).parent / "release_notes.json").read_text(
                 encoding="utf-8"
             )
         )
-        catalog.update(supplemental.get(language, {}))
+        catalog.update(release_notes.get(language, {}))
     except (OSError, ValueError, TypeError, AttributeError):
         pass
     return catalog

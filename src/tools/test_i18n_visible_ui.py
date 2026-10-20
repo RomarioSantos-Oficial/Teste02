@@ -14,10 +14,12 @@ from PySide6.QtWidgets import (  # noqa: E402
     QComboBox,
     QGroupBox,
     QLabel,
+    QMainWindow,
     QTabWidget,
     QWidget,
 )
 
+from src.i18n import tr  # noqa: E402
 from src.i18n.translator import LANGUAGES, _load_catalog, _source_text  # noqa: E402
 from src.ui.main_menu_window import MainMenuWindow  # noqa: E402
 from src.widget.battery.battery_editor import BatteryEditor  # noqa: E402
@@ -152,6 +154,49 @@ class VisibleUiTranslationTests(unittest.TestCase):
                 self.assertTrue(key, field)
                 self.assertIn(key, catalog, f"{language}: {key}")
                 self.assertNotEqual(catalog[key], key)
+
+    def test_connection_status_and_community_links_are_translated(self) -> None:
+        required = {
+            "LMU: Ativo",
+            "LMU: Desconectado",
+            "Abrir servidor do Discord",
+            "Ver atualizações do SectorFlow",
+        }
+        failures: list[str] = []
+        for language in LANGUAGES:
+            if language == "pt_BR":
+                continue
+            catalog = _load_catalog(language)
+            missing = sorted(key for key in required if key not in catalog)
+            if missing:
+                failures.append(f"{language}: {', '.join(missing)}")
+        self.assertFalse(failures, "\n".join(failures))
+
+    def test_footer_shows_connection_state_and_clickable_link_targets(self) -> None:
+        window = MainMenuWindow.__new__(MainMenuWindow)
+        QMainWindow.__init__(window)
+        footer = window._build_footer()
+
+        window.set_lmu_status(True, "— Track — 240 km/h")
+        self.assertEqual(window.connection_label.text(), tr("LMU: Ativo"))
+        self.assertTrue(window.connection_label.property("connected"))
+        self.assertNotIn("240", window.connection_label.text())
+        self.assertEqual(
+            window.discord_button.toolTip(),
+            tr("Abrir servidor do Discord"),
+        )
+        self.assertEqual(
+            window.releases_button.toolTip(),
+            tr("Ver atualizações do SectorFlow"),
+        )
+        self.assertEqual(window.DISCORD_URL, "https://discord.gg/pVShUkfbtN")
+        self.assertTrue(window.RELEASES_URL.endswith("/releases/"))
+
+        window.set_lmu_status(False, "telemetria indisponível")
+        self.assertEqual(window.connection_label.text(), tr("LMU: Desconectado"))
+        self.assertFalse(window.connection_label.property("connected"))
+        footer.deleteLater()
+        window.deleteLater()
 
 
 if __name__ == "__main__":
