@@ -6,12 +6,10 @@
 # Para usar: pyinstaller SectorFlow.spec
 # Executar no Windows com Python 3.10+ e PySide6 instalado
 
-import os
 from pathlib import Path
 
 block_cipher = None
 PROJECT_ROOT = Path(SPECPATH).parent
-ONEFILE = os.environ.get('SECTORFLOW_ONEFILE') == '1'
 
 a = Analysis(
     [str(PROJECT_ROOT / 'run.py')],
@@ -132,9 +130,8 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries if ONEFILE else [],
-    a.datas if ONEFILE else [],
-    exclude_binaries=not ONEFILE,
+    [],
+    exclude_binaries=True,
     name='SectorFlow',
     debug=False,
     bootloader_ignore_signals=False,
@@ -150,13 +147,12 @@ exe = EXE(
     version=str(PROJECT_ROOT / 'build/version_info.txt'),
 )
 
-if not ONEFILE:
-    coll = COLLECT(
-        exe,
-        a.binaries,
-        a.datas,
-        strip=False,
-        upx=True,
-        upx_exclude=[],
-        name='SectorFlow',
-    )
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='SectorFlow',
+)

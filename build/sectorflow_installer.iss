@@ -12,6 +12,9 @@
 #define MyAppPublisher "Sector Flow"
 #define MyAppURL "https://github.com/RomarioSantos-Oficial/Teste02"
 #define MyAppExeName "SectorFlow.exe"
+#ifndef SectorFlowSource
+#define SectorFlowSource "..\dist\SectorFlow\*"
+#endif
 
 [Setup]
 AppId={{A1B2C3D4-E5F6-7890-1234-56789ABCDEF0}
@@ -77,7 +80,7 @@ Name: "chinesesimplified"; MessagesFile: "ChineseSimplified.isl"
 [Files]
 ; Todos os arquivos abaixo são privados do SectorFlow. O ignoreversion garante
 ; que JSONs, traduções, imagens e DLLs sejam atualizados junto com o EXE.
-Source: "..\dist\SectorFlow\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "{#SectorFlowSource}"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Dirs]
 ; Criadas vazias em uma instalação nova. Em atualizações, o instalador não
