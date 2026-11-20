@@ -14,7 +14,7 @@ from src.widget.standings.lmu_online_client import LMUOnlineIdentityClient
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Diagnóstico seguro dos perfis RaceControl do Standings."
+        description="Diagnóstico seguro dos dados locais e do split online do STR."
     )
     parser.add_argument(
         "--export",
@@ -35,7 +35,7 @@ def main() -> None:
     print("REST local:", snapshot.local_api_available)
     print("Sessão online detectada:", snapshot.session_online)
     print("Event ID detectado:", bool(snapshot.event_id))
-    print("Perfis online DR/SR:", snapshot.cloud_available)
+    print("Split online recebido:", bool(snapshot.split_label))
     print("Autenticacao: ticket temporario do LMU / RaceOS")
     print("Identidades encontradas:", len(snapshot.identities))
     print("Fonte:", snapshot.source_message)
@@ -47,9 +47,6 @@ def main() -> None:
     for identity in snapshot.identities[:20]:
         print(
             f"{identity.display_name or identity.username} | "
-            f"DR={identity.driver_rank or '--'} | "
-            f"DR%={identity.driver_rank_progress} | "
-            f"SR={identity.safety_rank or '--'} | "
             f"PAÍS={identity.nationality or '--'} | "
             f"BADGE={identity.badge or '--'}"
         )

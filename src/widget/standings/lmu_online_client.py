@@ -36,7 +36,7 @@ _EVENT_ENDED_PATTERN = re.compile(
 
 
 class LMUOnlineIdentityClient:
-    """Leitor direto do LMU: memória é tratada fora; aqui entram REST e perfis online."""
+    """Reads local LMU identity data and the online session split."""
 
     LOCAL_ENDPOINTS = {
         "profile": "/rest/profile/",
@@ -197,9 +197,8 @@ class LMUOnlineIdentityClient:
                 self._last_refresh = 0.0
                 self._generation += 1
             elif signature_changed:
-                # Practice, Quali e Race do mesmo evento usam os mesmos
-                # perfis RaceOS. Preserva DR/SR/SOF durante a transicao e
-                # apenas agenda uma atualizacao em segundo plano.
+                # Practice, Quali e Race from one event share the same split.
+                # Keep the event identity and refresh the split in background.
                 self._session_signature = signature
                 self._last_refresh = 0.0
                 self._generation += 1

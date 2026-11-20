@@ -88,7 +88,6 @@
   "online_refresh_seconds": 900.0,
   "online_timeout_seconds": 3.0,
   "online_event_type": "daily",
-  "online_max_pages": 10,
   "raceos_base_url": "https://raceos.gg",
   "logo_directory": "images/logos",
   "class_colors": {

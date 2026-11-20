@@ -87,9 +87,7 @@ def _flat(source: dict[str, Any]) -> dict[str, Any]:
             for child in value:
                 visit(child, prefix)
         elif isinstance(value, str):
-            # Alguns retornos do LMU guardam o perfil RaceControl como JSON
-            # dentro de uma string (normalmente em ``metadata``). Decodificar
-            # aqui permite ler DR/SR e badges sem depender da API externa.
+            # LMU may return identity metadata as JSON inside a string field.
             decoded = _decode(value)
             if not isinstance(decoded, str):
                 visit(decoded, prefix)

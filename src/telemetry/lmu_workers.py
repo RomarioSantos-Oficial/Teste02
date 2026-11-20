@@ -6,7 +6,7 @@ import time
 from dataclasses import dataclass
 from typing import Callable
 
-from .lmu_adapter import LMUAdapter, lmu_data, lmu_mmap, safe_float, safe_int
+from .lmu_adapter import LMUAdapter, decode_text, lmu_data, lmu_mmap, safe_float, safe_int
 from .models import SessionData
 
 
@@ -26,6 +26,15 @@ class FastPlayerFrame:
     brake: float = 0.0
     clutch: float = 0.0
     steering: float = 0.0
+    lap_number: int = 0
+    lap_distance_m: float = 0.0
+    time_into_lap_s: float = 0.0
+    track_length_m: float = 0.0
+    track_name: str = ""
+    vehicle_class: str = ""
+    vehicle_model: str = ""
+    vehicle_filename: str = ""
+    current_lap_invalidated: bool = False
 
 
 class FastTelemetryWorker:
@@ -38,6 +47,7 @@ class FastTelemetryWorker:
         self._memory: lmu_mmap.MMapControl | None = None
         self._latest = FastPlayerFrame()
         self._sequence = 0
+        self.capture_lap_context = False
 
     def start(self) -> None:
         if self._thread is not None and self._thread.is_alive():
@@ -123,6 +133,22 @@ class FastTelemetryWorker:
                     )
                 else:
                     raw = telemetry.telemInfo[player_index]
+                    scoring_info = None
+                    player_score = None
+                    if self.capture_lap_context:
+                        scoring_info = getattr(getattr(data, "scoring", None), "scoringInfo", None)
+                    if self.capture_lap_context and scoring_info is not None:
+                        player_slot = safe_int(getattr(raw, "mID", -1), -1)
+                        score_count = max(0, min(
+                            safe_int(getattr(scoring_info, "mNumVehicles", 0)),
+                            int(lmu_data.LMUConstants.MAX_MAPPED_VEHICLES),
+                        ))
+                        scores = getattr(data.scoring, "vehScoringInfo", ())
+                        for score_index in range(score_count):
+                            candidate = scores[score_index]
+                            if safe_int(getattr(candidate, "mID", -2), -2) == player_slot:
+                                player_score = candidate
+                                break
                     velocity = raw.mLocalVel
                     speed_ms = math.sqrt(
                         safe_float(velocity.x) ** 2
@@ -151,6 +177,15 @@ class FastTelemetryWorker:
                         steering=safe_float(
                             getattr(raw, "mUnfilteredSteering", raw.mFilteredSteering)
                         ),
+                        lap_number=safe_int(getattr(player_score, "mTotalLaps", 0)) if player_score is not None else 0,
+                        lap_distance_m=safe_float(getattr(player_score, "mLapDist", 0.0)) if player_score is not None else 0.0,
+                        time_into_lap_s=safe_float(getattr(player_score, "mTimeIntoLap", 0.0)) if player_score is not None else 0.0,
+                        track_length_m=safe_float(getattr(scoring_info, "mLapDist", 0.0)) if scoring_info is not None else 0.0,
+                        track_name=decode_text(getattr(scoring_info, "mTrackName", b"")) if scoring_info is not None else "",
+                        vehicle_class=decode_text(getattr(player_score, "mVehicleClass", b"")) if player_score is not None else "",
+                        vehicle_model=decode_text(getattr(raw, "mVehicleModel", b"")),
+                        vehicle_filename=decode_text(getattr(player_score, "mVehFilename", b"")) if player_score is not None else "",
+                        current_lap_invalidated=bool(getattr(raw, "mLapInvalidated", False)),
                     )
             except (AttributeError, IndexError, OSError, ValueError, BufferError):
                 self._publish_empty()

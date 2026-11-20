@@ -3,6 +3,7 @@ app/*
 !app/README.md
 dist/
 build/work/
+.env
 
 # Configurações e dados locais do usuário
 data/online_debug/session_dump_*.json

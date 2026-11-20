@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
+    QLabel,
     QPushButton,
     QLineEdit,
     QScrollArea,
@@ -218,7 +219,10 @@ class DriverPanelEditor(QDialog):
 
         interval = QComboBox()
         interval.addItems(("5 s", "10 s", "30 s", "Volta", "Sessão"))
-        interval.setCurrentText(str(self.config.get("graph_interval", "10 s")))
+        interval.setCurrentText(
+            "Volta" if bool(self.config.get("compare_personal_best", False))
+            else str(self.config.get("graph_interval", "10 s"))
+        )
         interval.currentTextChanged.connect(lambda value: self._set_root("graph_interval", value))
         form.addRow("Intervalo exibido:", interval)
 
@@ -267,6 +271,27 @@ class DriverPanelEditor(QDialog):
             "Linhas verticais:",
             vertical,
         )
+
+        compare_best = QCheckBox("Comparar com minha melhor volta salva")
+        compare_best.setChecked(bool(self.config.get("compare_personal_best", False)))
+        def set_compare_best(enabled: bool) -> None:
+            self._set_root("compare_personal_best", enabled)
+            if enabled:
+                interval.setCurrentText("Volta")
+
+        compare_best.toggled.connect(set_compare_best)
+        scope = QComboBox()
+        scope.addItem("Categoria (qualquer carro)", "category")
+        scope.addItem("Mesmo modelo de carro", "model")
+        scope.setCurrentIndex(max(0, scope.findData(str(self.config.get("personal_best_scope", "category")))))
+        scope.currentIndexChanged.connect(
+            lambda index: self._set_root("personal_best_scope", scope.itemData(index))
+        )
+        form.addRow("Sobrepor curvas da volta:", compare_best)
+        form.addRow("Separar por:", scope)
+        hint = QLabel("Com a comparação ativa, o gráfico usa a volta atual e sobrepõe sua melhor volta salva.")
+        hint.setWordWrap(True)
+        form.addRow("", hint)
 
         self.content_layout.addWidget(group)
 

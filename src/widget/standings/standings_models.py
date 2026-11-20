@@ -29,11 +29,6 @@ class DriverMetadata:
     nationality: str = ""
     country_code: str = ""
     badge: str = ""
-    driver_rank: str = ""
-    driver_rank_progress: float | None = None
-    safety_rank: str = ""
-    safety_rank_progress: float | None = None
-    estimated_driver_rank_gain: float | None = None
     tyre_compound: str = ""
     # Ordem LMU: dianteiro esquerdo/direito, traseiro esquerdo/direito.
     # Mantemos os quatro valores para conseguir mostrar montagens mistas.
@@ -68,11 +63,6 @@ class StandingRow:
     nationality: str = ""
     country_code: str = ""
     badge: str = ""
-    driver_rank: str = ""
-    driver_rank_progress: float | None = None
-    safety_rank: str = ""
-    safety_rank_progress: float | None = None
-    estimated_driver_rank_gain: float | None = None
     laps: int = 0
     display_lap: int = 0
     lap_distance_m: float = 0.0
@@ -127,9 +117,6 @@ class CategoryBlock:
     # Explicação curta do cálculo usado para estimar total de voltas (ex: "ref=leader lap=92.3s rem=600s est=18.3")
     total_laps_calc: str = ""
     show_count: bool = False
-    dr_sof_rank: str = ""
-    dr_sof_progress: float | None = None
-    dr_sof_drivers: int = 0
     rows: list[StandingRow] = field(default_factory=list)
 
 
@@ -156,14 +143,9 @@ class OnlineDriverIdentity:
     team_name: str = ""
     car_number: str = ""
     vehicle_class: str = ""
-    driver_rank: str = ""
-    driver_rank_progress: float | None = None
-    safety_rank: str = ""
-    safety_rank_progress: float | None = None
     nationality: str = ""
     badge: str = ""
     incidents: int | None = None
-    estimated_driver_rank_gain: float | None = None
     source: str = ""
     raw: dict[str, Any] = field(default_factory=dict)
 

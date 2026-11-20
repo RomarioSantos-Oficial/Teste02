@@ -163,6 +163,9 @@ class _DriverPanelHost:
         self.timer.start(32 if low else 16)
 
     def _apply_config(self, *, force_geometry: bool) -> None:
+        self.fast_telemetry.capture_lap_context = bool(
+            self.config.get("compare_personal_best", False)
+        )
         self.widget.update_config(deepcopy(self.config))
         screens = QGuiApplication.screens()
         if screens:

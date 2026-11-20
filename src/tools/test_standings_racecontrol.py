@@ -64,34 +64,7 @@ class FakeRaceControlClient(LMUOnlineIdentityClient):
         if url.endswith("/authenticate"):
             return {
                 "accessToken": "temporary-session-token",
-                "player": {
-                    "name": "Alice Driver",
-                    "username": "Alice Driver",
-                    "profile": {"nationality": "BR"},
-                    "driverRank": {
-                        "rank": "Gold",
-                        "tier": 2,
-                        "progress": 0.64,
-                    },
-                    "safetyRank": {"rank": "Silver", "tier": 3},
-                },
             }
-        if url.endswith("/api/v1/players"):
-            return [
-                {
-                    "name": "Alice Driver",
-                    "username": "Alice Driver",
-                    "steamId": "steam-test-001",
-                    "nationality": "BR",
-                    "badge": "Good Driver",
-                    "driverRank": {
-                        "rank": "Gold",
-                        "tier": 2,
-                        "progress": 0.64,
-                    },
-                    "safetyRank": {"rank": "Silver", "tier": 3},
-                }
-            ]
         if "/api/v1/event/my-split/" in url:
             return {"splitNo": 6, "totalSplits": 8}
         return {}
@@ -352,6 +325,10 @@ class RaceControlClientTests(unittest.TestCase):
                 del kwargs
                 return [], ""
 
+            def _fetch_cloud_split(self, **kwargs):
+                del kwargs
+                return ""
+
         client = NoCurrentSplitClient()
         session = SimpleNamespace(
             connected=True,
@@ -443,7 +420,7 @@ class RaceControlClientTests(unittest.TestCase):
             "steam-test-002",
         )
 
-    def test_local_team_list_captures_embedded_badge_dr_and_sr(self) -> None:
+    def test_local_team_list_captures_country_and_badge(self) -> None:
         parser = object.__new__(LocalStandingsEnrichment)
         metadata = {}
         parser._parse_payload(
@@ -458,16 +435,7 @@ class RaceControlClientTests(unittest.TestCase):
                                         "profile": {
                                             "nationality": "BR",
                                             "contactBadge": "Good Driver",
-                                        },
-                                        "driverRank": {
-                                            "rank": "Gold",
-                                            "tier": 2,
-                                            "percentage": 0.64,
-                                        },
-                                        "safetyRank": {
-                                            "rank": "Silver",
-                                            "tier": 3,
-                                        },
+                                        }
                                     }
                                 ),
                             }
@@ -481,9 +449,6 @@ class RaceControlClientTests(unittest.TestCase):
         driver = metadata["alicedriver1234"]
         self.assertEqual(driver.country_code, "BR")
         self.assertEqual(driver.badge, "Good Driver")
-        self.assertEqual(driver.driver_rank, "Gold 2")
-        self.assertEqual(driver.driver_rank_progress, 64.0)
-        self.assertEqual(driver.safety_rank, "Silver 3")
 
     def test_local_roles_supply_badge_when_lmu_reports_none(self) -> None:
         parser = object.__new__(LocalStandingsEnrichment)
@@ -513,7 +478,7 @@ class RaceControlClientTests(unittest.TestCase):
             {
                 "drivers": {
                     "Alice Driver #1234": {
-                        "driverRank": {"rank": "Gold", "tier": 2}
+                        "nationality": "BR",
                     }
                 }
             },
@@ -521,9 +486,9 @@ class RaceControlClientTests(unittest.TestCase):
             "/rest/multiplayer/teams",
         )
         snapshot, _, _ = parser.snapshot(["Alice Driver"])
-        self.assertEqual(snapshot["alicedriver"].driver_rank, "Gold 2")
+        self.assertEqual(snapshot["alicedriver"].country_code, "BR")
 
-    def test_collects_country_badge_dr_and_sr(self) -> None:
+    def test_collects_split_without_online_profiles(self) -> None:
         client = FakeRaceControlClient()
         session = SimpleNamespace(
             track_name="Le Mans",
@@ -538,37 +503,11 @@ class RaceControlClientTests(unittest.TestCase):
         )
 
         snapshot = client.refresh_sync(session)
-        identity = client.lookup(
-            "Alice Driver",
-            steam_id="steam-test-001",
-        )
 
         self.assertTrue(snapshot.local_api_available)
         self.assertTrue(snapshot.session_online)
         self.assertTrue(snapshot.cloud_available)
-        self.assertIsNotNone(identity)
-        assert identity is not None
-        self.assertEqual(identity.nationality, "BR")
-        self.assertEqual(identity.badge, "Good Driver")
-        self.assertEqual(identity.driver_rank, "Gold 2")
-        self.assertAlmostEqual(identity.driver_rank_progress or 0.0, 0.64)
-        self.assertEqual(identity.safety_rank, "Silver 3")
-
-    def test_raceos_uses_batch_profile_lookup(self) -> None:
-        client = FakeRaceControlClient()
-        session = SimpleNamespace(
-            track_name="Le Mans",
-            session=13,
-            max_laps=20,
-            drivers=[SimpleNamespace(driver_name="Alice Driver", steam_id="")],
-        )
-        client.refresh_sync(session)
-        request = next(
-            item for item in client.requests if item[0].endswith("/api/v1/players")
-        )
-        _, method, body = request
-        self.assertEqual(method, "POST")
-        self.assertEqual(body, {"usernames": ["Alice Driver"]})
+        self.assertEqual(snapshot.split_label, "S 6/8")
 
     def test_raceos_does_not_require_external_client_key(self) -> None:
         client = FakeRaceControlClient()
@@ -583,16 +522,6 @@ class RaceControlClientTests(unittest.TestCase):
         self.assertTrue(
             any(url.endswith("/authenticate") for url, _, _ in client.requests)
         )
-
-    def test_raceos_uses_team_roster_when_session_is_missing(self) -> None:
-        client = FakeRaceControlClient()
-        snapshot = client.refresh_sync()
-        self.assertTrue(snapshot.cloud_available)
-        request = next(
-            item for item in client.requests if item[0].endswith("/api/v1/players")
-        )
-        self.assertEqual(request[2], {"usernames": ["Alice Driver"]})
-
 
 if __name__ == "__main__":
     unittest.main()

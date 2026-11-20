@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import copy
+import math
 import re
 import time
 from pathlib import Path
@@ -237,9 +238,8 @@ class StandingsWidget(QWidget):
         # outras colunas para continuar cabendo na largura anterior.
         configured = self.config.get("column_widths", {})
         enabled = self._enabled_columns()
-        # A referência precisa incluir todas as colunas. Quando ela era
-        # calculada apenas com as colunas ativas, ligar SR mantinha a mesma
-        # largura externa e comprimía/ocultava o conteúdo.
+        # A referência considera todas as colunas habilitadas para manter
+        # a largura externa coerente com o conteúdo visível.
         configured_total = 0.0
         for key, value in self.BASE_COLUMNS:
             if not enabled.get(key, True):
@@ -266,7 +266,7 @@ class StandingsWidget(QWidget):
         if self.widget_id == "standings":
             # Ao recriar o STR numa troca de perfil, a geometria salva pelo
             # usuário é autoritativa. Recalcular pela soma das colunas fazia
-            # a largura mudar sempre que DR/SR ou outra coluna alterava o
+            # a largura mudar quando outras colunas alteravam o
             # total em relação à referência gravada anteriormente.
             width = max(self.minimumWidth(), int(base_width))
         else:
@@ -607,6 +607,20 @@ class StandingsWidget(QWidget):
             self.resize(desired, self.height())
         finally:
             self._fitting_width = False
+
+    @staticmethod
+    def _format_rank_percent(value: float, signed: bool = False) -> str:
+        """Format one-decimal rank percentages without padding whole numbers."""
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return "--"
+        if not math.isfinite(number):
+            return "--"
+        formatted = f"{number:.1f}".rstrip("0").rstrip(".")
+        if signed and number > 0.0:
+            formatted = "+" + formatted
+        return formatted + "%"
 
     def _header_items(self) -> list[tuple[str, float, str]]:
         if not bool(self.config.get("show_global_header", True)):

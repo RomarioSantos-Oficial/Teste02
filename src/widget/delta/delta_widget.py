@@ -15,6 +15,7 @@ from .delta_models import DeltaViewData, FastestLapData
 from .delta_renderer import DeltaRenderer
 from .delta_sector_tracker import DeltaSectorTracker
 from .delta_session_tracker import DeltaSessionTracker
+from src.laps.archive import LapArchiveStore, local_owner_key
 
 
 class DeltaWidget(QWidget):
@@ -64,6 +65,10 @@ class DeltaWidget(QWidget):
         self.renderer = DeltaRenderer(
             self.logo_manager
         )
+        self.lap_archive: LapArchiveStore | None = None
+        self._personal_best_cache_key: tuple[str, ...] | None = None
+        self._personal_best_trace: list[dict[str, float]] = []
+        self._next_personal_best_check = 0.0
 
         self.view_data = DeltaViewData()
         self._target_delta = 0.0
@@ -336,6 +341,13 @@ class DeltaWidget(QWidget):
             )
             self.sector_tracker.reset()
 
+        personal_best_delta = self._personal_best_delta(session, player)
+        if personal_best_delta is not None:
+            self._target_delta = personal_best_delta
+            self._smooth_delta.set_target(personal_best_delta)
+            if self._delta_history:
+                self._delta_history[-1] = personal_best_delta
+
         always_visible = bool(
             self.config.get(
                 "fastest_lap_always_visible",
@@ -445,6 +457,72 @@ class DeltaWidget(QWidget):
             self._fit_content_if_enabled()
 
         self.update()
+
+    def _personal_best_delta(self, session: Any, player: Any) -> float | None:
+        if not bool(self.config.get("compare_personal_best", False)) or player is None:
+            return None
+        driver = next(
+            (row for row in (getattr(session, "drivers", []) or []) if bool(getattr(row, "is_player", False))),
+            None,
+        )
+        if driver is None or bool(getattr(player, "current_lap_invalidated", False)):
+            return None
+        track = str(getattr(session, "track_name", "") or "")
+        category = str(getattr(driver, "vehicle_class", "") or "")
+        model = str(getattr(driver, "vehicle_model", "") or "")
+        filename = str(getattr(driver, "vehicle_filename", "") or "")
+        scope = str(self.config.get("personal_best_scope", "category") or "category")
+        owner = local_owner_key()
+        cache_key = (owner, track.casefold(), category.casefold(), model.casefold(), filename.casefold(), scope)
+        now = time.monotonic()
+        if cache_key != self._personal_best_cache_key or now >= self._next_personal_best_check:
+            if self.lap_archive is None:
+                self.lap_archive = LapArchiveStore()
+            record = self.lap_archive.best(
+                track, category, model, filename, scope, owner,
+            )
+            self._personal_best_trace = record.trace if record is not None else []
+            self._personal_best_cache_key = cache_key
+            self._next_personal_best_check = now + 2.0
+        trace = self._personal_best_trace
+        track_length = float(getattr(session, "track_length_m", 0.0) or 0.0)
+        live = getattr(driver, "live_scoring", None)
+        live = live if isinstance(live, dict) else {}
+        distance = float(
+            live.get("lap_distance_m", getattr(driver, "lap_distance_m", 0.0)) or 0.0
+        )
+        elapsed = float(
+            live.get("time_into_lap_s", getattr(driver, "time_into_lap_s", 0.0)) or 0.0
+        )
+        if elapsed <= 0.0:
+            event_time = float(
+                getattr(session, "current_event_time_s", 0.0)
+                or getattr(session, "current_time_s", 0.0)
+                or 0.0
+            )
+            lap_start = float(
+                live.get("lap_start_event_time_s", getattr(driver, "lap_start_event_time_s", 0.0))
+                or 0.0
+            )
+            if event_time > lap_start > 0.0:
+                elapsed = event_time - lap_start
+        if track_length <= 0.0 or elapsed <= 0.0 or len(trace) < 2:
+            return None
+        fraction = max(0.0, min(1.0, distance / track_length))
+        right_index = next(
+            (index for index, point in enumerate(trace) if float(point.get("distance", 0.0)) >= fraction),
+            len(trace) - 1,
+        )
+        right = trace[right_index]
+        left = trace[max(0, right_index - 1)]
+        left_x = float(left.get("distance", 0.0))
+        right_x = float(right.get("distance", 1.0))
+        span = right_x - left_x
+        ratio = 0.0 if span <= 1e-9 else max(0.0, min(1.0, (fraction - left_x) / span))
+        reference_elapsed = float(left.get("elapsed_s", 0.0)) + (
+            float(right.get("elapsed_s", 0.0)) - float(left.get("elapsed_s", 0.0))
+        ) * ratio
+        return elapsed - reference_elapsed
 
     def update_config(
         self,

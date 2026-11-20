@@ -605,7 +605,7 @@ class OverlayManager(QObject):
                 self._shared_online_client.request_split_recheck(session)
         elif not allowed:
             # Fora da coleta valida, nenhum valor anterior pode permanecer
-            # visivel. DR/SR/paises continuam em cache para a retomada.
+            # visivel. Identidade local, país e badge continuam em cache.
             self._last_split_label = ""
             setattr(session, "split_label", "")
             if self._shared_online_client is not None:

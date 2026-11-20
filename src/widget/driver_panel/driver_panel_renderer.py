@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Sequence
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QFont, QFontMetricsF, QImage, QPainter, QPainterPath, QPen
+from src.i18n import tr
 
 
 @dataclass(slots=True)
@@ -34,11 +35,13 @@ class DriverPanelRenderer:
              throttle_history: Sequence[float], brake_history: Sequence[float],
              clutch_history: Sequence[float], rpm_history: Sequence[float],
              steering_history: Sequence[float], speed_history: Sequence[float],
-             config: dict[str, Any], edit_mode: bool = False) -> None:
+             config: dict[str, Any], edit_mode: bool = False,
+             reference_throttle_history: Sequence[float] = (),
+             reference_brake_history: Sequence[float] = ()) -> None:
         p.save(); p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         c=config.get("colors",{}); bg=QColor(c.get("background","#05080C")); bg.setAlphaF(float(config.get("background_opacity",.92)))
         panel=QColor(c.get("panel","#071014")); border=QColor(c.get("border","#18333A")); text=QColor(c.get("text","#F4F8FA")); muted=QColor(c.get("muted","#8CA0A8"))
-        colors={"rpm":QColor(c.get("rpm_graph","#FFD21F")),"throttle":QColor(c.get("throttle","#18E65A")),"brake":QColor(c.get("brake","#FF2638")),"clutch":QColor(c.get("clutch","#278BFF")),"steering":QColor(c.get("steering_graph","#C783FF")),"speed":QColor(c.get("speed","#20D4E8"))}
+        colors={"rpm":QColor(c.get("rpm_graph","#FFD21F")),"throttle":QColor(c.get("throttle","#18E65A")),"brake":QColor(c.get("brake","#FF2638")),"clutch":QColor(c.get("clutch","#278BFF")),"steering":QColor(c.get("steering_graph","#C783FF")),"speed":QColor(c.get("speed","#20D4E8")),"throttle_reference":QColor(c.get("personal_best_throttle","#37B9FF")),"brake_reference":QColor(c.get("personal_best_brake","#FFB547"))}
         s=max(.12,min(2.5,min(bounds.width()/1600,bounds.height()/650))); radius=max(5,float(config.get("border_radius",14))*s)
         p.setPen(QPen(border,max(1,2*s))); p.setBrush(bg); p.drawRoundedRect(bounds.adjusted(1,1,-1,-1),radius,radius)
         content=bounds.adjusted(max(7,16*s),max(7,16*s),-max(7,16*s),-max(7,16*s)); e=config.get("elements",{}); show=lambda k:bool(e.get(k,True))
@@ -59,7 +62,9 @@ class DriverPanelRenderer:
         graph=QRectF(body.left(),body.top(),max(0,body.width()-wheel_w-pedals_w-gap*2),body.height())
         pedals=QRectF(graph.right()+gap,content.top(),pedals_w,content.height())
         wheel=QRectF(pedals.right()+gap,content.top(),wheel_w,content.height())
-        if show("graph"): self._graph(p,graph,{"throttle":throttle_history,"brake":brake_history,"clutch":clutch_history},colors,text,muted,panel,border,config,s)
+        if show("graph"):
+            graph_series={"throttle":throttle_history,"brake":brake_history,"clutch":clutch_history,"throttle_reference":reference_throttle_history,"brake_reference":reference_brake_history}
+            self._graph(p,graph,graph_series,colors,text,muted,panel,border,config,s)
         if show("pedals"): self._pedals(p,pedals,data,colors,text,muted,panel,border,config,s)
         if wheel_w: self._wheel(p,wheel,data,colors,text,panel,border,config,s)
         if edit_mode:
@@ -77,11 +82,17 @@ class DriverPanelRenderer:
         enabled=cfg.get("pedal_elements",{})
         p.save(); p.setClipRect(graph)
         for name,values in series.items():
-            if bool(enabled.get(name,True)): self._path(p,graph,values,colors[name],max(1.3,2.5*s))
+            base_name=name.removesuffix("_reference")
+            if bool(enabled.get(base_name,True)):
+                self._path(p,graph,values,colors[name],max(1.3,2.1*s if name.endswith("_reference") else 2.5*s),name.endswith("_reference"))
         p.restore()
+        if series.get("throttle_reference") or series.get("brake_reference"):
+            p.setFont(QFont("Arial", max(7, round(8*s))))
+            p.setPen(muted)
+            p.drawText(QRectF(graph.left(), graph.top(), graph.width(), 13*s), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop, tr("PB tracejada"))
 
     @staticmethod
-    def _path(p:QPainter,r:QRectF,values:Sequence[float],color:QColor,width:float)->None:
+    def _path(p:QPainter,r:QRectF,values:Sequence[float],color:QColor,width:float,dashed:bool=False)->None:
         if len(values)<2:return
         path=QPainterPath()
         for i,raw in enumerate(values):
@@ -90,7 +101,9 @@ class DriverPanelRenderer:
             else:
                 x_ratio=i/(len(values)-1); value=float(raw)
             point=QPointF(r.left()+r.width()*x_ratio,r.bottom()-r.height()*max(0,min(1,value))); path.moveTo(point) if i==0 else path.lineTo(point)
-        pen=QPen(color,width); pen.setCapStyle(Qt.PenCapStyle.RoundCap); pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin); p.setPen(pen); p.setBrush(Qt.BrushStyle.NoBrush); p.drawPath(path)
+        pen=QPen(color,width); pen.setCapStyle(Qt.PenCapStyle.RoundCap); pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        if dashed: pen.setStyle(Qt.PenStyle.DashLine)
+        p.setPen(pen); p.setBrush(Qt.BrushStyle.NoBrush); p.drawPath(path)
 
     def _pedals(self,p:QPainter,r:QRectF,d:DriverPanelViewData,colors:dict[str,QColor],text:QColor,muted:QColor,panel:QColor,border:QColor,cfg:dict[str,Any],s:float)->None:
         p.setPen(Qt.PenStyle.NoPen); p.setBrush(panel); p.drawRoundedRect(r,8*s,8*s); pe=cfg.get("pedal_elements",{}); items=[("",d.brake,d.max_brake_seen,"brake",d.brake_abrupt),("",d.throttle,d.max_throttle_seen,"throttle",d.throttle_abrupt),("",d.clutch,d.max_clutch_seen,"clutch",False)]; items=[i for i in items if bool(pe.get(i[3],True))]

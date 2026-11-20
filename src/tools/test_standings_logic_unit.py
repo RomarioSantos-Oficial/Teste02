@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import unittest
-from unittest.mock import patch
 
 from src.telemetry.models import DriverData, PlayerData, SessionData
 from src.widget.standings.standings_logic import (
@@ -13,46 +12,6 @@ from src.widget.standings.standings_models import DriverMetadata, StandingRow
 
 
 class StandingsLogicUnitTests(unittest.TestCase):
-    def test_estimated_driver_rank_reuses_result_until_grid_changes(self) -> None:
-        rows = [
-            StandingRow(
-                slot_id=index,
-                class_key="LMGT3",
-                class_position=index,
-                driver_rank="Silver 2",
-                driver_rank_progress=float(index),
-            )
-            for index in range(1, 9)
-        ]
-        logic = StandingsLogic({"show_estimated_driver_rank_gain": True})
-
-        original = StandingsLogic._estimate_driver_rank_gains
-        with patch.object(
-            StandingsLogic,
-            "_estimate_driver_rank_gains",
-            wraps=original,
-        ) as estimator:
-            logic._apply_cached_driver_rank_gains(rows)
-            cached_rows = [
-                StandingRow(
-                    slot_id=row.slot_id,
-                    class_key=row.class_key,
-                    class_position=row.class_position,
-                    driver_rank=row.driver_rank,
-                    driver_rank_progress=row.driver_rank_progress,
-                )
-                for row in rows
-            ]
-            logic._apply_cached_driver_rank_gains(cached_rows)
-            self.assertEqual(estimator.call_count, 1)
-            self.assertTrue(
-                all(row.estimated_driver_rank_gain is not None for row in cached_rows)
-            )
-
-            cached_rows[0].class_position = 2
-            logic._apply_cached_driver_rank_gains(cached_rows)
-            self.assertEqual(estimator.call_count, 2)
-
     def test_pit_time_remains_visible_for_configured_laps_after_exit(self) -> None:
         driver = DriverData(
             slot_id=1,
@@ -251,17 +210,8 @@ class StandingsLogicUnitTests(unittest.TestCase):
         )
 
         metadata = {
-            "classleader": DriverMetadata(
-                driver_name="Class Leader",
-                driver_rank="Bronze 3",
-                driver_rank_progress=50.0,
-            ),
-            "player": DriverMetadata(
-                driver_name="Player",
-                driver_rank="Silver 0",
-                driver_rank_progress=50.0,
-                estimated_driver_rank_gain=-5.0,
-            ),
+            "classleader": DriverMetadata(driver_name="Class Leader"),
+            "player": DriverMetadata(driver_name="Player"),
         }
         view = StandingsLogic({}).build(session, metadata, "MEM")
         category = view.categories[0]
@@ -281,11 +231,6 @@ class StandingsLogicUnitTests(unittest.TestCase):
         self.assertEqual(rows["Player"].penalty_text, "--")
         self.assertEqual(rows["Class Leader"].damage_percent, 25.0)
         self.assertTrue(rows["Class Leader"].damage_is_estimated)
-        self.assertEqual(category.dr_sof_rank, "S1")
-        self.assertAlmostEqual(category.dr_sof_progress or 0.0, 0.0)
-        self.assertEqual(category.dr_sof_drivers, 2)
-        self.assertEqual(rows["Player"].estimated_driver_rank_gain, -5.0)
-
     def test_tyre_positions_do_not_shift_when_one_value_is_missing(self) -> None:
         session = SessionData(
             connected=True,

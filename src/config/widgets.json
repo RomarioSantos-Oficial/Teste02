@@ -514,7 +514,6 @@
       "online_refresh_seconds": 900.0,
       "online_timeout_seconds": 3.0,
       "online_event_type": "daily",
-      "online_max_pages": 10,
       "raceos_base_url": "https://raceos.gg",
       "logo_directory": "images/logos",
       "class_colors": {
@@ -730,7 +729,6 @@
       "online_refresh_seconds": 900.0,
       "online_timeout_seconds": 3.0,
       "online_event_type": "daily",
-      "online_max_pages": 10,
       "raceos_base_url": "https://raceos.gg",
       "logo_directory": "images/logos",
       "class_colors": {
@@ -853,6 +851,9 @@
       "font": {
         "family": "Bahnschrift Light"
       },
+      "graph_interval": "10 s",
+      "compare_personal_best": false,
+      "personal_best_scope": "category",
       "graph_history_points": 240,
       "graph_vertical_lines": 8,
       "layout": {
@@ -1389,7 +1390,6 @@
       "online_refresh_seconds": 900.0,
       "online_timeout_seconds": 3.0,
       "online_event_type": "daily",
-      "online_max_pages": 10,
       "raceos_base_url": "https://raceos.gg",
       "logo_directory": "images/logos",
       "class_colors": {
@@ -1605,7 +1605,6 @@
       "online_refresh_seconds": 900.0,
       "online_timeout_seconds": 3.0,
       "online_event_type": "daily",
-      "online_max_pages": 10,
       "raceos_base_url": "https://raceos.gg",
       "logo_directory": "images/logos",
       "class_colors": {
@@ -1718,6 +1717,9 @@
       "click_through": true,
       "snap_to_edges": true,
       "steering_visual_degrees": 180,
+      "graph_interval": "10 s",
+      "compare_personal_best": false,
+      "personal_best_scope": "category",
       "graph_history_points": 240,
       "graph_vertical_lines": 8,
       "design_base_width": 1380,
@@ -2268,7 +2270,6 @@
           "online_refresh_seconds": 900.0,
           "online_timeout_seconds": 3.0,
           "online_event_type": "daily",
-          "online_max_pages": 10,
           "raceos_base_url": "https://raceos.gg",
           "logo_directory": "images/logos",
           "class_colors": {
@@ -2484,7 +2485,6 @@
           "online_refresh_seconds": 900.0,
           "online_timeout_seconds": 3.0,
           "online_event_type": "daily",
-          "online_max_pages": 10,
           "raceos_base_url": "https://raceos.gg",
           "logo_directory": "images/logos",
           "class_colors": {
@@ -2607,6 +2607,9 @@
           "font": {
             "family": "Bahnschrift Light"
           },
+          "graph_interval": "10 s",
+          "compare_personal_best": false,
+          "personal_best_scope": "category",
           "graph_history_points": 240,
           "graph_vertical_lines": 8,
           "layout": {
@@ -3147,7 +3150,6 @@
           "online_refresh_seconds": 900.0,
           "online_timeout_seconds": 3.0,
           "online_event_type": "daily",
-          "online_max_pages": 10,
           "raceos_base_url": "https://raceos.gg",
           "logo_directory": "images/logos",
           "class_colors": {
@@ -3363,7 +3365,6 @@
           "online_refresh_seconds": 900.0,
           "online_timeout_seconds": 3.0,
           "online_event_type": "daily",
-          "online_max_pages": 10,
           "raceos_base_url": "https://raceos.gg",
           "logo_directory": "images/logos",
           "class_colors": {
@@ -3476,6 +3477,9 @@
           "click_through": true,
           "snap_to_edges": true,
           "steering_visual_degrees": 180,
+          "graph_interval": "10 s",
+          "compare_personal_best": false,
+          "personal_best_scope": "category",
           "graph_history_points": 240,
           "graph_vertical_lines": 8,
           "design_base_width": 1380,

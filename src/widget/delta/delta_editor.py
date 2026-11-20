@@ -441,6 +441,29 @@ class DeltaEditor(QDialog):
 
         self.content_layout.addWidget(group)
 
+        personal = QGroupBox("Comparação com sua melhor volta")
+        personal_form = QFormLayout(personal)
+        enabled = QCheckBox("Usar a melhor volta pessoal salva como referência")
+        enabled.setChecked(bool(self.config.get("compare_personal_best", False)))
+        enabled.toggled.connect(
+            lambda value: self._set_root("compare_personal_best", value)
+        )
+        scope = QComboBox()
+        scope.addItem("Categoria (qualquer carro)", "category")
+        scope.addItem("Mesmo modelo de carro", "model")
+        selected_scope = scope.findData(
+            str(self.config.get("personal_best_scope", "category"))
+        )
+        scope.setCurrentIndex(max(0, selected_scope))
+        scope.currentIndexChanged.connect(
+            lambda index: self._set_root(
+                "personal_best_scope", str(scope.itemData(index) or "category")
+            )
+        )
+        personal_form.addRow("Referência DELTA:", enabled)
+        personal_form.addRow("Separar por:", scope)
+        self.content_layout.addWidget(personal)
+
     def _build_penalties(self) -> None:
         group = QGroupBox(
             "Limite de pista / punições"

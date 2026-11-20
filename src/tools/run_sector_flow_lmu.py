@@ -51,6 +51,7 @@ from src.telemetry.lmu_workers import SessionTelemetryWorker
 from src.telemetry.session_state import SessionActivityTracker
 from src.i18n import install_translator, tr
 from src.private_data import clear_online_debug, ensure_private_data_directories
+from src.laps.archive import set_active_owner_key
 from src.ui.edit_mode_manager import EditModeManager
 from src.ui.main_menu_window import MainMenuWindow
 from src.ui.isolated_widget_process import (
@@ -136,6 +137,9 @@ class SingleInstanceGuard:
 
 class SectorFlowApplication:
     def __init__(self) -> None:
+        # Discord tokens are not persisted. Start each launch on the offline
+        # profile until the user authenticates, before isolated overlays start.
+        set_active_owner_key("offline")
         config_path = user_config_path()
         self.overlay_manager = OverlayManager(
             config_path,
@@ -322,7 +326,8 @@ class SectorFlowApplication:
         self.low_power_mode = low
 
     def show(self) -> None:
-        self.menu.show()
+        if not self._quit_requested:
+            self.menu.show()
 
     def _create_tray(self) -> None:
         if not QSystemTrayIcon.isSystemTrayAvailable():
@@ -385,7 +390,6 @@ class SectorFlowApplication:
         if self._quit_requested:
             return
         self._quit_requested = True
-
         if self.tray_quit_action is not None:
             self.tray_quit_action.setEnabled(False)
         if self.tray is not None:
@@ -425,17 +429,21 @@ class SectorFlowApplication:
             for geometry in controller.pending_geometry():
                 self.overlay_manager._save_widget_geometry(*geometry)
 
-        if not self.overlays_enabled:
-            self.overlay_manager.set_session_active(False)
-            self.menu.set_lmu_status(False, "overlays desativados pela bandeja")
-            return
-
         sequence, session = self.session_telemetry.snapshot()
         if sequence == self._last_session_sequence:
+            if not self.overlays_enabled:
+                self.overlay_manager.set_session_active(False)
+                self.menu.set_lmu_status(False, "overlays desativados pela bandeja")
             return
         self._last_session_sequence = sequence
 
         self.session_tracker.update(session)
+        self.menu.observe_lap_session(session)
+
+        if not self.overlays_enabled:
+            self.overlay_manager.set_session_active(False)
+            self.menu.set_lmu_status(False, "overlays desativados pela bandeja")
+            return
 
         if not session.connected:
             self.overlay_manager.set_session_active(False)
@@ -485,6 +493,7 @@ class SectorFlowApplication:
         self.timer.stop()
         if self.session_bus_publisher is not None:
             self.session_bus_publisher.close()
+        self.menu.finish_lap_recording()
         self.session_telemetry.close()
         for controller in self.widget_processes:
             controller.close()
@@ -515,9 +524,9 @@ def main() -> None:
         app.setWindowIcon(QIcon(str(APPLICATION_LOGO)))
     program = SectorFlowApplication()
     instance_guard.set_show_callback(program.show_menu)
-    program.show()
     app.aboutToQuit.connect(instance_guard.close)
     app.aboutToQuit.connect(program.close)
+    QTimer.singleShot(0, program.show)
     sys.exit(app.exec())
 
 

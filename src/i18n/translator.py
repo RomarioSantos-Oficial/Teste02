@@ -74,6 +74,15 @@ def _load_catalog(language: str) -> dict[str, str]:
         catalog.update(release_notes.get(language, {}))
     except (OSError, ValueError, TypeError, AttributeError):
         pass
+    try:
+        lap_archive = json.loads(
+            (_catalog_path(language).parent / "lap_archive.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        catalog.update(lap_archive.get(language, {}))
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass
     return catalog
 
 

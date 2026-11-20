@@ -8,6 +8,7 @@ from typing import Any
 from PySide6.QtCore import QPoint, QRectF, Qt, Signal
 from PySide6.QtGui import QMouseEvent, QPaintEvent, QPainter, QResizeEvent
 from PySide6.QtWidgets import QWidget
+from src.laps.archive import LapArchiveStore, local_owner_key
 
 from .driver_panel_renderer import DriverPanelRenderer, DriverPanelViewData
 
@@ -31,6 +32,14 @@ class DriverPanelWidget(QWidget):
         self.config = config
         self.renderer = DriverPanelRenderer()
         self.view_data = DriverPanelViewData()
+        self.lap_archive: LapArchiveStore | None = None
+        self._personal_best_key: tuple[str, ...] | None = None
+        self._personal_best_trace: list[dict[str, float]] = []
+        self._next_personal_best_check = 0.0
+        self._current_lap_marker: int | None = None
+        self._current_lap_samples: list[tuple[float, float, float]] = []
+        self._current_lap_graph: list[tuple[float, float, float]] = []
+        self._current_lap_capture_started = False
 
         history_size = max(
             30,
@@ -85,7 +94,7 @@ class DriverPanelWidget(QWidget):
             float(self.config.get("opacity", 0.96))
         )
 
-        interval = str(self.config.get("graph_interval", "10 s"))
+        interval = "Volta" if bool(self.config.get("compare_personal_best", False)) else str(self.config.get("graph_interval", "10 s"))
         seconds = {"5 s": 5, "10 s": 10, "30 s": 30, "Volta": 180, "Sessão": 3600}.get(interval, 10)
         history_rate = min(
             30,
@@ -208,8 +217,75 @@ class DriverPanelWidget(QWidget):
         )
         self._previous_throttle = throttle
         self._previous_brake = brake
+        self._update_personal_best_trace(player_data, throttle, brake, now)
 
         self.update()
+
+    def _update_personal_best_trace(
+        self,
+        frame: Any,
+        throttle: float,
+        brake: float,
+        now: float,
+    ) -> None:
+        if (
+            not bool(self.config.get("compare_personal_best", False))
+        ):
+            return
+        track = str(getattr(frame, "track_name", "") or "")
+        category = str(getattr(frame, "vehicle_class", "") or "")
+        model = str(getattr(frame, "vehicle_model", "") or "")
+        filename = str(getattr(frame, "vehicle_filename", "") or "")
+        owner = local_owner_key()
+        scope = str(self.config.get("personal_best_scope", "category") or "category")
+        context_key = (owner, track.casefold(), category.casefold(), model.casefold(), filename.casefold(), scope)
+        if context_key != self._personal_best_key or now >= self._next_personal_best_check:
+            if self.lap_archive is None:
+                self.lap_archive = LapArchiveStore()
+            record = self.lap_archive.best(track, category, model, filename, scope, owner)
+            self._personal_best_trace = record.trace if record is not None else []
+            self._personal_best_key = context_key
+            self._next_personal_best_check = now + 2.0
+
+        length = float(getattr(frame, "track_length_m", 0.0) or 0.0)
+        distance = float(getattr(frame, "lap_distance_m", 0.0) or 0.0)
+        marker = int(getattr(frame, "lap_number", 0) or 0)
+        fraction = distance / length if length > 0.0 else -1.0
+        if marker != self._current_lap_marker:
+            self._current_lap_samples.clear()
+            self._current_lap_marker = marker
+            self._current_lap_capture_started = 0.0 <= fraction <= 0.035
+        if bool(getattr(frame, "current_lap_invalidated", False)):
+            self._current_lap_samples.clear()
+            self._current_lap_capture_started = False
+            return
+        if not self._current_lap_capture_started or not 0.0 <= fraction <= 1.02:
+            return
+        ratio = max(0.0, min(1.0, fraction))
+        if self._current_lap_samples and ratio + 0.025 < self._current_lap_samples[-1][0]:
+            self._current_lap_samples.clear()
+            self._current_lap_capture_started = False
+            return
+        self._current_lap_samples.append((ratio, throttle, brake))
+
+    def _comparison_graph(self) -> tuple[list[tuple[float, float]], list[tuple[float, float]]]:
+        if len(self._current_lap_samples) > 600:
+            count = len(self._current_lap_samples)
+            indexes = [round(index * (count - 1) / 599) for index in range(600)]
+            self._current_lap_graph = [self._current_lap_samples[index] for index in indexes]
+        else:
+            self._current_lap_graph = self._current_lap_samples
+        if not self._personal_best_trace:
+            return [], []
+        best_throttle = [
+            (float(sample.get("distance", 0.0)), float(sample.get("throttle", 0.0)))
+            for sample in self._personal_best_trace
+        ]
+        best_brake = [
+            (float(sample.get("distance", 0.0)), float(sample.get("brake", 0.0)))
+            for sample in self._personal_best_trace
+        ]
+        return best_throttle, best_brake
 
     def clear_graph(self) -> None:
         self.throttle_history.clear()
@@ -245,6 +321,15 @@ class DriverPanelWidget(QWidget):
 
         painter = QPainter(self)
         throttle, brake, clutch, rpm, steering, speed = self._visible_history_cache
+        reference_throttle: list[tuple[float, float]] = []
+        reference_brake: list[tuple[float, float]] = []
+        compare_best = bool(self.config.get("compare_personal_best", False))
+        if compare_best:
+            reference_throttle, reference_brake = self._comparison_graph()
+            if self._current_lap_capture_started:
+                current = getattr(self, "_current_lap_graph", self._current_lap_samples)
+                throttle = [(sample[0], sample[1]) for sample in current]
+                brake = [(sample[0], sample[2]) for sample in current]
         self.renderer.draw(
             painter,
             QRectF(self.rect()),
@@ -257,6 +342,8 @@ class DriverPanelWidget(QWidget):
             speed,
             self.config,
             self.edit_mode,
+            reference_throttle,
+            reference_brake,
         )
 
         if self.edit_mode:
@@ -277,7 +364,7 @@ class DriverPanelWidget(QWidget):
         if not times:
             return tuple(series + [[], [], []])
 
-        interval = str(self.config.get("graph_interval", "10 s"))
+        interval = "Volta" if bool(self.config.get("compare_personal_best", False)) else str(self.config.get("graph_interval", "10 s"))
         seconds = {"5 s": 5.0, "10 s": 10.0, "30 s": 30.0}.get(interval)
         points = max(2, int(self.config.get("graph_history_points", 240)))
         if seconds is not None:

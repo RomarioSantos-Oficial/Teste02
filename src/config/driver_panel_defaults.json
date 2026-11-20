@@ -21,6 +21,8 @@
   "steering_style": "Circular",
   "custom_wheel_image": "",
   "graph_interval": "10 s",
+  "compare_personal_best": false,
+  "personal_best_scope": "category",
   "sample_rate_hz": 60,
   "pedal_bar_width": 38.0,
   "pedal_bar_gap": 9.0,

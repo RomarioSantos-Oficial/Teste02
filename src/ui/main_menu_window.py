@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSystemTrayIcon,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -41,6 +42,8 @@ from src.widget.fuel_time.fuel_time_editor import FuelTimeEditor
 from src.widget.lap_timer.lap_timer_editor import LapTimerEditor
 from src.widget.url.url_editor import UrlEditor
 from src.widget.radar.radar_editor import RadarEditor
+from src.laps.archive import LapRecorder
+from src.ui.lap_archive_page import LapArchivePage
 
 
 class MainMenuWindow(QMainWindow):
@@ -66,7 +69,13 @@ class MainMenuWindow(QMainWindow):
         root.setSpacing(12)
         root.addWidget(self._build_header())
         root.addWidget(self._build_toolbar())
-        root.addWidget(self._build_widget_grid(), 1)
+        self.content_tabs = QTabWidget()
+        self.content_tabs.addTab(self._build_widget_grid(), tr("Overlays"))
+        self.lap_archive_page = LapArchivePage(self)
+        self.content_tabs.addTab(self.lap_archive_page, tr("Voltas"))
+        self.lap_recorder = LapRecorder(self.lap_archive_page.store)
+        self.lap_recorder.set_owner_key(self.lap_archive_page.owner_key)
+        root.addWidget(self.content_tabs, 1)
         root.addWidget(self._build_footer())
         self._apply_style()
         self.overlay_manager.profile_changed.connect(self._profile_applied)
@@ -315,6 +324,8 @@ class MainMenuWindow(QMainWindow):
         if hasattr(self, "releases_button"):
             self.releases_button.setText(tr("Atualizações"))
             self.releases_button.setToolTip(tr("Ver atualizações do SectorFlow"))
+        if hasattr(self, "lap_archive_page"):
+            self.lap_archive_page.retranslate()
         self._reload_profiles()
         self.edit_mode_button.setText(
             tr("Modo edição: LIGADO")
@@ -511,6 +522,15 @@ class MainMenuWindow(QMainWindow):
             self.connection_label.setProperty("connected", connected)
             self.connection_label.style().unpolish(self.connection_label)
             self.connection_label.style().polish(self.connection_label)
+
+    def observe_lap_session(self, session) -> None:
+        """Record valid laps even while the overlay windows are hidden."""
+        saved = self.lap_recorder.observe(session)
+        if saved:
+            self.lap_archive_page.refresh_local_records()
+
+    def finish_lap_recording(self) -> None:
+        self.lap_recorder.finish_session()
 
     def _toggle_widget(self, widget_id: str, enabled: bool) -> None:
         try:

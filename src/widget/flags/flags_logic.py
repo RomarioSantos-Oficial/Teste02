@@ -180,8 +180,6 @@ class FlagsLogic:
 
         candidates.sort(key=lambda car: (car.distance < 0.0, abs(car.distance)))
         if full_course_yellow:
-            if not candidates:
-                return FlagAlert()
             return FlagAlert(
                 active=True,
                 driver="FULL COURSE YELLOW",
