@@ -680,6 +680,16 @@ class StandingsWidget(QWidget):
             else f"SPLIT {value}"
         )
 
+    @staticmethod
+    def _color_with_opacity(value: str, opacity: float) -> QColor:
+        color = QColor(value)
+        try:
+            factor = max(0.0, min(1.0, float(opacity)))
+        except (TypeError, ValueError):
+            factor = 1.0
+        color.setAlphaF(color.alphaF() * factor)
+        return color
+
     def paintEvent(self, event: QPaintEvent) -> None:
         del event
         painter = QPainter(self)
@@ -692,7 +702,12 @@ class StandingsWidget(QWidget):
         visual_outer.setRight(max(outer.left(), outer.right() - popup_reserve))
         if bool(self.config.get("background_enabled", True)):
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor(colors.get("background", "#030711")))
+            painter.setBrush(
+                self._color_with_opacity(
+                    colors.get("background", "#090D12"),
+                    self.config.get("panel_opacity", 0.25),
+                )
+            )
             painter.drawRect(visual_outer)
         margin = max(2.0, float(self.config.get("panel_margin", 8.0)) * self._scale)
         content = visual_outer.adjusted(margin, margin, -margin, -margin)
@@ -721,7 +736,12 @@ class StandingsWidget(QWidget):
     def _draw_global_header(self, painter: QPainter, rect: QRectF) -> None:
         colors = self.config.get("colors", {})
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor(colors.get("header_background", "#000000")))
+        painter.setBrush(
+            self._color_with_opacity(
+                colors.get("header_background", "#080B10"),
+                self.config.get("row_opacity", 0.78),
+            )
+        )
         painter.drawRect(rect)
         items = self._header_items()
         # As larguras usam pesos fixos por tipo de informacao. Medir o texto
@@ -790,6 +810,17 @@ class StandingsWidget(QWidget):
             )
             painter.drawText(target, alignment, label)
             painter.restore()
+            if index < len(items) - 1:
+                painter.setPen(
+                    QPen(
+                        self._color_with_opacity(
+                            colors.get("header_separator", "#2A3540"),
+                            self.config.get("row_opacity", 0.78),
+                        ),
+                        max(0.7, 1.0 * self._scale),
+                    )
+                )
+                painter.drawLine(cell.topRight(), cell.bottomRight())
         self._column_content_scale = 1.0
         painter.setPen(QPen(QColor(colors.get("header_line", "#175C9C")), max(1.0, 2.0 * self._scale)))
         painter.drawLine(rect.bottomLeft(), rect.bottomRight())
@@ -829,6 +860,7 @@ class StandingsWidget(QWidget):
             ),
         )
         color = QColor(category.color)
+        colors = self.config.get("colors", {})
         gap = max(3.0, 6.0 * self._scale)
         # Categoria, pilotos e volta dividem a faixa em blocos iguais.
         equal_width_weight = 1.0
@@ -864,12 +896,36 @@ class StandingsWidget(QWidget):
             "category_header_font_size", 18.0, rect
         )
         base_category_font.setBold(True)
-        for box, text in boxes:
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(
+            self._color_with_opacity(
+                colors.get("category_header_background", "#151C24"),
+                self.config.get("row_opacity", 0.78),
+            )
+        )
+        painter.drawRect(rect.adjusted(0.0, 0.0, 0.0, -3.0 * self._scale))
+        for index, ((key, _weight, _label), (box, text)) in enumerate(
+            zip(definitions, boxes)
+        ):
             painter.setFont(QFont(base_category_font))
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(color)
-            painter.drawRect(box)
-            painter.setPen(QColor("#FFFFFF"))
+            if key == "class":
+                accent_width = max(3.0, 4.0 * self._scale)
+                painter.fillRect(
+                    QRectF(box.left(), box.top(), accent_width, box.height()),
+                    color,
+                )
+            if index > 0:
+                painter.setPen(
+                    QPen(
+                        self._color_with_opacity(
+                            colors.get("header_separator", "#2A3540"),
+                            self.config.get("row_opacity", 0.78),
+                        ),
+                        max(0.7, 1.0 * self._scale),
+                    )
+                )
+                painter.drawLine(box.topLeft(), box.bottomLeft())
+            painter.setPen(QColor(colors.get("text", "#F4F6F8")))
             target = box.adjusted(8 * self._scale, 0, -8 * self._scale, 0)
             if category.show_count and text == f"{category.started}/{category.total}":
                 size = min(target.height() * .68, target.width() * .26)
@@ -891,7 +947,7 @@ class StandingsWidget(QWidget):
                 font.setPixelSize(font.pixelSize() - 1)
             painter.setFont(font)
             painter.drawText(target, Qt.AlignmentFlag.AlignCenter, text)
-        painter.setPen(QPen(color, max(1.0, 3.0 * self._scale)))
+        painter.setPen(QPen(color, max(1.5, 2.0 * self._scale)))
         painter.drawLine(rect.bottomLeft(), rect.bottomRight())
         self._column_content_scale = previous_content_scale
 
@@ -928,7 +984,12 @@ class StandingsWidget(QWidget):
     def _draw_legend(self, painter: QPainter, rect: QRectF) -> None:
         colors = self.config.get("colors", {})
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor(colors.get("legend_background", "#11151D")))
+        painter.setBrush(
+            self._color_with_opacity(
+                colors.get("legend_background", "#0E1319"),
+                self.config.get("row_opacity", 0.78),
+            )
+        )
         painter.drawRect(rect)
         labels = {
             "position": "P", "change": "+/-", "flag": "PAÍS", "badge": "BADGE",
@@ -938,7 +999,9 @@ class StandingsWidget(QWidget):
             "tyre": "TYR",
             "energy": "VE/FUEL", "damage": "DMG",
         }
-        for key, cell in self._column_rects(rect):
+        legend_cells = self._column_rects(rect)
+        first_column_key = legend_cells[0][0] if legend_cells else ""
+        for key, cell in legend_cells:
             base_width = dict(self.BASE_COLUMNS).get(key, cell.width())
             configured_width = float(self.config.get("column_widths", {}).get(key, base_width))
             effective_width = self._effective_column_width(key, configured_width)
@@ -960,6 +1023,17 @@ class StandingsWidget(QWidget):
             label = painter.fontMetrics().elidedText(label, Qt.TextElideMode.ElideRight, max(1, int(cell.width()-2)))
             painter.drawText(cell, Qt.AlignmentFlag.AlignCenter, label)
             painter.restore()
+            if key != first_column_key:
+                painter.setPen(
+                    QPen(
+                        self._color_with_opacity(
+                            colors.get("header_separator", "#2A3540"),
+                            self.config.get("row_opacity", 0.78),
+                        ),
+                        max(0.7, 1.0 * self._scale),
+                    )
+                )
+                painter.drawLine(cell.topLeft(), cell.bottomLeft())
         if (
             bool(self.config.get("detach_penalty_column", True))
             and bool(self.config.get("show_penalty_column", True))
@@ -987,7 +1061,12 @@ class StandingsWidget(QWidget):
             )
             painter.save()
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor(colors.get("legend_background", "#11151D")))
+            painter.setBrush(
+                self._color_with_opacity(
+                    colors.get("legend_background", "#0E1319"),
+                    self.config.get("row_opacity", 0.78),
+                )
+            )
             painter.drawRect(popup)
             painter.setFont(self._section_font("column_legend_font_size", 12.0, rect))
             painter.setPen(QColor(colors.get("muted", "#A7AFBA")))
@@ -1034,15 +1113,26 @@ class StandingsWidget(QWidget):
                 Qt.GlobalColor.transparent,
             )
             painter.restore()
-        background = QColor(colors.get("row_background", "#030711"))
+        if int(row.class_position or 0) % 2 == 0:
+            background_value = colors.get(
+                "alternate_row_background",
+                "#191F26",
+            )
+        else:
+            background_value = colors.get("row_background", "#12171D")
         if row.is_player:
-            background = QColor(colors.get("player_background", "#111B2B"))
+            background_value = colors.get("player_background", "#142622")
         elif row.in_pits or row.in_garage:
-            background = QColor(colors.get("pit_row_background", "#17191D"))
+            background_value = colors.get("pit_row_background", "#27211A")
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(background)
+        painter.setBrush(
+            self._color_with_opacity(
+                background_value,
+                self.config.get("row_opacity", 0.78),
+            )
+        )
         painter.drawRect(main_rect)
-        for key, cell in draw_cells:
+        for cell_index, (key, cell) in enumerate(draw_cells):
             painter.save()
             painter.setClipRect(cell)
             self._drawing_driver_row = True
@@ -1051,6 +1141,17 @@ class StandingsWidget(QWidget):
             finally:
                 self._drawing_driver_row = False
                 painter.restore()
+            if cell_index > 0:
+                painter.setPen(
+                    QPen(
+                        self._color_with_opacity(
+                            colors.get("column_separator", "#26303A"),
+                            float(self.config.get("row_opacity", 0.78)) * 0.55,
+                        ),
+                        max(0.5, 0.7 * self._scale),
+                    )
+                )
+                painter.drawLine(cell.topLeft(), cell.bottomLeft())
         if (
             detached_penalty
             and bool(self.config.get("show_penalty_column", True))
@@ -1082,7 +1183,34 @@ class StandingsWidget(QWidget):
             painter.restore()
         self._column_content_scale = 1.0
         row_color = self._row_class_color(row, category)
-        painter.setPen(QPen(row_color, max(1.0, 1.2 * self._scale)))
+        painter.fillRect(
+            QRectF(
+                main_rect.left(),
+                main_rect.top(),
+                max(2.0, 3.0 * self._scale),
+                main_rect.height(),
+            ),
+            row_color,
+        )
+        if row.is_player:
+            painter.fillRect(
+                QRectF(
+                    main_rect.right() - max(2.0, 3.0 * self._scale),
+                    main_rect.top(),
+                    max(2.0, 3.0 * self._scale),
+                    main_rect.height(),
+                ),
+                QColor(colors.get("header_line", "#43BDCA")),
+            )
+        painter.setPen(
+            QPen(
+                self._color_with_opacity(
+                    colors.get("row_separator", "#35404A"),
+                    self.config.get("row_opacity", 0.78),
+                ),
+                max(0.7, 1.0 * self._scale),
+            )
+        )
         if penalty_cell is None or not detached_penalty:
             painter.drawLine(rect.bottomLeft(), rect.bottomRight())
         else:
@@ -1133,9 +1261,15 @@ class StandingsWidget(QWidget):
         row_color = self._row_class_color(row, category)
         if key == "position":
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(row_color)
-            painter.drawRect(rect.adjusted(0, 2 * self._scale, -2 * self._scale, -2 * self._scale))
-            # A posição fica isolada; a chegada é desenhada na coluna STS.
+            painter.fillRect(
+                QRectF(
+                    rect.left(),
+                    rect.top() + 2 * self._scale,
+                    max(3.0, 4.0 * self._scale),
+                    rect.height() - 4 * self._scale,
+                ),
+                row_color,
+            )
             self._text(painter, rect, f"{row.class_position}", 0.76, True)
         elif key == "change":
             value = row.position_change
@@ -1208,7 +1342,13 @@ class StandingsWidget(QWidget):
             painter.drawText(target, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, text)
         elif key == "brand":
             if self.BRAND_CELL_BLACK_BACKGROUND:
-                painter.fillRect(rect, QColor("#000000"))
+                painter.fillRect(
+                    rect,
+                    self._color_with_opacity(
+                        "#000000",
+                        self.config.get("row_opacity", 0.78),
+                    ),
+                )
             pixmap = None
             # No STR a marca permanece visível mesmo depois da chegada. O
             # Relative conserva o comportamento anterior por meio da flag da

@@ -16,6 +16,11 @@ from src.widget.standings.standings_widget import (
 
 
 class StandingsLayoutUnitTests(unittest.TestCase):
+    def test_surface_opacity_changes_alpha_without_changing_rgb(self) -> None:
+        color = StandingsWidget._color_with_opacity("#43BDCA", 0.5)
+        self.assertEqual(color.name(), "#43bdca")
+        self.assertIn(color.alpha(), {127, 128})
+
     def test_large_grids_use_adaptive_render_interval(self) -> None:
         self.assertEqual(
             StandingsWidget._adaptive_render_interval(0.20, 30),
