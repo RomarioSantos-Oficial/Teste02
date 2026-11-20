@@ -10,7 +10,7 @@ class RelativeWidget(StandingsWidget):
     # bandeira de chegada foi aprovada somente para o STR.
     FINISH_FLAG_IN_STATUS_COLUMN = False
     BORROW_INACTIVE_PIT_FOR_DRIVER = False
-    BRAND_CELL_BLACK_BACKGROUND = False
+    BRAND_CELL_BLACK_BACKGROUND = True
     BRAND_LOGO_FILL_WIDTH = False
     BASE_COLUMNS = (
         ("position", 46.0),

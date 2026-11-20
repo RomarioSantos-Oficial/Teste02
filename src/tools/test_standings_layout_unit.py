@@ -3,7 +3,8 @@ from __future__ import annotations
 import unittest
 import time
 
-from PySide6.QtCore import QRectF
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QColor, QImage, QPainter
 
 from src.ui.overlay_manager import OverlayManager
 from src.widget.relative.relative_widget import RelativeWidget
@@ -27,7 +28,7 @@ class StandingsLayoutUnitTests(unittest.TestCase):
             _row_surface_color = StandingsWidget._row_surface_color
 
             def __init__(self) -> None:
-                self.config = {"row_opacity": 0.65, "player_opacity": 0.92}
+                self.config = {"row_opacity": 0.35, "player_opacity": 0.95}
 
         probe = SurfaceWidgetProbe()
         colors = {
@@ -46,7 +47,34 @@ class StandingsLayoutUnitTests(unittest.TestCase):
         )
 
         self.assertEqual(player.name(), "#5b1239")
+        self.assertIn(player.alpha(), {127, 128})
         self.assertGreater(player.alpha(), other.alpha())
+
+    def test_position_cell_background_fills_the_entire_cell(self) -> None:
+        class PositionWidgetProbe:
+            config = {"colors": {"text": "#FFFFFF"}}
+
+            def _row_class_color(self, _row, _category):
+                return QColor("#123456")
+
+            def _text(self, *_args):
+                pass
+
+        image = QImage(64, 48, QImage.Format.Format_ARGB32)
+        image.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(image)
+        StandingsWidget._draw_cell(
+            PositionWidgetProbe(),
+            painter,
+            "position",
+            QRectF(8.0, 8.0, 32.0, 24.0),
+            StandingRow(class_position=1),
+            object(),
+        )
+        painter.end()
+
+        self.assertEqual(image.pixelColor(8, 8).name(), "#123456")
+        self.assertEqual(image.pixelColor(39, 31).name(), "#123456")
 
     def test_large_grids_use_adaptive_render_interval(self) -> None:
         self.assertEqual(
@@ -276,10 +304,12 @@ class StandingsLayoutUnitTests(unittest.TestCase):
         self.assertLess(columns.index("brand"), columns.index("pit"))
         self.assertEqual(columns.index("pit"), columns.index("number") + 1)
 
-    def test_only_str_uses_black_brand_cell_and_full_width_logo(self) -> None:
+    def test_both_widgets_use_opaque_brand_cells_but_only_str_fills_logo_width(
+        self,
+    ) -> None:
         self.assertTrue(StandingsWidget.BRAND_CELL_BLACK_BACKGROUND)
         self.assertTrue(StandingsWidget.BRAND_LOGO_FILL_WIDTH)
-        self.assertFalse(RelativeWidget.BRAND_CELL_BLACK_BACKGROUND)
+        self.assertTrue(RelativeWidget.BRAND_CELL_BLACK_BACKGROUND)
         self.assertFalse(RelativeWidget.BRAND_LOGO_FILL_WIDTH)
 
         cell = QRectF(12.0, 5.0, 72.0, 40.0)

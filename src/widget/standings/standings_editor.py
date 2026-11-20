@@ -356,12 +356,12 @@ class StandingsEditor(QDialog):
             lambda value: self._set("row_opacity", value / 100.0)
         )
         player_opacity = QDoubleSpinBox()
-        player_opacity.setRange(0.0, 100.0)
+        player_opacity.setRange(0.0, 50.0)
         player_opacity.setDecimals(0)
         player_opacity.setSingleStep(5.0)
         player_opacity.setSuffix(" %")
         player_opacity.setValue(
-            float(self.config.get("player_opacity", 0.95)) * 100.0
+            float(self.config.get("player_opacity", 0.50)) * 100.0
         )
         player_opacity.valueChanged.connect(
             lambda value: self._set("player_opacity", value / 100.0)
@@ -390,7 +390,7 @@ class StandingsEditor(QDialog):
         form.addRow("Opacidade geral do widget:", opacity)
         form.addRow("Opacidade do fundo do painel:", panel_opacity)
         form.addRow("Opacidade das linhas e faixas:", row_opacity)
-        form.addRow("Opacidade da linha do piloto:", player_opacity)
+        form.addRow("Opacidade da linha do piloto (máx. 50%):", player_opacity)
         form.addRow("Pasta de logos:", logo_dir)
         form.addRow("Pasta de badges:", badge_dir)
         self.layout_content.addWidget(group)

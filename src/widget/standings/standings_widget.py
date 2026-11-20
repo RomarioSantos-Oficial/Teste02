@@ -681,12 +681,17 @@ class StandingsWidget(QWidget):
         )
 
     @staticmethod
-    def _color_with_opacity(value: str, opacity: float) -> QColor:
+    def _color_with_opacity(
+        value: str,
+        opacity: float,
+        *,
+        maximum: float = 1.0,
+    ) -> QColor:
         color = QColor(value)
         try:
-            factor = max(0.0, min(1.0, float(opacity)))
+            factor = max(0.0, min(float(maximum), float(opacity)))
         except (TypeError, ValueError):
-            factor = 1.0
+            factor = max(0.0, min(1.0, float(maximum)))
         color.setAlphaF(color.alphaF() * factor)
         return color
 
@@ -694,7 +699,8 @@ class StandingsWidget(QWidget):
         if row.is_player:
             return self._color_with_opacity(
                 colors.get("player_background", "#5B1239"),
-                self.config.get("player_opacity", 0.95),
+                self.config.get("player_opacity", 0.50),
+                maximum=0.50,
             )
         if row.in_pits or row.in_garage:
             background = colors.get("pit_row_background", "#27211A")
@@ -1261,19 +1267,7 @@ class StandingsWidget(QWidget):
         colors = self.config.get("colors", {})
         row_color = self._row_class_color(row, category)
         if key == "position":
-            badge = rect.adjusted(
-                5.0 * self._scale,
-                4.0 * self._scale,
-                -5.0 * self._scale,
-                -4.0 * self._scale,
-            )
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(row_color)
-            painter.drawRoundedRect(
-                badge,
-                3.0 * self._scale,
-                3.0 * self._scale,
-            )
+            painter.fillRect(rect, row_color)
             self._text(
                 painter,
                 rect,
@@ -1353,17 +1347,10 @@ class StandingsWidget(QWidget):
             painter.drawText(target, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, text)
         elif key == "brand":
             if self.BRAND_CELL_BLACK_BACKGROUND:
-                painter.fillRect(
-                    rect,
-                    self._color_with_opacity(
-                        "#000000",
-                        self.config.get("row_opacity", 0.78),
-                    ),
-                )
+                painter.fillRect(rect, QColor("#000000"))
             pixmap = None
-            # No STR a marca permanece visível mesmo depois da chegada. O
-            # Relative conserva o comportamento anterior por meio da flag da
-            # classe, para esta mudança não vazar para outro widget.
+            # No STR a marca permanece visível mesmo depois da chegada;
+            # Relative mantém a bandeira de chegada nesta célula.
             if self._is_finished(row) and not self.FINISH_FLAG_IN_STATUS_COLUMN:
                 pixmap = self._finish_flag_pixmap(
                     max(1, int(rect.width() - 2)),

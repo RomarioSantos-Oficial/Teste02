@@ -572,7 +572,7 @@
       "column_legend_font_size": 11,
       "panel_opacity": 0.25,
       "row_opacity": 0.78,
-      "player_opacity": 0.95
+      "player_opacity": 0.50
     },
     "damage": {
       "enabled": false,
@@ -803,7 +803,7 @@
       "column_legend_font_size": 11,
       "panel_opacity": 0.25,
       "row_opacity": 0.78,
-      "player_opacity": 0.95
+      "player_opacity": 0.50
     },
     "radar": {
       "enabled": false,
@@ -1474,7 +1474,7 @@
       "column_legend_font_size": 11,
       "panel_opacity": 0.25,
       "row_opacity": 0.78,
-      "player_opacity": 0.95
+      "player_opacity": 0.50
     },
     "damage": {
       "enabled": false,
@@ -1705,7 +1705,7 @@
       "column_legend_font_size": 11,
       "panel_opacity": 0.25,
       "row_opacity": 0.78,
-      "player_opacity": 0.95
+      "player_opacity": 0.50
     },
     "radar": {
       "enabled": false,
@@ -2380,7 +2380,7 @@
           "column_legend_font_size": 11,
           "panel_opacity": 0.25,
           "row_opacity": 0.78,
-          "player_opacity": 0.95
+          "player_opacity": 0.50
         },
         "damage": {
           "enabled": false,
@@ -2611,7 +2611,7 @@
           "column_legend_font_size": 11,
           "panel_opacity": 0.25,
           "row_opacity": 0.78,
-          "player_opacity": 0.95
+          "player_opacity": 0.50
         },
         "radar": {
           "enabled": false,
@@ -3286,7 +3286,7 @@
           "column_legend_font_size": 11,
           "panel_opacity": 0.25,
           "row_opacity": 0.78,
-          "player_opacity": 0.95
+          "player_opacity": 0.50
         },
         "damage": {
           "enabled": false,
@@ -3517,7 +3517,7 @@
           "column_legend_font_size": 11,
           "panel_opacity": 0.25,
           "row_opacity": 0.78,
-          "player_opacity": 0.95
+          "player_opacity": 0.50
         },
         "radar": {
           "enabled": false,
