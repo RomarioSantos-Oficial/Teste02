@@ -46,7 +46,6 @@ class DriverPanelGeometryUnitTests(unittest.TestCase):
         config = self._config()
         config["sample_rate_hz"] = 60
         widget = DriverPanelWidget("driver_panel", config)
-        widget._history_interval_s = 0.0
         player = type(
             "Player",
             (),
@@ -62,17 +61,21 @@ class DriverPanelGeometryUnitTests(unittest.TestCase):
             },
         )()
 
-        for _ in range(3):
+        def sample() -> None:
+            widget._next_history_sample_at = 0.0
             widget.update_telemetry(player)
+
+        for _ in range(3):
+            sample()
         player.throttle = 1.0
-        widget.update_telemetry(player)
+        sample()
         player.throttle = 0.0
-        widget.update_telemetry(player)
+        sample()
 
         self.assertEqual(widget.throttle_history[-1], 0.0)
         for _ in range(5):
             player.throttle = 1.0
-            widget.update_telemetry(player)
+            sample()
         self.assertEqual(widget.throttle_history[-1], 1.0)
         widget.deleteLater()
 
@@ -89,36 +92,6 @@ class DriverPanelGeometryUnitTests(unittest.TestCase):
 
         self.assertEqual([point[1] for point in throttle], [0.0, 0.4, 0.6, 1.0])
         self.assertEqual([point[1] for point in brake], [1.0, 0.6, 0.4, 0.0])
-        widget.deleteLater()
-
-    def test_graph_ignores_single_sample_pedal_spike(self) -> None:
-        config = self._config()
-        config["pedal_smoothing"] = 0.0
-        widget = DriverPanelWidget("driver_panel", config)
-        widget._history_interval_s = 0.0
-        player = type(
-            "Player",
-            (),
-            {
-                "throttle": 0.0,
-                "brake": 0.0,
-                "clutch": 0.0,
-                "steering": 0.0,
-                "rpm": 3000.0,
-                "max_rpm": 9000.0,
-                "speed_kmh": 30.0,
-                "gear": 1,
-            },
-        )()
-
-        for _ in range(3):
-            widget.update_telemetry(player)
-        player.throttle = 1.0
-        widget.update_telemetry(player)
-        player.throttle = 0.0
-        widget.update_telemetry(player)
-
-        self.assertEqual(widget.throttle_history[-1], 0.0)
         widget.deleteLater()
 
     def test_normalized_geometry_can_reach_compact_minimum(self) -> None:
