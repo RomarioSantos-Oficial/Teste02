@@ -21,12 +21,7 @@
   "show_last_lap": false,
   "show_gap": true,
   "font_name": "Bahnschrift Condensed",
-  "font_size": 26,
   "opacity": 0.98,
-  "row_height": 54.0,
-  "global_header_height": 58.0,
-  "category_header_height": 50.0,
-  "panel_margin": 8.0,
   "colors": {
     "background": "#080D14",
     "header_background": "#0D151F",

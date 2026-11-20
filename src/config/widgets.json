@@ -472,11 +472,11 @@
       "click_through": true,
       "snap_to_edges": true,
       "font_name": "Bahnschrift Condensed",
-      "font_size": 22,
-      "row_height": 36.0,
-      "global_header_height": 40.0,
-      "category_header_height": 34.0,
-      "panel_margin": 4.0,
+      "font_size": 26,
+      "row_height": 54.0,
+      "global_header_height": 58.0,
+      "category_header_height": 50.0,
+      "panel_margin": 8.0,
       "render_interval_seconds": 0.2,
       "lap_highlight_seconds": 5.0,
       "pit_status_laps": 2,
@@ -561,8 +561,7 @@
           "#EF6C00"
         ],
         "edit_border": "#D6A84F"
-      },
-      "background_enabled": true
+      }
     },
     "damage": {
       "enabled": false,
@@ -1353,11 +1352,11 @@
       "click_through": true,
       "snap_to_edges": true,
       "font_name": "Bahnschrift Condensed",
-      "font_size": 22,
-      "row_height": 36.0,
-      "global_header_height": 40.0,
-      "category_header_height": 34.0,
-      "panel_margin": 4.0,
+      "font_size": 26,
+      "row_height": 54.0,
+      "global_header_height": 58.0,
+      "category_header_height": 50.0,
+      "panel_margin": 8.0,
       "render_interval_seconds": 0.2,
       "lap_highlight_seconds": 5.0,
       "pit_status_laps": 2,
@@ -1442,8 +1441,7 @@
           "#EF6C00"
         ],
         "edit_border": "#D6A84F"
-      },
-      "background_enabled": true
+      }
     },
     "damage": {
       "enabled": false,
@@ -2238,11 +2236,11 @@
           "click_through": true,
           "snap_to_edges": true,
           "font_name": "Bahnschrift Condensed",
-          "font_size": 22,
-          "row_height": 36.0,
-          "global_header_height": 40.0,
-          "category_header_height": 34.0,
-          "panel_margin": 4.0,
+          "font_size": 26,
+          "row_height": 54.0,
+          "global_header_height": 58.0,
+          "category_header_height": 50.0,
+          "panel_margin": 8.0,
           "render_interval_seconds": 0.2,
           "lap_highlight_seconds": 5.0,
           "pit_status_laps": 2,
@@ -2327,8 +2325,7 @@
               "#EF6C00"
             ],
             "edit_border": "#D6A84F"
-          },
-          "background_enabled": true
+          }
         },
         "damage": {
           "enabled": false,
@@ -3123,11 +3120,11 @@
           "click_through": true,
           "snap_to_edges": true,
           "font_name": "Bahnschrift Condensed",
-          "font_size": 22,
-          "row_height": 36.0,
-          "global_header_height": 40.0,
-          "category_header_height": 34.0,
-          "panel_margin": 4.0,
+          "font_size": 26,
+          "row_height": 54.0,
+          "global_header_height": 58.0,
+          "category_header_height": 50.0,
+          "panel_margin": 8.0,
           "render_interval_seconds": 0.2,
           "lap_highlight_seconds": 5.0,
           "pit_status_laps": 2,
@@ -3212,8 +3209,7 @@
               "#EF6C00"
             ],
             "edit_border": "#D6A84F"
-          },
-          "background_enabled": true
+          }
         },
         "damage": {
           "enabled": false,
