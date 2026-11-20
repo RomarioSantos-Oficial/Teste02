@@ -21,6 +21,33 @@ class StandingsLayoutUnitTests(unittest.TestCase):
         self.assertEqual(color.name(), "#43bdca")
         self.assertIn(color.alpha(), {127, 128})
 
+    def test_player_row_uses_its_own_color_and_opacity(self) -> None:
+        class SurfaceWidgetProbe:
+            _color_with_opacity = staticmethod(StandingsWidget._color_with_opacity)
+            _row_surface_color = StandingsWidget._row_surface_color
+
+            def __init__(self) -> None:
+                self.config = {"row_opacity": 0.65, "player_opacity": 0.92}
+
+        probe = SurfaceWidgetProbe()
+        colors = {
+            "player_background": "#351A2B",
+            "row_background": "#12171D",
+        }
+        player = StandingsWidget._row_surface_color(
+            probe,
+            StandingRow(is_player=True, class_position=1),
+            colors,
+        )
+        other = StandingsWidget._row_surface_color(
+            probe,
+            StandingRow(is_player=False, class_position=1),
+            colors,
+        )
+
+        self.assertEqual(player.name(), "#351a2b")
+        self.assertGreater(player.alpha(), other.alpha())
+
     def test_large_grids_use_adaptive_render_interval(self) -> None:
         self.assertEqual(
             StandingsWidget._adaptive_render_interval(0.20, 30),

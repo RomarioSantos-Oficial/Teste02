@@ -355,6 +355,17 @@ class StandingsEditor(QDialog):
         row_opacity.valueChanged.connect(
             lambda value: self._set("row_opacity", value / 100.0)
         )
+        player_opacity = QDoubleSpinBox()
+        player_opacity.setRange(0.0, 100.0)
+        player_opacity.setDecimals(0)
+        player_opacity.setSingleStep(5.0)
+        player_opacity.setSuffix(" %")
+        player_opacity.setValue(
+            float(self.config.get("player_opacity", 0.90)) * 100.0
+        )
+        player_opacity.valueChanged.connect(
+            lambda value: self._set("player_opacity", value / 100.0)
+        )
         logo_dir = QLineEdit(str(self.config.get("logo_directory", "images/logos")))
         logo_dir.editingFinished.connect(lambda: self._set("logo_directory", logo_dir.text().strip()))
         badge_dir = QLineEdit(
@@ -379,6 +390,7 @@ class StandingsEditor(QDialog):
         form.addRow("Opacidade geral do widget:", opacity)
         form.addRow("Opacidade do fundo do painel:", panel_opacity)
         form.addRow("Opacidade das linhas e faixas:", row_opacity)
+        form.addRow("Opacidade da linha do piloto:", player_opacity)
         form.addRow("Pasta de logos:", logo_dir)
         form.addRow("Pasta de badges:", badge_dir)
         self.layout_content.addWidget(group)
@@ -439,11 +451,12 @@ class StandingsEditor(QDialog):
             "muted": ("Texto secundário", "#A7B0BA"),
             "row_background": ("Linha normal", "#12171D"),
             "alternate_row_background": ("Linha alternada", "#191F26"),
-            "player_background": ("Linha do jogador", "#142622"),
+            "player_background": ("Fundo da linha do piloto", "#351A2B"),
+            "player_accent": ("Marcador do piloto", "#FF54B8"),
             "pit_row_background": ("Linha em pit/garagem", "#27211A"),
             "row_separator": ("Separador das linhas", "#35404A"),
             "header_separator": ("Divisor do cabeçalho", "#2A3540"),
-            "header_line": ("Linha de destaque", "#43BDCA"),
+            "header_line": ("Linha de destaque do cabeçalho", "#43BDCA"),
             "position_gain": ("Posição ganha", "#55D98A"),
             "position_loss": ("Posição perdida", "#FF5E6B"),
             "personal_best": ("Melhor volta", "#55D98A"),

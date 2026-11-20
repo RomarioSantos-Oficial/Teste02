@@ -530,7 +530,8 @@
         "header_line": "#43BDCA",
         "legend_background": "#0E1319",
         "row_background": "#12171D",
-        "player_background": "#142622",
+        "player_background": "#351A2B",
+        "player_accent": "#FF54B8",
         "pit_row_background": "#27211A",
         "yellow_row_background": "#2A250B",
         "text": "#F4F6F8",
@@ -570,7 +571,8 @@
       "category_header_font_size": 16,
       "column_legend_font_size": 11,
       "panel_opacity": 0.25,
-      "row_opacity": 0.78
+      "row_opacity": 0.78,
+      "player_opacity": 0.90
     },
     "damage": {
       "enabled": false,
@@ -756,7 +758,8 @@
         "header_line": "#43BDCA",
         "legend_background": "#0E1319",
         "row_background": "#12171D",
-        "player_background": "#142622",
+        "player_background": "#351A2B",
+        "player_accent": "#FF54B8",
         "pit_row_background": "#27211A",
         "yellow_row_background": "#2A250B",
         "text": "#F4F6F8",
@@ -799,7 +802,8 @@
       "category_header_font_size": 16,
       "column_legend_font_size": 11,
       "panel_opacity": 0.25,
-      "row_opacity": 0.78
+      "row_opacity": 0.78,
+      "player_opacity": 0.90
     },
     "radar": {
       "enabled": false,
@@ -1428,7 +1432,8 @@
         "header_line": "#43BDCA",
         "legend_background": "#0E1319",
         "row_background": "#12171D",
-        "player_background": "#142622",
+        "player_background": "#351A2B",
+        "player_accent": "#FF54B8",
         "pit_row_background": "#27211A",
         "yellow_row_background": "#2A250B",
         "text": "#F4F6F8",
@@ -1468,7 +1473,8 @@
       "category_header_font_size": 16,
       "column_legend_font_size": 11,
       "panel_opacity": 0.25,
-      "row_opacity": 0.78
+      "row_opacity": 0.78,
+      "player_opacity": 0.90
     },
     "damage": {
       "enabled": false,
@@ -1654,7 +1660,8 @@
         "header_line": "#43BDCA",
         "legend_background": "#0E1319",
         "row_background": "#12171D",
-        "player_background": "#142622",
+        "player_background": "#351A2B",
+        "player_accent": "#FF54B8",
         "pit_row_background": "#27211A",
         "yellow_row_background": "#2A250B",
         "text": "#F4F6F8",
@@ -1697,7 +1704,8 @@
       "category_header_font_size": 16,
       "column_legend_font_size": 11,
       "panel_opacity": 0.25,
-      "row_opacity": 0.78
+      "row_opacity": 0.78,
+      "player_opacity": 0.90
     },
     "radar": {
       "enabled": false,
@@ -2330,7 +2338,8 @@
             "header_line": "#43BDCA",
             "legend_background": "#0E1319",
             "row_background": "#12171D",
-            "player_background": "#142622",
+            "player_background": "#351A2B",
+            "player_accent": "#FF54B8",
             "pit_row_background": "#27211A",
             "yellow_row_background": "#2A250B",
             "text": "#F4F6F8",
@@ -2370,7 +2379,8 @@
           "category_header_font_size": 16,
           "column_legend_font_size": 11,
           "panel_opacity": 0.25,
-          "row_opacity": 0.78
+          "row_opacity": 0.78,
+          "player_opacity": 0.90
         },
         "damage": {
           "enabled": false,
@@ -2556,7 +2566,8 @@
             "header_line": "#43BDCA",
             "legend_background": "#0E1319",
             "row_background": "#12171D",
-            "player_background": "#142622",
+            "player_background": "#351A2B",
+            "player_accent": "#FF54B8",
             "pit_row_background": "#27211A",
             "yellow_row_background": "#2A250B",
             "text": "#F4F6F8",
@@ -2599,7 +2610,8 @@
           "category_header_font_size": 16,
           "column_legend_font_size": 11,
           "panel_opacity": 0.25,
-          "row_opacity": 0.78
+          "row_opacity": 0.78,
+          "player_opacity": 0.90
         },
         "radar": {
           "enabled": false,
@@ -3232,7 +3244,8 @@
             "header_line": "#43BDCA",
             "legend_background": "#0E1319",
             "row_background": "#12171D",
-            "player_background": "#142622",
+            "player_background": "#351A2B",
+            "player_accent": "#FF54B8",
             "pit_row_background": "#27211A",
             "yellow_row_background": "#2A250B",
             "text": "#F4F6F8",
@@ -3272,7 +3285,8 @@
           "category_header_font_size": 16,
           "column_legend_font_size": 11,
           "panel_opacity": 0.25,
-          "row_opacity": 0.78
+          "row_opacity": 0.78,
+          "player_opacity": 0.90
         },
         "damage": {
           "enabled": false,
@@ -3458,7 +3472,8 @@
             "header_line": "#43BDCA",
             "legend_background": "#0E1319",
             "row_background": "#12171D",
-            "player_background": "#142622",
+            "player_background": "#351A2B",
+            "player_accent": "#FF54B8",
             "pit_row_background": "#27211A",
             "yellow_row_background": "#2A250B",
             "text": "#F4F6F8",
@@ -3501,7 +3516,8 @@
           "category_header_font_size": 16,
           "column_legend_font_size": 11,
           "panel_opacity": 0.25,
-          "row_opacity": 0.78
+          "row_opacity": 0.78,
+          "player_opacity": 0.90
         },
         "radar": {
           "enabled": false,

@@ -690,6 +690,23 @@ class StandingsWidget(QWidget):
         color.setAlphaF(color.alphaF() * factor)
         return color
 
+    def _row_surface_color(self, row: StandingRow, colors: dict[str, Any]) -> QColor:
+        if row.is_player:
+            return self._color_with_opacity(
+                colors.get("player_background", "#351A2B"),
+                self.config.get("player_opacity", 0.90),
+            )
+        if row.in_pits or row.in_garage:
+            background = colors.get("pit_row_background", "#27211A")
+        elif int(row.class_position or 0) % 2 == 0:
+            background = colors.get("alternate_row_background", "#191F26")
+        else:
+            background = colors.get("row_background", "#12171D")
+        return self._color_with_opacity(
+            background,
+            self.config.get("row_opacity", 0.78),
+        )
+
     def paintEvent(self, event: QPaintEvent) -> None:
         del event
         painter = QPainter(self)
@@ -1113,24 +1130,8 @@ class StandingsWidget(QWidget):
                 Qt.GlobalColor.transparent,
             )
             painter.restore()
-        if int(row.class_position or 0) % 2 == 0:
-            background_value = colors.get(
-                "alternate_row_background",
-                "#191F26",
-            )
-        else:
-            background_value = colors.get("row_background", "#12171D")
-        if row.is_player:
-            background_value = colors.get("player_background", "#142622")
-        elif row.in_pits or row.in_garage:
-            background_value = colors.get("pit_row_background", "#27211A")
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(
-            self._color_with_opacity(
-                background_value,
-                self.config.get("row_opacity", 0.78),
-            )
-        )
+        painter.setBrush(self._row_surface_color(row, colors))
         painter.drawRect(main_rect)
         for cell_index, (key, cell) in enumerate(draw_cells):
             painter.save()
@@ -1200,7 +1201,7 @@ class StandingsWidget(QWidget):
                     max(2.0, 3.0 * self._scale),
                     main_rect.height(),
                 ),
-                QColor(colors.get("header_line", "#43BDCA")),
+                QColor(colors.get("player_accent", "#FF54B8")),
             )
         painter.setPen(
             QPen(
