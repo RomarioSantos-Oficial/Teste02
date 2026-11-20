@@ -361,7 +361,7 @@ class StandingsEditor(QDialog):
         player_opacity.setSingleStep(5.0)
         player_opacity.setSuffix(" %")
         player_opacity.setValue(
-            float(self.config.get("player_opacity", 0.90)) * 100.0
+            float(self.config.get("player_opacity", 0.95)) * 100.0
         )
         player_opacity.valueChanged.connect(
             lambda value: self._set("player_opacity", value / 100.0)
@@ -451,7 +451,7 @@ class StandingsEditor(QDialog):
             "muted": ("Texto secundário", "#A7B0BA"),
             "row_background": ("Linha normal", "#12171D"),
             "alternate_row_background": ("Linha alternada", "#191F26"),
-            "player_background": ("Fundo da linha do piloto", "#351A2B"),
+            "player_background": ("Fundo da linha do piloto", "#5B1239"),
             "player_accent": ("Marcador do piloto", "#FF54B8"),
             "pit_row_background": ("Linha em pit/garagem", "#27211A"),
             "row_separator": ("Separador das linhas", "#35404A"),

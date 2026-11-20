@@ -693,8 +693,8 @@ class StandingsWidget(QWidget):
     def _row_surface_color(self, row: StandingRow, colors: dict[str, Any]) -> QColor:
         if row.is_player:
             return self._color_with_opacity(
-                colors.get("player_background", "#351A2B"),
-                self.config.get("player_opacity", 0.90),
+                colors.get("player_background", "#5B1239"),
+                self.config.get("player_opacity", 0.95),
             )
         if row.in_pits or row.in_garage:
             background = colors.get("pit_row_background", "#27211A")
@@ -1261,17 +1261,27 @@ class StandingsWidget(QWidget):
         colors = self.config.get("colors", {})
         row_color = self._row_class_color(row, category)
         if key == "position":
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.fillRect(
-                QRectF(
-                    rect.left(),
-                    rect.top() + 2 * self._scale,
-                    max(3.0, 4.0 * self._scale),
-                    rect.height() - 4 * self._scale,
-                ),
-                row_color,
+            badge = rect.adjusted(
+                5.0 * self._scale,
+                4.0 * self._scale,
+                -5.0 * self._scale,
+                -4.0 * self._scale,
             )
-            self._text(painter, rect, f"{row.class_position}", 0.76, True)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(row_color)
+            painter.drawRoundedRect(
+                badge,
+                3.0 * self._scale,
+                3.0 * self._scale,
+            )
+            self._text(
+                painter,
+                rect,
+                f"{row.class_position}",
+                0.76,
+                True,
+                QColor(colors.get("text", "#FFFFFF")),
+            )
         elif key == "change":
             value = row.position_change
             if value > 0:

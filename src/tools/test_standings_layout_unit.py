@@ -31,7 +31,7 @@ class StandingsLayoutUnitTests(unittest.TestCase):
 
         probe = SurfaceWidgetProbe()
         colors = {
-            "player_background": "#351A2B",
+            "player_background": "#5B1239",
             "row_background": "#12171D",
         }
         player = StandingsWidget._row_surface_color(
@@ -45,7 +45,7 @@ class StandingsLayoutUnitTests(unittest.TestCase):
             colors,
         )
 
-        self.assertEqual(player.name(), "#351a2b")
+        self.assertEqual(player.name(), "#5b1239")
         self.assertGreater(player.alpha(), other.alpha())
 
     def test_large_grids_use_adaptive_render_interval(self) -> None:
