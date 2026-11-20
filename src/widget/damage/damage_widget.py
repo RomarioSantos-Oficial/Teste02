@@ -59,9 +59,9 @@ class DamageWidget(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         c = self.config.get("colors", {})
-        p.setPen(QPen(QColor(c.get("border", "#384553")), 1.2))
-        p.setBrush(QColor(c.get("background", "#0B1018")))
-        p.drawRect(QRectF(1, 1, self.width()-2, self.height()-2))
+        p.setPen(QPen(QColor(c.get("border", "#3B4A5C")), 1.2))
+        p.setBrush(QColor(c.get("background", "#080D14")))
+        p.drawRoundedRect(QRectF(1, 1, self.width()-2, self.height()-2), float(self.config.get("border_radius", 6)), float(self.config.get("border_radius", 6)))
 
         margin = max(6.0, min(self.width(), self.height()) * .07)
         area = QRectF(margin, margin, self.width()-2*margin, self.height()-2*margin)
@@ -141,14 +141,14 @@ class DamageWidget(QWidget):
             if damage <= 0 and raw:
                 damage = sum(max(0,min(2,int(v))) for v in raw[:8]) / 16 * 100
             p.setPen(QColor(c.get("text", "#FFFFFF")))
-            font = p.font(); font.setBold(True); font.setPixelSize(max(9, int(area.height()*.09))); p.setFont(font)
+            font = p.font(); font.setFamily(str(self.config.get("font_name", "Bahnschrift"))); font.setBold(True); font.setPixelSize(max(9, int(area.height()*.09))); p.setFont(font)
             p.drawText(QRectF(area.left(), area.bottom()-area.height()*.1, area.width(), area.height()*.1), Qt.AlignmentFlag.AlignCenter, f"{max(0,100-damage):.0f}%")
 
         if self.edit_mode:
-            p.setPen(QPen(QColor(c.get("edit_border", "#8B5CF6")), 2, Qt.PenStyle.DashLine))
+            p.setPen(QPen(QColor(c.get("edit_border", "#D6A84F")), 2, Qt.PenStyle.DashLine))
             p.drawRect(self.rect().adjusted(1,1,-2,-2))
             handle = max(10, int(min(self.width(), self.height())*.09))
-            p.fillRect(QRectF(self.width()-handle, self.height()-handle, handle, handle), QColor(c.get("edit_border", "#8B5CF6")))
+            p.fillRect(QRectF(self.width()-handle, self.height()-handle, handle, handle), QColor(c.get("edit_border", "#D6A84F")))
 
     def _damage_color(self, severity: int) -> QColor:
         c = self.config.get("colors", {})

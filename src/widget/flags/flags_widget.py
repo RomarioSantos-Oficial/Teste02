@@ -1086,7 +1086,7 @@ class FlagsWidget(QWidget):
         family = str(
             self.config.get(
                 "font_name",
-                "Arial",
+                "Bahnschrift",
             )
         )
 

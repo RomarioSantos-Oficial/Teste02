@@ -711,7 +711,7 @@ class StandingsWidget(QWidget):
                 "AGUARDANDO O LMU\nSTANDINGS SEM SIMHUB",
             )
         if self.edit_mode:
-            painter.setPen(QPen(QColor(colors.get("edit_border", "#9B5CFF")), max(1.0, 2.0 * self._scale), Qt.PenStyle.DashLine))
+            painter.setPen(QPen(QColor(colors.get("edit_border", "#D6A84F")), max(1.0, 2.0 * self._scale), Qt.PenStyle.DashLine))
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawRect(visual_outer)
             painter.setPen(Qt.PenStyle.NoPen)

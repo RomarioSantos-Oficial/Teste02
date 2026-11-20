@@ -26,18 +26,18 @@ class FuelTimeWidget(QWidget):
         rounded=Decimal(str(value)).quantize(Decimal("0.01"),rounding=ROUND_CEILING)
         return f"{rounded:.2f}"
     def paintEvent(self,_event)->None:
-        p=QPainter(self); p.setRenderHint(QPainter.RenderHint.Antialiasing,True); c=self.config.get("colors",{}); p.setPen(QPen(QColor(c.get("border","#344155")),1.2)); p.setBrush(QColor(c.get("background","#0A0F17EE"))); p.drawRoundedRect(QRectF(1,1,self.width()-2,self.height()-2),10,10)
-        margin=max(6,int(min(self.width(),self.height())*.045)); area=self.rect().adjusted(margin,margin,-margin,-margin); title_h=max(22,int(area.height()*.16)); font=p.font(); font.setFamily(str(self.config.get("font_name","Arial"))); font.setBold(True); font.setPixelSize(max(11,int(title_h*.52))); p.setFont(font); p.setPen(QColor(c.get("title","#67E8F9"))); p.drawText(QRectF(area.left()+4,area.top(),area.width()*.55,title_h),Qt.AlignmentFlag.AlignVCenter,"FUEL TIME")
+        p=QPainter(self); p.setRenderHint(QPainter.RenderHint.Antialiasing,True); c=self.config.get("colors",{}); p.setPen(QPen(QColor(c.get("border","#3B4A5C")),1.2)); p.setBrush(QColor(c.get("background","#080D14"))); p.drawRoundedRect(QRectF(1,1,self.width()-2,self.height()-2),10,10)
+        margin=max(6,int(min(self.width(),self.height())*.045)); area=self.rect().adjusted(margin,margin,-margin,-margin); title_h=max(22,int(area.height()*.16)); font=p.font(); font.setFamily(str(self.config.get("font_name","Bahnschrift"))); font.setBold(True); font.setPixelSize(max(11,int(title_h*.52))); p.setFont(font); p.setPen(QColor(c.get("title","#67E8F9"))); p.drawText(QRectF(area.left()+4,area.top(),area.width()*.55,title_h),Qt.AlignmentFlag.AlignVCenter,"FUEL TIME")
         status = f"{self.data.sample_count}/{int(self.config.get('average_laps',5))} VOLTAS"
-        font.setPixelSize(max(8,int(title_h*.38))); font.setBold(False); p.setFont(font); p.setPen(QColor(c.get("muted","#9BA8BA"))); p.drawText(QRectF(area.left()+area.width()*.55,area.top(),area.width()*.45-4,title_h),Qt.AlignmentFlag.AlignVCenter|Qt.AlignmentFlag.AlignRight,status)
-        p.setPen(QPen(QColor(c.get("accent","#2563EB")),max(1.0,title_h*.07))); p.drawLine(area.left(),area.top()+title_h,area.right(),area.top()+title_h)
+        font.setPixelSize(max(8,int(title_h*.38))); font.setBold(False); p.setFont(font); p.setPen(QColor(c.get("muted","#9BA8B7"))); p.drawText(QRectF(area.left()+area.width()*.55,area.top(),area.width()*.45-4,title_h),Qt.AlignmentFlag.AlignVCenter|Qt.AlignmentFlag.AlignRight,status)
+        p.setPen(QPen(QColor(c.get("accent","#4B9DB9")),max(1.0,title_h*.07))); p.drawLine(area.left(),area.top()+title_h,area.right(),area.top()+title_h)
         d=self.data; rows=[("COMBUSTIVEL",self._v(d.fuel_l," L"),"MEDIA/VOLTA",self._v(d.fuel_per_lap_l," L")),("VOLTAS REST.",self._v(d.laps_remaining),"AUTONOMIA",self._v(d.fuel_laps," v")),("NECESSARIO",self._v(d.fuel_needed_l," L"),"ADICIONAR",self._v(d.fuel_to_add_l," L")),("ALVO/VOLTA",self._v(d.target_fuel_per_lap_l," L"),"FINAL",self._v(d.finish_fuel_l," L"))]
         if bool(self.config.get("show_energy",True)): rows.append(("ENERGIA/VOLTA",self._v(d.energy_per_lap_pct,"%"),"FUEL RATIO",self._fuel_ratio(d.fuel_ratio)))
-        gap=max(3.0,area.width()*.008); y=area.top()+title_h+gap; row_h=max(18,(area.bottom()-y-gap*(len(rows)-1))/max(1,len(rows))); muted=QColor(c.get("muted","#9BA8BA")); text=QColor(c.get("text","#F4F7FB")); panel=QColor(c.get("panel","#151B26"))
+        gap=max(3.0,area.width()*.008); y=area.top()+title_h+gap; row_h=max(18,(area.bottom()-y-gap*(len(rows)-1))/max(1,len(rows))); muted=QColor(c.get("muted","#9BA8B7")); text=QColor(c.get("text","#F4F7FB")); panel=QColor(c.get("panel","#151B26"))
         for ll,lv,rl,rv in rows:
             half=(area.width()-gap)/2
             for x,label,value in ((area.left(),ll,lv),(area.left()+half+gap,rl,rv)):
-                box=QRectF(x,y,half,row_h); p.setPen(QPen(QColor(c.get("panel_border","#27313E")),1)); p.setBrush(panel); p.drawRoundedRect(box,4,4)
+                box=QRectF(x,y,half,row_h); p.setPen(QPen(QColor(c.get("panel_border","#273646")),1)); p.setBrush(panel); p.drawRoundedRect(box,4,4)
                 font.setPixelSize(max(7,int(row_h*.28))); font.setBold(False); p.setFont(font); p.setPen(muted); p.drawText(box.adjusted(max(5,row_h*.18),0,-box.width()*.46,0),Qt.AlignmentFlag.AlignVCenter,label)
                 font.setPixelSize(max(9,int(row_h*.43))); font.setBold(True); p.setFont(font); value_color=text
                 if label in {"ADICIONAR","FINAL"} and value != "--":
@@ -46,7 +46,7 @@ class FuelTimeWidget(QWidget):
                     if numeric is not None and numeric < 0: value_color=QColor(c.get("warning","#EF4444"))
                 p.setPen(value_color); p.drawText(box.adjusted(box.width()*.50,0,-max(5,row_h*.18),0),Qt.AlignmentFlag.AlignVCenter|Qt.AlignmentFlag.AlignRight,value)
             y+=row_h+gap
-        if self.edit_mode: p.setPen(QPen(QColor(c.get("edit_border","#8B5CF6")),2,Qt.PenStyle.DashLine)); p.setBrush(Qt.BrushStyle.NoBrush); p.drawRect(self.rect().adjusted(1,1,-2,-2)); p.fillRect(self.width()-14,self.height()-14,14,14,QColor(c.get("edit_border","#8B5CF6")))
+        if self.edit_mode: p.setPen(QPen(QColor(c.get("edit_border","#D6A84F")),2,Qt.PenStyle.DashLine)); p.setBrush(Qt.BrushStyle.NoBrush); p.drawRect(self.rect().adjusted(1,1,-2,-2)); p.fillRect(self.width()-14,self.height()-14,14,14,QColor(c.get("edit_border","#D6A84F")))
     def mousePressEvent(self,e:QMouseEvent)->None:
         if self.edit_mode and e.button()==Qt.MouseButton.LeftButton:
             self.selected.emit(self.widget_id); self._resizing=e.position().x()>=self.width()-18 and e.position().y()>=self.height()-18; self._dragging=not self._resizing; self._start_global=e.globalPosition().toPoint(); self._start_size=self.size(); self._drag_offset=e.globalPosition().toPoint()-self.frameGeometry().topLeft()

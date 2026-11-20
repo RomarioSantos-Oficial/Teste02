@@ -35,5 +35,7 @@
     "detached": "#2B323A",
     "impact": "#F05A63",
     "edit_border": "#D6A84F"
-  }
+  },
+  "font_name": "Bahnschrift",
+  "border_radius": 6
 }

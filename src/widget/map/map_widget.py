@@ -486,7 +486,7 @@ class TrackMapWidget(QWidget):
                     QColor(
                         colors.get(
                             "edit_border",
-                            "#9B5CFF",
+                            "#D6A84F",
                         )
                     ),
                     max(
@@ -529,7 +529,7 @@ class TrackMapWidget(QWidget):
             str(
                 self.config.get(
                     "font_name",
-                    "Arial",
+                    "Bahnschrift",
                 )
             )
         )
@@ -1312,7 +1312,7 @@ class TrackMapWidget(QWidget):
             if lap_difference > 0:
                 outline_color = colors.get(
                     "vehicle_outline_laps_ahead",
-                    "#8B4DFF",
+                    "#B08A42",
                 )
             elif lap_difference < 0:
                 outline_color = colors.get(
@@ -1387,7 +1387,7 @@ class TrackMapWidget(QWidget):
                 str(
                     self.config.get(
                         "font_name",
-                        "Arial",
+                        "Bahnschrift",
                     )
                 )
             )
@@ -1547,7 +1547,7 @@ class TrackMapWidget(QWidget):
                 return QColor(
                     colors.get(
                         "vehicle_laps_ahead",
-                        "#8B4DFF",
+                        "#B08A42",
                     )
                 )
             if lap_difference < 0:

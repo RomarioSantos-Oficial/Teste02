@@ -564,7 +564,7 @@ class MapEditor(QDialog):
             str(
                 self.config.get(
                     "font_name",
-                    "Arial",
+                    "Bahnschrift",
                 )
             )
         )

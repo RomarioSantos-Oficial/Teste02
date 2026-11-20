@@ -43,7 +43,7 @@ class LapTimerEditor(QDialog):
         visual = QGroupBox("Visual")
         vf = QFormLayout(visual)
         family = QFontComboBox()
-        configured_family = str(self.config.get("font_name", "Arial"))
+        configured_family = str(self.config.get("font_name", "Bahnschrift"))
         # QFont(family) usa pointSize=-1. O QFontComboBox tenta reaplicar
         # esse valor e o Qt emite "Point size <= 0". Um tamanho válido aqui
         # serve apenas para selecionar a família; o overlay usa pixels.

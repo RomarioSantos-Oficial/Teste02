@@ -122,14 +122,14 @@ class LapTimerWidget(QWidget):
         colors = self.config.get("colors", {})
         outer = QRectF(1, 1, self.width() - 2, self.height() - 2)
         if self.config.get("background_enabled", True):
-            p.setPen(QPen(QColor(colors.get("border", "#344155")), 1.2))
+            p.setPen(QPen(QColor(colors.get("border", "#3B4A5C")), 1.2))
             p.setBrush(QColor(colors.get("background", "#080C12")))
             p.drawRoundedRect(outer, float(self.config.get("border_radius", 10)), float(self.config.get("border_radius", 10)))
 
         margin = max(7, int(min(self.width(), self.height()) * 0.05))
         area = self.rect().adjusted(margin, margin, -margin, -margin)
         font = p.font()
-        font.setFamily(str(self.config.get("font_name", "Arial")))
+        font.setFamily(str(self.config.get("font_name", "Bahnschrift")))
         title_h = max(20, int(area.height() * 0.13))
         font.setPixelSize(max(10, int(title_h * float(self.config.get("title_font_scale", 0.52)))))
         font.setBold(True)
@@ -145,9 +145,9 @@ class LapTimerWidget(QWidget):
             position_parts.append(f"C {d.class_position}/{d.class_count}")
         font.setPixelSize(max(8, int(title_h * 0.40)))
         p.setFont(font)
-        p.setPen(QColor(colors.get("muted", "#9BA8BA")))
+        p.setPen(QColor(colors.get("muted", "#9BA8B7")))
         p.drawText(QRectF(area.left() + area.width() * 0.42, area.top(), area.width() * 0.58, title_h), Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight, "   ".join(position_parts))
-        p.setPen(QPen(QColor(colors.get("accent", "#2563EB")), max(1.0, title_h * 0.07)))
+        p.setPen(QPen(QColor(colors.get("accent", "#4B9DB9")), max(1.0, title_h * 0.07)))
         p.drawLine(area.left(), area.top() + title_h, area.right(), area.top() + title_h)
 
         rows = self._rows()
@@ -156,19 +156,19 @@ class LapTimerWidget(QWidget):
         row_h = max(16.0, (area.bottom() - y - gap * max(0, len(rows) - 1)) / max(1, len(rows)))
         color_map = {
             "text": colors.get("text", "#F4F7FB"), "current": colors.get("current", "#FFFFFF"),
-            "best": colors.get("best", "#C084FC"), "predicted": colors.get("predicted", "#67E8F9"),
+            "best": colors.get("best", "#B08A42"), "predicted": colors.get("predicted", "#67E8F9"),
             "theoretical": colors.get("theoretical", "#FACC15"), "invalid": colors.get("invalid", "#EF4444"),
         }
         for label, value, role in rows:
             box = QRectF(area.left(), y, area.width(), row_h)
             if self.config.get("row_backgrounds", True):
-                p.setPen(QPen(QColor(colors.get("panel_border", "#27313E")), 1))
+                p.setPen(QPen(QColor(colors.get("panel_border", "#273646")), 1))
                 p.setBrush(QColor(colors.get("panel", "#10151D")))
                 p.drawRoundedRect(box, 4, 4)
             font.setBold(False)
             font.setPixelSize(max(7, int(row_h * float(self.config.get("label_font_scale", 0.28)))))
             p.setFont(font)
-            p.setPen(QColor(colors.get("muted", "#9BA8BA")))
+            p.setPen(QColor(colors.get("muted", "#9BA8B7")))
             p.drawText(box.adjusted(max(6, row_h * .18), 0, -box.width() * .52, 0), Qt.AlignmentFlag.AlignVCenter, label)
             font.setBold(True)
             font.setPixelSize(max(10, int(row_h * float(self.config.get("value_font_scale", 0.46)))))
@@ -178,10 +178,10 @@ class LapTimerWidget(QWidget):
             y += row_h + gap
 
         if self.edit_mode:
-            p.setPen(QPen(QColor(colors.get("edit_border", "#8B5CF6")), 2, Qt.PenStyle.DashLine))
+            p.setPen(QPen(QColor(colors.get("edit_border", "#D6A84F")), 2, Qt.PenStyle.DashLine))
             p.setBrush(Qt.BrushStyle.NoBrush)
             p.drawRect(self.rect().adjusted(1, 1, -2, -2))
-            p.fillRect(self.width() - 14, self.height() - 14, 14, 14, QColor(colors.get("edit_border", "#8B5CF6")))
+            p.fillRect(self.width() - 14, self.height() - 14, 14, 14, QColor(colors.get("edit_border", "#D6A84F")))
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if self.edit_mode and event.button() == Qt.MouseButton.LeftButton:

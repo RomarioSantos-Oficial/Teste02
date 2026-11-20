@@ -531,7 +531,7 @@ class BatteryEditor(QDialog):
             str(
                 self.config.get(
                     "font_name",
-                    "Arial",
+                    "Bahnschrift",
                 )
             )
         )

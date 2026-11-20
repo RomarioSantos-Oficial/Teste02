@@ -1162,7 +1162,7 @@ class TyresWidget(QWidget):
         font_name = str(
             self.config.get(
                 "font_name",
-                "Arial",
+                "Bahnschrift",
             )
         )
         base_font = max(
@@ -1337,7 +1337,7 @@ class TyresWidget(QWidget):
                 {},
             ).get(
                 "edit_border",
-                "#9B5CFF",
+                "#D6A84F",
             )
         )
         pen = QPen(

@@ -150,8 +150,8 @@ class RadarWidget(QWidget):
         colors = self.config.get("colors", {})
         area = QRectF(2, 2, self.width()-4, self.height()-4)
         if bool(self.config.get("show_background", False)):
-            p.setPen(QPen(QColor(colors.get("border", "#344155")), 1))
-            p.setBrush(QColor(colors.get("background", "#080D15")))
+            p.setPen(QPen(QColor(colors.get("border", "#3B4A5C")), 1))
+            p.setBrush(QColor(colors.get("background", "#080D14")))
             p.drawRoundedRect(area, 10, 10)
         cx, cy = area.center().x(), area.center().y()
         meters = max(self._side_range, self._ahead_range, self._behind_range)
@@ -159,7 +159,7 @@ class RadarWidget(QWidget):
 
         if bool(self.config.get("show_marks", True)):
             p.setBrush(Qt.BrushStyle.NoBrush)
-            p.setPen(QPen(QColor(colors.get("marks", "#58677A")), 1, Qt.PenStyle.DashLine))
+            p.setPen(QPen(QColor(colors.get("marks", "#687789")), 1, Qt.PenStyle.DashLine))
             for ratio in (.33, .66, 1.0):
                 radius = min(area.width(), area.height()) * .46 * ratio
                 p.drawEllipse(QRectF(cx-radius, cy-radius, radius*2, radius*2))
@@ -212,10 +212,10 @@ class RadarWidget(QWidget):
 
         if self.edit_mode:
             p.setClipping(False)
-            p.setPen(QPen(QColor(colors.get("edit_border", "#8B5CF6")), 2, Qt.PenStyle.DashLine))
+            p.setPen(QPen(QColor(colors.get("edit_border", "#D6A84F")), 2, Qt.PenStyle.DashLine))
             p.setBrush(Qt.BrushStyle.NoBrush); p.drawRect(self.rect().adjusted(1,1,-2,-2))
             handle = max(10, int(min(self.width(), self.height())*.08))
-            p.fillRect(QRectF(self.width()-handle, self.height()-handle, handle, handle), QColor(colors.get("edit_border", "#8B5CF6")))
+            p.fillRect(QRectF(self.width()-handle, self.height()-handle, handle, handle), QColor(colors.get("edit_border", "#D6A84F")))
 
     def _draw_overlap_indicator(
         self, p: QPainter, area: QRectF, nearest_left: float, nearest_right: float,

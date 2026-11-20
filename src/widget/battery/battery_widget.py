@@ -338,7 +338,7 @@ class BatteryGauge(QWidget):
                 self.property(
                     "fontFamily"
                 )
-                or "Arial"
+                or "Bahnschrift"
             )
         )
         font.setBold(True)
@@ -1336,7 +1336,7 @@ class BatteryWidget(QWidget):
             str(
                 self.config.get(
                     "font_name",
-                    "Arial",
+                    "Bahnschrift",
                 )
             ),
         )
@@ -1388,7 +1388,7 @@ class BatteryWidget(QWidget):
         font_name = str(
             self.config.get(
                 "font_name",
-                "Arial",
+                "Bahnschrift",
             )
         )
         base_font = max(
@@ -1549,7 +1549,7 @@ class BatteryWidget(QWidget):
                 {},
             ).get(
                 "edit_border",
-                "#9B5CFF",
+                "#D6A84F",
             )
         )
         pen = QPen(

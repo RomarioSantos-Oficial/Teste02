@@ -398,7 +398,7 @@ class FlagsEditor(QDialog):
             str(
                 self.config.get(
                     "font_name",
-                    "Arial",
+                    "Bahnschrift",
                 )
             )
         )

@@ -847,7 +847,7 @@ class TyresEditor(QDialog):
             str(
                 self.config.get(
                     "font_name",
-                    "Arial",
+                    "Bahnschrift",
                 )
             )
         )

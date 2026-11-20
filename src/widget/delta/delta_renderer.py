@@ -172,7 +172,7 @@ class DeltaRenderer:
             )
 
         if edit_mode:
-            edit = QColor(colors.get("edit_border", "#9B5CFF"))
+            edit = QColor(colors.get("edit_border", "#D6A84F"))
             pen = QPen(edit, max(1.2, 2.0 * scale))
             pen.setStyle(Qt.PenStyle.DashLine)
             painter.setPen(pen)
@@ -217,9 +217,9 @@ class DeltaRenderer:
         elements = config.get("elements", {})
 
         text = QColor(colors.get("text", "#FFFFFF"))
-        muted = QColor(colors.get("muted", "#AAB2BD"))
-        warning = QColor(colors.get("warning", "#FFC42E"))
-        danger = QColor(colors.get("loss", "#FF2828"))
+        muted = QColor(colors.get("muted", "#9BA8B7"))
+        warning = QColor(colors.get("warning", "#E2B454"))
+        danger = QColor(colors.get("loss", "#F05A63"))
         panel = QColor(colors.get("panel", "#121821"))
 
         if bool(config.get("section_backgrounds", True)):
@@ -324,11 +324,11 @@ class DeltaRenderer:
         """
         colors = config.get("colors", {})
         text = QColor(colors.get("text", "#FFFFFF"))
-        gain = QColor(colors.get("gain", "#00A000"))
-        loss = QColor(colors.get("loss", "#FF2828"))
+        gain = QColor(colors.get("gain", "#24C78A"))
+        loss = QColor(colors.get("loss", "#F05A63"))
         neutral = QColor(colors.get("neutral", "#5A5A5A"))
         panel = QColor(colors.get("panel", "#121821"))
-        muted = QColor(colors.get("muted", "#AAB2BD"))
+        muted = QColor(colors.get("muted", "#9BA8B7"))
 
         if bool(config.get("section_backgrounds", True)):
             painter.setPen(Qt.PenStyle.NoPen)
@@ -461,9 +461,9 @@ class DeltaRenderer:
         colors = config.get("colors", {})
         grid = QColor(colors.get("grid", "#27313E"))
         panel = QColor(colors.get("panel", "#121821"))
-        gain = QColor(colors.get("gain", "#00A000"))
-        loss = QColor(colors.get("loss", "#FF2828"))
-        muted = QColor(colors.get("muted", "#AAB2BD"))
+        gain = QColor(colors.get("gain", "#24C78A"))
+        loss = QColor(colors.get("loss", "#F05A63"))
+        muted = QColor(colors.get("muted", "#9BA8B7"))
 
         if bool(config.get("section_backgrounds", True)):
             painter.setPen(
@@ -632,7 +632,7 @@ class DeltaRenderer:
         panel = QColor(
             colors.get(
                 "fastest_panel",
-                "#111720",
+                "#151D28",
             )
         )
         text = QColor(
@@ -644,13 +644,13 @@ class DeltaRenderer:
         purple = QColor(
             colors.get(
                 "fastest",
-                "#8B4DFF",
+                "#B08A42",
             )
         )
         muted = QColor(
             colors.get(
                 "muted",
-                "#AAB2BD",
+                "#9BA8B7",
             )
         )
 
@@ -911,19 +911,19 @@ class DeltaRenderer:
         better = QColor(
             colors.get(
                 "sector_better",
-                "#00A000",
+                "#24C78A",
             )
         )
         worse = QColor(
             colors.get(
                 "sector_worse",
-                "#FFC42E",
+                "#E2B454",
             )
         )
         session_best = QColor(
             colors.get(
                 "sector_session_best",
-                "#8B4DFF",
+                "#B08A42",
             )
         )
 
@@ -941,7 +941,7 @@ class DeltaRenderer:
 
         color = color_by_status.get(sector.status, neutral)
 
-        background = QColor(colors.get("fastest", "#8B4DFF"))
+        background = QColor(colors.get("fastest", "#B08A42"))
         background.setAlphaF(
             max(
                 0.0,
@@ -1017,7 +1017,7 @@ class DeltaRenderer:
                     {},
                 ).get(
                     "family",
-                    "Arial",
+                    "Bahnschrift",
                 )
             )
         )

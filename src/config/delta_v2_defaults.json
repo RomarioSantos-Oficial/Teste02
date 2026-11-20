@@ -13,8 +13,8 @@
   "opacity": 0.96,
   "background_enabled": false,
   "section_backgrounds": true,
-  "background_opacity": 0.86,
-  "border_radius": 12,
+  "background_opacity": 0.82,
+  "border_radius": 6,
   "always_on_top": true,
   "click_through": true,
   "snap_to_edges": true,
@@ -30,7 +30,7 @@
   "show_manufacturer_logo": true,
   "logo_directory": "images/logos",
   "font": {
-    "family": "Arial"
+    "family": "Bahnschrift"
   },
   "elements": {
     "header": {
@@ -75,23 +75,23 @@
     }
   },
   "colors": {
-    "text": "#FFFFFF",
-    "muted": "#AAB2BD",
-    "background": "#070B12",
-    "panel": "#121821",
-    "fastest_panel": "#111720",
-    "grid": "#27313E",
-    "gain": "#009B00",
-    "loss": "#FF2828",
-    "neutral": "#5A5A5A",
-    "fastest": "#8B4DFF",
-    "warning": "#FFC42E",
-    "sector_neutral": "#5A5A5A",
-    "border": "#3A4452",
-    "edit_border": "#9B5CFF",
-    "sector_better": "#00A000",
-    "sector_worse": "#FFC42E",
-    "sector_session_best": "#8B4DFF"
+    "text": "#F4F7FB",
+    "muted": "#9BA8B7",
+    "background": "#080D14",
+    "panel": "#111923",
+    "fastest_panel": "#151D28",
+    "grid": "#273442",
+    "gain": "#24C78A",
+    "loss": "#F05A63",
+    "neutral": "#687789",
+    "fastest": "#B08A42",
+    "warning": "#E2B454",
+    "sector_neutral": "#687789",
+    "border": "#3B4A5C",
+    "edit_border": "#D6A84F",
+    "sector_better": "#24C78A",
+    "sector_worse": "#E2B454",
+    "sector_session_best": "#B08A42"
   },
   "penalty_limit_fallback": 0.0,
   "sector_tolerance_seconds": 0.001,

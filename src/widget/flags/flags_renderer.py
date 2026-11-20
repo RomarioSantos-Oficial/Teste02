@@ -58,7 +58,7 @@ class FlagsRenderer:
         )
         colors = config.get("colors", {})
         background = QColor(
-            colors.get("background", "#0A0F17")
+            colors.get("background", "#080D14")
         )
         background.setAlphaF(
             max(
@@ -75,7 +75,7 @@ class FlagsRenderer:
             )
         )
         border = QColor(
-            colors.get("border", "#344155")
+            colors.get("border", "#3B4A5C")
         )
         text = QColor(
             colors.get("text", "#FFFFFF")
@@ -305,7 +305,7 @@ class FlagsRenderer:
             edit = QColor(
                 colors.get(
                     "edit_border",
-                    "#9B5CFF",
+                    "#D6A84F",
                 )
             )
             pen = QPen(
@@ -594,7 +594,7 @@ class FlagsRenderer:
                 color = QColor(
                     colors.get(
                         "blue",
-                        "#2787FF",
+                        "#4B9DB9",
                     )
                 )
             else:
@@ -669,35 +669,35 @@ class FlagsRenderer:
         colors = config.get("colors", {})
         mapping = {
             "yellow": (
-                colors.get("yellow", "#FFD400"),
+                colors.get("yellow", "#E2B454"),
                 colors.get(
                     "yellow_light",
                     "#FFF1A6",
                 ),
             ),
             "fcy": (
-                colors.get("yellow", "#FFD400"),
+                colors.get("yellow", "#E2B454"),
                 colors.get(
                     "yellow_light",
                     "#FFF1A6",
                 ),
             ),
             "blue": (
-                colors.get("blue", "#2787FF"),
+                colors.get("blue", "#4B9DB9"),
                 colors.get(
                     "blue_light",
                     "#8CC6FF",
                 ),
             ),
             "green": (
-                colors.get("green", "#20C763"),
+                colors.get("green", "#24C78A"),
                 colors.get(
                     "green_light",
                     "#89E8AD",
                 ),
             ),
             "red": (
-                colors.get("red", "#EF3340"),
+                colors.get("red", "#F05A63"),
                 colors.get(
                     "red_light",
                     "#FF9AA2",
@@ -733,7 +733,7 @@ class FlagsRenderer:
                     {},
                 ).get(
                     "family",
-                    "Arial",
+                    "Bahnschrift",
                 )
             )
         )

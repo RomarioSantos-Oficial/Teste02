@@ -636,7 +636,7 @@ class DeltaEditor(QDialog):
             str(
                 font_cfg.get(
                     "family",
-                    "Arial",
+                    "Bahnschrift",
                 )
             )
         )
