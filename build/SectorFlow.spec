@@ -28,8 +28,11 @@ a = Analysis(
         # Configuração principal
         (str(PROJECT_ROOT / 'src/config/*.json'), 'src/config'),
         (str(PROJECT_ROOT / 'src/i18n/locales/*.json'), 'src/i18n/locales'),
-        # Bibliotecas LMU (vendor)
-        (str(PROJECT_ROOT / 'vendor'), 'vendor'),
+        # Aviso de licença da biblioteca LMU incluída como módulos Python.
+        (
+            str(PROJECT_ROOT / 'vendor/pyLMUSharedMemory/License.txt'),
+            'vendor/pyLMUSharedMemory',
+        ),
     ],
     hiddenimports=[
         # PySide6 essencial

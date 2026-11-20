@@ -7,7 +7,10 @@
     "Ver atualizações do SectorFlow": "Ver atualizações do SectorFlow",
     "release_notes_1_0": "NOVIDADES — VERSÃO 1.0\n• Catálogo de carros do LMU atualizado com modelos recentes e identificadores nativos recebidos pela telemetria.\n• Mapas são criados e salvos somente após uma volta completa válida, evitando traçados incompletos ou incorretos.\n• O rodapé reúne os links do Discord e das atualizações e indica se o LMU está ativo ou desconectado.",
     "release_notes_1_0_improvements": "OTIMIZAÇÃO, OVERLAYS E DESEMPENHO\n• Continuidade das otimizações anteriores: overlays isolados e frequência de atualização adaptada ao perfil de desempenho.\n• Melhorias de fluidez e estabilidade dos overlays, mapas e interface durante sessões e transições.\n• O perfil Baixo consumo reduz a frequência de leitura da telemetria e atualização dos overlays.",
-    "release_notes_1_0_fixes": "BANDEIRAS, RADARES E CORREÇÕES\n• Radares usam posição e orientação dos carros e mostram os veículos elegíveis nas janelas de bandeira amarela (12 s) e azul (3 s).\n• Com bandeiras amarela e azul simultâneas, um único painel amarelo com faixa azul mostra os carros das duas bandeiras em suas posições.\n• Ajustes de contagem e previsão de voltas, validade das amostras do mapa e visibilidade dos overlays."
+    "release_notes_1_0_fixes": "BANDEIRAS, RADARES E CORREÇÕES\n• Radares usam posição e orientação dos carros e mostram os veículos elegíveis nas janelas de bandeira amarela (12 s) e azul (3 s).\n• Com bandeiras amarela e azul simultâneas, um único painel amarelo com faixa azul mostra os carros das duas bandeiras em suas posições.\n• Ajustes de contagem e previsão de voltas, validade das amostras do mapa e visibilidade dos overlays.",
+    "release_notes_1_1": "NOVIDADES — VERSÃO 1.1\n• Arquivo local de voltas com sincronização opcional e consulta de rankings online.\n• Radares de bandeiras aprimorados, com janela azul configurável de 10 s.",
+    "release_notes_1_1_improvements": "CLASSIFICAÇÃO, RELATIVE E OVERLAYS\n• Linha do jogador com fundo rosa mais visível, exceto nas colunas de posição, marca, número e delta.\n• Ajustes de geometria, responsividade e estabilidade dos painéis, incluindo o Driver Panel.",
+    "release_notes_1_1_fixes": "BANDEIRAS E ATUALIZAÇÃO\n• O radar amarelo remove somente o marcador 1; os outros números e o radar azul permanecem.\n• O instalador substitui os arquivos do programa e limpa caches da instalação, preservando configurações e arquivo pessoal de voltas."
   },
   "en": {
     "LMU: Ativo": "LMU: Active",
@@ -17,7 +20,10 @@
     "Ver atualizações do SectorFlow": "View SectorFlow updates",
     "release_notes_1_0": "WHAT'S NEW — VERSION 1.0\n• Updated the LMU car catalog with recent models and native identifiers received through telemetry.\n• Maps are created and saved only after a complete valid lap, preventing incomplete or incorrect track drawings.\n• The footer now groups Discord and update links and shows whether LMU is active or disconnected.",
     "release_notes_1_0_improvements": "OPTIMIZATION, OVERLAYS, AND PERFORMANCE\n• Continued previous optimization work with isolated overlays and update frequency adapted to the selected performance profile.\n• Improved overlay, map, and interface smoothness and stability during sessions and transitions.\n• Low Power mode reduces telemetry reading and overlay update frequency.",
-    "release_notes_1_0_fixes": "FLAGS, RADARS, AND FIXES\n• Radars use car position and orientation and show eligible cars within the yellow-flag (12 s) and blue-flag (3 s) windows.\n• When yellow and blue flags are active together, one yellow panel with a blue underline shows both groups at their positions.\n• Refined lap counting and projections, valid map samples, and overlay visibility."
+    "release_notes_1_0_fixes": "FLAGS, RADARS, AND FIXES\n• Radars use car position and orientation and show eligible cars within the yellow-flag (12 s) and blue-flag (3 s) windows.\n• When yellow and blue flags are active together, one yellow panel with a blue underline shows both groups at their positions.\n• Refined lap counting and projections, valid map samples, and overlay visibility.",
+    "release_notes_1_1": "WHAT'S NEW — VERSION 1.1\n• Local lap archive with optional cloud synchronization and online rankings.\n• Improved flag radars with a configurable 10 s blue-flag detection window.",
+    "release_notes_1_1_improvements": "STANDINGS, RELATIVE, AND OVERLAYS\n• More visible pink player-row background, except for position, brand, car number, and delta columns.\n• Improved geometry, responsiveness, and stability across overlays, including Driver Panel.",
+    "release_notes_1_1_fixes": "FLAGS AND UPDATES\n• Only the yellow-radar marker 1 is removed; other numbers and the blue radar remain.\n• The installer replaces program files and clears installation caches while preserving settings and personal lap records."
   },
   "es": {
     "LMU: Ativo": "LMU: Activo",
@@ -27,7 +33,10 @@
     "Ver atualizações do SectorFlow": "Ver actualizaciones de SectorFlow",
     "release_notes_1_0": "NOVEDADES — VERSIÓN 1.0\n• Catálogo de coches de LMU actualizado con modelos recientes e identificadores nativos recibidos por telemetría.\n• Los mapas solo se crean y guardan después de completar una vuelta válida, evitando trazados incompletos o incorrectos.\n• El pie del menú reúne los enlaces de Discord y actualizaciones e indica si LMU está activo o desconectado.",
     "release_notes_1_0_improvements": "OPTIMIZACIÓN, OVERLAYS Y RENDIMIENTO\n• Continuación de las optimizaciones anteriores: overlays aislados y frecuencia de actualización adaptada al perfil de rendimiento.\n• Mejoras de fluidez y estabilidad de overlays, mapas e interfaz durante las sesiones y sus transiciones.\n• El modo Bajo consumo reduce la frecuencia de lectura de telemetría y actualización de overlays.",
-    "release_notes_1_0_fixes": "BANDERAS, RADARES Y CORRECCIONES\n• Los radares usan la posición y orientación de los coches y muestran los vehículos dentro de las ventanas de bandera amarilla (12 s) y azul (3 s).\n• Si coinciden las banderas amarilla y azul, un único panel amarillo con una línea azul muestra ambos grupos en sus posiciones.\n• Ajustes al conteo y la previsión de vueltas, las muestras válidas del mapa y la visibilidad de los overlays."
+    "release_notes_1_0_fixes": "BANDERAS, RADARES Y CORRECCIONES\n• Los radares usan la posición y orientación de los coches y muestran los vehículos dentro de las ventanas de bandera amarilla (12 s) y azul (3 s).\n• Si coinciden las banderas amarilla y azul, un único panel amarillo con una línea azul muestra ambos grupos en sus posiciones.\n• Ajustes al conteo y la previsión de vueltas, las muestras válidas del mapa y la visibilidad de los overlays.",
+    "release_notes_1_1": "NOVEDADES — VERSIÓN 1.1\n• Archivo local de vueltas con sincronización opcional en la nube y clasificaciones online.\n• Radares de banderas mejorados, con ventana azul configurable de 10 s.",
+    "release_notes_1_1_improvements": "CLASIFICACIÓN, RELATIVE Y OVERLAYS\n• Fondo rosa más visible en la fila del jugador, excepto en posición, marca, número y delta.\n• Mejoras de geometría, adaptación y estabilidad de los paneles, incluido Driver Panel.",
+    "release_notes_1_1_fixes": "BANDERAS Y ACTUALIZACIÓN\n• Solo se elimina el marcador 1 del radar amarillo; los demás números y el radar azul se conservan.\n• El instalador reemplaza los archivos del programa y limpia sus cachés, preservando la configuración y las vueltas personales."
   },
   "fr": {
     "LMU: Ativo": "LMU : Actif",
@@ -37,7 +46,10 @@
     "Ver atualizações do SectorFlow": "Voir les mises à jour de SectorFlow",
     "release_notes_1_0": "NOUVEAUTÉS — VERSION 1.0\n• Catalogue LMU mis à jour avec les modèles récents et leurs identifiants natifs reçus par télémétrie.\n• Les cartes ne sont créées et enregistrées qu'après un tour complet valide, afin d'éviter les tracés incomplets ou incorrects.\n• Le pied de menu regroupe les liens Discord et mises à jour et indique si LMU est actif ou déconnecté.",
     "release_notes_1_0_improvements": "OPTIMISATION, OVERLAYS ET PERFORMANCES\n• Poursuite des optimisations précédentes : overlays isolés et fréquence de mise à jour adaptée au profil de performance.\n• Fluidité et stabilité améliorées pour les overlays, les cartes et l'interface pendant les sessions et transitions.\n• Le mode Basse consommation réduit la fréquence de lecture télémétrique et de mise à jour des overlays.",
-    "release_notes_1_0_fixes": "DRAPEAUX, RADARS ET CORRECTIFS\n• Les radars utilisent la position et l'orientation des voitures et affichent celles qui sont dans les fenêtres jaune (12 s) et bleu (3 s).\n• Si les drapeaux jaune et bleu sont actifs ensemble, un seul panneau jaune souligné de bleu affiche les deux groupes à leur position.\n• Comptage et projections de tours, échantillons valides de carte et visibilité des overlays améliorés."
+    "release_notes_1_0_fixes": "DRAPEAUX, RADARS ET CORRECTIFS\n• Les radars utilisent la position et l'orientation des voitures et affichent celles qui sont dans les fenêtres jaune (12 s) et bleu (3 s).\n• Si les drapeaux jaune et bleu sont actifs ensemble, un seul panneau jaune souligné de bleu affiche les deux groupes à leur position.\n• Comptage et projections de tours, échantillons valides de carte et visibilité des overlays améliorés.",
+    "release_notes_1_1": "NOUVEAUTÉS — VERSION 1.1\n• Archive locale des tours avec synchronisation cloud facultative et classements en ligne.\n• Radars améliorés, avec une fenêtre bleue configurable de 10 s.",
+    "release_notes_1_1_improvements": "CLASSEMENT, RELATIVE ET OVERLAYS\n• Fond rose plus visible pour la ligne du joueur, sauf pour la position, la marque, le numéro et le delta.\n• Géométrie, adaptation et stabilité améliorées, y compris pour Driver Panel.",
+    "release_notes_1_1_fixes": "DRAPEAUX ET MISE À JOUR\n• Seul le marqueur 1 du radar jaune est supprimé ; les autres numéros et le radar bleu sont conservés.\n• L'installateur remplace les fichiers du programme et nettoie ses caches, tout en préservant les réglages et les tours personnels."
   },
   "it": {
     "LMU: Ativo": "LMU: Attivo",
@@ -47,7 +59,10 @@
     "Ver atualizações do SectorFlow": "Vedi gli aggiornamenti di SectorFlow",
     "release_notes_1_0": "NOVITÀ — VERSIONE 1.0\n• Catalogo auto LMU aggiornato con modelli recenti e identificatori nativi ricevuti dalla telemetria.\n• Le mappe vengono create e salvate solo dopo un giro completo valido, evitando tracciati incompleti o errati.\n• Il piè di pagina riunisce i link a Discord e agli aggiornamenti e indica se LMU è attivo o disconnesso.",
     "release_notes_1_0_improvements": "OTTIMIZZAZIONE, OVERLAY E PRESTAZIONI\n• Continuano le ottimizzazioni precedenti: overlay isolati e frequenza di aggiornamento adattata al profilo prestazionale.\n• Migliorate fluidità e stabilità di overlay, mappe e interfaccia durante sessioni e transizioni.\n• La modalità Basso consumo riduce la frequenza di lettura della telemetria e di aggiornamento degli overlay.",
-    "release_notes_1_0_fixes": "BANDIERE, RADAR E CORREZIONI\n• I radar usano posizione e orientamento delle auto e mostrano i veicoli nelle finestre di bandiera gialla (12 s) e blu (3 s).\n• Con bandiere gialla e blu simultanee, un solo pannello giallo con linea blu mostra entrambi i gruppi nelle rispettive posizioni.\n• Migliorati conteggio e previsione dei giri, campioni validi della mappa e visibilità degli overlay."
+    "release_notes_1_0_fixes": "BANDIERE, RADAR E CORREZIONI\n• I radar usano posizione e orientamento delle auto e mostrano i veicoli nelle finestre di bandiera gialla (12 s) e blu (3 s).\n• Con bandiere gialla e blu simultanee, un solo pannello giallo con linea blu mostra entrambi i gruppi nelle rispettive posizioni.\n• Migliorati conteggio e previsione dei giri, campioni validi della mappa e visibilità degli overlay.",
+    "release_notes_1_1": "NOVITÀ — VERSIONE 1.1\n• Archivio giri locale con sincronizzazione cloud facoltativa e classifiche online.\n• Radar bandiere migliorati, con finestra blu configurabile di 10 s.",
+    "release_notes_1_1_improvements": "CLASSIFICA, RELATIVE E OVERLAY\n• Sfondo rosa più visibile sulla riga del pilota, tranne posizione, marca, numero e delta.\n• Migliorate geometria, adattabilità e stabilità dei pannelli, incluso Driver Panel.",
+    "release_notes_1_1_fixes": "BANDIERE E AGGIORNAMENTO\n• Rimosso solo il marcatore 1 dal radar giallo; gli altri numeri e il radar blu restano.\n• L'installer sostituisce i file del programma e pulisce le cache, preservando impostazioni e giri personali."
   },
   "de": {
     "LMU: Ativo": "LMU: Aktiv",
@@ -57,7 +72,10 @@
     "Ver atualizações do SectorFlow": "SectorFlow-Updates ansehen",
     "release_notes_1_0": "NEU — VERSION 1.0\n• Der LMU-Fahrzeugkatalog wurde um aktuelle Modelle und native Kennungen aus der Telemetrie ergänzt.\n• Karten werden erst nach einer vollständigen gültigen Runde erstellt und gespeichert, damit keine unvollständigen oder falschen Streckenbilder entstehen.\n• Die Fußzeile bündelt Discord- und Update-Links und zeigt, ob LMU aktiv oder getrennt ist.",
     "release_notes_1_0_improvements": "OPTIMIERUNG, OVERLAYS UND LEISTUNG\n• Die bisherigen Optimierungen werden fortgeführt: isolierte Overlays und eine an das Leistungsprofil angepasste Aktualisierungsrate.\n• Flüssigkeit und Stabilität von Overlays, Karten und Oberfläche während Sitzungen und Übergängen wurden verbessert.\n• Der Energiesparmodus senkt die Häufigkeit von Telemetrieabfragen und Overlay-Aktualisierungen.",
-    "release_notes_1_0_fixes": "FLAGGEN, RADAR UND KORREKTUREN\n• Radare verwenden Position und Ausrichtung der Fahrzeuge und zeigen Autos in den gelben (12 s) und blauen (3 s) Flaggenfenstern.\n• Bei gleichzeitiger gelber und blauer Flagge zeigt ein gelbes Feld mit blauer Unterlinie beide Gruppen an ihrer Position.\n• Rundenzählung und -prognose, gültige Kartenproben und Overlay-Sichtbarkeit wurden verbessert."
+    "release_notes_1_0_fixes": "FLAGGEN, RADAR UND KORREKTUREN\n• Radare verwenden Position und Ausrichtung der Fahrzeuge und zeigen Autos in den gelben (12 s) und blauen (3 s) Flaggenfenstern.\n• Bei gleichzeitiger gelber und blauer Flagge zeigt ein gelbes Feld mit blauer Unterlinie beide Gruppen an ihrer Position.\n• Rundenzählung und -prognose, gültige Kartenproben und Overlay-Sichtbarkeit wurden verbessert.",
+    "release_notes_1_1": "NEU — VERSION 1.1\n• Lokales Rundenarchiv mit optionaler Cloud-Synchronisierung und Online-Ranglisten.\n• Verbesserte Flaggenradare mit einem konfigurierbaren Blauflaggenfenster von 10 s.",
+    "release_notes_1_1_improvements": "STANDINGS, RELATIVE UND OVERLAYS\n• Deutlicherer rosa Hintergrund für die Fahrerzeile, außer bei Position, Marke, Nummer und Delta.\n• Geometrie, Anpassung und Stabilität der Overlays einschließlich Driver Panel verbessert.",
+    "release_notes_1_1_fixes": "FLAGGEN UND UPDATE\n• Nur die Markierung 1 im Gelbflaggen-Radar entfällt; weitere Nummern und das blaue Radar bleiben.\n• Das Setup ersetzt Programmdateien und leert Installations-Caches; Einstellungen und persönliche Runden bleiben erhalten."
   },
   "pl": {
     "LMU: Ativo": "LMU: Aktywny",
@@ -67,7 +85,10 @@
     "Ver atualizações do SectorFlow": "Zobacz aktualizacje SectorFlow",
     "release_notes_1_0": "NOWOŚCI — WERSJA 1.0\n• Zaktualizowano katalog samochodów LMU o najnowsze modele i natywne identyfikatory z telemetrii.\n• Mapy są tworzone i zapisywane dopiero po pełnym prawidłowym okrążeniu, co zapobiega niekompletnym lub błędnym trasom.\n• Pasek menu zawiera linki do Discorda i aktualizacji oraz pokazuje, czy LMU jest aktywne, czy rozłączone.",
     "release_notes_1_0_improvements": "OPTYMALIZACJA, NAKŁADKI I WYDAJNOŚĆ\n• Kontynuacja wcześniejszych optymalizacji: odizolowane nakładki i częstotliwość aktualizacji dostosowana do profilu wydajności.\n• Poprawiono płynność i stabilność nakładek, map oraz interfejsu podczas sesji i przejść.\n• Tryb niskiego zużycia ogranicza częstotliwość odczytu telemetrii i aktualizacji nakładek.",
-    "release_notes_1_0_fixes": "FLAGI, RADAR I POPRAWKI\n• Radary używają pozycji i orientacji samochodów oraz pokazują pojazdy w oknach żółtej (12 s) i niebieskiej (3 s) flagi.\n• Przy jednoczesnej żółtej i niebieskiej fladze jeden żółty panel z niebieskim podkreśleniem pokazuje obie grupy w ich położeniu.\n• Udoskonalono liczenie i prognozowanie okrążeń, prawidłowe próbki mapy oraz widoczność nakładek."
+    "release_notes_1_0_fixes": "FLAGI, RADAR I POPRAWKI\n• Radary używają pozycji i orientacji samochodów oraz pokazują pojazdy w oknach żółtej (12 s) i niebieskiej (3 s) flagi.\n• Przy jednoczesnej żółtej i niebieskiej fladze jeden żółty panel z niebieskim podkreśleniem pokazuje obie grupy w ich położeniu.\n• Udoskonalono liczenie i prognozowanie okrążeń, prawidłowe próbki mapy oraz widoczność nakładek.",
+    "release_notes_1_1": "NOWOŚCI — WERSJA 1.1\n• Lokalne archiwum okrążeń z opcjonalną synchronizacją w chmurze i rankingami online.\n• Ulepszone radary flag z konfigurowalnym oknem niebieskiej flagi 10 s.",
+    "release_notes_1_1_improvements": "KLASYFIKACJA, RELATIVE I OVERLAYS\n• Bardziej widoczne różowe tło wiersza gracza, z wyjątkiem pozycji, marki, numeru i delty.\n• Ulepszono geometrię, responsywność i stabilność paneli, w tym Driver Panel.",
+    "release_notes_1_1_fixes": "FLAGI I AKTUALIZACJA\n• Usunięto tylko znacznik 1 z radaru żółtej flagi; pozostałe liczby i niebieski radar zostają.\n• Instalator zastępuje pliki programu i czyści cache instalacji, zachowując ustawienia oraz osobiste okrążenia."
   },
   "ko": {
     "LMU: Ativo": "LMU: 활성",
@@ -77,7 +98,10 @@
     "Ver atualizações do SectorFlow": "SectorFlow 업데이트 보기",
     "release_notes_1_0": "새로운 기능 — 버전 1.0\n• 최신 모델과 텔레메트리의 기본 식별자를 반영하도록 LMU 차량 카탈로그를 업데이트했습니다.\n• 맵은 완전하고 유효한 랩을 마친 뒤에만 저장되어 불완전하거나 잘못된 트랙 그림을 방지합니다.\n• 메뉴 하단에 Discord와 업데이트 링크를 모으고 LMU 연결 상태를 표시합니다.",
     "release_notes_1_0_improvements": "최적화, 오버레이 및 성능\n• 이전 최적화를 이어가며 오버레이를 분리하고 성능 프로필에 따라 업데이트 빈도를 조정합니다.\n• 세션과 전환 중 오버레이, 맵 및 인터페이스의 부드러움과 안정성을 개선했습니다.\n• 저전력 모드는 텔레메트리 읽기와 오버레이 업데이트 빈도를 낮춥니다.",
-    "release_notes_1_0_fixes": "플래그, 레이더 및 수정 사항\n• 레이더는 차량 위치와 방향을 사용하고 노란색(12초) 및 파란색(3초) 플래그 조건에 맞는 차량을 표시합니다.\n• 노란색과 파란색 플래그가 동시에 켜지면 파란색 밑줄이 있는 노란색 패널 하나에 두 플래그 차량의 위치를 함께 표시합니다.\n• 랩 계산과 예측, 유효한 맵 샘플 및 오버레이 표시를 개선했습니다."
+    "release_notes_1_0_fixes": "플래그, 레이더 및 수정 사항\n• 레이더는 차량 위치와 방향을 사용하고 노란색(12초) 및 파란색(3초) 플래그 조건에 맞는 차량을 표시합니다.\n• 노란색과 파란색 플래그가 동시에 켜지면 파란색 밑줄이 있는 노란색 패널 하나에 두 플래그 차량의 위치를 함께 표시합니다.\n• 랩 계산과 예측, 유효한 맵 샘플 및 오버레이 표시를 개선했습니다.",
+    "release_notes_1_1": "새로운 기능 — 버전 1.1\n• 선택적 클라우드 동기화 및 온라인 순위가 있는 로컬 랩 아카이브.\n• 10초로 설정 가능한 블루 플래그 감지 기능으로 플래그 레이더를 개선했습니다.",
+    "release_notes_1_1_improvements": "스탠딩, RELATIVE 및 오버레이\n• 위치, 브랜드, 차량 번호, 델타 열을 제외하고 플레이어 행의 분홍색 배경을 더 선명하게 표시합니다.\n• Driver Panel을 포함한 오버레이의 배치, 반응성 및 안정성을 개선했습니다.",
+    "release_notes_1_1_fixes": "플래그 및 업데이트\n• 노란색 레이더의 숫자 1 표시만 제거하고 다른 숫자와 파란색 레이더는 유지합니다.\n• 설치 프로그램은 프로그램 파일을 교체하고 설치 캐시를 비우며 설정과 개인 랩 기록은 보존합니다."
   },
   "zh_CN": {
     "LMU: Ativo": "LMU：已启用",
@@ -87,6 +111,9 @@
     "Ver atualizações do SectorFlow": "查看 SectorFlow 更新",
     "release_notes_1_0": "1.0 版本新功能\n• 更新 LMU 车辆目录，加入近期车型及遥测传入的原生车型标识。\n• 地图仅在完成一个完整有效圈后创建并保存，避免出现不完整或错误的赛道图。\n• 菜单底栏集中显示 Discord 和更新链接，并指示 LMU 是否已连接。",
     "release_notes_1_0_improvements": "优化、叠加层与性能\n• 延续之前的优化：隔离运行叠加层，并根据性能配置调整更新频率。\n• 改进了比赛期间及切换时地图、叠加层和界面的流畅度与稳定性。\n• 低功耗模式会降低遥测读取和叠加层更新频率。",
-    "release_notes_1_0_fixes": "旗帜、雷达与修复\n• 雷达使用车辆位置和朝向，并显示符合黄旗（12 秒）和蓝旗（3 秒）条件的车辆。\n• 黄旗和蓝旗同时出现时，仅显示一个带蓝色底线的黄色面板，并显示两类车辆的位置。\n• 改进圈数统计与预测、有效地图样本以及叠加层可见性。"
+    "release_notes_1_0_fixes": "旗帜、雷达与修复\n• 雷达使用车辆位置和朝向，并显示符合黄旗（12 秒）和蓝旗（3 秒）条件的车辆。\n• 黄旗和蓝旗同时出现时，仅显示一个带蓝色底线的黄色面板，并显示两类车辆的位置。\n• 改进圈数统计与预测、有效地图样本以及叠加层可见性。",
+    "release_notes_1_1": "版本 1.1 新功能\n• 本地圈速档案支持可选云同步和在线排名。\n• 改进旗帜雷达，蓝旗检测窗口可配置为 10 秒。",
+    "release_notes_1_1_improvements": "排名、RELATIVE 与叠加层\n• 玩家行背景更明显地显示为粉色，位置、品牌、车辆号码和 Delta 列除外。\n• 改进包括 Driver Panel 在内的叠加层布局、响应速度和稳定性。",
+    "release_notes_1_1_fixes": "旗帜与更新\n• 仅移除黄旗雷达上的数字 1，保留其他数字和蓝旗雷达。\n• 安装程序替换程序文件并清理安装缓存，同时保留设置和个人圈速记录。"
   }
 }

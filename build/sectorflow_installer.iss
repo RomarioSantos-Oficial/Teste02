@@ -8,7 +8,7 @@
 ; ============================================================
 
 #define MyAppName "SectorFlow Overley"
-#define MyAppVersion "1.0"
+#define MyAppVersion "1.1"
 #define MyAppPublisher "Sector Flow"
 #define MyAppURL "https://github.com/RomarioSantos-Oficial/Teste02"
 #define MyAppExeName "SectorFlow.exe"
@@ -49,7 +49,7 @@ ArchitecturesInstallIn64BitMode=x64
 SetupIconFile=..\images\logo\Logo.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 AppComments=Overlay de telemetria para Le Mans Ultimate (LMU)
-VersionInfoVersion={#MyAppVersion}.0
+VersionInfoVersion={#MyAppVersion}.0.0
 VersionInfoProductName={#MyAppName}
 VersionInfoProductVersion={#MyAppVersion}
 VersionInfoDescription={#MyAppName} - Overlay de telemetria para LMU
@@ -83,8 +83,7 @@ Name: "chinesesimplified"; MessagesFile: "ChineseSimplified.isl"
 Source: "{#SectorFlowSource}"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Dirs]
-; Criadas vazias em uma instalação nova. Em atualizações, o instalador não
-; remove mapas e caches que já pertencem ao usuário.
+; Recriadas vazias após a substituição do pacote durante a atualização.
 Name: "{app}\_internal\data\online_debug"
 Name: "{app}\_internal\data\online_profiles"
 Name: "{app}\_internal\data\track_maps"
@@ -93,8 +92,14 @@ Name: "{app}\_internal\data\track_maps"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
 
 [InstallDelete]
-; Remove atalhos antigos do Menu Iniciar nas atualizações. A partir da 0.0.5,
-; o único atalho oferecido pelo instalador é o opcional da Área de Trabalho.
+; Substitui todo o pacote do programa e remove caches antigos da instalação.
+; Preferências, arquivo de voltas e credenciais em LOCALAPPDATA são preservados.
+Type: files; Name: "{app}\*"
+Type: filesandordirs; Name: "{app}\_internal"
+Type: filesandordirs; Name: "{app}\images"
+Type: filesandordirs; Name: "{app}\data"
+Type: filesandordirs; Name: "{app}\vendor"
+Type: filesandordirs; Name: "{localappdata}\SectorFlow\session_cache"
 Type: files; Name: "{group}\{#MyAppName}.lnk"
 Type: files; Name: "{group}\{cm:UninstallProgram,{#MyAppName}}.lnk"
 

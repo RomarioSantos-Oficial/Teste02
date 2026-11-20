@@ -1,6 +1,6 @@
 # ============================================================
-#   Build Completo - SectorFlow Overley
-#   Gera EXE + Instalador para Windows
+#   Build Completo - SectorFlow Overley 1.1
+#   Gera pacote portatil + instalador para Windows
 # ============================================================
 # Uso: .\build_all.ps1 [-SignWithCert "C:\cert\cert.pfx" -CertPassword "senha"]
 # ============================================================
@@ -16,7 +16,7 @@ Set-Location $ProjectRoot
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  SectorFlow Overley 1.0 - Build Completo" -ForegroundColor Cyan
+Write-Host "  SectorFlow Overley 1.1 - Build Completo" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -99,6 +99,11 @@ if ($SignWithCert -ne "") {
     Write-Host "  Assinatura pulada (sem certificado)" -ForegroundColor Gray
 }
 
+$PortableZip = Join-Path $ProjectRoot "app\SectorFlow_Portable_1.1.zip"
+if (Test-Path $PortableZip) { Remove-Item -LiteralPath $PortableZip -Force }
+Compress-Archive -Path $OutputDir -DestinationPath $PortableZip -CompressionLevel Optimal
+Write-Host "  Pacote portatil: $PortableZip" -ForegroundColor Green
+
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  BUILD CONCLUIDO!" -ForegroundColor Cyan
@@ -119,8 +124,8 @@ if (-not $InnoCompiler) {
 Write-Host "[7/7] Gerando instalador com Inno Setup 6..." -ForegroundColor Yellow
 & $InnoCompiler "/Q" "build\sectorflow_installer.iss"
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup falhou." }
-Write-Host "  Instalador: app\SectorFlow_Setup_1.0.exe" -ForegroundColor Green
+Write-Host "  Instalador: app\SectorFlow_Setup_1.1.exe" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Para distribuir SEM instalador:" -ForegroundColor Yellow
-Write-Host "  Copie a pasta $OutputDir para outro PC e execute SectorFlow.exe" -ForegroundColor Yellow
+Write-Host "  Extraia SectorFlow_Portable_1.1.zip em uma pasta limpa e execute SectorFlow.exe" -ForegroundColor Yellow
 Write-Host ""

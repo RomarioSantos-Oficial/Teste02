@@ -140,7 +140,7 @@ class VisibleUiTranslationTests(unittest.TestCase):
 
     def test_release_notes_keep_all_translation_keys(self) -> None:
         config = MainMenuWindow._load_header_config()
-        self.assertEqual(config["version"], "1.0")
+        self.assertEqual(config["version"], "1.1")
         fields = (
             "update_note_key",
             "update_note_addendum_key",

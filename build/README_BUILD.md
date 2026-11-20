@@ -1,6 +1,6 @@
-# Build Guide - SectorFlow ALFA
+# Build Guide - SectorFlow Overley 1.1
 
-Este diretório contém tudo necessário para gerar um executável instalável do **SectorFlow ALFA** para Windows.
+Este diretório contém o pipeline para gerar o pacote portátil e o instalador do **SectorFlow Overley 1.1** para Windows.
 
 ---
 
@@ -17,42 +17,27 @@ Este diretório contém tudo necessário para gerar um executável instalável d
 
 ## Passo a Passo
 
-### 1. Gerar o Executável (.exe)
+### 1. Gerar as distribuições
 
 Abra o terminal na raiz do projeto (onde está `run.py`) e execute:
-
-```batch
-build\build_sectorflow.bat
-```
-
-Ou via PowerShell (mais completo):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File build\build_all.ps1
 ```
 
-Isso gera:
-- `app\SectorFlow\SectorFlow.exe` — o executável principal
-- `app\SectorFlow\` — pasta completa com todas as dependências
-
-### 2. Gerar o Instalador (.exe Setup)
-
-Depois de gerar o executável, instale o [Inno Setup](https://jrsoftware.org/isinfo.php) e execute:
-
-```powershell
-& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" build\sectorflow_installer.iss
-```
-
-Isso gera:
-- `app\SectorFlow_Setup_1.0.exe` — instalador profissional
+O build completo usa PyInstaller e Inno Setup 6 e gera:
+- `app\SectorFlow\` — pasta portátil pronta para executar;
+- `app\SectorFlow_Portable_1.1.zip` — pacote para copiar para outro PC;
+- `app\SectorFlow_Setup_1.1.exe` — instalador profissional.
 
 ### 3. Distribuir para Outro PC
 
-**Opção A - Sem instalador (portável):**
-Copie toda a pasta `app\SectorFlow\` para o PC destino e execute `SectorFlow.exe`.
+**Opção A - Sem instalador (portátil):**
+Extraia `app\SectorFlow_Portable_1.1.zip` em uma pasta nova no PC destino e execute `SectorFlow.exe`.
+Para atualizar, feche o programa, remova a pasta anterior e extraia o ZIP novo.
 
 **Opção B - Com instalador:**
-Distribua o arquivo `app\SectorFlow_Setup_1.0.exe`. O usuário executa e o instalador cuida de tudo.
+Distribua `app\SectorFlow_Setup_1.1.exe`. Em atualizações, o instalador substitui os arquivos do programa e limpa os caches da instalação.
 
 ---
 
@@ -81,16 +66,16 @@ app/
 │   ├── _internal/                 ← Dependências internas
 │   ├── images/                    ← Imagens empacotadas
 │   ├── data/                      ← Dados empacotados
-│   └── vendor/                    ← Bibliotecas LMU
+│   └── vendor/                    ← Aviso de licença da biblioteca LMU
 │
-├── SectorFlow_Setup_1.0.exe       ← Instalador (se usar Inno Setup)
-└── SectorFlow ALFA 1.0.zip        ← Pacote ZIP
+├── SectorFlow_Portable_1.1.zip    ← Pacote portátil
+└── SectorFlow_Setup_1.1.exe       ← Instalador
 ```
 
 ---
 
 ## Notas Importantes
 
-- O **vendor/pyLMUSharedMemory** deve conter os arquivos `lmu_data.py` e `lmu_mmap.py` para que a leitura de memória compartilhada do LMU funcione.
+- Os módulos LMU são incorporados ao executável; o pacote inclui o aviso de licença da biblioteca.
 - O executável é específico para **Windows x64** (a aplicação usa memória compartilhada Windows).
 - Para builds de outras arquiteturas, execute o build diretamente no PC alvo.
