@@ -681,17 +681,12 @@ class StandingsWidget(QWidget):
         )
 
     @staticmethod
-    def _color_with_opacity(
-        value: str,
-        opacity: float,
-        *,
-        maximum: float = 1.0,
-    ) -> QColor:
+    def _color_with_opacity(value: str, opacity: float) -> QColor:
         color = QColor(value)
         try:
-            factor = max(0.0, min(float(maximum), float(opacity)))
+            factor = max(0.0, min(1.0, float(opacity)))
         except (TypeError, ValueError):
-            factor = max(0.0, min(1.0, float(maximum)))
+            factor = 1.0
         color.setAlphaF(color.alphaF() * factor)
         return color
 
@@ -699,8 +694,7 @@ class StandingsWidget(QWidget):
         if row.is_player:
             return self._color_with_opacity(
                 colors.get("player_background", "#5B1239"),
-                self.config.get("player_opacity", 0.50),
-                maximum=0.50,
+                self.config.get("player_opacity", 1.0),
             )
         if row.in_pits or row.in_garage:
             background = colors.get("pit_row_background", "#27211A")

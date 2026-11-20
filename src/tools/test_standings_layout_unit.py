@@ -28,7 +28,7 @@ class StandingsLayoutUnitTests(unittest.TestCase):
             _row_surface_color = StandingsWidget._row_surface_color
 
             def __init__(self) -> None:
-                self.config = {"row_opacity": 0.35, "player_opacity": 0.95}
+                self.config = {"row_opacity": 0.35, "player_opacity": 1.0}
 
         probe = SurfaceWidgetProbe()
         colors = {
@@ -47,7 +47,7 @@ class StandingsLayoutUnitTests(unittest.TestCase):
         )
 
         self.assertEqual(player.name(), "#5b1239")
-        self.assertIn(player.alpha(), {127, 128})
+        self.assertEqual(player.alpha(), 255)
         self.assertGreater(player.alpha(), other.alpha())
 
     def test_position_cell_background_fills_the_entire_cell(self) -> None:
