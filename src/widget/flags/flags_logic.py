@@ -96,11 +96,16 @@ class FlagsLogic:
         # Na memória real do LMU, 1 representa setor sob amarela. Valores
         # como 11 também aparecem durante pista verde e não são amarelas.
         any_sector_yellow = any(int(value or 0) == 1 for value in sector_flags)
+        driver_local_yellow = any(
+            self._int(row, "flag") in {1, 2}
+            for row in self._drivers(session)
+            if not self._in_paddock(row)
+        )
 
         # Só existe alerta amarelo quando o próprio LMU informa uma
         # bandeira local ou Full Course Yellow. Um carro lento sozinho
         # não deve criar uma bandeira.
-        if not (full_course_yellow or any_sector_yellow):
+        if not (full_course_yellow or any_sector_yellow or driver_local_yellow):
             return FlagAlert()
 
         # Durante FCY todos os carros reduzem a velocidade. Tentar apontar
@@ -110,28 +115,36 @@ class FlagsLogic:
             1.0,
             float(self.config.get("yellow_hazard_speed_kmh", 15.12)),
         )
-        # Um carro que provoca amarela pode continuar em movimento depois de
-        # uma rodada ou contato. O limite fixo de 15,12 km/h descartava esses
-        # casos e removia justamente a distância/chegada mais útil ao piloto.
+        # O sinal local confirma a amarela; a velocidade relativa ajuda a
+        # localizar carros envolvidos mesmo sem uma marca individual.
         candidate_speed_limit = max(
             hazard_speed,
-            min(120.0, player_speed * 0.60),
+            min(120.0, player_speed * 0.70),
         )
-        individual_yellow_confirmed = any(
-            self._driver_has_local_yellow(row)
-            for row in self._drivers(session)
-            if not self._in_paddock(row)
+        player_sector = self._int(player, "current_sector")
+        player_sector_is_yellow = (
+            1 <= player_sector <= len(sector_flags)
+            and int(sector_flags[player_sector - 1] or 0) == 1
         )
-        # O LMU pode mostrar YEL na interface e ainda publicar flag=0 e
-        # under_yellow=False. Sem confirmação individual, conserva o limite
-        # estrito da versão de referência; com confirmação, aceita o carro
-        # causador ainda em movimento para manter distância e tempo de chegada.
-        if not individual_yellow_confirmed:
-            candidate_speed_limit = hazard_speed
+        player_sector_unknown = not 1 <= player_sector <= len(sector_flags)
+        player_hazard_speed_limit = max(
+            hazard_speed,
+            min(45.0, player_speed * 0.30),
+        )
+        player_flagged_local_yellow = self._int(player, "flag") in {1, 2}
         player_causing_local_yellow = (
-            any_sector_yellow
-            and self._driver_has_local_yellow(player)
-            and player_speed < hazard_speed
+            not full_course_yellow
+            and (
+                player_flagged_local_yellow
+                or (
+                    any_sector_yellow
+                    and player_speed < player_hazard_speed_limit
+                    and (
+                        player_sector_is_yellow
+                        or player_sector_unknown
+                    )
+                )
+            )
         )
         candidates: list[FlagCar] = []
 
@@ -178,7 +191,10 @@ class FlagsLogic:
                 )
             )
 
-        candidates.sort(key=lambda car: (car.distance < 0.0, abs(car.distance)))
+        candidates.sort(key=lambda car: abs(car.distance))
+        first_order = 2 if player_causing_local_yellow else 1
+        for order, car in enumerate(candidates, start=first_order):
+            car.radar_order = order
         if full_course_yellow:
             return FlagAlert(
                 active=True,
@@ -190,17 +206,6 @@ class FlagsLogic:
                 cars=candidates,
             )
         if player_causing_local_yellow:
-            if candidates:
-                target = candidates[0]
-                return FlagAlert(
-                    active=True,
-                    driver=target.driver,
-                    category=target.category,
-                    position=target.position,
-                    distance=target.distance,
-                    tempo_gap=target.tempo_gap,
-                    cars=candidates,
-                )
             player_category = str(
                 getattr(player, "vehicle_class", "") or "PERIGO LOCAL"
             ).upper()
@@ -245,7 +250,6 @@ class FlagsLogic:
         if not receiving_blue:
             return FlagAlert()
 
-        player_position = self._race_position(player)
         player_speed = max(0.0, self._float(player, "speed_kmh"))
         blue_window_s = max(
             0.1,
@@ -259,19 +263,14 @@ class FlagsLogic:
                 continue
 
             distance = self._signed_track_gap(session, player, row)
-            car_position = self._race_position(row)
-            effective_player_position = self._race_position(player) or player_position
-            if car_position <= 0 or (
-                effective_player_position > 0
-                and car_position >= effective_player_position
-            ):
-                continue
-
             row_speed = max(0.0, self._float(row, "speed_kmh"))
             closing_speed_ms = (row_speed - player_speed) / 3.6
             if closing_speed_ms <= 0.1:
-                continue
-            tempo_gap = abs(distance) / closing_speed_ms
+                if abs(distance) > 15.0:
+                    continue
+                tempo_gap = 0.0
+            else:
+                tempo_gap = abs(distance) / closing_speed_ms
             if tempo_gap > blue_window_s:
                 continue
             radar_x, radar_y, radar_orientation = self._flag_radar_pose(

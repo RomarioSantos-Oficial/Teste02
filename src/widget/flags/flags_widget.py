@@ -64,6 +64,7 @@ class RadarWidget(QWidget):
         super().__init__(parent)
         self.is_blue_radar = is_blue_radar
         self.cars_data: list[FlagCar] = []
+        self.player_is_yellow_hazard = False
         self.ui_scale = 1.0
         self.setSizePolicy(
             QSizePolicy.Policy.Fixed,
@@ -100,8 +101,10 @@ class RadarWidget(QWidget):
     def update_radar_data(
         self,
         cars: list[FlagCar],
+        player_is_yellow_hazard: bool = False,
     ) -> None:
         self.cars_data = list(cars)
+        self.player_is_yellow_hazard = bool(player_is_yellow_hazard)
         self.update()
 
     def sizeHint(self) -> QSize:
@@ -132,7 +135,19 @@ class RadarWidget(QWidget):
         center_x = width / 2.0
         center_y = height / 2.0
         scale = self.ui_scale
-        max_radar_distance = 140.0
+        max_radar_distance = max(
+            140.0,
+            max(
+                (
+                    abs(car.raw_pos_y)
+                    if abs(car.raw_pos_y) > 0.001
+                    else abs(car.distance)
+                    for car in self.cars_data
+                ),
+                default=0.0,
+            )
+            * 1.08,
+        )
 
         # Deixa a faixa da pista mais larga e reserva uma margem visível para
         # carros que ultrapassaram a borda (LS/RS).
@@ -230,7 +245,11 @@ class RadarWidget(QWidget):
         )
 
         painter.setBrush(
-            QBrush(QColor(0, 0, 0))
+            QBrush(
+                QColor(229, 57, 53)
+                if self.player_is_yellow_hazard
+                else QColor(0, 0, 0)
+            )
         )
         painter.setPen(Qt.PenStyle.NoPen)
         painter.drawRoundedRect(
@@ -243,6 +262,16 @@ class RadarWidget(QWidget):
             car_radius,
             car_radius,
         )
+        if self.player_is_yellow_hazard:
+            self._draw_order_badge(
+                painter,
+                center_x,
+                center_y - car_height * 0.55,
+                1,
+                scale,
+                width,
+                height,
+            )
 
         for car in self.cars_data:
             raw_pos_x = float(car.raw_pos_x)
@@ -342,6 +371,45 @@ class RadarWidget(QWidget):
                 )
             )
             painter.restore()
+            if car.radar_order > 0:
+                self._draw_order_badge(
+                    painter,
+                    pos_x + car_width * 0.30,
+                    pos_y - car_height * 0.55,
+                    car.radar_order,
+                    scale,
+                    width,
+                    height,
+                )
+
+    @staticmethod
+    def _draw_order_badge(
+        painter: QPainter,
+        center_x: float,
+        center_y: float,
+        order: int,
+        scale: float,
+        width: float,
+        height: float,
+    ) -> None:
+        label = str(order)
+        badge_width = max(10.0, (7.0 + len(label) * 5.0) * scale)
+        badge_height = max(9.0, 11.0 * scale)
+        left = max(0.0, min(width - badge_width, center_x - badge_width / 2))
+        top = max(0.0, min(height - badge_height, center_y - badge_height / 2))
+        badge = QRectF(left, top, badge_width, badge_height)
+
+        painter.save()
+        painter.setPen(QPen(QColor(255, 255, 255, 220), max(0.6, 0.8 * scale)))
+        painter.setBrush(QBrush(QColor(10, 15, 22, 225)))
+        painter.drawRoundedRect(badge, 2.0 * scale, 2.0 * scale)
+        font = painter.font()
+        font.setPixelSize(max(6, round(7.0 * scale)))
+        font.setBold(True)
+        painter.setFont(font)
+        painter.setPen(QColor(255, 255, 255))
+        painter.drawText(badge, Qt.AlignmentFlag.AlignCenter, label)
+        painter.restore()
 
 
 class FlagsWidget(QWidget):
@@ -1238,7 +1306,8 @@ class FlagsWidget(QWidget):
                 )
 
             self.yellow_radar.update_radar_data(
-                yellow.cars + (blue.cars if blue.active else [])
+                yellow.cars + (blue.cars if blue.active else []),
+                player_is_yellow_hazard=yellow.player_is_hazard,
             )
             self.yellow_card.show()
             self.yellow_ativa = True

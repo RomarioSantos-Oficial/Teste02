@@ -20,6 +20,7 @@ class FlagCar:
     player_track_edge_m: float = 0.0
     speed_kmh: float = 0.0
     is_blue_context: bool = False
+    radar_order: int = 0
 
 
 @dataclass(slots=True)

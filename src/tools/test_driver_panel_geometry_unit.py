@@ -34,6 +34,93 @@ class DriverPanelGeometryUnitTests(unittest.TestCase):
         self.assertEqual(DriverPanelWidget.MINIMUM_WIDTH, 180)
         self.assertEqual(DriverPanelWidget.MINIMUM_HEIGHT, 70)
 
+    def test_history_rate_follows_configured_sample_rate(self) -> None:
+        config = self._config()
+        config["sample_rate_hz"] = 60
+        widget = DriverPanelWidget("driver_panel", config)
+        widget.apply_config()
+        self.assertAlmostEqual(widget._history_interval_s, 1.0 / 60.0)
+        widget.deleteLater()
+
+    def test_graph_ignores_single_sample_pedal_spike(self) -> None:
+        config = self._config()
+        config["sample_rate_hz"] = 60
+        widget = DriverPanelWidget("driver_panel", config)
+        widget._history_interval_s = 0.0
+        player = type(
+            "Player",
+            (),
+            {
+                "throttle": 0.0,
+                "brake": 0.0,
+                "clutch": 0.0,
+                "steering": 0.0,
+                "rpm": 3000.0,
+                "max_rpm": 9000.0,
+                "speed_kmh": 30.0,
+                "gear": 1,
+            },
+        )()
+
+        for _ in range(3):
+            widget.update_telemetry(player)
+        player.throttle = 1.0
+        widget.update_telemetry(player)
+        player.throttle = 0.0
+        widget.update_telemetry(player)
+
+        self.assertEqual(widget.throttle_history[-1], 0.0)
+        for _ in range(5):
+            player.throttle = 1.0
+            widget.update_telemetry(player)
+        self.assertEqual(widget.throttle_history[-1], 1.0)
+        widget.deleteLater()
+
+    def test_timed_graph_keeps_original_samples_when_history_exceeds_point_limit(self) -> None:
+        config = self._config()
+        config["graph_history_points"] = 2
+        widget = DriverPanelWidget("driver_panel", config)
+        widget.history_times.extend([1.0, 2.0, 3.0, 4.0])
+        widget.throttle_history.extend([0.0, 0.4, 0.6, 1.0])
+        widget.brake_history.extend([1.0, 0.6, 0.4, 0.0])
+        widget.clutch_history.extend([0.0, 0.0, 0.0, 0.0])
+
+        throttle, brake, _, _, _, _ = widget._visible_history(now=10.5)
+
+        self.assertEqual([point[1] for point in throttle], [0.0, 0.4, 0.6, 1.0])
+        self.assertEqual([point[1] for point in brake], [1.0, 0.6, 0.4, 0.0])
+        widget.deleteLater()
+
+    def test_graph_ignores_single_sample_pedal_spike(self) -> None:
+        config = self._config()
+        config["pedal_smoothing"] = 0.0
+        widget = DriverPanelWidget("driver_panel", config)
+        widget._history_interval_s = 0.0
+        player = type(
+            "Player",
+            (),
+            {
+                "throttle": 0.0,
+                "brake": 0.0,
+                "clutch": 0.0,
+                "steering": 0.0,
+                "rpm": 3000.0,
+                "max_rpm": 9000.0,
+                "speed_kmh": 30.0,
+                "gear": 1,
+            },
+        )()
+
+        for _ in range(3):
+            widget.update_telemetry(player)
+        player.throttle = 1.0
+        widget.update_telemetry(player)
+        player.throttle = 0.0
+        widget.update_telemetry(player)
+
+        self.assertEqual(widget.throttle_history[-1], 0.0)
+        widget.deleteLater()
+
     def test_normalized_geometry_can_reach_compact_minimum(self) -> None:
         config = self._config()
         config["size"] = {"width": 0.01, "height": 0.01}

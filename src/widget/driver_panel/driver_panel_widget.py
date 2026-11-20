@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import deque
 from bisect import bisect_right
+from statistics import median
 import time
 from typing import Any
 
@@ -61,6 +62,9 @@ class DriverPanelWidget(QWidget):
             config.get("graph_interval", "10 s")
         )
         self._smoothed_steering = 0.0
+        self._graph_throttle_samples: deque[float] = deque(maxlen=5)
+        self._graph_brake_samples: deque[float] = deque(maxlen=5)
+        self._graph_clutch_samples: deque[float] = deque(maxlen=5)
         self._max_rpm_seen = 0.0
         self._max_throttle_seen = 0.0
         self._max_brake_seen = 0.0
@@ -97,9 +101,10 @@ class DriverPanelWidget(QWidget):
         interval = "Volta" if bool(self.config.get("compare_personal_best", False)) else str(self.config.get("graph_interval", "10 s"))
         seconds = {"5 s": 5, "10 s": 10, "30 s": 30, "Volta": 180, "Sessão": 3600}.get(interval, 10)
         history_rate = min(
-            30,
+            120,
             max(1, int(self.config.get("sample_rate_hz", 60))),
         )
+        self._history_interval_s = 1.0 / history_rate
         history_size = max(30, min(108000, history_rate * seconds))
 
         if self.throttle_history.maxlen != history_size:
@@ -171,6 +176,9 @@ class DriverPanelWidget(QWidget):
             ),
         )
         clutch = max(0.0, min(1.0, float(getattr(player_data, "clutch", 0.0))))
+        self._graph_throttle_samples.append(throttle)
+        self._graph_brake_samples.append(brake)
+        self._graph_clutch_samples.append(clutch)
         steering = max(-1.0, min(1.0, float(getattr(player_data, "steering", 0.0))))
         smoothing = max(0.0, min(0.95, float(self.config.get("steering_smoothing", 0.32))))
         self._smoothed_steering += (steering - self._smoothed_steering) * (1.0 - smoothing)
@@ -188,10 +196,14 @@ class DriverPanelWidget(QWidget):
         self._max_clutch_seen = max(self._max_clutch_seen, clutch)
 
         if now >= self._next_history_sample_at:
-            self._next_history_sample_at = now + self._history_interval_s
-            self.throttle_history.append(throttle)
-            self.brake_history.append(brake)
-            self.clutch_history.append(clutch)
+            if self._next_history_sample_at == 0.0:
+                self._next_history_sample_at = now
+            self._next_history_sample_at += self._history_interval_s
+            while self._next_history_sample_at <= now:
+                self._next_history_sample_at += self._history_interval_s
+            self.throttle_history.append(median(self._graph_throttle_samples))
+            self.brake_history.append(median(self._graph_brake_samples))
+            self.clutch_history.append(median(self._graph_clutch_samples))
             self.rpm_history.append(min(1.0, rpm / max_rpm))
             self.steering_history.append((self._smoothed_steering + 1.0) * 0.5)
             self.speed_history.append(min(1.0, speed_kmh / 350.0))
@@ -299,6 +311,9 @@ class DriverPanelWidget(QWidget):
         self._max_throttle_seen = 0.0
         self._max_brake_seen = 0.0
         self._max_clutch_seen = 0.0
+        self._graph_throttle_samples.clear()
+        self._graph_brake_samples.clear()
+        self._graph_clutch_samples.clear()
         self._next_history_sample_at = 0.0
         self._visible_history_cache = ([], [], [], [], [], [])
         self.update()
@@ -374,11 +389,6 @@ class DriverPanelWidget(QWidget):
             # borda esquerda sem mudar seu formato.
             start = max(0, bisect_right(times, cutoff) - 1)
             indexes = list(range(start, len(times)))
-            if len(indexes) > points:
-                indexes = [
-                    indexes[round(index * (len(indexes) - 1) / (points - 1))]
-                    for index in range(points)
-                ]
             timed: list[list[tuple[float, float]]] = []
             for values in series:
                 timed.append([
