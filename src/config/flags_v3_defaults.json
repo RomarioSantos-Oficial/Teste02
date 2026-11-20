@@ -13,7 +13,7 @@
   "internal_scale": 1.0,
   "responsive_min_scale": 0.21,
   "responsive_max_scale": 2.2,
-  "opacity": 1.0,
+  "opacity": 0.97,
   "always_on_top": true,
   "click_through": true,
   "snap_to_edges": true,
@@ -30,14 +30,14 @@
   "yellow_hazard_speed_kmh": 15.12,
   "simulation_file": "simulacao_flags.json",
   "preview_mode": "yellow",
-  "font_name": "Arial",
+  "font_name": "Bahnschrift",
   "font_size": 16,
   "colors": {
-    "yellow_bg": "#FFEA00",
-    "yellow_light": "#FFF59D",
-    "blue_bg": "#1E88E5",
-    "blue_light": "#81D4FA",
-    "green_bg": "#00AA00",
-    "green_fg": "#FFFFFF"
+    "yellow_bg": "#D19A35",
+    "yellow_light": "#F0D58A",
+    "blue_bg": "#2F7895",
+    "blue_light": "#8DCAD9",
+    "green_bg": "#247A5B",
+    "green_fg": "#F4F7FB"
   }
 }

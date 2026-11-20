@@ -1507,7 +1507,9 @@ class FlagsWidget(QWidget):
             QPainter.RenderHint.Antialiasing
         )
         pen = QPen(
-            QColor("#9B5CFF"),
+            QColor(
+                str(self.config.get("colors", {}).get("edit_border", "#D6A84F"))
+            ),
             max(
                 1.0,
                 2.0

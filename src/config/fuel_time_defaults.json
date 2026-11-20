@@ -1,1 +1,33 @@
-{"enabled":false,"monitor":0,"position":{"x":0.35,"y":0.70},"size":{"width":0.30,"height":0.19},"opacity":0.98,"always_on_top":true,"click_through":true,"snap_to_edges":true,"average_laps":5,"reserve_laps":1.0,"show_energy":true,"font_name":"Arial","colors":{"background":"#0A0F17EE","panel":"#151B26","panel_border":"#27313E","border":"#344155","accent":"#2563EB","title":"#67E8F9","text":"#F4F7FB","muted":"#9BA8BA","good":"#16C784","warning":"#EF4444","edit_border":"#8B5CF6"}}
+{
+  "enabled": false,
+  "monitor": 0,
+  "position": {
+    "x": 0.35,
+    "y": 0.7
+  },
+  "size": {
+    "width": 0.3,
+    "height": 0.19
+  },
+  "opacity": 0.97,
+  "always_on_top": true,
+  "click_through": true,
+  "snap_to_edges": true,
+  "average_laps": 5,
+  "reserve_laps": 1.0,
+  "show_energy": true,
+  "font_name": "Bahnschrift",
+  "colors": {
+    "background": "#080D14",
+    "panel": "#111923",
+    "panel_border": "#273646",
+    "border": "#3B4A5C",
+    "accent": "#4B9DB9",
+    "title": "#64C7D7",
+    "text": "#F4F7FB",
+    "muted": "#9BA8B7",
+    "good": "#24C78A",
+    "warning": "#F05A63",
+    "edit_border": "#D6A84F"
+  }
+}

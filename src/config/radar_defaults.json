@@ -2,11 +2,17 @@
   "enabled": false,
   "always_on_top": true,
   "click_through": true,
-  "opacity": 1.0,
+  "opacity": 0.96,
   "monitor": 0,
   "scale": 1.0,
-  "position": {"x": 0.72, "y": 0.39},
-  "size": {"width": 0.12, "height": 0.21},
+  "position": {
+    "x": 0.72,
+    "y": 0.39
+  },
+  "size": {
+    "width": 0.12,
+    "height": 0.21
+  },
   "snap_to_edges": true,
   "radar_radius_m": 15.0,
   "ahead_multiplier": 1.5,
@@ -19,10 +25,19 @@
   "show_background": false,
   "show_marks": true,
   "colors": {
-    "background": "#080D15E6", "border": "#344155", "marks": "#58677A80",
-    "player": "#FF4422", "leader": "#88FF00", "same_lap": "#FFFFFF", "laps_ahead": "#FF44CC",
-    "laps_behind": "#00AAFF", "in_pit": "#888888", "yellow": "#FFFF00",
-    "vehicle_outline": "#050505", "nearby": "#FFC400", "critical": "#FF2638",
-    "edit_border": "#8B5CF6"
+    "background": "#080D14D9",
+    "border": "#3B4A5C",
+    "marks": "#68778980",
+    "player": "#F4F7FB",
+    "leader": "#24C78A",
+    "same_lap": "#D8E1EA",
+    "laps_ahead": "#B08A42",
+    "laps_behind": "#4B9DB9",
+    "in_pit": "#687789",
+    "yellow": "#E2B454",
+    "vehicle_outline": "#05080C",
+    "nearby": "#E2B454",
+    "critical": "#F05A63",
+    "edit_border": "#D6A84F"
   }
 }

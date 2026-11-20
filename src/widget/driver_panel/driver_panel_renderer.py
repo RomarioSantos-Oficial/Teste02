@@ -87,7 +87,7 @@ class DriverPanelRenderer:
                 self._path(p,graph,values,colors[name],max(1.3,2.1*s if name.endswith("_reference") else 2.5*s),name.endswith("_reference"))
         p.restore()
         if series.get("throttle_reference") or series.get("brake_reference"):
-            p.setFont(QFont("Arial", max(7, round(8*s))))
+            p.setFont(QFont(str(cfg.get("font", {}).get("family", "Bahnschrift")), max(7, round(8*s))))
             p.setPen(muted)
             p.drawText(QRectF(graph.left(), graph.top(), graph.width(), 13*s), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop, tr("PB tracejada"))
 

@@ -1,12 +1,18 @@
 {
   "enabled": true,
   "monitor": 0,
-  "position": {"x": 0.14, "y": 0.66},
-  "size": {"width": 0.72, "height": 0.30},
+  "position": {
+    "x": 0.14,
+    "y": 0.66
+  },
+  "size": {
+    "width": 0.72,
+    "height": 0.3
+  },
   "scale": 1.0,
   "opacity": 0.96,
-  "background_opacity": 0.88,
-  "border_radius": 12,
+  "background_opacity": 0.82,
+  "border_radius": 6,
   "always_on_top": true,
   "click_through": true,
   "snap_to_edges": true,
@@ -30,22 +36,47 @@
   "graph_vertical_lines": 8,
   "design_base_width": 1380,
   "design_base_height": 420,
-  "font": {"family": "Arial"},
-  "layout": {"rpm_segments": 28, "shift_start": 0.78, "red_start": 0.92},
+  "font": {
+    "family": "Bahnschrift"
+  },
+  "layout": {
+    "rpm_segments": 28,
+    "shift_start": 0.78,
+    "red_start": 0.92
+  },
   "colors": {
-    "text": "#FFFFFF", "muted": "#AAB2BD", "background": "#10151D",
-    "panel": "#080C12", "grid": "#27313E", "rpm_low": "#1769E0",
-    "rpm_shift": "#FFC400", "rpm_high": "#FF2438", "throttle": "#50DF42",
-    "brake": "#FF2438", "clutch": "#29A8FF", "speed": "#22D3EE",
-    "rpm_graph": "#FFD21F", "steering_graph": "#C084FC",
-    "wheel": "#0B4A50", "steering_center": "#FFFFFF",
-    "steering_marker": "#4CFF5E", "border": "#424B56", "edit_border": "#8B5CF6"
+    "text": "#F4F7FB",
+    "muted": "#9BA8B7",
+    "background": "#080D14",
+    "panel": "#101923",
+    "grid": "#273646",
+    "rpm_low": "#3D91A7",
+    "rpm_shift": "#E2B454",
+    "rpm_high": "#F05A63",
+    "throttle": "#24C78A",
+    "brake": "#F05A63",
+    "clutch": "#6AA7C0",
+    "speed": "#64C7D7",
+    "rpm_graph": "#D8B45A",
+    "steering_graph": "#9FB6C5",
+    "wheel": "#425569",
+    "steering_center": "#F4F7FB",
+    "steering_marker": "#E2B454",
+    "border": "#3B4A5C",
+    "edit_border": "#D6A84F"
   },
   "elements": {
-    "rpm": true, "graph": true, "steering": true,
-    "gear": true, "speed": true, "steering_marker": true, "pedals": true
+    "rpm": true,
+    "graph": true,
+    "steering": true,
+    "gear": true,
+    "speed": true,
+    "steering_marker": true,
+    "pedals": true
   },
   "pedal_elements": {
-    "throttle": true, "brake": true, "clutch": true
+    "throttle": true,
+    "brake": true,
+    "clutch": true
   }
 }

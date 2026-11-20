@@ -1,9 +1,15 @@
 {
   "enabled": false,
   "monitor": 0,
-  "position": {"x": 0.88, "y": 0.58},
-  "size": {"width": 0.07, "height": 0.18},
-  "opacity": 0.96,
+  "position": {
+    "x": 0.88,
+    "y": 0.58
+  },
+  "size": {
+    "width": 0.07,
+    "height": 0.18
+  },
+  "opacity": 0.94,
   "always_on_top": true,
   "click_through": true,
   "show_integrity": true,
@@ -14,10 +20,20 @@
   "susp_heavy_threshold": 0.4,
   "susp_totaled_threshold": 0.8,
   "colors": {
-    "background": "#88000000", "border": "#555555", "outline": "#888888",
-    "text": "#FFFFFF", "body_ok": "#888888", "body_light": "#FFFF00",
-    "body_heavy": "#FF0000", "susp_ok": "#44CC00", "susp_light": "#FFFF00",
-    "susp_medium": "#FF6600", "susp_heavy": "#FF00FF", "susp_totaled": "#0000FF", "detached": "#000000", "impact": "#FF0000",
-    "edit_border": "#8B5CF6"
+    "background": "#080D14B8",
+    "border": "#3B4A5C",
+    "outline": "#8794A3",
+    "text": "#F4F7FB",
+    "body_ok": "#8794A3",
+    "body_light": "#E2B454",
+    "body_heavy": "#F05A63",
+    "susp_ok": "#24C78A",
+    "susp_light": "#E2B454",
+    "susp_medium": "#E2A14F",
+    "susp_heavy": "#F05A63",
+    "susp_totaled": "#8E353D",
+    "detached": "#2B323A",
+    "impact": "#F05A63",
+    "edit_border": "#D6A84F"
   }
 }

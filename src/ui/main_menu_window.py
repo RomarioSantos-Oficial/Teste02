@@ -697,38 +697,51 @@ class MainMenuWindow(QMainWindow):
     def _apply_style(self) -> None:
         self.setStyleSheet(
             """
-            QMainWindow, QWidget { background: #090D15; color: #F4F7FB; font-family: Arial; font-size: 14px; }
-            QFrame#headerBox, QFrame#toolbarBox, QFrame#footerBox { background: #151B26; border: 1px solid #2A3444; border-radius: 12px; }
-            QFrame#headerInfoBox { background: #101722; border: 1px solid #2A3444; border-radius: 8px; }
-            QLabel#mainTitle { font-size: 30px; font-weight: 700; }
-            QLabel#subtitle { color: #9BA8BA; }
-            QLabel#versionLabel { color: #67E8F9; font-weight: 700; }
-            QPushButton#updateNotesButton { background: #1265A8; border-color: #2784CA; }
-            QLabel#updateDialogTitle { color: #67E8F9; font-size: 20px; font-weight: 700; }
-            QLabel#updateDialogNote { color: #D7DEE9; font-size: 14px; padding: 10px; }
-            QLabel#donationLabel { color: #F1B84B; font-size: 12px; font-weight: 700; }
-            QPushButton#donationButton { background: #7C3AED; border-color: #9B6AF3; }
-            QLabel#donationDialogTitle { font-size: 18px; font-weight: 700; color: #F1B84B; }
-            QLabel#pixQrCode { background: #202938; border: 2px solid #67E8F9; border-radius: 10px; padding: 14px; }
-            QLabel#pixKeyLabel { color: #D7DEE9; font-family: Consolas; font-size: 12px; }
-            QPushButton#paypalButton { background: #0070BA; border-color: #169BD7; }
-            QFrame#menuRow { background: #171E2A; border: 1px solid #2B3546; border-radius: 9px; }
-            QFrame#menuRow:hover { border: 1px solid #506078; }
-            QLabel#rowTitle { font-size: 17px; font-weight: 650; }
-            QLabel#rowStatus { color: #EF5350; font-size: 11px; font-weight: 700; }
-            QLabel#rowStatus[active="true"] { color: #4BD59A; }
-            QPushButton { background: #29364A; border: 1px solid #40516C; border-radius: 7px; padding: 7px 12px; }
-            QPushButton:hover { background: #34445C; }
-            QPushButton:disabled { background: #1C2330; color: #606B7A; border-color: #2B3340; }
-            QPushButton:checked { background: #7C3AED; border-color: #9B6AF3; }
-            QComboBox { background: #202938; border: 1px solid #3A485E; border-radius: 7px; padding: 7px; min-width: 150px; }
+            QMainWindow, QWidget { background: #0B111A; color: #E8EDF3; font-family: "Segoe UI"; font-size: 13px; }
+            QFrame#headerBox, QFrame#toolbarBox, QFrame#footerBox { background: #121B27; border: 1px solid #243244; border-radius: 10px; }
+            QFrame#headerInfoBox { background: #0F1722; border: 1px solid #29394D; border-radius: 7px; }
+            QLabel#mainTitle { color: #F4F7FA; font-size: 28px; font-weight: 700; }
+            QLabel#subtitle { color: #8D9CAF; font-size: 13px; }
+            QLabel#versionLabel { color: #64C7D7; font-size: 12px; font-weight: 700; }
+            QPushButton#updateNotesButton { background: #1D4051; border-color: #2C6877; color: #BCEAF0; }
+            QLabel#updateDialogTitle { color: #7AD7E2; font-size: 19px; font-weight: 700; }
+            QLabel#updateDialogNote { color: #C5D0DC; font-size: 13px; padding: 10px; }
+            QLabel#donationLabel { color: #E0B15A; font-size: 11px; font-weight: 700; }
+            QPushButton#donationButton { background: #56431F; border-color: #927235; color: #F6D68B; }
+            QLabel#donationDialogTitle { font-size: 18px; font-weight: 700; color: #E5B85F; }
+            QLabel#pixQrCode { background: #F2F4F6; border: 2px solid #5BB9C7; border-radius: 8px; padding: 14px; }
+            QLabel#pixKeyLabel { color: #C5D0DC; font-family: Consolas; font-size: 12px; }
+            QPushButton#paypalButton { background: #14567C; border-color: #2788BB; }
+            QTabWidget::pane { background: #0F1722; border: 1px solid #243244; border-radius: 8px; top: -1px; }
+            QTabBar::tab { background: #121B27; color: #8190A2; border: 1px solid transparent; border-bottom: 2px solid transparent; padding: 9px 18px; margin-right: 3px; }
+            QTabBar::tab:hover { color: #C7D2DF; }
+            QTabBar::tab:selected { color: #E8EDF3; border-bottom-color: #D7A646; }
+            QFrame#menuRow { background: #151F2C; border: 1px solid #29394D; border-radius: 8px; }
+            QFrame#menuRow:hover { background: #192637; border-color: #49627D; }
+            QLabel#rowTitle { color: #E8EDF3; font-size: 15px; font-weight: 650; }
+            QLabel#rowStatus { color: #E06A70; font-size: 11px; font-weight: 700; }
+            QLabel#rowStatus[active="true"] { color: #53C89A; }
+            QPushButton { background: #202D3E; border: 1px solid #354960; border-radius: 6px; color: #DCE5EE; padding: 7px 12px; min-height: 18px; }
+            QPushButton:hover { background: #2A3B50; border-color: #57718D; }
+            QPushButton:pressed { background: #172332; }
+            QPushButton:disabled { background: #171F2A; color: #596777; border-color: #273343; }
+            QPushButton:checked { background: #8A6827; border-color: #C1943A; color: #FFF1C9; }
+            QComboBox { background: #172333; border: 1px solid #354960; border-radius: 6px; color: #E2E9F0; padding: 7px 9px; min-width: 132px; }
+            QComboBox:hover { border-color: #57718D; }
+            QComboBox::drop-down { border: none; width: 24px; }
+            QComboBox QAbstractItemView { background: #172333; color: #E2E9F0; selection-background-color: #2C4C64; selection-color: #FFFFFF; border: 1px solid #3B526B; }
             QCheckBox::indicator { width: 42px; height: 22px; }
-            QCheckBox::indicator:unchecked { image: none; background: #4A5362; border-radius: 11px; }
-            QCheckBox::indicator:checked { image: none; background: #14B86E; border-radius: 11px; }
-            QLabel#connectionLabel { color: #F1B84B; font-weight: 600; }
-            QLabel#connectionLabel[connected="true"] { color: #3EDB91; }
-            QLabel#connectionLabel[connected="false"] { color: #FF6268; }
-            QPushButton#communityLinkButton { background: #202D42; border-color: #40516C; color: #8CC6FF; padding: 4px 9px; min-height: 20px; font-size: 12px; }
+            QCheckBox::indicator:unchecked { image: none; background: #485566; border-radius: 11px; }
+            QCheckBox::indicator:checked { image: none; background: #2DAD82; border-radius: 11px; }
+            QLabel#connectionLabel { color: #DDB15A; font-weight: 650; }
+            QLabel#connectionLabel[connected="true"] { color: #53C89A; }
+            QLabel#connectionLabel[connected="false"] { color: #E06A70; }
+            QPushButton#communityLinkButton { background: transparent; border-color: #34485E; color: #91B8D8; padding: 4px 9px; min-height: 18px; font-size: 12px; }
+            QPushButton#communityLinkButton:hover { background: #1C2B3C; color: #C4E1F5; }
             QScrollArea { border: none; background: transparent; }
+            QScrollBar:vertical { background: #0F1722; width: 10px; margin: 2px; }
+            QScrollBar::handle:vertical { background: #34485E; border-radius: 5px; min-height: 30px; }
+            QScrollBar::handle:vertical:hover { background: #4C6680; }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
             """
         )
