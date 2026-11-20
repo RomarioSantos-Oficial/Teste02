@@ -337,6 +337,24 @@ class StandingsEditor(QDialog):
         opacity.setSingleStep(0.05)
         opacity.setValue(float(self.config.get("opacity", 0.98)))
         opacity.valueChanged.connect(lambda value: self._set("opacity", value))
+        panel_opacity = QDoubleSpinBox()
+        panel_opacity.setRange(0.0, 100.0)
+        panel_opacity.setDecimals(0)
+        panel_opacity.setSingleStep(5.0)
+        panel_opacity.setSuffix(" %")
+        panel_opacity.setValue(float(self.config.get("panel_opacity", 0.25)) * 100.0)
+        panel_opacity.valueChanged.connect(
+            lambda value: self._set("panel_opacity", value / 100.0)
+        )
+        row_opacity = QDoubleSpinBox()
+        row_opacity.setRange(0.0, 100.0)
+        row_opacity.setDecimals(0)
+        row_opacity.setSingleStep(5.0)
+        row_opacity.setSuffix(" %")
+        row_opacity.setValue(float(self.config.get("row_opacity", 0.78)) * 100.0)
+        row_opacity.valueChanged.connect(
+            lambda value: self._set("row_opacity", value / 100.0)
+        )
         logo_dir = QLineEdit(str(self.config.get("logo_directory", "images/logos")))
         logo_dir.editingFinished.connect(lambda: self._set("logo_directory", logo_dir.text().strip()))
         badge_dir = QLineEdit(
@@ -358,7 +376,9 @@ class StandingsEditor(QDialog):
         form.addRow("Destaque de nova melhor volta:", lap_highlight)
         form.addRow("Manter tempo do pit por:", pit_status_laps)
         form.addRow("Ajustar fundo ao conteúdo:", auto_fit)
-        form.addRow("Opacidade:", opacity)
+        form.addRow("Opacidade geral do widget:", opacity)
+        form.addRow("Opacidade do fundo do painel:", panel_opacity)
+        form.addRow("Opacidade das linhas e faixas:", row_opacity)
         form.addRow("Pasta de logos:", logo_dir)
         form.addRow("Pasta de badges:", badge_dir)
         self.layout_content.addWidget(group)
@@ -411,16 +431,32 @@ class StandingsEditor(QDialog):
         group = QGroupBox("Cores principais")
         form = QFormLayout(group)
         labels = {
-            "background": "Fundo", "header_background": "Cabeçalho global",
-            "text": "Texto", "muted": "Texto secundário", "row_background": "Linha normal",
-            "player_background": "Linha do jogador", "position_gain": "Posição ganha",
-            "position_loss": "Posição perdida", "personal_best": "Melhor volta",
-            "delta_gain": "DELTA — ganhando", "delta_loss": "DELTA — perdendo",
-            "invalid_lap": "Volta inválida",
-            "energy_low": "Energia baixa", "damage_high": "Dano alto", "edit_border": "Borda de edição",
+            "background": ("Fundo do painel", "#090D12"),
+            "header_background": ("Cabeçalho global", "#080B10"),
+            "category_header_background": ("Cabeçalho da categoria", "#151C24"),
+            "legend_background": ("Fundo da legenda", "#0E1319"),
+            "text": ("Texto", "#F4F6F8"),
+            "muted": ("Texto secundário", "#A7B0BA"),
+            "row_background": ("Linha normal", "#12171D"),
+            "alternate_row_background": ("Linha alternada", "#191F26"),
+            "player_background": ("Linha do jogador", "#142622"),
+            "pit_row_background": ("Linha em pit/garagem", "#27211A"),
+            "row_separator": ("Separador das linhas", "#35404A"),
+            "header_separator": ("Divisor do cabeçalho", "#2A3540"),
+            "header_line": ("Linha de destaque", "#43BDCA"),
+            "position_gain": ("Posição ganha", "#55D98A"),
+            "position_loss": ("Posição perdida", "#FF5E6B"),
+            "personal_best": ("Melhor volta", "#55D98A"),
+            "delta_gain": ("DELTA — ganhando", "#55D98A"),
+            "delta_loss": ("DELTA — perdendo", "#FF5E6B"),
+            "invalid_lap": ("Volta inválida", "#FF5E6B"),
+            "energy_low": ("Energia baixa", "#E5222B"),
+            "damage_high": ("Dano alto", "#E5222B"),
+            "edit_border": ("Borda de edição", "#43BDCA"),
         }
-        for key, label in labels.items():
-            value = str(self.config.setdefault("colors", {}).get(key, "#FFFFFF"))
+        colors = self.config.setdefault("colors", {})
+        for key, (label, fallback) in labels.items():
+            value = str(colors.setdefault(key, fallback))
             button = QPushButton(value)
             button.clicked.connect(lambda checked=False, current=key: self._choose_color(current))
             self.color_buttons[key] = button
