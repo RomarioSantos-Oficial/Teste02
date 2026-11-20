@@ -58,6 +58,47 @@ class ProfileEditRegressionTests(unittest.TestCase):
             self.assertNotIn("x", manager.config_data["widgets"]["delta"]["position"])
             manager.close_all()
 
+    def test_player_background_migrates_saved_dark_defaults(self) -> None:
+        factory = Path(__file__).resolve().parents[1] / "config" / "widgets.json"
+        config = json.loads(factory.read_text(encoding="utf-8"))
+        config["widgets"]["standings"]["colors"]["player_background"] = "#111B2B"
+        config["defaults"]["standings"]["colors"]["player_background"] = "#5B1239"
+        config["profiles"]["standard"]["widgets"]["standings"]["colors"][
+            "player_background"
+        ] = "#111B2B"
+        config["profiles"]["engineer"]["widgets"]["standings"]["colors"][
+            "player_background"
+        ] = "#123456"
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "widgets.json"
+            path.write_text(json.dumps(config), encoding="utf-8")
+            manager = OverlayManager(path)
+            self.assertEqual(
+                manager.config_data["widgets"]["standings"]["colors"][
+                    "player_background"
+                ],
+                "#B51B69",
+            )
+            self.assertEqual(
+                manager.config_data["defaults"]["standings"]["colors"][
+                    "player_background"
+                ],
+                "#B51B69",
+            )
+            self.assertEqual(
+                manager.config_data["profiles"]["engineer"]["widgets"][
+                    "standings"
+                ]["colors"]["player_background"],
+                "#123456",
+            )
+            saved = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                saved["widgets"]["standings"]["colors"]["player_background"],
+                "#B51B69",
+            )
+            manager.close_all()
+
     def test_rank_percent_keeps_available_decimal_precision(self) -> None:
         self.assertEqual(StandingsWidget._format_rank_percent(43.6), "43.6%")
         self.assertEqual(StandingsWidget._format_rank_percent(70.0), "70%")

@@ -53,6 +53,9 @@ class StandingsWidget(QWidget):
     selected = Signal(str)
     DESIGN_WIDTH = 1500.0
     DESIGN_HEIGHT = 820.0
+    PLAYER_ROW_UNHIGHLIGHTED_COLUMNS = frozenset(
+        {"position", "brand", "number", "delta"}
+    )
     FINISH_FLAG_IN_STATUS_COLUMN = True
     BORROW_INACTIVE_PIT_FOR_DRIVER = True
     BRAND_CELL_BLACK_BACKGROUND = True
@@ -690,12 +693,9 @@ class StandingsWidget(QWidget):
         color.setAlphaF(color.alphaF() * factor)
         return color
 
-    def _row_surface_color(self, row: StandingRow, colors: dict[str, Any]) -> QColor:
-        if row.is_player:
-            return self._color_with_opacity(
-                colors.get("player_background", "#5B1239"),
-                self.config.get("player_opacity", 1.0),
-            )
+    def _normal_row_surface_color(
+        self, row: StandingRow, colors: dict[str, Any]
+    ) -> QColor:
         if row.in_pits or row.in_garage:
             background = colors.get("pit_row_background", "#27211A")
         elif int(row.class_position or 0) % 2 == 0:
@@ -706,6 +706,18 @@ class StandingsWidget(QWidget):
             background,
             self.config.get("row_opacity", 0.78),
         )
+
+    def _row_surface_color(self, row: StandingRow, colors: dict[str, Any]) -> QColor:
+        if row.is_player:
+            return self._color_with_opacity(
+                colors.get("player_background", "#B51B69"),
+                self.config.get("player_opacity", 1.0),
+            )
+        return self._normal_row_surface_color(row, colors)
+
+    @classmethod
+    def _highlight_player_cell(cls, column: str) -> bool:
+        return column not in cls.PLAYER_ROW_UNHIGHLIGHTED_COLUMNS
 
     def paintEvent(self, event: QPaintEvent) -> None:
         del event
@@ -1131,11 +1143,18 @@ class StandingsWidget(QWidget):
             )
             painter.restore()
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(self._row_surface_color(row, colors))
+        base_color = (
+            self._normal_row_surface_color(row, colors)
+            if row.is_player
+            else self._row_surface_color(row, colors)
+        )
+        painter.setBrush(base_color)
         painter.drawRect(main_rect)
         for cell_index, (key, cell) in enumerate(draw_cells):
             painter.save()
             painter.setClipRect(cell)
+            if row.is_player and self._highlight_player_cell(key):
+                painter.fillRect(cell, self._row_surface_color(row, colors))
             self._drawing_driver_row = True
             try:
                 self._draw_cell(painter, key, cell, row, category)
@@ -1180,6 +1199,8 @@ class StandingsWidget(QWidget):
             )
             painter.save()
             painter.setClipRect(popup)
+            if row.is_player and self._highlight_player_cell("penalty"):
+                painter.fillRect(popup, self._row_surface_color(row, colors))
             self._draw_cell(painter, "penalty", popup, row, category)
             painter.restore()
         self._column_content_scale = 1.0

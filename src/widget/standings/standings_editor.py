@@ -451,7 +451,7 @@ class StandingsEditor(QDialog):
             "muted": ("Texto secundário", "#A7B0BA"),
             "row_background": ("Linha normal", "#12171D"),
             "alternate_row_background": ("Linha alternada", "#191F26"),
-            "player_background": ("Fundo da linha do piloto", "#5B1239"),
+            "player_background": ("Fundo da linha do piloto", "#B51B69"),
             "player_accent": ("Marcador do piloto", "#FF54B8"),
             "pit_row_background": ("Linha em pit/garagem", "#27211A"),
             "row_separator": ("Separador das linhas", "#35404A"),

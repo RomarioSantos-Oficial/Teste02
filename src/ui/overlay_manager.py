@@ -75,6 +75,8 @@ class OverlayManager(QObject):
         self.external_driver_panel = "driver_panel" in self.external_widget_ids
         self.config_data = self._load_config()
         self._ensure_profiles()
+        if self._migrate_player_background():
+            self.save_config()
         self._delta_history_path = (
             self.config_path.parent
             / "session_cache"
@@ -210,6 +212,33 @@ class OverlayManager(QObject):
         profile = profiles.get(self.active_profile_id)
         if isinstance(profile, dict):
             profile["widgets"] = deepcopy(self.config_data.get("widgets", {}))
+
+    def _migrate_player_background(self) -> bool:
+        legacy_colors = {"#111B2B", "#5B1239"}
+        migrated = False
+        configurations = [
+            self.config_data.get("widgets"),
+            self.config_data.get("defaults"),
+        ]
+        configurations.extend(
+            profile.get("widgets")
+            for profile in self.config_data.get("profiles", {}).values()
+            if isinstance(profile, dict)
+        )
+        for configuration in configurations:
+            if not isinstance(configuration, dict):
+                continue
+            standings = configuration.get("standings")
+            if not isinstance(standings, dict):
+                continue
+            colors = standings.get("colors")
+            if not isinstance(colors, dict):
+                continue
+            background = str(colors.get("player_background", "")).upper()
+            if background in legacy_colors:
+                colors["player_background"] = "#B51B69"
+                migrated = True
+        return migrated
 
     def create_driver_panel(self) -> DriverPanelWidget:
         existing = self.widgets.get("driver_panel")

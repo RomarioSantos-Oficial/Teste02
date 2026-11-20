@@ -17,6 +17,15 @@ from src.widget.standings.standings_widget import (
 
 
 class StandingsLayoutUnitTests(unittest.TestCase):
+    def test_player_highlight_excludes_position_brand_number_and_delta(self) -> None:
+        for column in ("position", "brand", "number", "delta"):
+            with self.subTest(column=column):
+                self.assertFalse(StandingsWidget._highlight_player_cell(column))
+
+        for column in ("driver", "pit", "laps", "best", "last", "interval", "gap"):
+            with self.subTest(column=column):
+                self.assertTrue(StandingsWidget._highlight_player_cell(column))
+
     def test_surface_opacity_changes_alpha_without_changing_rgb(self) -> None:
         color = StandingsWidget._color_with_opacity("#43BDCA", 0.5)
         self.assertEqual(color.name(), "#43bdca")
@@ -25,6 +34,7 @@ class StandingsLayoutUnitTests(unittest.TestCase):
     def test_player_row_uses_its_own_color_and_opacity(self) -> None:
         class SurfaceWidgetProbe:
             _color_with_opacity = staticmethod(StandingsWidget._color_with_opacity)
+            _normal_row_surface_color = StandingsWidget._normal_row_surface_color
             _row_surface_color = StandingsWidget._row_surface_color
 
             def __init__(self) -> None:
