@@ -228,16 +228,19 @@ class OverlayManager(QObject):
         for configuration in configurations:
             if not isinstance(configuration, dict):
                 continue
-            standings = configuration.get("standings")
-            if not isinstance(standings, dict):
-                continue
-            colors = standings.get("colors")
-            if not isinstance(colors, dict):
-                continue
-            background = str(colors.get("player_background", "")).upper()
-            if background in legacy_colors:
-                colors["player_background"] = "#B51B69"
-                migrated = True
+            for widget_id in ("standings", "relative"):
+                widget_config = configuration.get(widget_id)
+                if not isinstance(widget_config, dict):
+                    continue
+                colors = widget_config.get("colors")
+                if not isinstance(colors, dict):
+                    continue
+                background = str(
+                    colors.get("player_background", "")
+                ).upper()
+                if background in legacy_colors:
+                    colors["player_background"] = "#B51B69"
+                    migrated = True
         return migrated
 
     def create_driver_panel(self) -> DriverPanelWidget:

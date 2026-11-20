@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.telemetry.models import DriverData, SessionData
 from src.ui.overlay_manager import OverlayManager
-from src.widget.flags.flags_widget import FlagsWidget
+from src.widget.flags.flags_widget import FlagsWidget, RadarWidget
 from src.widget.flags.flags_models import FlagAlert, FlagCar, FlagsSnapshot
 
 
@@ -80,6 +80,12 @@ class FlagsLayoutUnitTests(unittest.TestCase):
             OverlayManager._geometry_minimum_ratios("flags"),
             (0.01, 0.01),
         )
+
+    def test_only_yellow_radar_hides_the_nearest_car_order_number(self) -> None:
+        self.assertFalse(RadarWidget._show_radar_order_badge(1, False, False))
+        self.assertTrue(RadarWidget._show_radar_order_badge(2, False, False))
+        self.assertTrue(RadarWidget._show_radar_order_badge(1, True, False))
+        self.assertTrue(RadarWidget._show_radar_order_badge(1, False, True))
 
     def test_yellow_reopens_after_isolated_host_hid_window(self) -> None:
         widget = FlagsWidget("flags", self._config())
@@ -155,6 +161,30 @@ class FlagsLayoutUnitTests(unittest.TestCase):
         self.assertTrue(widget.blue_card.isHidden())
         self.assertEqual(widget.yellow_radar.cars_data, [yellow_car, blue_car])
         self.assertTrue(widget.blue_ativa)
+        widget.close()
+
+    def test_blue_only_alert_sends_cars_to_blue_radar(self) -> None:
+        widget = FlagsWidget("flags", self._config())
+        blue_car = FlagCar(
+            driver="BLUE",
+            category="HYPER",
+            raw_pos_y=25.0,
+            is_blue_context=True,
+        )
+        widget.snapshot = FlagsSnapshot(
+            blue=FlagAlert(
+                active=True,
+                driver="BLUE",
+                category="HYPER",
+                cars=[blue_car],
+            )
+        )
+
+        widget._render_snapshot()
+
+        self.assertTrue(widget.blue_ativa)
+        self.assertFalse(widget.blue_card.isHidden())
+        self.assertEqual(widget.blue_radar.cars_data, [blue_car])
         widget.close()
 
     def test_compact_distance_panel_keeps_width_and_self_hazard_values(self) -> None:

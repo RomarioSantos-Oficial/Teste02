@@ -253,7 +253,7 @@ class FlagsLogic:
         player_speed = max(0.0, self._float(player, "speed_kmh"))
         blue_window_s = max(
             0.1,
-            float(self.config.get("blue_lookahead_seconds", 3.0)),
+            float(self.config.get("blue_lookahead_seconds", 10.0)),
         )
         candidates: list[FlagCar] = []
         for row in self._drivers(session):

@@ -262,17 +262,6 @@ class RadarWidget(QWidget):
             car_radius,
             car_radius,
         )
-        if self.player_is_yellow_hazard:
-            self._draw_order_badge(
-                painter,
-                center_x,
-                center_y - car_height * 0.55,
-                1,
-                scale,
-                width,
-                height,
-            )
-
         for car in self.cars_data:
             raw_pos_x = float(car.raw_pos_x)
             raw_pos_y = float(car.raw_pos_y)
@@ -371,7 +360,11 @@ class RadarWidget(QWidget):
                 )
             )
             painter.restore()
-            if car.radar_order > 0:
+            if self._show_radar_order_badge(
+                car.radar_order,
+                self.is_blue_radar,
+                car.is_blue_context,
+            ):
                 self._draw_order_badge(
                     painter,
                     pos_x + car_width * 0.30,
@@ -381,6 +374,16 @@ class RadarWidget(QWidget):
                     width,
                     height,
                 )
+
+    @staticmethod
+    def _show_radar_order_badge(
+        order: int,
+        is_blue_radar: bool,
+        is_blue_context: bool,
+    ) -> bool:
+        return order > 0 and (
+            is_blue_radar or is_blue_context or order != 1
+        )
 
     @staticmethod
     def _draw_order_badge(

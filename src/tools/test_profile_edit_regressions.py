@@ -63,10 +63,18 @@ class ProfileEditRegressionTests(unittest.TestCase):
         config = json.loads(factory.read_text(encoding="utf-8"))
         config["widgets"]["standings"]["colors"]["player_background"] = "#111B2B"
         config["defaults"]["standings"]["colors"]["player_background"] = "#5B1239"
+        config["widgets"]["relative"]["colors"]["player_background"] = "#111B2B"
+        config["defaults"]["relative"]["colors"]["player_background"] = "#5B1239"
         config["profiles"]["standard"]["widgets"]["standings"]["colors"][
             "player_background"
         ] = "#111B2B"
+        config["profiles"]["standard"]["widgets"]["relative"]["colors"][
+            "player_background"
+        ] = "#111B2B"
         config["profiles"]["engineer"]["widgets"]["standings"]["colors"][
+            "player_background"
+        ] = "#123456"
+        config["profiles"]["engineer"]["widgets"]["relative"]["colors"][
             "player_background"
         ] = "#123456"
 
@@ -87,8 +95,20 @@ class ProfileEditRegressionTests(unittest.TestCase):
                 "#B51B69",
             )
             self.assertEqual(
+                manager.config_data["widgets"]["relative"]["colors"][
+                    "player_background"
+                ],
+                "#B51B69",
+            )
+            self.assertEqual(
                 manager.config_data["profiles"]["engineer"]["widgets"][
                     "standings"
+                ]["colors"]["player_background"],
+                "#123456",
+            )
+            self.assertEqual(
+                manager.config_data["profiles"]["engineer"]["widgets"][
+                    "relative"
                 ]["colors"]["player_background"],
                 "#123456",
             )

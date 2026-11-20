@@ -25,6 +25,7 @@
   "green_flag_duration_seconds": 3.0,
   "yellow_lookahead_seconds": 10.0,
   "yellow_lookbehind_seconds": 2.0,
+  "blue_lookahead_seconds": 10.0,
   "yellow_max_ahead_m": 900.0,
   "yellow_max_behind_m": 300.0,
   "yellow_hazard_speed_kmh": 15.12,

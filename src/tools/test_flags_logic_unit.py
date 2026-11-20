@@ -159,7 +159,21 @@ class FlagsLogicUnitTests(unittest.TestCase):
         self.assertEqual(alert.cars[0].driver, "CAR")
         self.assertEqual(alert.cars[0].distance, 80.0)
 
-    def test_blue_radar_excludes_car_outside_three_second_window(self) -> None:
+    def test_blue_radar_includes_faster_car_within_ten_second_window(self) -> None:
+        session = self._session()
+        session.drivers[0].flag = 6
+        session.drivers[0].speed_kmh = 150.0
+        session.drivers[1].speed_kmh = 250.0
+        session.drivers[1].lap_distance_m = 750.0
+
+        alert = FlagsLogic({}).get_blue_flag_car_info(session)
+
+        self.assertTrue(alert.active)
+        self.assertEqual(len(alert.cars), 1)
+        self.assertEqual(alert.cars[0].distance, -250.0)
+        self.assertAlmostEqual(alert.cars[0].tempo_gap, 9.0)
+
+    def test_blue_radar_excludes_slower_car_far_behind(self) -> None:
         session = self._session()
         session.drivers[0].flag = 6
         session.drivers[0].position = 8
@@ -170,6 +184,18 @@ class FlagsLogicUnitTests(unittest.TestCase):
 
         self.assertTrue(alert.active)
         self.assertEqual(alert.driver, "BANDEIRA AZUL")
+        self.assertEqual(alert.cars, [])
+
+    def test_blue_radar_excludes_faster_car_outside_ten_second_window(self) -> None:
+        session = self._session()
+        session.drivers[0].flag = 6
+        session.drivers[0].speed_kmh = 150.0
+        session.drivers[1].speed_kmh = 250.0
+        session.drivers[1].lap_distance_m = 0.0
+
+        alert = FlagsLogic({}).get_blue_flag_car_info(session)
+
+        self.assertTrue(alert.active)
         self.assertEqual(alert.cars, [])
 
     def test_flagged_yellow_car_is_not_dropped_by_nearby_alert_window(self) -> None:

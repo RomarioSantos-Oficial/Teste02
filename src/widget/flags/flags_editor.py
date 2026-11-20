@@ -221,6 +221,15 @@ class FlagsEditor(QDialog):
 
         settings = [
             (
+                "blue_lookahead_seconds",
+                "Janela bandeira azul:",
+                1.0,
+                20.0,
+                1.0,
+                10.0,
+                " s",
+            ),
+            (
                 "yellow_lookahead_seconds",
                 "Janela amarela à frente:",
                 1.0,
