@@ -186,8 +186,6 @@ class StandingsLogic:
         self._delta_restore_attempted = False
         self._delta_player_class = ""
         self._delta_menu_since: float | None = None
-        self._estimated_dr_signature: tuple[tuple[Any, ...], ...] | None = None
-        self._estimated_dr_values: dict[int, float] = {}
         if self._delta_history_store is not None and not self._delta_config_enabled:
             self._delta_history_store.delete()
             self._delta_store_empty = True
@@ -226,8 +224,6 @@ class StandingsLogic:
         self._delta_restore_attempted = False
         self._delta_player_class = ""
         self._delta_menu_since = None
-        self._estimated_dr_signature = None
-        self._estimated_dr_values.clear()
 
     def close(self) -> None:
         if self._delta_history_store is not None:
@@ -268,14 +264,6 @@ class StandingsLogic:
             )
             for driver in drivers
         ]
-        if (
-            bool(self.config.get("show_estimated_driver_rank_gain", False))
-            and 10 <= int(getattr(session, "session", 0) or 0) <= 13
-        ):
-            self._apply_cached_driver_rank_gains(rows)
-        else:
-            self._estimated_dr_signature = None
-            self._estimated_dr_values.clear()
         self._apply_lap_states(rows, now)
         session_number = int(getattr(session, "session", 0) or 0)
         player = next((row for row in rows if row.is_player), None)
@@ -1187,11 +1175,6 @@ class StandingsLogic:
             nationality=extra.nationality,
             country_code=extra.country_code,
             badge=extra.badge,
-            driver_rank=extra.driver_rank,
-            driver_rank_progress=extra.driver_rank_progress,
-            safety_rank=extra.safety_rank,
-            safety_rank_progress=extra.safety_rank_progress,
-            estimated_driver_rank_gain=extra.estimated_driver_rank_gain,
             laps=completed_laps,
             display_lap=displayed_lap_number(
                 completed_laps,
@@ -1466,9 +1449,6 @@ class StandingsLogic:
             active_count = sum(
                 1 for row in class_rows if self._is_active_race_car(row)
             )
-            sof_rank, sof_progress, sof_drivers = self._driver_rank_sof(
-                class_rows
-            )
             blocks.append(CategoryBlock(
                 class_name=class_name,
                 class_key=class_key,
@@ -1486,144 +1466,9 @@ class StandingsLogic:
                 # Na corrida o primeiro numero representa somente ativos;
                 # nas demais sessoes representa todos os inscritos da classe.
                 show_count=bool(class_rows),
-                dr_sof_rank=sof_rank,
-                dr_sof_progress=sof_progress,
-                dr_sof_drivers=sof_drivers,
                 rows=selected_rows,
             ))
         return blocks
-
-    @staticmethod
-    def _driver_rank_sof(
-        rows: list[StandingRow],
-    ) -> tuple[str, float | None, int]:
-        tier_base = {
-            "bronze": 0,
-            "silver": 3,
-            "gold": 6,
-            "platinum": 9,
-        }
-        values: list[float] = []
-        for row in rows:
-            match = re.search(
-                r"(bronze|silver|gold|platinum)\s*([1-3])?",
-                str(row.driver_rank or ""),
-                re.IGNORECASE,
-            )
-            if match is None:
-                continue
-            progress = _optional_float(row.driver_rank_progress)
-            if progress is None:
-                progress = 0.0
-            if 0.0 <= progress <= 1.0:
-                progress *= 100.0
-            values.append(
-                tier_base[match.group(1).casefold()]
-                + max(0, int(match.group(2) or 1) - 1)
-                + max(0.0, min(100.0, progress)) / 100.0
-            )
-        if not values:
-            return "", None, 0
-        average = max(0.0, min(11.999, sum(values) / len(values)))
-        whole = int(average)
-        tier_index = whole // 3
-        tier = ("B", "S", "G", "P")[tier_index]
-        subrank = whole % 3 + 1
-        progress = (average - whole) * 100.0
-        return f"{tier}{subrank}", progress, len(values)
-
-    @classmethod
-    def _estimate_driver_rank_gains(cls, rows: list[StandingRow]) -> None:
-        """Preenche um delta local quando RaceControl nao publica a previsao.
-
-        E uma estimativa Elo relativa ao grid da propria classe. Valores que
-        vierem da API sao sempre preservados e continuam tendo prioridade.
-        """
-        grouped: dict[str, list[tuple[StandingRow, float]]] = {}
-        for row in rows:
-            value = cls._driver_rank_value(row)
-            if value is not None:
-                grouped.setdefault(row.class_key, []).append((row, value))
-        for class_rows in grouped.values():
-            if len(class_rows) < 2:
-                continue
-            for row, rating in class_rows:
-                if row.estimated_driver_rank_gain is not None:
-                    continue
-                actual_total = expected_total = 0.0
-                comparisons = 0
-                for opponent, opponent_rating in class_rows:
-                    if opponent.slot_id == row.slot_id:
-                        continue
-                    actual = (
-                        1.0 if row.class_position < opponent.class_position
-                        else 0.0 if row.class_position > opponent.class_position
-                        else 0.5
-                    )
-                    expected = 1.0 / (1.0 + 10.0 ** ((opponent_rating - rating) / 4.0))
-                    actual_total += actual; expected_total += expected; comparisons += 1
-                if comparisons:
-                    # Limite de seis pontos percentuais reduz os saltos com
-                    # grids pequenos; o valor final e identificado como
-                    # estimativa pelo sinal junto ao progresso do DR.
-                    delta = 6.0 * (
-                        actual_total / comparisons - expected_total / comparisons
-                    )
-                    row.estimated_driver_rank_gain = max(-6.0, min(6.0, delta))
-
-    def _apply_cached_driver_rank_gains(
-        self,
-        rows: list[StandingRow],
-    ) -> None:
-        """Evita repetir a comparação quadrática enquanto o grid não muda."""
-        signature = tuple(
-            (
-                row.slot_id,
-                row.class_key,
-                row.class_position,
-                str(row.driver_rank or ""),
-                None
-                if row.driver_rank_progress is None
-                else round(float(row.driver_rank_progress), 3),
-                None
-                if row.estimated_driver_rank_gain is None
-                else round(float(row.estimated_driver_rank_gain), 3),
-            )
-            for row in rows
-        )
-        if signature == self._estimated_dr_signature:
-            for row in rows:
-                if (
-                    row.estimated_driver_rank_gain is None
-                    and row.slot_id in self._estimated_dr_values
-                ):
-                    row.estimated_driver_rank_gain = self._estimated_dr_values[
-                        row.slot_id
-                    ]
-            return
-
-        self._estimate_driver_rank_gains(rows)
-        self._estimated_dr_signature = signature
-        self._estimated_dr_values = {
-            row.slot_id: float(row.estimated_driver_rank_gain)
-            for row in rows
-            if row.estimated_driver_rank_gain is not None
-        }
-
-    @staticmethod
-    def _driver_rank_value(row: StandingRow) -> float | None:
-        match = re.search(
-            r"(bronze|silver|gold|platinum)\s*([1-3])?",
-            str(row.driver_rank or ""), re.IGNORECASE,
-        )
-        if match is None:
-            return None
-        base = {"bronze": 0, "silver": 3, "gold": 6, "platinum": 9}
-        progress = _optional_float(row.driver_rank_progress) or 0.0
-        if 0.0 <= progress <= 1.0:
-            progress *= 100.0
-        subrank = max(1, min(3, int(match.group(2) or 1)))
-        return base[match.group(1).casefold()] + subrank - 1 + max(0.0, min(100.0, progress)) / 100.0
 
     @staticmethod
     def _is_active_race_car(row: StandingRow) -> bool:

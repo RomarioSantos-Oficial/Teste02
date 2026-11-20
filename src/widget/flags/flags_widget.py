@@ -1292,6 +1292,9 @@ class FlagsWidget(QWidget):
                     """
                 )
                 self.blue_ativa = False
+        else:
+            self.yellow_card.hide()
+            self.yellow_ativa = False
 
         # Caso 2: somente azul.
         if blue.active and not yellow.active:

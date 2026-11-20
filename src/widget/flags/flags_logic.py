@@ -67,14 +67,24 @@ class FlagsLogic:
         )
         lookahead = max(
             1.0,
-            float(self.config.get("yellow_lookahead_seconds", 12.0)),
+            min(
+                10.0,
+                float(self.config.get("yellow_lookahead_seconds", 10.0)),
+            ),
         )
         ahead_limit = min(max_ahead, player_speed_ms * lookahead)
+        lookbehind = max(
+            0.0,
+            min(
+                10.0,
+                float(self.config.get("yellow_lookbehind_seconds", 2.0)),
+            ),
+        )
         behind_limit = max(
             0.0,
             min(
-                float(self.config.get("yellow_max_ahead_m", 900.0)),
-                player_speed_ms * lookahead,
+                float(self.config.get("yellow_max_behind_m", 300.0)),
+                player_speed_ms * lookbehind,
             ),
         )
         phase = self._int(session, "game_phase")
@@ -120,6 +130,7 @@ class FlagsLogic:
             candidate_speed_limit = hazard_speed
         player_causing_local_yellow = (
             any_sector_yellow
+            and self._driver_has_local_yellow(player)
             and player_speed < hazard_speed
         )
         candidates: list[FlagCar] = []
@@ -137,7 +148,7 @@ class FlagsLogic:
                 continue
 
             distance = self._signed_track_gap(session, player, row)
-            # Mesmo uma indicação individual precisa estar na janela de 12 s
+            # Mesmo uma indicação individual precisa estar dentro da janela
             # do radar amarelo; fora dela, mantém a regra atual e não polui o HUD.
             if distance >= 0.0:
                 if distance > ahead_limit:
@@ -169,6 +180,8 @@ class FlagsLogic:
 
         candidates.sort(key=lambda car: (car.distance < 0.0, abs(car.distance)))
         if full_course_yellow:
+            if not candidates:
+                return FlagAlert()
             return FlagAlert(
                 active=True,
                 driver="FULL COURSE YELLOW",

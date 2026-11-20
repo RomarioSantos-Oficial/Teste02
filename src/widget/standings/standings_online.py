@@ -81,10 +81,7 @@ def _flat(source: dict[str, Any]) -> dict[str, Any]:
                     "user",
                     "account",
                 }:
-                    # Wrappers de perfil nao fazem parte do nome real do
-                    # campo. Visitar também no nível atual produz, por
-                    # exemplo, ``driverRankRank`` a partir de
-                    # ``metadata.driverRank.rank``.
+                    # Profile wrappers preserve the original field names.
                     visit(child, prefix)
         elif isinstance(value, list):
             for child in value:
@@ -143,36 +140,6 @@ def _percent(value: Any) -> float | None:
     if 0.0 <= number <= 1.0:
         number *= 100.0
     return max(0.0, min(100.0, number))
-
-
-def _rank(values: dict[str, Any], prefix: str) -> str:
-    name = str(
-        _first(
-            values,
-            f"{prefix}Rank",
-            f"{prefix}Name",
-            f"{prefix}Label",
-            f"{prefix}Title",
-            prefix,
-            default="",
-        )
-        or ""
-    ).strip()
-    tier = _first(
-        values,
-        f"{prefix}Tier",
-        f"{prefix}Level",
-        f"{prefix}SubRank",
-        f"{prefix}Division",
-        default=None,
-    )
-    if tier in (None, ""):
-        return name
-    try:
-        tier_text = str(int(float(tier)))
-    except (TypeError, ValueError):
-        tier_text = str(tier).strip()
-    return f"{name} {tier_text}".strip()
 
 
 class HttpJson:
@@ -355,11 +322,6 @@ class LocalStandingsEnrichment:
                     "nationality": item.nationality,
                     "country_code": item.country_code,
                     "badge": item.badge,
-                    "driver_rank": item.driver_rank,
-                    "driver_rank_progress": item.driver_rank_progress,
-                    "safety_rank": item.safety_rank,
-                    "safety_rank_progress": item.safety_rank_progress,
-                    "estimated_driver_rank_gain": item.estimated_driver_rank_gain,
                     "tyre_compound": item.tyre_compound,
                     "energy_percent": item.energy_percent,
                     "energy_remaining_fraction": item.energy_remaining_fraction,
@@ -656,8 +618,6 @@ class LocalStandingsEnrichment:
             marker_fields = (
                 "nationality", "countryCode", "badge", "driverBadge",
                 "contactBadge", "contactBadgeName", "reputationBadge",
-                "driverRank", "driverRankRank", "safetyRank",
-                "safetyRankRank", "safeRank",
                 "vehicleName", "teamName", "carNumber", "manufacturer",
                 "batteryChargeFraction", "virtualEnergy", "damage", "integrity",
                 "lapInvalidated", "lastLapInvalidated", "lastLapValid",
@@ -668,8 +628,6 @@ class LocalStandingsEnrichment:
                 useful_cache_fields = (
                     "nationality", "countryCode", "badge", "driverBadge",
                     "contactBadge", "contactBadgeName", "reputationBadge",
-                    "driverRank", "driverRankRank", "safetyRank",
-                    "safetyRankRank", "safeRank",
                     "vehicleName", "teamName", "tireCompound",
                     "tyreCompound", "batteryChargeFraction",
                     "virtualEnergy", "damage", "integrity",
@@ -722,47 +680,6 @@ class LocalStandingsEnrichment:
             if badge.casefold() in {"", "none", "null", "undefined", "-"}:
                 badge = self._badge_from_roles(record) or current.badge
             current.badge = badge
-            driver_rank = _rank(values, "driverRank")
-            safety_rank = _rank(values, "safetyRank") or _rank(values, "safeRank")
-            current.driver_rank = driver_rank or current.driver_rank
-            current.safety_rank = safety_rank or current.safety_rank
-            safety_progress = _percent(
-                _first(
-                    values,
-                    "safetyRankProgress",
-                    "safety_rank_progress",
-                    "safetyRankPercentage",
-                    "safetyRankPercent",
-                    "safeRankProgress",
-                    "srProgress",
-                    default=None,
-                )
-            )
-            if safety_progress is not None:
-                current.safety_rank_progress = safety_progress
-            progress = _percent(
-                _first(
-                    values,
-                    "driverRankProgress",
-                    "driverRankPercentage",
-                    "driverRankPercent",
-                    "rankProgress",
-                    default=None,
-                )
-            )
-            if progress is not None:
-                current.driver_rank_progress = progress
-            estimated_gain = _float(
-                _first(
-                    values,
-                    "estimatedDriverRankGain",
-                    "driverRankGain",
-                    "estimatedRankGain",
-                    default=None,
-                )
-            )
-            if estimated_gain is not None:
-                current.estimated_driver_rank_gain = estimated_gain
             front = str(_first(values, "frontTireCompound", "frontTyreCompound", default="") or "")
             rear = str(_first(values, "rearTireCompound", "rearTyreCompound", default="") or "")
             compound = str(_first(values, "tireCompound", "tyreCompound", "compound", default="") or "")

@@ -19,8 +19,9 @@ def main() -> None:
         "show_blue_flag": True,
         "show_startlights": True,
         "yellow_lookahead_seconds": 10.0,
+        "yellow_lookbehind_seconds": 2.0,
         "yellow_max_ahead_m": 900.0,
-        "yellow_max_behind_m": 100.0,
+        "yellow_max_behind_m": 300.0,
         "yellow_hazard_speed_kmh": 15.12,
     }
     logic = FlagsLogic(config)

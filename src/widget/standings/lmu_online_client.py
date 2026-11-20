@@ -105,7 +105,7 @@ class LMUOnlineIdentityClient:
             self._index = self._build_index(snapshot.identities)
 
     def hide_split(self) -> None:
-        """Oculta o valor sem descartar ranks e paises ja recebidos."""
+        """Oculta o split sem descartar as identidades locais ja recebidas."""
         with self._lock:
             self._snapshot.split_label = ""
 
@@ -170,7 +170,7 @@ class LMUOnlineIdentityClient:
                     # Marca imediatamente o evento observado. A consulta
                     # RaceOS pode levar mais que os dois segundos da sonda;
                     # comparar com o snapshot ainda vazio cancelava cada
-                    # worker antes que DR/SR/pais/split fossem publicados.
+                    # worker antes que o split fosse publicado.
                     self._observed_event_id = current_event_id
 
         with self._lock:
@@ -183,7 +183,7 @@ class LMUOnlineIdentityClient:
                 event_for_split = current_event_id or self._observed_event_id
                 if event_for_split:
                     self._split_by_event_id.pop(event_for_split, None)
-                # Mantem DR/SR/paises, mas remove o split antigo ate a
+                # Mantem os dados locais, mas remove o split antigo ate a
                 # verificacao unica da nova sessao terminar.
                 self._snapshot.split_label = ""
                 self._last_refresh = 0.0
@@ -326,23 +326,6 @@ class LMUOnlineIdentityClient:
         local_identities = self._identities_from_payloads(
             payloads.values(), source="LMU REST local"
         )
-        session_driver_names = [
-            str(getattr(driver, "driver_name", "") or "").strip()
-            for driver in list(getattr(session, "drivers", []) or [])
-            if str(getattr(driver, "driver_name", "") or "").strip()
-        ]
-        session_driver_names.extend(
-            self._driver_names_from_teams(payloads.get("teams"))
-        )
-        session_driver_names = list(
-            dict.fromkeys(name for name in session_driver_names if name)
-        )
-        if not session_driver_names:
-            session_driver_names = [
-                item.display_name
-                for item in local_identities
-                if item.display_name
-            ]
         event_id = self._find_first_string_by_keys(
             payloads,
             {
@@ -370,26 +353,21 @@ class LMUOnlineIdentityClient:
             event_id = ""
             split_label = ""
 
-        cloud_identities: list[OnlineDriverIdentity] = []
         cloud_split_label = ""
         cloud_error = ""
         cloud_available = False
-        if (
-            bool(self.config.get("use_cloud_profiles", False))
-            and session_driver_names
-        ):
+        if bool(self.config.get("use_cloud_profiles", False)) and event_id:
             try:
-                cloud_identities, cloud_split_label = self._fetch_cloud_identities(
+                cloud_split_label = self._fetch_cloud_split(
                     local_base=local_base,
-                    driver_names=session_driver_names,
                     event_id=event_id,
                     timeout=timeout,
                 )
-                cloud_available = bool(cloud_identities)
+                cloud_available = bool(cloud_split_label)
             except Exception as exc:
                 cloud_error = self._short_error(exc)
 
-        identities = self._merge_identities(local_identities, cloud_identities)
+        identities = local_identities
         # Quando a consulta RaceOS esta habilitada, somente a resposta nova
         # de `my-split` pode autorizar a exibicao. O REST local frequentemente
         # conserva `splitLabel` da sala anterior durante a transicao; usar o
@@ -400,7 +378,7 @@ class LMUOnlineIdentityClient:
         if not split_allowed:
             split_label = ""
         if cloud_available:
-            source_message = "LMU REST + perfis online"
+            source_message = "LMU REST + RaceOS split"
         elif local_available:
             source_message = "LMU REST local"
         else:
@@ -410,7 +388,7 @@ class LMUOnlineIdentityClient:
         if not local_available and errors:
             messages.append("REST local indisponível: " + "; ".join(errors[:2]))
         if cloud_error:
-            messages.append("Perfis online: " + cloud_error)
+            messages.append("RaceOS split: " + cloud_error)
 
         return OnlineSnapshot(
             local_api_available=local_available,
@@ -424,14 +402,14 @@ class LMUOnlineIdentityClient:
             identities=identities,
         )
 
-    def _fetch_cloud_identities(
+    def _fetch_cloud_split(
         self,
         *,
         local_base: str,
-        driver_names: list[str],
         event_id: str,
         timeout: float,
-    ) -> tuple[list[OnlineDriverIdentity], str]:
+    ) -> str:
+        """Fetch only the session split; no per-driver profiles are requested."""
         ticket_payload = self._request_json(
             local_base + "/rest/profile/getAuthSessionTicket",
             timeout=timeout,
@@ -443,100 +421,52 @@ class LMUOnlineIdentityClient:
         if not ticket and isinstance(ticket_payload, str):
             ticket = ticket_payload.strip()
         if not ticket:
-            raise RuntimeError("LMU não retornou authSessionTicket")
+            raise RuntimeError("LMU did not return authSessionTicket")
 
         cloud_base = str(
-            self.config.get(
-                "raceos_base_url",
-                "https://raceos.gg",
-            )
+            self.config.get("raceos_base_url", "https://raceos.gg")
         ).rstrip("/")
         auth_response = self._request_json(
             cloud_base + "/authenticate",
             method="POST",
-            body={
-                "token": ticket,
-                "game": "lmu",
-                "platform": "steam",
-            },
+            body={"token": ticket, "game": "lmu", "platform": "steam"},
             timeout=timeout,
         )
         session_token = self._find_first_string_by_keys(
             auth_response, {"accesstoken", "access_token"}
         )
         if not session_token:
-            raise RuntimeError("autenticação online recusada")
+            raise RuntimeError("online authentication rejected")
 
+        event_type = str(
+            self.config.get("online_event_type", "daily") or "daily"
+        ).strip().casefold()
+        if event_type not in {"daily", "weekly"}:
+            event_type = "daily"
+        with self._lock:
+            split_label = self._split_by_event_id.get(event_id, "")
+        if split_label:
+            return split_label
+
+        split_url = f"{cloud_base}/api/v1/event/my-split/{event_type}/{event_id}"
         headers = {"Game-Authorization": "Bearer " + session_token}
-        profile_payloads: list[Any] = []
-        if isinstance(auth_response, dict) and auth_response.get("player"):
-            profile_payloads.append(auth_response.get("player"))
-        else:
-            profile_payloads.append(
-                self._request_json(
-                    cloud_base + "/api/v1/player",
+        for attempt in range(5):
+            try:
+                split_payload = self._request_json(
+                    split_url,
                     headers=headers,
                     timeout=timeout,
                 )
-            )
-
-        usernames = sorted(
-            {
-                candidate
-                for value in driver_names
-                for candidate in (value, self._strip_driver_hash_suffix(value))
-                if candidate
-            }
-        )
-        for start in range(0, len(usernames), 40):
-            profile_payloads.append(
-                self._request_json(
-                    cloud_base + "/api/v1/players",
-                    method="POST",
-                    body={"usernames": usernames[start : start + 40]},
-                    headers=headers,
-                    timeout=timeout,
-                )
-            )
-        split_label = ""
-        if event_id:
-            with self._lock:
-                split_label = self._split_by_event_id.get(event_id, "")
-            event_type = str(
-                self.config.get("online_event_type", "daily") or "daily"
-            ).strip().casefold()
-            if event_type not in {"daily", "weekly"}:
-                event_type = "daily"
-            if not split_label:
-                split_url = (
-                    f"{cloud_base}/api/v1/event/my-split/"
-                    f"{event_type}/{event_id}"
-                )
-                for attempt in range(5):
-                    try:
-                        split_payload = self._request_json(
-                            split_url,
-                            headers=headers,
-                            timeout=timeout,
-                        )
-                        split_label = self._split_label_from_payload(split_payload)
-                    except Exception:
-                        split_label = ""
-                    if split_label:
-                        break
-                    if attempt < 4:
-                        time.sleep(1.0)
-                # Ausencia de resposta nao prova que existe somente um split.
-                # Mantemos vazio para uma tentativa futura, sem fabricar 1/1.
-                if split_label:
-                    with self._lock:
-                        self._split_by_event_id[event_id] = split_label
-
-        identities = self._identities_from_payloads(
-            profile_payloads,
-            source="LMU RaceOS",
-        )
-        return identities, split_label
+                split_label = self._split_label_from_payload(split_payload)
+            except Exception:
+                split_label = ""
+            if split_label:
+                with self._lock:
+                    self._split_by_event_id[event_id] = split_label
+                return split_label
+            if attempt < 4:
+                time.sleep(1.0)
+        return ""
 
     @staticmethod
     def _make_split_session_signature(session: Any | None) -> str:
@@ -606,15 +536,51 @@ class LMUOnlineIdentityClient:
                     identities.append(identity)
         return self._merge_identities(identities, [])
 
+    @staticmethod
+    def _first_value(mapping: dict[str, Any], keys: tuple[str, ...]) -> Any:
+        lower = {str(key).casefold(): value for key, value in mapping.items()}
+        for key in keys:
+            value = lower.get(key.casefold())
+            if value not in (None, ""):
+                return value
+        return None
+
+    @classmethod
+    def _first_text(cls, mapping: dict[str, Any], keys: tuple[str, ...]) -> str:
+        value = cls._decode_jsonish(cls._first_value(mapping, keys))
+        if value in (None, ""):
+            return ""
+        if isinstance(value, dict):
+            for key in ("name", "label", "value", "code"):
+                nested = value.get(key)
+                if nested not in (None, ""):
+                    return str(nested).strip()
+            return ""
+        return str(value).strip()
+
+    @classmethod
+    def _first_number(cls, mapping: dict[str, Any], keys: tuple[str, ...]) -> float | None:
+        value = cls._first_value(mapping, keys)
+        if isinstance(value, dict):
+            value = cls._first_value(value, ("value", "progress", "amount"))
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    @classmethod
+    def _first_int(cls, mapping: dict[str, Any], keys: tuple[str, ...]) -> int | None:
+        value = cls._first_number(mapping, keys)
+        return int(value) if value is not None else None
+
     def _identity_from_record(
         self,
         record: dict[str, Any],
         source: str,
     ) -> OnlineDriverIdentity | None:
         merged = dict(record)
-        # Perfis Nakama guardam profile/driverRank/safetyRank dentro de
-        # `metadata`, que por sua vez costuma ser uma string JSON. Duas
-        # passagens incluem também os objetos que surgem após decodificá-la.
+        # Nested profile metadata can be a JSON string; decode it before
+        # reading identity, country, and badge fields.
         for _ in range(2):
             for key in (
                 "profile", "metadata", "properties", "data", "driver",
@@ -634,32 +600,6 @@ class LMUOnlineIdentityClient:
         steam_id = self._first_text(
             merged, ("steamId", "steamID", "steam_id", "platformId")
         )
-        driver_rank_raw = self._first_value(merged, ("driverRank", "driver_rank"))
-        safety_rank_raw = self._first_value(
-            merged, ("safetyRank", "safeRank", "safety_rank", "sr")
-        )
-        driver_rank = self._format_rank(driver_rank_raw)
-        safety_rank = self._format_rank(safety_rank_raw)
-        progress = self._first_number(
-            merged,
-            ("driverRankProgress", "driver_rank_progress", "rankProgress"),
-        )
-        if progress is None and isinstance(driver_rank_raw, dict):
-            progress = self._first_number(driver_rank_raw, ("progress", "rankProgress"))
-        safety_progress = self._first_number(
-            merged,
-            (
-                "safetyRankProgress", "safety_rank_progress",
-                "safetyRankPercentage", "safetyRankPercent",
-                "safeRankProgress", "srProgress",
-            ),
-        )
-        if safety_progress is None and isinstance(safety_rank_raw, dict):
-            safety_progress = self._first_number(
-                safety_rank_raw,
-                ("progress", "rankProgress", "percentage", "percent"),
-            )
-
         nationality = self._first_text(
             merged, ("nationality", "countryCode", "country_code", "country")
         )
@@ -668,14 +608,6 @@ class LMUOnlineIdentityClient:
         )
         incidents = self._first_int(
             merged, ("incidents", "incidentCount", "incident_count")
-        )
-        estimated_gain = self._first_number(
-            merged,
-            (
-                "estimatedDriverRankGain",
-                "estimated_driver_rank_gain",
-                "driverRankGain",
-            ),
         )
         team_name = self._first_text(merged, ("teamName", "team_name", "team"))
         car_number = self._first_text(
@@ -688,8 +620,6 @@ class LMUOnlineIdentityClient:
         has_identity = any((display_name, username, steam_id))
         has_useful_data = any(
             (
-                driver_rank,
-                safety_rank,
                 nationality,
                 badge,
                 team_name,
@@ -707,14 +637,9 @@ class LMUOnlineIdentityClient:
             team_name=team_name,
             car_number=car_number,
             vehicle_class=vehicle_class,
-            driver_rank=driver_rank,
-            driver_rank_progress=progress,
-            safety_rank=safety_rank,
-            safety_rank_progress=safety_progress,
             nationality=nationality.upper() if len(nationality.strip()) <= 3 else nationality,
             badge=badge,
             incidents=incidents,
-            estimated_driver_rank_gain=estimated_gain,
             source=source,
             raw=merged,
         )
@@ -752,14 +677,9 @@ class LMUOnlineIdentityClient:
                 "team_name",
                 "car_number",
                 "vehicle_class",
-                "driver_rank",
-                "driver_rank_progress",
-                "safety_rank",
-                "safety_rank_progress",
                 "nationality",
                 "badge",
                 "incidents",
-                "estimated_driver_rank_gain",
                 "source",
             ):
                 value = getattr(identity, field_name)
@@ -1065,86 +985,6 @@ class LMUOnlineIdentityClient:
             for value in decoded.values()
             if isinstance(value, (dict, list, str))
         )
-
-    @classmethod
-    def _driver_names_from_teams(cls, payload: Any) -> list[str]:
-        """Extrai os nomes que o LMU publica como chaves de ``drivers``."""
-        decoded = cls._decode_jsonish(payload)
-        if not isinstance(decoded, dict):
-            return []
-        result: list[str] = []
-        for key, value in decoded.items():
-            if str(key).casefold() == "drivers":
-                roster = cls._decode_jsonish(value)
-                if isinstance(roster, dict):
-                    result.extend(
-                        str(name).strip()
-                        for name in roster
-                        if str(name).strip()
-                    )
-                elif isinstance(roster, list):
-                    for record in roster:
-                        if isinstance(record, dict):
-                            name = cls._first_text(
-                                record,
-                                (
-                                    "driverName",
-                                    "displayName",
-                                    "username",
-                                    "name",
-                                ),
-                            )
-                            if name:
-                                result.append(name)
-            elif isinstance(value, (dict, list, str)):
-                result.extend(cls._driver_names_from_teams(value))
-        return list(dict.fromkeys(result))
-
-    @staticmethod
-    def _first_value(mapping: dict[str, Any], keys: tuple[str, ...]) -> Any:
-        lower = {str(key).casefold(): value for key, value in mapping.items()}
-        for key in keys:
-            value = lower.get(key.casefold())
-            if value not in (None, ""):
-                return value
-        return None
-
-    @classmethod
-    def _first_text(cls, mapping: dict[str, Any], keys: tuple[str, ...]) -> str:
-        value = cls._decode_jsonish(cls._first_value(mapping, keys))
-        if value in (None, ""):
-            return ""
-        if isinstance(value, dict):
-            for key in ("name", "label", "value", "code"):
-                nested = value.get(key)
-                if nested not in (None, ""):
-                    return str(nested).strip()
-            return ""
-        return str(value).strip()
-
-    @classmethod
-    def _first_number(cls, mapping: dict[str, Any], keys: tuple[str, ...]) -> float | None:
-        value = cls._first_value(mapping, keys)
-        if isinstance(value, dict):
-            value = cls._first_value(value, ("value", "progress", "amount"))
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return None
-
-    @classmethod
-    def _first_int(cls, mapping: dict[str, Any], keys: tuple[str, ...]) -> int | None:
-        value = cls._first_number(mapping, keys)
-        return int(value) if value is not None else None
-
-    @classmethod
-    def _format_rank(cls, value: Any) -> str:
-        value = cls._decode_jsonish(value)
-        if isinstance(value, dict):
-            rank = cls._first_text(value, ("rank", "name", "label", "code"))
-            tier = cls._first_int(value, ("tier", "level"))
-            return f"{rank} {tier}" if rank and tier is not None else rank
-        return "" if value in (None, "") else str(value).strip()
 
     @staticmethod
     def _short_error(error: Exception) -> str:

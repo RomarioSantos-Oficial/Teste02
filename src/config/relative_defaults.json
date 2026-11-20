@@ -1,8 +1,14 @@
 {
   "enabled": false,
   "relative_mode": true,
-  "position": {"x": 0.02, "y": 0.25},
-  "size": {"width": 0.58, "height": 0.50},
+  "position": {
+    "x": 0.02,
+    "y": 0.25
+  },
+  "size": {
+    "width": 0.58,
+    "height": 0.5
+  },
   "show_global_header": false,
   "show_header_split": true,
   "show_column_legend": false,
@@ -13,6 +19,5 @@
   "show_laps": false,
   "show_best_lap": false,
   "show_last_lap": false,
-  "show_gap": true,
-  "show_driver_rank_progress": false
+  "show_gap": true
 }

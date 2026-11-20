@@ -65,9 +65,6 @@ class StandingsWidget(QWidget):
         ("driver", 105.0),
         ("pit", 90.0),
         ("brand", 72.0),
-        ("dr", 110.0),
-        ("sr", 88.0),
-        ("gain_dr", 76.0),
         ("number", 58.0),
         ("laps", 70.0),
         ("best", 140.0),
@@ -240,12 +237,6 @@ class StandingsWidget(QWidget):
         # outras colunas para continuar cabendo na largura anterior.
         configured = self.config.get("column_widths", {})
         enabled = self._enabled_columns()
-        gain_factor = (
-            145.0 / 110.0
-            if bool(self.config.get("show_estimated_driver_rank_gain", False))
-            and self._has_estimated_dr()
-            else 1.0
-        )
         # A referência precisa incluir todas as colunas. Quando ela era
         # calculada apenas com as colunas ativas, ligar SR mantinha a mesma
         # largura externa e comprimía/ocultava o conteúdo.
@@ -253,11 +244,10 @@ class StandingsWidget(QWidget):
         for key, value in self.BASE_COLUMNS:
             if not enabled.get(key, True):
                 continue
-            multiplier = gain_factor if key in {"dr", "sr"} else 1.0
             configured_total += self._effective_column_width(
                 key,
                 float(configured.get(key, value)),
-            ) * multiplier
+            )
         horizontal_margin = max(
             2.0,
             float(self.config.get("panel_margin", 8.0)) * self._scale,
@@ -303,21 +293,14 @@ class StandingsWidget(QWidget):
     def column_width_total(self) -> float:
         configured = self.config.get("column_widths", {})
         enabled = self._enabled_columns()
-        gain_factor = (
-            145.0 / 110.0
-            if bool(self.config.get("show_estimated_driver_rank_gain", False))
-            and self._has_estimated_dr()
-            else 1.0
-        )
         total = 0.0
         for key, default_width in self.BASE_COLUMNS:
             if not enabled.get(key, True):
                 continue
-            multiplier = gain_factor if key in {"dr", "sr"} else 1.0
             total += self._effective_column_width(
                 key,
                 float(configured.get(key, default_width)),
-            ) * multiplier
+            )
         return max(1.0, total)
 
     def _effective_column_width(self, key: str, configured_width: float) -> float:
@@ -328,21 +311,6 @@ class StandingsWidget(QWidget):
         samples: dict[str, tuple[str, float]] = {
             "position": ("99", .76),
             "change": ("99 ▲", .62),
-            "dr": (
-                "DR B3 100% +100%"
-                if bool(self.config.get("show_estimated_driver_rank_gain", False))
-                else "DR B3 100%",
-                .50,
-            ),
-            # SR usa a mesma base geométrica do DR. Mesmo quando a API não
-            # fornece progresso de SR, o terceiro bloco "--" preserva o
-            # alinhamento e a largura entre as duas colunas.
-            "sr": (
-                "SR G3 100% +100%"
-                if bool(self.config.get("show_estimated_driver_rank_gain", False))
-                else "SR G3 100%",
-                .50,
-            ),
             "number": ("999", .68),
             "laps": ("999", .70),
             "pit": ("Pit 999s", .54),
@@ -481,8 +449,6 @@ class StandingsWidget(QWidget):
         metadata, source, _ = self.enrichment.snapshot(driver_names)
         snapshot = self.online_client.snapshot()
         metadata = self._merge_online_metadata(drivers, metadata)
-        if snapshot.cloud_available:
-            source = "RACECONTROL"
         view = self.logic.build(
             self.session,
             metadata,
@@ -566,20 +532,6 @@ class StandingsWidget(QWidget):
                 if len(nationality) in (2, 3):
                     current.country_code = nationality.upper()
             current.badge = identity.badge or current.badge
-            current.driver_rank = identity.driver_rank or current.driver_rank
-            if identity.driver_rank_progress is not None:
-                progress = float(identity.driver_rank_progress)
-                current.driver_rank_progress = progress * 100.0 if 0.0 <= progress <= 1.0 else progress
-            current.safety_rank = identity.safety_rank or current.safety_rank
-            if identity.safety_rank_progress is not None:
-                progress = float(identity.safety_rank_progress)
-                current.safety_rank_progress = (
-                    progress * 100.0 if 0.0 <= progress <= 1.0 else progress
-                )
-            if identity.estimated_driver_rank_gain is not None:
-                current.estimated_driver_rank_gain = float(
-                    identity.estimated_driver_rank_gain
-                )
             current.source = identity.source or current.source
             metadata[key] = current
         for current in metadata.values():
@@ -864,8 +816,7 @@ class StandingsWidget(QWidget):
         )
         color = QColor(category.color)
         gap = max(3.0, 6.0 * self._scale)
-        # Todos os blocos visiveis recebem o mesmo peso. Com Categoria,
-        # Pilotos, Voltas e SOF presentes, cada bloco ocupa 25% da linha.
+        # Categoria, pilotos e volta dividem a faixa em blocos iguais.
         equal_width_weight = 1.0
         definitions: list[tuple[str, float, str]] = [
             ("class", equal_width_weight, category.class_name)
@@ -876,19 +827,12 @@ class StandingsWidget(QWidget):
             )
         lap_label = f"🏁  {category.current_lap}/{category.total_laps_text}"
         definitions.append(("lap", equal_width_weight, lap_label))
-        has_sof = bool(
-            category.dr_sof_rank and category.dr_sof_progress is not None
-        )
-        if has_sof:
-            definitions.append(("sof", equal_width_weight, ""))
-
         available = max(
             1.0,
             rect.width() - gap * max(0, len(definitions) - 1),
         )
         weight_total = sum(weight for _key, weight, _text in definitions) or 1.0
         boxes: list[tuple[QRectF, str]] = []
-        sof_box = None
         x = rect.left()
         for index, (key, weight, text) in enumerate(definitions):
             width = available * weight / weight_total
@@ -900,10 +844,7 @@ class StandingsWidget(QWidget):
                 max(1.0, width),
                 rect.height() - 3 * self._scale,
             )
-            if key == "sof":
-                sof_box = box
-            else:
-                boxes.append((box, text))
+            boxes.append((box, text))
             x += width + gap
         base_category_font = self._section_font(
             "category_header_font_size", 18.0, rect
@@ -936,14 +877,6 @@ class StandingsWidget(QWidget):
                 font.setPixelSize(font.pixelSize() - 1)
             painter.setFont(font)
             painter.drawText(target, Qt.AlignmentFlag.AlignCenter, text)
-        if sof_box is not None:
-            self._draw_rank(
-                painter,
-                sof_box,
-                category.dr_sof_rank,
-                category.dr_sof_progress,
-                prefix="SOF DR",
-            )
         painter.setPen(QPen(color, max(1.0, 3.0 * self._scale)))
         painter.drawLine(rect.bottomLeft(), rect.bottomRight())
         self._column_content_scale = previous_content_scale
@@ -985,7 +918,6 @@ class StandingsWidget(QWidget):
         painter.drawRect(rect)
         labels = {
             "position": "P", "change": "+/-", "flag": "PAÍS", "badge": "BADGE",
-            "dr": "DR", "sr": "SR", "gain_dr": "ΔDR",
             "driver": "PILOTO", "brand": "MAR", "number": "#", "laps": "VLT",
             "pit": "PIT", "best": "BEST", "last": "LAST", "interval": "INT", "delta": "DELTA", "gap": "GAP", "track_limits": "PEN",
             "penalty": "INFO",
@@ -1250,39 +1182,6 @@ class StandingsWidget(QWidget):
                 painter.setBrush(color)
                 painter.drawRect(target)
                 self._text(painter, target, label, 0.42, True)
-        elif key == "dr":
-            self._draw_rank(
-                painter,
-                rect,
-                row.driver_rank,
-                row.driver_rank_progress,
-                row.estimated_driver_rank_gain,
-            )
-        elif key == "sr":
-            self._draw_rank(
-                painter,
-                rect,
-                row.safety_rank,
-                row.safety_rank_progress,
-                prefix="SR",
-            )
-        elif key == "gain_dr":
-            if row.estimated_driver_rank_gain is not None:
-                gain = float(row.estimated_driver_rank_gain)
-                color = QColor(
-                    colors.get(
-                        "position_gain" if gain >= 0 else "position_loss",
-                        "#008E16" if gain >= 0 else "#E52B35",
-                    )
-                )
-                self._text(
-                    painter,
-                    rect,
-                    f"{gain:+.1f}",
-                    0.58,
-                    True,
-                    color,
-                )
         elif key == "driver":
             target = rect.adjusted(8 * self._scale, 0, -6 * self._scale, 0)
             painter.setFont(self._row_font(row.is_player))
@@ -1714,178 +1613,6 @@ class StandingsWidget(QWidget):
                 color = colors.get("damage_low", "#FFFFFF")
         self._text(painter, rect, f"{value:.1f}%" if kind == "energy" else f"{value:.0f}%", 0.68, True, QColor(color))
 
-    def _draw_rank(
-        self,
-        painter: QPainter,
-        rect: QRectF,
-        rank: str,
-        progress: float | None = None,
-        estimated_gain: float | None = None,
-        prefix: str = "DR",
-    ) -> None:
-        label = self._rank_short(rank)
-        if not label:
-            self._text(
-                painter,
-                rect,
-                "--",
-                0.52,
-                True,
-                QColor(self.config.get("colors", {}).get("muted", "#A7AFBA")),
-            )
-            return
-        colors = self.config.get("colors", {})
-        rank_color = QColor(self._rank_color(rank))
-        dark = QColor(colors.get("rank_cell_background", "#10141C"))
-        muted = QColor(colors.get("muted", "#A7AFBA"))
-        if prefix == "SOF DR":
-            # No cabeçalho, o SOF deve preencher integralmente a célula.
-            cell = QRectF(rect)
-        else:
-            padding = max(1.0, 2.0 * self._scale)
-            cell = rect.adjusted(
-                padding,
-                1 * self._scale,
-                -padding,
-                -1 * self._scale,
-            )
-
-        progress_text = "--"
-        if progress is not None:
-            value = float(progress)
-            if 0.0 <= value <= 1.0:
-                value *= 100.0
-            progress_text = self._format_rank_percent(value)
-
-        gain_text = ""
-        if (
-            estimated_gain is not None
-            and bool(
-                self.config.get("show_estimated_driver_rank_gain", False)
-            )
-        ):
-            gain_value = float(estimated_gain)
-            gain_text = self._format_rank_percent(gain_value, signed=True)
-
-        # Layout compacto inspirado no TinyPedal: DR | S1 | 43% | -5%.
-        # Somente o bloco do nivel recebe a cor do rank; nao ha barra inferior.
-        prefix_weight = 0.42 if prefix == "SOF DR" else 0.23
-        parts: list[tuple[str, float, QColor, QColor]] = [
-            (prefix, prefix_weight, dark, muted),
-            (label, 0.25, rank_color, QColor("#101010")),
-            (progress_text, 0.29, dark, QColor("#FFFFFF")),
-        ]
-        if gain_text:
-            gain = float(estimated_gain or 0.0)
-            gain_color = QColor(
-                colors.get(
-                    "position_gain" if gain >= 0.0 else "position_loss",
-                    "#008E16" if gain >= 0.0 else "#E52B35",
-                )
-            )
-            parts.append((gain_text, 0.26, dark, gain_color))
-
-        rank_font: QFont | None = None
-        if prefix == "SOF DR":
-            part_widths = [weight for _, weight, _, _ in parts]
-        else:
-            # Mede cada parte com a fonte uniforme da linha. Se a coluna
-            # estiver estreita demais, reduz DR/SR como um conjunto (nunca
-            # cada pedaco separadamente) para impedir texto cortado.
-            rank_font = self._row_font(True)
-
-            def measured_widths() -> list[float]:
-                metrics = QFontMetrics(rank_font)
-                padding = max(4.0, 6.0 * self._scale)
-                return [
-                    max(1.0, metrics.horizontalAdvance(text) + padding)
-                    for text, _weight, _background, _foreground in parts
-                ]
-
-            part_widths = measured_widths()
-            natural_width = sum(part_widths)
-            if natural_width > cell.width() and rank_font.pixelSize() > 7:
-                fitted_size = max(
-                    7,
-                    int(rank_font.pixelSize() * cell.width() / natural_width),
-                )
-                rank_font.setPixelSize(fitted_size)
-                part_widths = measured_widths()
-
-        total = sum(part_widths) or 1.0
-        x = cell.left()
-        for index, (text, _weight, background, foreground) in enumerate(parts):
-            width = cell.width() * part_widths[index] / total
-            if index == len(parts) - 1:
-                width = cell.right() - x
-            part_rect = QRectF(x, cell.top(), width, cell.height())
-            painter.setPen(QPen(QColor("#313744"), max(0.5, self._scale)))
-            painter.setBrush(background)
-            painter.drawRect(part_rect)
-            if prefix == "SOF DR":
-                # O SOF pertence ao cabecalho da categoria. Usa a mesma
-                # fonte e o mesmo tamanho-base de Categoria/Pilotos/Voltas,
-                # reduzindo somente se uma das partes nao couber.
-                font = self._section_font(
-                    "category_header_font_size", 18.0, part_rect
-                )
-                font.setBold(True)
-                target = part_rect.adjusted(
-                    3 * self._scale, 0, -3 * self._scale, 0
-                )
-                while (
-                    font.pixelSize() > 7
-                    and QFontMetrics(font).horizontalAdvance(text)
-                    > max(1.0, target.width())
-                ):
-                    font.setPixelSize(font.pixelSize() - 1)
-                painter.setFont(font)
-                painter.setPen(foreground)
-                painter.drawText(target, Qt.AlignmentFlag.AlignCenter, text)
-            else:
-                target = part_rect.adjusted(
-                    2 * self._scale, 0, -2 * self._scale, 0
-                )
-                painter.setFont(rank_font or self._row_font(True))
-                painter.setPen(foreground)
-                painter.drawText(target, Qt.AlignmentFlag.AlignCenter, text)
-            x += width
-
-    @staticmethod
-    def _format_rank_percent(value: float, *, signed: bool = False) -> str:
-        value = max(-100.0 if signed else 0.0, min(100.0, float(value)))
-        spec = "+.1f" if signed else ".1f"
-        return format(value, spec).rstrip("0").rstrip(".") + "%"
-
-    @staticmethod
-    def _rank_short(rank: str) -> str:
-        text = str(rank or "").strip()
-        if not text:
-            return ""
-        match = re.search(
-            r"(bronze|silver|gold|platinum)\s*([1-3])?",
-            text,
-            re.IGNORECASE,
-        )
-        if not match:
-            return text[:4].upper()
-        return match.group(1)[0].upper() + (match.group(2) or "")
-
-    def _rank_color(self, rank: str) -> str:
-        text = str(rank or "").strip().casefold()
-        colors = self.config.get("colors", {})
-        # SOF já chega no formato compacto (B1/S1/G1/P1), enquanto as
-        # células dos pilotos normalmente recebem Bronze/Silver/Gold/etc.
-        compact = re.match(r"^(?:dr\s*)?([bsgp])\s*[1-3]?\b", text)
-        tier = compact.group(1) if compact else ""
-        if "platinum" in text or tier == "p":
-            return str(colors.get("rank_platinum", "#76D7EA"))
-        if "gold" in text or tier == "g":
-            return str(colors.get("rank_gold", "#F2C94C"))
-        if "silver" in text or tier == "s":
-            return str(colors.get("rank_silver", "#C5CED8"))
-        return str(colors.get("rank_bronze", "#C47A44"))
-
     def _draw_tyre(
         self, painter: QPainter, rect: QRectF, compounds: tuple[str, ...]
     ) -> None:
@@ -2068,9 +1795,6 @@ class StandingsWidget(QWidget):
     def _column_width_specs(self) -> list[tuple[str, float, float]]:
         """Retorna (coluna, largura preferida, largura minima)."""
         enabled = self._enabled_columns()
-        show_gain_in_dr = bool(
-            self.config.get("show_estimated_driver_rank_gain", False)
-        ) and self._has_estimated_dr()
         configured_widths = self.config.get("column_widths", {})
         columns: list[tuple[str, float, float]] = []
         for key, default_width in self.BASE_COLUMNS:
@@ -2084,8 +1808,6 @@ class StandingsWidget(QWidget):
                 key,
                 float(configured_widths.get(key, default_width)),
             )
-            if key in {"dr", "sr"} and show_gain_in_dr:
-                preferred *= 145.0 / 110.0
             preferred = max(24.0, preferred)
             if key == "driver":
                 # A largura escolhida para o nome é contratual: aumentar 50 px
@@ -2147,10 +1869,6 @@ class StandingsWidget(QWidget):
             "change": bool(self.config.get("show_position_change", True)),
             "flag": bool(self.config.get("show_country_flag", True)),
             "badge": bool(self.config.get("show_badge", True)),
-            "dr": bool(self.config.get("show_driver_rank", True)),
-            "sr": bool(self.config.get("show_safety_rank", True)),
-            # O ganho estimado agora faz parte da propria coluna DR.
-            "gain_dr": False,
             "brand": bool(self.config.get("show_brand_logo", True)),
             "number": bool(self.config.get("show_car_number", True)),
             "laps": bool(self.config.get("show_laps", True)),
@@ -2180,13 +1898,6 @@ class StandingsWidget(QWidget):
     def _has_penalties(self) -> bool:
         return any(
             row.penalties > 0
-            for category in self.view.categories
-            for row in category.rows
-        )
-
-    def _has_estimated_dr(self) -> bool:
-        return any(
-            row.estimated_driver_rank_gain is not None
             for category in self.view.categories
             for row in category.rows
         )

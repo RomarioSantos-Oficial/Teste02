@@ -19,9 +19,6 @@ class RelativeWidget(StandingsWidget):
         ("badge", 60.0),
         ("driver", 105.0),
         ("brand", 72.0),
-        ("dr", 110.0),
-        ("sr", 88.0),
-        ("gain_dr", 76.0),
         ("number", 58.0),
         ("pit", 90.0),
         ("interval", 100.0),
@@ -39,7 +36,6 @@ class RelativeWidget(StandingsWidget):
         config["show_laps"] = False
         config["show_best_lap"] = False
         config["show_last_lap"] = False
-        config["show_driver_rank_progress"] = False
         super().__init__(widget_id, config, parent, **shared)
         self.setWindowTitle("Sector Flow Drive - Relative")
 
@@ -48,7 +44,6 @@ class RelativeWidget(StandingsWidget):
         config["show_laps"] = False
         config["show_best_lap"] = False
         config["show_last_lap"] = False
-        config["show_driver_rank_progress"] = False
         super().update_config(config)
 
     def _enabled_columns(self) -> dict[str, bool]:

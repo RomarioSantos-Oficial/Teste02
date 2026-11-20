@@ -35,8 +35,6 @@ class StandingsEditor(QDialog):
         ("driver", "Nome do piloto", 180.0),
         ("pit", "Tempo do pit", 90.0),
         ("brand", "Marca", 72.0),
-        ("dr", "Driver Rank (DR)", 110.0),
-        ("sr", "Safety Rank (SR)", 88.0),
         ("number", "Número do carro", 58.0),
         ("laps", "Voltas", 70.0),
         ("best", "Melhor volta", 140.0),
@@ -154,14 +152,6 @@ class StandingsEditor(QDialog):
             ("use_flag_images", "Usar imagem da bandeira:", True),
             ("show_badge", "Badge do piloto:", True),
             ("use_badge_images", "Usar imagem do badge:", True),
-            ("show_driver_rank", "Driver Rank (DR):", True),
-            ("show_driver_rank_progress", "Progresso do DR:", True),
-            ("show_safety_rank", "Safety Rank (SR):", True),
-            (
-                "show_estimated_driver_rank_gain",
-                "Estimativa de ganho do DR:",
-                False,
-            ),
             ("show_brand_logo", "Logo da marca:", True),
             ("show_car_number", "Número do carro:", True),
             ("show_laps", "Voltas:", True),
@@ -360,8 +350,8 @@ class StandingsEditor(QDialog):
         form.addRow("Altura da linha:", row_height)
         form.addRow("Altura do cabeçalho principal:", header_height)
         form.addRow("Fonte do cabeçalho principal:", global_header_font)
-        form.addRow("Altura da faixa Categoria/Volta/SOF:", category_height)
-        form.addRow("Fonte de Categoria/Volta/SOF:", category_header_font)
+        form.addRow("Altura da faixa Categoria/Pilotos/Volta:", category_height)
+        form.addRow("Fonte de Categoria/Pilotos/Volta:", category_header_font)
         form.addRow("Fonte da legenda das colunas:", legend_font)
         form.addRow("Escala interna:", scale)
         form.addRow("Tamanho do desenho do pneu:", tyre_scale)
@@ -405,16 +395,15 @@ class StandingsEditor(QDialog):
             lambda value: self._set("online_refresh_seconds", value)
         )
         online_note = QLabel(
-            "O REST local captura país e badge. DR e SR usam o ticket "
-            "temporário do LMU com o RaceOS oficial; nenhuma chave externa "
-            "precisa ser configurada."
+            "Pa\u00eds e badge v\u00eam do REST local. "
+            "A consulta externa verifica o split da sess\u00e3o."
         )
         online_note.setWordWrap(True)
         form.addRow("REST local:", enabled)
         form.addRow("Atualização:", interval)
         form.addRow("Timeout:", timeout)
         form.addRow("Consulta externa:", online)
-        form.addRow("Atualizar perfis:", online_interval)
+        form.addRow("Atualizar split:", online_interval)
         form.addRow(online_note)
         self.layout_content.addWidget(group)
 
@@ -428,10 +417,6 @@ class StandingsEditor(QDialog):
             "position_loss": "Posição perdida", "personal_best": "Melhor volta",
             "delta_gain": "DELTA — ganhando", "delta_loss": "DELTA — perdendo",
             "invalid_lap": "Volta inválida",
-            "rank_bronze": "DR/SR Bronze",
-            "rank_silver": "DR/SR Prata",
-            "rank_gold": "DR/SR Ouro",
-            "rank_platinum": "DR/SR Platina",
             "energy_low": "Energia baixa", "damage_high": "Dano alto", "edit_border": "Borda de edição",
         }
         for key, label in labels.items():
