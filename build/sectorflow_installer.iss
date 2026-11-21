@@ -4,7 +4,7 @@
 ;   Este script gera um instalador .exe profissional para Windows.
 ;   Requisitos:
 ;     - Inno Setup 6+ instalado (https://jrsoftware.org/isinfo.php)
-;     - Primeiro execute build_sectorflow.bat para gerar o EXE
+;     - Execute build\build_all.ps1 para gerar o pacote e o instalador
 ; ============================================================
 
 #define MyAppName "SectorFlow Overley"

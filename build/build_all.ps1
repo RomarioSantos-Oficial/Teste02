@@ -101,7 +101,13 @@ if ($SignWithCert -ne "") {
 
 $PortableZip = Join-Path $ProjectRoot "app\SectorFlow_Portable_1.1.zip"
 if (Test-Path $PortableZip) { Remove-Item -LiteralPath $PortableZip -Force }
-Compress-Archive -Path $OutputDir -DestinationPath $PortableZip -CompressionLevel Optimal
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+[System.IO.Compression.ZipFile]::CreateFromDirectory(
+    (Resolve-Path $OutputDir).Path,
+    $PortableZip,
+    [System.IO.Compression.CompressionLevel]::Fastest,
+    $true
+)
 Write-Host "  Pacote portatil: $PortableZip" -ForegroundColor Green
 
 Write-Host ""
