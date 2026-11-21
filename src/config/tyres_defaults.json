@@ -16,11 +16,11 @@
   "wear_font_scale": 0.95,
   "responsive_min_scale": 0.55,
   "responsive_max_scale": 2.2,
-  "opacity": 0.98,
+  "opacity": 1.0,
   "always_on_top": true,
   "click_through": true,
   "snap_to_edges": true,
-  "font_name": "Arial",
+  "font_name": "Bahnschrift Condensed",
   "font_size": 14,
   "tyre_base_width": 70,
   "tyre_base_height": 105,
@@ -80,11 +80,11 @@
   "brake_optimal_limit_c": 500.0,
   "brake_hot_limit_c": 700.0,
   "colors": {
-    "background": "rgba(15,15,15,240)",
-    "border": "#2E3948",
-    "text": "#FFFFFF",
-    "muted": "#AAAAAA",
-    "tyre_border": "rgba(255,255,255,40)",
+    "background": "#090D12",
+    "border": "#35404A",
+    "text": "#F4F6F8",
+    "muted": "#A7B0BA",
+    "tyre_border": "#26303A",
     "tyre_cold": "#1565C0",
     "tyre_optimal": "#2E7D32",
     "tyre_warm": "#F9A825",
@@ -100,6 +100,10 @@
     "flat": "#7D2222",
     "detached": "#6D1B1B",
     "warning": "#FF5252",
-    "edit_border": "#9B5CFF"
+    "edit_border": "#8B4DFF",
+    "panel": "#12171D",
+    "panel_border": "#26303A",
+    "accent": "#43BDCA",
+    "title": "#F4F6F8"
   }
 }

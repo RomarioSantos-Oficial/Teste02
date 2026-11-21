@@ -65,9 +65,9 @@ class LapTimerWidget(QWidget):
         # alfa quase invisivel. Migra somente os dois valores antigos exatos.
         colors = self.config.setdefault("colors", {})
         if str(colors.get("background", "")).upper() == "#0A0F17E8":
-            colors["background"] = "#080C12"
+            colors["background"] = "#090D12"
         if str(colors.get("panel", "")).upper() == "#151B26E8":
-            colors["panel"] = "#10151D"
+            colors["panel"] = "#12171D"
         if float(self.config.get("opacity", 0.98)) == 0.98:
             self.config["opacity"] = 1.0
         self.setWindowOpacity(max(0.10, min(1.0, float(config.get("opacity", 0.98)))))
@@ -122,19 +122,19 @@ class LapTimerWidget(QWidget):
         colors = self.config.get("colors", {})
         outer = QRectF(1, 1, self.width() - 2, self.height() - 2)
         if self.config.get("background_enabled", True):
-            p.setPen(QPen(QColor(colors.get("border", "#344155")), 1.2))
-            p.setBrush(QColor(colors.get("background", "#080C12")))
+            p.setPen(QPen(QColor(colors.get("border", "#35404A")), 1.2))
+            p.setBrush(QColor(colors.get("background", "#090D12")))
             p.drawRoundedRect(outer, float(self.config.get("border_radius", 10)), float(self.config.get("border_radius", 10)))
 
         margin = max(7, int(min(self.width(), self.height()) * 0.05))
         area = self.rect().adjusted(margin, margin, -margin, -margin)
         font = p.font()
-        font.setFamily(str(self.config.get("font_name", "Arial")))
+        font.setFamily(str(self.config.get("font_name", "Bahnschrift Condensed")))
         title_h = max(20, int(area.height() * 0.13))
         font.setPixelSize(max(10, int(title_h * float(self.config.get("title_font_scale", 0.52)))))
         font.setBold(True)
         p.setFont(font)
-        p.setPen(QColor(colors.get("title", "#67E8F9")))
+        p.setPen(QColor(colors.get("title", "#F4F6F8")))
         p.drawText(QRectF(area.left(), area.top(), area.width() * 0.58, title_h), Qt.AlignmentFlag.AlignVCenter, "LAP TIMER")
 
         position_parts = []
@@ -145,9 +145,9 @@ class LapTimerWidget(QWidget):
             position_parts.append(f"C {d.class_position}/{d.class_count}")
         font.setPixelSize(max(8, int(title_h * 0.40)))
         p.setFont(font)
-        p.setPen(QColor(colors.get("muted", "#9BA8BA")))
+        p.setPen(QColor(colors.get("muted", "#A7B0BA")))
         p.drawText(QRectF(area.left() + area.width() * 0.42, area.top(), area.width() * 0.58, title_h), Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight, "   ".join(position_parts))
-        p.setPen(QPen(QColor(colors.get("accent", "#2563EB")), max(1.0, title_h * 0.07)))
+        p.setPen(QPen(QColor(colors.get("accent", "#43BDCA")), max(1.0, title_h * 0.07)))
         p.drawLine(area.left(), area.top() + title_h, area.right(), area.top() + title_h)
 
         rows = self._rows()
@@ -155,20 +155,27 @@ class LapTimerWidget(QWidget):
         y = area.top() + title_h + gap
         row_h = max(16.0, (area.bottom() - y - gap * max(0, len(rows) - 1)) / max(1, len(rows)))
         color_map = {
-            "text": colors.get("text", "#F4F7FB"), "current": colors.get("current", "#FFFFFF"),
-            "best": colors.get("best", "#C084FC"), "predicted": colors.get("predicted", "#67E8F9"),
-            "theoretical": colors.get("theoretical", "#FACC15"), "invalid": colors.get("invalid", "#EF4444"),
+            "text": colors.get("text", "#F4F6F8"), "current": colors.get("current", "#FFFFFF"),
+            "best": colors.get("best", "#8B4DFF"), "predicted": colors.get("predicted", "#43BDCA"),
+            "theoretical": colors.get("theoretical", "#E49127"), "invalid": colors.get("invalid", "#FF5E6B"),
         }
         for label, value, role in rows:
             box = QRectF(area.left(), y, area.width(), row_h)
             if self.config.get("row_backgrounds", True):
-                p.setPen(QPen(QColor(colors.get("panel_border", "#27313E")), 1))
-                p.setBrush(QColor(colors.get("panel", "#10151D")))
+                current_row = role == "current"
+                row_background = colors.get("panel", "#12171D")
+                row_border = colors.get("panel_border", "#26303A")
+                if current_row:
+                    row_background = colors.get("current_background", "#B51B69")
+                    row_border = colors.get("current_accent", "#FF54B8")
+                p.setPen(QPen(QColor(row_border), 1))
+                p.setBrush(QColor(row_background))
                 p.drawRoundedRect(box, 4, 4)
             font.setBold(False)
             font.setPixelSize(max(7, int(row_h * float(self.config.get("label_font_scale", 0.28)))))
             p.setFont(font)
-            p.setPen(QColor(colors.get("muted", "#9BA8BA")))
+            label_color = colors.get("text", "#F4F6F8") if role == "current" else colors.get("muted", "#A7B0BA")
+            p.setPen(QColor(label_color))
             p.drawText(box.adjusted(max(6, row_h * .18), 0, -box.width() * .52, 0), Qt.AlignmentFlag.AlignVCenter, label)
             font.setBold(True)
             font.setPixelSize(max(10, int(row_h * float(self.config.get("value_font_scale", 0.46)))))

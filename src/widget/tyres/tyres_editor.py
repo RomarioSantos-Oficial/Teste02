@@ -847,7 +847,7 @@ class TyresEditor(QDialog):
             str(
                 self.config.get(
                     "font_name",
-                    "Arial",
+                    "Bahnschrift Condensed",
                 )
             )
         )
@@ -884,7 +884,7 @@ class TyresEditor(QDialog):
             float(
                 self.config.get(
                     "opacity",
-                    0.98,
+                    1.0,
                 )
             )
         )

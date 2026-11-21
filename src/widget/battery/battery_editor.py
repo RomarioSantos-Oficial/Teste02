@@ -531,7 +531,7 @@ class BatteryEditor(QDialog):
             str(
                 self.config.get(
                     "font_name",
-                    "Arial",
+                    "Bahnschrift Condensed",
                 )
             )
         )
@@ -576,7 +576,7 @@ class BatteryEditor(QDialog):
             float(
                 self.config.get(
                     "opacity",
-                    0.98,
+                    1.0,
                 )
             )
         )
