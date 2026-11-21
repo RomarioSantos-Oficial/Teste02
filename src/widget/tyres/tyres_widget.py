@@ -88,6 +88,7 @@ class WheelGroup(QWidget):
     ) -> None:
         super().__init__(parent)
 
+        self.setObjectName("TyreWheelGroup")
         self.index = index
         self.is_left = is_left
         self.is_front = is_front
@@ -849,7 +850,7 @@ class TyresWidget(QWidget):
                     float(
                         self.config.get(
                             "opacity",
-                            0.98,
+                            1.0,
                         )
                     ),
                 ),
@@ -1141,28 +1142,44 @@ class TyresWidget(QWidget):
         )
         background = colors.get(
             "background",
-            "rgba(15,15,15,240)",
+            "#090D12",
+        )
+        panel = colors.get(
+            "panel",
+            "#12171D",
+        )
+        panel_border = colors.get(
+            "panel_border",
+            "#26303A",
+        )
+        accent = colors.get(
+            "accent",
+            "#43BDCA",
+        )
+        title = colors.get(
+            "title",
+            "#F4F6F8",
         )
         text = colors.get(
             "text",
-            "#FFFFFF",
+            "#F4F6F8",
         )
         muted = colors.get(
             "muted",
-            "#AAAAAA",
+            "#A7B0BA",
         )
         border = colors.get(
             "border",
-            "#2E3948",
+            "#35404A",
         )
         warning = colors.get(
             "warning",
-            "#FF5252",
+            "#FF5E6B",
         )
         font_name = str(
             self.config.get(
                 "font_name",
-                "Arial",
+                "Bahnschrift Condensed",
             )
         )
         base_font = max(
@@ -1213,6 +1230,20 @@ class TyresWidget(QWidget):
             1,
             round(3 * scale),
         )
+        card_radius = max(
+            3,
+            round(5 * scale),
+        )
+        group_background = (
+            panel
+            if bool(self.config.get("show_background", True))
+            else "transparent"
+        )
+        group_border = (
+            panel_border
+            if bool(self.config.get("show_background", True))
+            else "transparent"
+        )
 
         main_frame_style = tyres_main_frame_style(
             self.config,
@@ -1234,6 +1265,12 @@ class TyresWidget(QWidget):
                 {main_frame_style}
             }}
 
+            QWidget#TyreWheelGroup {{
+                background-color: {group_background};
+                border: {border_width}px solid {group_border};
+                border-radius: {card_radius}px;
+            }}
+
             QLabel {{
                 background: transparent;
                 border: none;
@@ -1242,10 +1279,11 @@ class TyresWidget(QWidget):
             }}
 
             QLabel#CompoundLabel {{
-                color: {muted};
+                color: {title};
                 font-size: {wear_size}px;
                 font-weight: 900;
                 padding: {compound_padding}px;
+                border-bottom: {border_width}px solid {accent};
             }}
 
             QLabel#WearLabel {{
@@ -1255,7 +1293,7 @@ class TyresWidget(QWidget):
             }}
 
             QLabel#PositionLabel {{
-                color: rgba(255,255,255,180);
+                color: {muted};
                 font-size: {detail_size}px;
                 font-weight: 900;
             }}
@@ -1270,7 +1308,7 @@ class TyresWidget(QWidget):
             QLabel#PressureLabel,
             QLabel#DetailLabel,
             QLabel#AdvancedLabel {{
-                color: rgba(255,255,255,215);
+                color: {text};
                 font-size: {detail_size}px;
                 font-weight: bold;
             }}
@@ -1282,7 +1320,7 @@ class TyresWidget(QWidget):
             }}
 
             QLabel#BrakePressureLabel {{
-                color: rgba(255,255,255,210);
+                color: {text};
                 font-size: {detail_size}px;
                 font-weight: bold;
             }}

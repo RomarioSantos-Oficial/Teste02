@@ -119,6 +119,61 @@ class ProfileEditRegressionTests(unittest.TestCase):
             )
             manager.close_all()
 
+    def test_race_widget_theme_migration_preserves_custom_values(self) -> None:
+        factory = Path(__file__).resolve().parents[1] / "config" / "widgets.json"
+        config = json.loads(factory.read_text(encoding="utf-8"))
+        battery = config["profiles"]["standard"]["widgets"]["battery"]
+        battery["low_battery_threshold"] = 12.5
+        engineer_battery = config["profiles"]["engineer"]["widgets"]["battery"]
+        engineer_battery["font_name"] = "Comic Sans MS"
+        engineer_battery["opacity"] = 0.73
+        engineer_battery["colors"]["normal"] = "#123456"
+        engineer_battery["colors"]["accent"] = "#654321"
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "widgets.json"
+            path.write_text(json.dumps(config), encoding="utf-8")
+            manager = OverlayManager(path)
+
+            active_battery = manager.config_data["widgets"]["battery"]
+            self.assertEqual(active_battery["colors"]["background"], "#090D12")
+            self.assertEqual(active_battery["colors"]["normal"], "#2563EB")
+            self.assertEqual(active_battery["colors"]["high"], "#9333EA")
+            self.assertEqual(active_battery["colors"]["low"], "#DC2626")
+            self.assertEqual(active_battery["colors"]["regen"], "#16C784")
+            self.assertEqual(active_battery["font_name"], "Bahnschrift Condensed")
+            self.assertEqual(active_battery["opacity"], 1.0)
+            self.assertEqual(active_battery["low_battery_threshold"], 12.5)
+
+            custom_battery = manager.config_data["profiles"]["engineer"]["widgets"]["battery"]
+            self.assertEqual(custom_battery["font_name"], "Comic Sans MS")
+            self.assertEqual(custom_battery["opacity"], 0.73)
+            self.assertEqual(custom_battery["colors"]["normal"], "#123456")
+            self.assertEqual(custom_battery["colors"]["accent"], "#654321")
+            manager.close_all()
+
+    def test_battery_and_tyre_semantic_color_defaults_are_unchanged(self) -> None:
+        config_dir = Path(__file__).resolve().parents[1] / "config"
+        battery = json.loads(
+            (config_dir / "battery_defaults.json").read_text(encoding="utf-8")
+        )["colors"]
+        self.assertEqual(
+            (battery["normal"], battery["high"], battery["low"], battery["regen"]),
+            ("#2563EB", "#9333EA", "#DC2626", "#16C784"),
+        )
+        tyres = json.loads(
+            (config_dir / "tyres_defaults.json").read_text(encoding="utf-8")
+        )["colors"]
+        self.assertEqual(
+            (
+                tyres["tyre_cold"],
+                tyres["tyre_optimal"],
+                tyres["tyre_warm"],
+                tyres["tyre_hot"],
+            ),
+            ("#1565C0", "#2E7D32", "#F9A825", "#C62828"),
+        )
+
     def test_rank_percent_keeps_available_decimal_precision(self) -> None:
         self.assertEqual(StandingsWidget._format_rank_percent(43.6), "43.6%")
         self.assertEqual(StandingsWidget._format_rank_percent(70.0), "70%")

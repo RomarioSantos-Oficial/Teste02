@@ -338,7 +338,7 @@ class BatteryGauge(QWidget):
                 self.property(
                     "fontFamily"
                 )
-                or "Arial"
+                or "Bahnschrift Condensed"
             )
         )
         font.setBold(True)
@@ -354,7 +354,7 @@ class BatteryGauge(QWidget):
                 QColor(
                     self.colors.get(
                         "text",
-                        "#E5E7EB",
+                        "#F4F6F8",
                     )
                 )
             )
@@ -451,7 +451,7 @@ class ComparisonBar(QWidget):
             QColor(
                 self.colors.get(
                     "bar_background",
-                    "#27313E",
+                    "#191F26",
                 )
             )
         )
@@ -467,7 +467,7 @@ class ComparisonBar(QWidget):
                 QColor(
                     self.colors.get(
                         "bar_center",
-                        "#D1D5DB",
+                        "#43BDCA",
                     )
                 ),
                 max(
@@ -832,7 +832,7 @@ class BatteryWidget(QWidget):
                     float(
                         self.config.get(
                             "opacity",
-                            0.98,
+                            1.0,
                         )
                     ),
                 ),
@@ -1336,7 +1336,7 @@ class BatteryWidget(QWidget):
             str(
                 self.config.get(
                     "font_name",
-                    "Arial",
+                    "Bahnschrift Condensed",
                 )
             ),
         )
@@ -1367,28 +1367,36 @@ class BatteryWidget(QWidget):
         )
         background = colors.get(
             "background",
-            "rgba(10,15,23,238)",
+            "#090D12",
         )
         panel = colors.get(
             "panel",
-            "#151B26",
+            "#151C24",
         )
         border = colors.get(
             "border",
-            "#344155",
+            "#35404A",
+        )
+        accent = colors.get(
+            "accent",
+            "#43BDCA",
+        )
+        title = colors.get(
+            "title",
+            "#F4F6F8",
         )
         text = colors.get(
             "text",
-            "#F4F7FB",
+            "#F4F6F8",
         )
         muted = colors.get(
             "muted",
-            "#9BA8BA",
+            "#A7B0BA",
         )
         font_name = str(
             self.config.get(
                 "font_name",
-                "Arial",
+                "Bahnschrift Condensed",
             )
         )
         base_font = max(
@@ -1453,6 +1461,7 @@ class BatteryWidget(QWidget):
                 background-color: {background};
                 border: {border_width}px
                 solid {border};
+                border-top: {max(2, border_width)}px solid {accent};
                 border-radius: {radius}px;
             }}
 
@@ -1469,6 +1478,7 @@ class BatteryWidget(QWidget):
             }}
 
             QLabel#BatteryTitle {{
+                color: {title};
                 font-size: {title_size}px;
                 font-weight: 900;
             }}

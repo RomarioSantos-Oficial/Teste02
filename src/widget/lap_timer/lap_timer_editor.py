@@ -43,7 +43,7 @@ class LapTimerEditor(QDialog):
         visual = QGroupBox("Visual")
         vf = QFormLayout(visual)
         family = QFontComboBox()
-        configured_family = str(self.config.get("font_name", "Arial"))
+        configured_family = str(self.config.get("font_name", "Bahnschrift Condensed"))
         # QFont(family) usa pointSize=-1. O QFontComboBox tenta reaplicar
         # esse valor e o Qt emite "Point size <= 0". Um tamanho válido aqui
         # serve apenas para selecionar a família; o overlay usa pixels.
@@ -78,6 +78,7 @@ class LapTimerEditor(QDialog):
         for key, label in (
             ("background", "Cor do fundo principal"),
             ("panel", "Cor do fundo das linhas"),
+            ("current_background", "Fundo da volta atual"),
             ("border", "Cor da borda"),
             ("title", "Cor do título"),
             ("muted", "Cor dos nomes"),
@@ -88,7 +89,8 @@ class LapTimerEditor(QDialog):
             ("theoretical", "Cor da volta teórica"),
             ("invalid", "Cor da volta inválida"),
         ):
-            button = QPushButton(str(self.config.get("colors", {}).get(key, "#FFFFFF")))
+            default_color = "#B51B69" if key == "current_background" else "#FFFFFF"
+            button = QPushButton(str(self.config.get("colors", {}).get(key, default_color)))
             button.clicked.connect(lambda _=False, name=key, target=button: self._pick_color(name, target))
             vf.addRow(label + ":", button)
         root.addWidget(visual)
@@ -103,7 +105,8 @@ class LapTimerEditor(QDialog):
         self.config_changed.emit(deepcopy(self.config))
 
     def _pick_color(self, key: str, button: QPushButton) -> None:
-        current = QColor(str(self.config.get("colors", {}).get(key, "#FFFFFF")))
+        default_color = "#B51B69" if key == "current_background" else "#FFFFFF"
+        current = QColor(str(self.config.get("colors", {}).get(key, default_color)))
         color = QColorDialog.getColor(
             current,
             self,

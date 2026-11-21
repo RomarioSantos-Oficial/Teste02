@@ -75,7 +75,9 @@ class OverlayManager(QObject):
         self.external_driver_panel = "driver_panel" in self.external_widget_ids
         self.config_data = self._load_config()
         self._ensure_profiles()
-        if self._migrate_player_background():
+        migrated = self._migrate_player_background()
+        migrated = self._migrate_race_widget_visual_theme() or migrated
+        if migrated:
             self.save_config()
         self._delta_history_path = (
             self.config_path.parent
@@ -241,6 +243,133 @@ class OverlayManager(QObject):
                 if background in legacy_colors:
                     colors["player_background"] = "#B51B69"
                     migrated = True
+        return migrated
+
+    def _migrate_race_widget_visual_theme(self) -> bool:
+        """Migrate exact legacy defaults while leaving customized values alone."""
+        migrations = {
+            "battery": {
+                "font_name": {"Arial": "Bahnschrift Condensed"},
+                "opacity": {0.98: 1.0},
+                "colors": {
+                    "background": {"rgba(10,15,23,238)": "#090D12"},
+                    "panel": {"#151B26": "#151C24"},
+                    "border": {"#344155": "#35404A"},
+                    "text": {"#F4F7FB": "#F4F6F8"},
+                    "muted": {"#9BA8BA": "#A7B0BA"},
+                    "bar_background": {"#27313E": "#191F26"},
+                    "bar_center": {"#D1D5DB": "#43BDCA"},
+                    "gauge_border": {"#5B6573": "#35404A"},
+                    "gauge_terminal": {"#C8CDD4": "#A7B0BA"},
+                    "edit_border": {"#9B5CFF": "#8B4DFF"},
+                },
+                "new_colors": {"accent": "#43BDCA", "title": "#F4F6F8"},
+            },
+            "fuel_time": {
+                "font_name": {"Arial": "Bahnschrift Condensed"},
+                "opacity": {0.98: 1.0},
+                "colors": {
+                    "background": {"#0A0F17EE": "#090D12"},
+                    "panel": {"#151B26": "#151C24"},
+                    "panel_border": {"#27313E": "#26303A"},
+                    "border": {"#344155": "#35404A"},
+                    "accent": {"#2563EB": "#43BDCA"},
+                    "title": {"#67E8F9": "#F4F6F8"},
+                    "text": {"#F4F7FB": "#F4F6F8"},
+                    "muted": {"#9BA8BA": "#A7B0BA"},
+                    "good": {"#16C784": "#55D98A"},
+                    "warning": {"#EF4444": "#FF5E6B"},
+                    "edit_border": {"#8B5CF6": "#8B4DFF"},
+                },
+            },
+            "lap_timer": {
+                "font_name": {"Arial": "Bahnschrift Condensed"},
+                "opacity": {0.98: 1.0},
+                "colors": {
+                    "background": {"#080C12": "#090D12"},
+                    "panel": {"#10151D": "#12171D"},
+                    "panel_border": {"#27313E": "#26303A"},
+                    "border": {"#344155": "#35404A"},
+                    "accent": {"#2563EB": "#43BDCA"},
+                    "title": {"#67E8F9": "#F4F6F8"},
+                    "text": {"#F4F7FB": "#F4F6F8"},
+                    "best": {"#C084FC": "#8B4DFF"},
+                    "predicted": {"#67E8F9": "#43BDCA"},
+                    "theoretical": {"#FACC15": "#E49127"},
+                    "invalid": {"#EF4444": "#FF5E6B"},
+                    "muted": {"#9BA8BA": "#A7B0BA"},
+                    "edit_border": {"#8B5CF6": "#8B4DFF"},
+                },
+                "new_colors": {
+                    "current_background": "#B51B69",
+                    "current_accent": "#FF54B8",
+                },
+            },
+            "tires": {
+                "font_name": {"Arial": "Bahnschrift Condensed"},
+                "opacity": {0.98: 1.0},
+                "colors": {
+                    "background": {"rgba(15,15,15,240)": "#090D12"},
+                    "border": {"#2E3948": "#35404A"},
+                    "text": {"#FFFFFF": "#F4F6F8"},
+                    "muted": {"#AAAAAA": "#A7B0BA"},
+                    "tyre_border": {"rgba(255,255,255,40)": "#26303A"},
+                    "edit_border": {"#9B5CFF": "#8B4DFF"},
+                },
+                "new_colors": {
+                    "panel": "#12171D",
+                    "panel_border": "#26303A",
+                    "accent": "#43BDCA",
+                    "title": "#F4F6F8",
+                },
+            },
+        }
+        migrated = False
+        configurations = [
+            self.config_data.get("widgets"),
+            self.config_data.get("defaults"),
+        ]
+        configurations.extend(
+            profile.get("widgets")
+            for profile in self.config_data.get("profiles", {}).values()
+            if isinstance(profile, dict)
+        )
+        for configuration in configurations:
+            if not isinstance(configuration, dict):
+                continue
+            for widget_id, rules in migrations.items():
+                widget_config = configuration.get(widget_id)
+                if not isinstance(widget_config, dict):
+                    continue
+                for key in ("font_name", "opacity"):
+                    rules_for_key = rules.get(key, {})
+                    current = widget_config.get(key)
+                    for old, new in rules_for_key.items():
+                        if key == "font_name" and isinstance(current, str):
+                            if current.strip().casefold() == old.casefold():
+                                widget_config[key] = new
+                                migrated = True
+                        elif key == "opacity" and isinstance(current, (int, float)):
+                            if abs(float(current) - float(old)) < 1e-9:
+                                widget_config[key] = new
+                                migrated = True
+
+                colors = widget_config.get("colors")
+                if not isinstance(colors, dict):
+                    colors = widget_config.setdefault("colors", {})
+                for color_key, color_migrations in rules.get("colors", {}).items():
+                    current = colors.get(color_key)
+                    if not isinstance(current, str):
+                        continue
+                    for old, new in color_migrations.items():
+                        if current.strip().casefold() == old.casefold():
+                            colors[color_key] = new
+                            migrated = True
+                            break
+                for color_key, default in rules.get("new_colors", {}).items():
+                    if color_key not in colors:
+                        colors[color_key] = default
+                        migrated = True
         return migrated
 
     def create_driver_panel(self) -> DriverPanelWidget:
