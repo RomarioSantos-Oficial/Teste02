@@ -334,80 +334,45 @@ class DriverPanelEditor(QDialog):
         self.content_layout.addWidget(group)
 
     def _build_rpm_group(self) -> None:
-        group = QGroupBox(
-            "Barra segmentada de RPM"
-        )
+        group = QGroupBox("Faixa de RPM e luzes de troca")
         form = QFormLayout(group)
-
-        layout = self.config.setdefault(
-            "layout",
-            {},
-        )
+        layout = self.config.setdefault("layout", {})
 
         segments = QSpinBox()
         segments.setRange(10, 10)
         segments.setValue(10)
         segments.setEnabled(False)
-        segments.valueChanged.connect(
-            lambda v:
-            self._set_nested(
-                "layout",
-                "rpm_segments",
-                v,
-            )
-        )
-
-        shift = QDoubleSpinBox()
-        shift.setRange(0.50, 0.95)
-        shift.setSingleStep(0.01)
-        shift.setValue(
-            float(layout.get("shift_start", 0.78))
-        )
-        shift.valueChanged.connect(
-            lambda v:
-            self._set_nested(
-                "layout",
-                "shift_start",
-                v,
-            )
-        )
-
-        red = QDoubleSpinBox()
-        red.setRange(0.70, 1.00)
-        red.setSingleStep(0.01)
-        red.setValue(
-            float(layout.get("red_start", 0.92))
-        )
-        red.valueChanged.connect(
-            lambda v:
-            self._set_nested(
-                "layout",
-                "red_start",
-                v,
-            )
-        )
-
         form.addRow("Blocos da faixa (10):", segments)
-        form.addRow(
-            "Começo do amarelo:",
-            shift,
-        )
-        form.addRow(
-            "Começo do vermelho:",
-            red,
-        )
+
+        def add_threshold(key: str, label: str, default: float, minimum: float = 0.50) -> None:
+            spin = QDoubleSpinBox()
+            spin.setRange(minimum, 1.20)
+            spin.setSingleStep(0.01)
+            spin.setDecimals(0)
+            spin.setSuffix("%")
+            spin.setValue(float(layout.get(key, default)) * 100.0)
+            spin.valueChanged.connect(
+                lambda value, config_key=key:
+                self._set_nested("layout", config_key, value / 100.0)
+            )
+            form.addRow(label, spin)
+
+        add_threshold("shift_start", "Acender azul central:", 0.88)
+        add_threshold("shift_light_1", "1ª luz superior:", 0.91)
+        add_threshold("shift_light_2", "2ª luz superior:", 0.94)
+        add_threshold("shift_light_3", "3ª luz superior:", 0.96)
+        add_threshold("rpm_flash_start", "Piscar vermelho/roxo:", 1.00, 0.80)
 
         flash_interval = QDoubleSpinBox()
         flash_interval.setRange(0.05, 1.00)
-        flash_interval.setSingleStep(0.05)
+        flash_interval.setSingleStep(0.01)
         flash_interval.setDecimals(2)
         flash_interval.setSuffix(" s")
-        flash_interval.setValue(float(self.config.get("rpm_flash_interval_s", 0.2)))
+        flash_interval.setValue(float(self.config.get("rpm_flash_interval_s", 0.06)))
         flash_interval.valueChanged.connect(
             lambda value: self._set_root("rpm_flash_interval_s", value)
         )
-        form.addRow("Intervalo do alerta roxo/vermelho:", flash_interval)
-
+        form.addRow("Velocidade do pisca:", flash_interval)
         self.content_layout.addWidget(group)
 
     def _build_steering_group(self) -> None:
