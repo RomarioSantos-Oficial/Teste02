@@ -30,7 +30,9 @@ class DriverPanelViewData:
     rpm_flash_phase: bool = False
 
 
-RPM_READOUT_MULTIPLIER = 1.25
+# Apply the new +75% to the already enlarged (+25%) readout:
+# 1.25 * 1.75 = 2.1875 times the raw telemetry RPM.
+RPM_READOUT_MULTIPLIER = 2.1875
 
 
 def format_rpm_readout(rpm: float) -> str:

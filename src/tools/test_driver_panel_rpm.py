@@ -8,9 +8,11 @@ from src.widget.driver_panel.driver_panel_renderer import format_rpm_readout
 
 class RPMReadoutTests(unittest.TestCase):
     def test_readout_is_increased_by_exactly_25_percent(self) -> None:
-        self.assertEqual(format_rpm_readout(8000.0), "10.000 RPM")
-        self.assertEqual(format_rpm_readout(8124.0), "10.155 RPM")
-        self.assertEqual(format_rpm_readout(3000.0), "3.750 RPM")
+        # The displayed value is now 75% above the previous display
+        # (which already represented 125% of the raw telemetry RPM).
+        self.assertEqual(format_rpm_readout(8000.0), "17.500 RPM")
+        self.assertEqual(format_rpm_readout(8124.0), "17.771 RPM")
+        self.assertEqual(format_rpm_readout(3000.0), "6.563 RPM")
 
     def test_readout_handles_zero_negative_and_non_finite_values(self) -> None:
         self.assertEqual(format_rpm_readout(0.0), "0 RPM")
