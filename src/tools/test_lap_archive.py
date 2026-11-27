@@ -12,7 +12,15 @@ from src.laps import archive
 from src.laps.archive import LapArchiveStore, LapRecord, LapRecorder
 
 
-def make_record(owner: str, lap_s: float, scope: str = "category") -> LapRecord:
+def make_record(
+    owner: str,
+    lap_s: float,
+    scope: str = "category",
+    *,
+    category: str = "LMGT3",
+    car_model: str = "Ferrari 296 GT3",
+    car_filename: str = "ferrari_296_gt3",
+) -> LapRecord:
     trace = [
         {
             "distance": index / 239,
@@ -25,8 +33,8 @@ def make_record(owner: str, lap_s: float, scope: str = "category") -> LapRecord:
     ]
     return LapRecord(
         record_id=f"{owner}-{scope}-{lap_s}", scope=scope,
-        track="Silverstone", category="LMGT3", car_model="Ferrari 296 GT3",
-        car_filename="ferrari_296_gt3", car_number="17", slot_id=17,
+        track="Silverstone", category=category, car_model=car_model,
+        car_filename=car_filename, car_number="17", slot_id=17,
         lap_seconds=lap_s, sector1=lap_s / 3, sector2=lap_s / 3,
         sector3=lap_s / 3, trace=trace, saved_at=time.time(),
         session_key=f"session-{owner}", owner_key=owner, driver_name="R. Lima",
@@ -51,6 +59,106 @@ class LapArchiveStoreTests(unittest.TestCase):
         self.assertEqual(self.store.best("Silverstone", "LMGT3", owner_key="account-b").lap_seconds, 105.0)
         self.assertEqual(len(self.store.all_personal_bests("account-a")), 2)
         self.assertEqual(len(self.store.all_personal_bests("account-b")), 2)
+
+    def test_category_and_model_personal_bests_update_independently(self) -> None:
+        ferrari = make_record(
+            "account-a", 100.0, category="LMGT3",
+            car_model="Ferrari 296 GT3", car_filename="ferrari_296_gt3",
+        )
+        bmw = make_record(
+            "account-a", 101.0, category="LMGT3",
+            car_model="BMW M4 GT3", car_filename="bmw_m4_gt3",
+        )
+
+        # The first Ferrari establishes the category record and Ferrari record.
+        self.assertEqual(len(self.store.save_if_better(ferrari)), 2)
+
+        # A slower BMW cannot replace the category's Ferrari record, but it
+        # must still establish its own independent model record.
+        self.assertEqual(len(self.store.save_if_better(bmw)), 1)
+        self.assertAlmostEqual(
+            self.store.best("Silverstone", "LMGT3", owner_key="account-a").lap_seconds,
+            100.0,
+        )
+        self.assertAlmostEqual(
+            self.store.best(
+                "Silverstone", "LMGT3", car_filename="ferrari_296_gt3",
+                scope="model", owner_key="account-a",
+            ).lap_seconds,
+            100.0,
+        )
+        self.assertAlmostEqual(
+            self.store.best(
+                "Silverstone", "LMGT3", car_filename="bmw_m4_gt3",
+                scope="model", owner_key="account-a",
+            ).lap_seconds,
+            101.0,
+        )
+
+        # When BMW beats the category record, it becomes the category PB too;
+        # Ferrari's own model PB remains untouched.
+        faster_bmw = make_record(
+            "account-a", 99.0, category="LMGT3",
+            car_model="BMW M4 GT3", car_filename="bmw_m4_gt3",
+        )
+        self.assertEqual(len(self.store.save_if_better(faster_bmw)), 2)
+        self.assertAlmostEqual(
+            self.store.best("Silverstone", "LMGT3", owner_key="account-a").lap_seconds,
+            99.0,
+        )
+        self.assertAlmostEqual(
+            self.store.best(
+                "Silverstone", "LMGT3", car_filename="ferrari_296_gt3",
+                scope="model", owner_key="account-a",
+            ).lap_seconds,
+            100.0,
+        )
+        self.assertAlmostEqual(
+            self.store.best(
+                "Silverstone", "LMGT3", car_filename="bmw_m4_gt3",
+                scope="model", owner_key="account-a",
+            ).lap_seconds,
+            99.0,
+        )
+
+        model_rows = [
+            record for record in self.store.all_personal_bests("account-a")
+            if record.scope == "model"
+        ]
+        self.assertEqual(
+            [record.car_model for record in model_rows],
+            ["BMW M4 GT3", "Ferrari 296 GT3"],
+        )
+        self.assertEqual(
+            [record.lap_seconds for record in model_rows],
+            [99.0, 100.0],
+        )
+
+        # Slower laps do not replace either record.
+        self.assertEqual(
+            self.store.save_if_better(
+                make_record(
+                    "account-a", 102.0, category="LMGT3",
+                    car_model="BMW M4 GT3", car_filename="bmw_m4_gt3",
+                )
+            ),
+            [],
+        )
+
+        # A different vehicle category has an independent category PB.
+        self.assertEqual(
+            len(self.store.save_if_better(
+                make_record(
+                    "account-a", 110.0, category="LMP2",
+                    car_model="BMW M4 GT3", car_filename="bmw_m4_gt3",
+                )
+            )),
+            2,
+        )
+        self.assertAlmostEqual(
+            self.store.best("Silverstone", "LMP2", owner_key="account-a").lap_seconds,
+            110.0,
+        )
 
     def test_delete_personal_best_removes_only_selected_record_and_owner(self) -> None:
         self.store.save_if_better(make_record("account-a", 100.0))

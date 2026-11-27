@@ -227,7 +227,11 @@ class LapArchiveStore:
             )
 
     def save_if_better(self, record: LapRecord) -> list[LapRecord]:
-        """Store category and exact-model PBs from one validated lap."""
+        """Update category PB and this exact model's PB independently.
+
+        A new lap can improve only the model record, only the category record,
+        or both. Records for other models are never overwritten.
+        """
         scopes = ["category"]
         if record.car_model or record.car_filename:
             scopes.append("model")
@@ -258,6 +262,7 @@ class LapArchiveStore:
         return saved
 
     def _save_scope_if_better(self, record: LapRecord) -> bool:
+        """Replace one scope key only when the incoming lap is strictly faster."""
         track_key, category_key = _key(record.track), _key(record.category)
         car_key = _key(record.car_filename or record.car_model) if record.scope == "model" else ""
         compressed = gzip.compress(
@@ -328,7 +333,11 @@ class LapArchiveStore:
     def all_personal_bests(self, owner_key: str | None = None) -> list[LapRecord]:
         with self._connection() as db:
             rows = db.execute(
-                "SELECT * FROM personal_bests WHERE owner_key=? ORDER BY track, category, scope, lap_seconds",
+                """SELECT * FROM personal_bests WHERE owner_key=?
+                   ORDER BY track_key, category_key,
+                   CASE WHEN scope='category' THEN 0 ELSE 1 END,
+                   CASE WHEN scope='model' THEN lap_seconds ELSE 0 END,
+                   car_model COLLATE NOCASE""",
                 (owner_key or local_owner_key(),),
             ).fetchall()
         return [self._from_row(row) for row in rows]
