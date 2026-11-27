@@ -46,14 +46,11 @@ class DeltaViewData:
     track_state: str = "Unknown"
     split_label: str = ""
 
-    # Quantidade de punições e valores numéricos de limites de pista.
-    # Os dois dados são independentes: limites aparecem como PEN e a punição
-    # esportiva é apresentada separadamente como INFO.
+    # Valores de limites de pista, independentes da contagem de punições.
     penalties: int = 0
     penalties_current: float = 0.0
     penalties_limit: float = 0.0
     track_limits_text: str = "--"
-    penalty_status: str = "--"
 
     sectors: list[DeltaSectorData] = field(
         default_factory=lambda: [

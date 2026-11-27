@@ -589,9 +589,8 @@ class DeltaEditor(QDialog):
             {},
         )
         font = QComboBox()
-        font.addItems(
-            QFontDatabase.families()
-        )
+        font.setEditable(True)
+        font.addItems(sorted(QFontDatabase.families()))
         font.setCurrentText(
             str(
                 font_cfg.get(
@@ -605,9 +604,85 @@ class DeltaEditor(QDialog):
             self._set_nested(
                 "font",
                 "family",
-                value,
+                value.strip(),
             )
         )
+
+        header_group = QGroupBox("Cabeçalho — estilo telemetria")
+        header_form = QFormLayout(header_group)
+        header_font_cfg = self.config.setdefault("header_font", {})
+        header_font = QComboBox()
+        header_font.setEditable(True)
+        header_font.addItems(sorted(QFontDatabase.families()))
+        header_font.setCurrentText(
+            str(header_font_cfg.get("family", "Segoe UI") or "Segoe UI")
+        )
+        header_font.currentTextChanged.connect(
+            lambda value: self._set_nested(
+                "header_font", "family", value.strip()
+            )
+        )
+
+        header_label_size = QSpinBox()
+        header_label_size.setRange(6, 24)
+        header_label_size.setSuffix(" px")
+        header_label_size.setValue(int(self.config.get("header_label_size", 10)))
+        header_label_size.valueChanged.connect(
+            lambda value: self._set_root("header_label_size", value)
+        )
+
+        header_value_size = QSpinBox()
+        header_value_size.setRange(8, 42)
+        header_value_size.setSuffix(" px")
+        header_value_size.setValue(int(self.config.get("header_value_size", 19)))
+        header_value_size.valueChanged.connect(
+            lambda value: self._set_root("header_value_size", value)
+        )
+
+        highlight = QComboBox()
+        for label, key in (
+            ("Tipo da sessão", "session_type"),
+            ("Tempo restante", "session_time"),
+            ("Estado da pista", "track_state"),
+            ("Split", "split"),
+            ("Limites de pista", "penalties"),
+            ("Sem destaque", "none"),
+        ):
+            highlight.addItem(label, key)
+        highlight_key = str(self.config.get("header_highlight_item", "session_type"))
+        highlight_index = highlight.findData(highlight_key)
+        highlight.setCurrentIndex(max(0, highlight_index))
+        highlight.currentIndexChanged.connect(
+            lambda _index: self._set_root(
+                "header_highlight_item", highlight.currentData()
+            )
+        )
+
+        header_form.addRow("Fonte do cabeçalho:", header_font)
+        header_form.addRow("Tamanho dos rótulos:", header_label_size)
+        header_form.addRow("Tamanho dos valores:", header_value_size)
+        header_form.addRow("Bloco em destaque:", highlight)
+
+        header_labels = self.config.setdefault("header_labels", {})
+        for key, default_label in (
+            ("session_time", "TIME LEFT"),
+            ("session_type", "SESSION"),
+            ("track_state", "TRACK"),
+            ("split", "SPLIT"),
+            ("penalties", "PEN"),
+        ):
+            label_edit = QLineEdit(
+                str(header_labels.get(key, default_label) or default_label)
+            )
+            label_edit.setMaxLength(18)
+            label_edit.editingFinished.connect(
+                lambda k=key, field=label_edit: self._set_nested(
+                    "header_labels", k, field.text().strip()
+                )
+            )
+            header_form.addRow(f"Rótulo {default_label}:", label_edit)
+
+        self.content_layout.addWidget(header_group)
 
         opacity = QDoubleSpinBox()
         opacity.setRange(0.10, 1.00)
@@ -702,11 +777,16 @@ class DeltaEditor(QDialog):
         for key, label in (
             ("text", "Texto"),
             ("muted", "Texto secundário"),
-            ("background", "Fundo"),
-            ("header_background", "Fundo do cabeçalho"),
-            ("header_separator", "Separadores do cabeçalho"),
-            ("header_line", "Linha de destaque ciano"),
-            ("penalty_danger", "Punição / desclassificação"),
+            ("background", "Fundo geral"),
+            ("header_background", "Fundo externo do cabeçalho"),
+            ("header_cell_background", "Fundo dos blocos"),
+            ("header_separator", "Bordas / separadores"),
+            ("header_accent", "Destaque e filete do cabeçalho"),
+            ("header_label", "Texto pequeno dos rótulos"),
+            ("header_value", "Valores dos blocos"),
+            ("header_highlight_background", "Fundo do bloco destacado"),
+            ("header_highlight_text", "Texto do bloco destacado"),
+            ("header_limit_danger", "Cor ao atingir limite de pista"),
             ("panel", "Painéis internos"),
             ("fastest_panel", "Painel da volta rápida"),
             ("grid", "Grade do histórico"),

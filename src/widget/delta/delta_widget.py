@@ -456,13 +456,6 @@ class DeltaWidget(QWidget):
             if player_driver is not None
             else "--"
         )
-        self.view_data.penalty_status = (
-            StandingsLogic._penalty_text(
-                player_driver, session, True
-            )
-            if player_driver is not None
-            else "--"
-        )
         sector_values = self.sector_tracker.update(session, result.session_key)
         changed_index = self.sector_tracker.last_changed_index
         if changed_index is not None:

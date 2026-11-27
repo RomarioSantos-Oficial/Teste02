@@ -215,106 +215,210 @@ class DeltaRenderer:
     ) -> None:
         colors = config.get("colors", {})
         elements = config.get("elements", {})
+        labels = config.get("header_labels", {})
+        if not isinstance(labels, dict):
+            labels = {}
 
         text = QColor(colors.get("text", "#F4F6F8"))
-        muted = QColor(colors.get("muted", "#A7B0BA"))
-        warning = QColor(colors.get("warning", "#E49127"))
-        danger = QColor(colors.get("penalty_danger", "#FF3B45"))
-        panel = QColor(colors.get("header_background", "#080B10"))
+        label_color = QColor(colors.get("header_label", "#A7B0BA"))
+        value_color = QColor(colors.get("header_value", "#F4F6F8"))
+        container = QColor(colors.get("header_background", "#080B10"))
+        cell_background = QColor(colors.get("header_cell_background", "#10151D"))
         separator = QColor(colors.get("header_separator", "#2A3540"))
-        accent = QColor(colors.get("header_line", "#43BDCA"))
+        accent = QColor(colors.get("header_accent", "#FF54B8"))
+        highlight_background = QColor(
+            colors.get("header_highlight_background", "#B51B69")
+        )
+        highlight_text = QColor(colors.get("header_highlight_text", "#FFFFFF"))
+        warning = QColor(colors.get("warning", "#E49127"))
+        danger = QColor(colors.get("header_limit_danger", "#FF3B45"))
 
-        if bool(config.get("section_backgrounds", True)):
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(panel)
-            painter.drawRoundedRect(
-                rect,
-                max(3.0, 7.0 * scale),
-                max(3.0, 7.0 * scale),
-            )
+        # A família do cabeçalho é independente da fonte usada no restante
+        # do Delta, permitindo escolher uma fonte mais legível para números.
+        header_font_config = dict(config)
+        header_font = dict(config.get("header_font", {}) or {})
+        font_settings = dict(config.get("font", {}) or {})
+        font_settings["family"] = str(
+            header_font.get("family", "Segoe UI") or "Segoe UI"
+        )
+        header_font_config["font"] = font_settings
 
-        items: list[tuple[str, QColor]] = []
-
+        items: list[tuple[str, str, str, QColor]] = []
         if self._enabled(elements, "session_time"):
-            items.append(
-                (f"TIME  {data.session_time_text}", text)
-            )
+            items.append((
+                "session_time",
+                str(labels.get("session_time", "TIME LEFT") or "TIME LEFT"),
+                str(data.session_time_text or "--:--"),
+                value_color,
+            ))
 
         if self._enabled(elements, "session_type"):
-            items.append(
-                (data.session_name.upper(), text)
-            )
+            items.append((
+                "session_type",
+                str(labels.get("session_type", "SESSION") or "SESSION"),
+                str(data.session_name or "--").upper(),
+                value_color,
+            ))
 
         if self._enabled(elements, "track_state"):
-            items.append(
-                (data.track_state.upper(), text)
-            )
+            items.append((
+                "track_state",
+                str(labels.get("track_state", "TRACK") or "TRACK"),
+                str(data.track_state or "--").upper(),
+                value_color,
+            ))
 
         if self._enabled(elements, "split") and data.split_label:
-            split = data.split_label.strip()
-            if "split" not in split.casefold() and not split.casefold().startswith("s "):
-                split = f"SPLIT {split}"
-            items.append((split.upper(), text))
+            split_value = str(data.split_label).strip().upper()
+            if split_value.startswith("SPLIT "):
+                split_value = split_value[6:].strip()
+            elif split_value.startswith("S "):
+                split_value = split_value[2:].strip()
+            items.append((
+                "split",
+                str(labels.get("split", "SPLIT") or "SPLIT"),
+                split_value or "--",
+                value_color,
+            ))
 
         if self._enabled(elements, "penalties"):
-            current = max(0.0, data.penalties_current)
-            limit = max(0.0, data.penalties_limit)
-            track_label = str(data.track_limits_text or "--").strip()
-
+            current = max(0.0, float(data.penalties_current or 0.0))
+            limit = max(0.0, float(data.penalties_limit or 0.0))
             if limit > 0 and current >= limit:
-                track_color = danger
+                limit_color = danger
             elif current > 0:
-                track_color = warning
+                limit_color = warning
             else:
-                track_color = muted
-
-            # PEN é reservado aos limites de pista, como no Standings.
-            # INFO mostra a mesma classificação esportiva usada no campo INFO.
-            items.append((f"PEN  {track_label}", track_color))
-            penalty_status = str(data.penalty_status or "--").strip().upper()
-            penalty_color = danger if penalty_status not in {"", "--"} else muted
-            items.append((f"INFO  {penalty_status or '--'}", penalty_color))
+                limit_color = value_color
+            items.append((
+                "penalties",
+                str(labels.get("penalties", "PEN") or "PEN"),
+                str(data.track_limits_text or "--"),
+                limit_color,
+            ))
 
         if not items:
             return
 
-        slot_width = rect.width() / len(items)
+        radius = max(3.0, float(config.get("header_radius", 6.0)) * scale)
+        border_width = max(0.6, float(config.get("header_border_width", 0.8)) * scale)
+        painter.setPen(QPen(separator, border_width))
+        painter.setBrush(container)
+        painter.drawRoundedRect(rect, radius, radius)
 
-        for index, (label, color) in enumerate(items):
-            slot = QRectF(
-                rect.left() + slot_width * index,
-                rect.top(),
-                slot_width,
-                rect.height(),
+        gap = max(1.0, float(config.get("header_cell_gap", 3.0)) * scale)
+        inner = rect.adjusted(2.0 * scale, 2.0 * scale, -2.0 * scale, -2.0 * scale)
+        gaps_width = gap * max(0, len(items) - 1)
+        usable_width = max(1.0, inner.width() - gaps_width)
+
+        # Dá mais espaço a tempo e sessão, mas mantém cada bloco responsivo.
+        weight_by_key = {
+            "session_time": 1.30,
+            "session_type": 1.55,
+            "track_state": 1.00,
+            "split": 0.92,
+            "penalties": 0.92,
+        }
+        weights = [weight_by_key.get(item[0], 1.0) for item in items]
+        weight_total = sum(weights) or 1.0
+        x = inner.left()
+        highlight_item = str(
+            config.get("header_highlight_item", "session_type") or "session_type"
+        )
+
+        label_size = max(
+            7.0,
+            float(config.get("header_label_size", 10.0)) * scale,
+        )
+        value_size = max(
+            7.0,
+            float(config.get("header_value_size", 19.0)) * scale,
+        )
+        vertical_padding = max(1.0, 3.0 * scale)
+
+        for index, (key, label, value, status_color) in enumerate(items):
+            width = usable_width * weights[index] / weight_total
+            if index == len(items) - 1:
+                width = inner.right() - x
+            cell = QRectF(x, inner.top(), width, inner.height())
+            x += width + gap
+
+            highlighted = key == highlight_item and highlight_item != "none"
+            fill = highlight_background if highlighted else cell_background
+            border = accent if highlighted else separator
+            painter.setPen(QPen(border, border_width))
+            painter.setBrush(fill)
+            painter.drawRoundedRect(
+                cell,
+                max(2.0, radius * 0.72),
+                max(2.0, radius * 0.72),
             )
-            if index > 0:
-                painter.setPen(QPen(separator, max(0.7, 0.8 * scale)))
-                painter.drawLine(
-                    QPointF(slot.left(), rect.top() + 4.0 * scale),
-                    QPointF(slot.left(), rect.bottom() - 3.0 * scale),
-                )
-            painter.setFont(
-                self._fit_font(
-                    config,
-                    slot,
-                    label,
-                    rect.height() * 0.35,
-                    7,
-                    True,
-                )
+
+            label_rect = QRectF(
+                cell.left() + 3.0 * scale,
+                cell.top() + vertical_padding,
+                max(1.0, cell.width() - 6.0 * scale),
+                max(1.0, cell.height() * 0.34),
             )
-            painter.setPen(color)
+            value_rect = QRectF(
+                cell.left() + 3.0 * scale,
+                cell.top() + cell.height() * 0.34,
+                max(1.0, cell.width() - 6.0 * scale),
+                max(1.0, cell.height() * 0.59 - vertical_padding * 0.35),
+            )
+
+            label_font = self._fit_font(
+                header_font_config,
+                label_rect,
+                label.upper(),
+                label_size,
+                7,
+                True,
+            )
+            painter.setFont(label_font)
+            label_pen = QColor(highlight_text if highlighted else label_color)
+            if highlighted:
+                label_pen.setAlpha(205)
+            painter.setPen(label_pen)
             painter.drawText(
-                slot,
-                Qt.AlignmentFlag.AlignCenter,
-                label,
+                label_rect,
+                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter,
+                label.upper(),
             )
 
-        painter.setPen(QPen(accent, max(0.8, 1.35 * scale)))
-        accent_y = rect.bottom() - max(0.5, 0.7 * scale)
-        painter.drawLine(
-            QPointF(rect.left(), accent_y),
-            QPointF(rect.right(), accent_y),
+            value_font = self._fit_font(
+                header_font_config,
+                value_rect,
+                value,
+                value_size,
+                7,
+                True,
+            )
+            painter.setFont(value_font)
+            painter.setPen(
+                highlight_text if highlighted else status_color
+            )
+            painter.drawText(
+                value_rect,
+                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter,
+                value,
+            )
+
+        # Filete rosa reforça a identidade visual sem obrigar o usuário a
+        # manter essa cor: o valor vem do seletor de cores do editor.
+        accent_height = max(1.0, float(config.get("header_accent_height", 2.0)) * scale)
+        accent_rect = QRectF(
+            rect.left() + radius,
+            rect.bottom() - accent_height,
+            max(1.0, rect.width() - radius * 2.0),
+            accent_height,
+        )
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(accent)
+        painter.drawRoundedRect(
+            accent_rect,
+            accent_height / 2.0,
+            accent_height / 2.0,
         )
 
     def _draw_delta_bar(

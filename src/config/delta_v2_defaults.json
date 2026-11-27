@@ -94,8 +94,13 @@
     "sector_session_best": "#8B4DFF",
     "header_background": "#080B10",
     "header_separator": "#2A3540",
-    "header_line": "#43BDCA",
-    "penalty_danger": "#FF3B45"
+    "header_cell_background": "#10151D",
+    "header_accent": "#FF54B8",
+    "header_label": "#A7B0BA",
+    "header_value": "#F4F6F8",
+    "header_highlight_background": "#B51B69",
+    "header_highlight_text": "#FFFFFF",
+    "header_limit_danger": "#FF3B45"
   },
   "penalty_limit_fallback": 0,
   "sector_tolerance_seconds": 0.001,
@@ -104,5 +109,22 @@
   "delta_good_side": "right",
   "penalty_increment": 0.25,
   "logo_auto_refresh": true,
-  "background_mode": "sections"
+  "background_mode": "sections",
+  "header_font": {
+    "family": "Segoe UI"
+  },
+  "header_label_size": 10,
+  "header_value_size": 19,
+  "header_highlight_item": "session_type",
+  "header_radius": 6,
+  "header_border_width": 0.8,
+  "header_cell_gap": 3,
+  "header_accent_height": 2,
+  "header_labels": {
+    "session_time": "TIME LEFT",
+    "session_type": "SESSION",
+    "track_state": "TRACK",
+    "split": "SPLIT",
+    "penalties": "PEN"
+  }
 }
