@@ -462,7 +462,8 @@
         "status_ready": "#3EDB91",
         "status_recording": "#F1B84B",
         "edit_border": "#9B5CFF"
-      }
+      },
+      "use_track_distance_positions": true
     },
     "standings": {
       "enabled": false,
@@ -1379,7 +1380,8 @@
         "status_ready": "#3EDB91",
         "status_recording": "#F1B84B",
         "edit_border": "#9B5CFF"
-      }
+      },
+      "use_track_distance_positions": true
     },
     "standings": {
       "enabled": false,
@@ -2300,7 +2302,8 @@
             "status_ready": "#3EDB91",
             "status_recording": "#F1B84B",
             "edit_border": "#9B5CFF"
-          }
+          },
+          "use_track_distance_positions": true
         },
         "standings": {
           "enabled": false,
@@ -3221,7 +3224,8 @@
             "status_ready": "#3EDB91",
             "status_recording": "#F1B84B",
             "edit_border": "#9B5CFF"
-          }
+          },
+          "use_track_distance_positions": true
         },
         "standings": {
           "enabled": false,

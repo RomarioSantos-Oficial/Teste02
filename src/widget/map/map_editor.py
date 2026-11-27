@@ -176,6 +176,11 @@ class MapEditor(QDialog):
                 True,
             ),
             (
+                "use_track_distance_positions",
+                "Usar posição pelo traçado (mais estável):",
+                True,
+            ),
+            (
                 "show_only_same_class",
                 "Mostrar somente mesma categoria:",
                 False,

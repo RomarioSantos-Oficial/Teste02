@@ -120,6 +120,17 @@ class MapOverlayFeaturesTest(unittest.TestCase):
         self.assertAlmostEqual(position[1], 10.0)
         self.assertAlmostEqual(position[2], 0.0)
 
+    def test_track_distance_position_is_interpolated_without_world_jitter(self) -> None:
+        points = [
+            SimpleNamespace(distance_m=0.0, world_x=0.0, world_y=0.0),
+            SimpleNamespace(distance_m=100.0, world_x=100.0, world_y=0.0),
+            SimpleNamespace(distance_m=200.0, world_x=100.0, world_y=100.0),
+        ]
+        position = self.widget._track_position_at_distance(points, 150.0, 300.0)
+        self.assertEqual(position, (100.0, 50.0))
+        position = self.widget._track_position_at_distance(points, 250.0, 300.0)
+        self.assertEqual(position, (50.0, 50.0))
+
     def test_long_pause_snaps_to_latest_position(self) -> None:
         self.widget.session = SimpleNamespace(track_length_m=1000.0)
         driver = SimpleNamespace(
@@ -208,6 +219,7 @@ class MapOverlayFeaturesTest(unittest.TestCase):
             "leader_marker_text": "♛",
             "leader_marker_image": "",
             "player_marker_image": "",
+            "use_track_distance_positions": True,
         }
         for config in [defaults, *configs]:
             for key, value in expected.items():
