@@ -854,28 +854,142 @@ class StandingsWidget(QWidget):
         painter.setPen(QPen(QColor(colors.get("header_line", "#175C9C")), max(1.0, 2.0 * self._scale)))
         painter.drawLine(rect.bottomLeft(), rect.bottomRight())
 
-    def _draw_categories(self, painter: QPainter, rect: QRectF) -> float:
-        y = rect.top()
-        row_height = max(14.0, float(self.config.get("row_height", 54.0)) * self._scale)
-        category_height = self._category_header_height()
-        legend_height = self._legend_height()
-        for category_index, category in enumerate(self.view.categories):
-            if y + category_height > rect.bottom():
+    @staticmethod
+    def _allocate_category_row_counts(
+        categories: list[CategoryBlock],
+        row_capacity: int,
+    ) -> list[int]:
+        """Distribui espaço por todas as categorias antes de repetir linhas."""
+        counts = [0] * len(categories)
+        remaining = max(0, int(row_capacity))
+
+        # Reserva uma linha por categoria primeiro. Assim uma classe no topo
+        # não consome todo o painel e esconde as classes seguintes.
+        for index, category in enumerate(categories):
+            if remaining <= 0:
                 break
-            self._draw_category_header(painter, QRectF(rect.left(), y, rect.width(), category_height), category)
-            y += category_height
-            if bool(self.config.get("show_column_legend", False)) and category_index == 0:
-                if y + legend_height > rect.bottom():
+            if category.rows:
+                counts[index] = 1
+                remaining -= 1
+
+        # As linhas adicionais são distribuídas em rodadas, respeitando o
+        # limite de cada categoria e mantendo todas representadas.
+        while remaining > 0:
+            changed = False
+            for index, category in enumerate(categories):
+                if remaining <= 0:
                     break
-                self._draw_legend(painter, QRectF(rect.left(), y, rect.width(), legend_height))
+                if counts[index] < len(category.rows):
+                    counts[index] += 1
+                    remaining -= 1
+                    changed = True
+            if not changed:
+                break
+        return counts
+
+    def _draw_categories(self, painter: QPainter, rect: QRectF) -> float:
+        categories = self.view.categories
+        if not categories:
+            return 0.0
+
+        original_scale = self._scale
+        show_legend = bool(self.config.get("show_column_legend", False))
+        minimum_scale_factor = 0.12
+
+        def dimensions(scale_factor: float) -> tuple[float, float, float, float]:
+            self._scale = original_scale * scale_factor
+            row_height = max(
+                14.0,
+                float(self.config.get("row_height", 54.0)) * self._scale,
+            )
+            category_height = self._category_header_height()
+            legend_height = self._legend_height() if show_legend else 0.0
+            category_gap = max(2.0, 7.0 * self._scale)
+            return row_height, category_height, legend_height, category_gap
+
+        def required_height(scale_factor: float) -> float:
+            row_height, category_height, legend_height, category_gap = dimensions(
+                scale_factor
+            )
+            return legend_height + sum(
+                category_height
+                + len(category.rows) * row_height
+                + category_gap
+                for category in categories
+            )
+
+        scale_factor = 1.0
+        visible_counts = [len(category.rows) for category in categories]
+        if required_height(scale_factor) > rect.height():
+            if required_height(minimum_scale_factor) <= rect.height():
+                # Reduz os elementos de forma proporcional antes de omitir
+                # qualquer piloto. A escala final é a maior que cabe.
+                low = minimum_scale_factor
+                high = 1.0
+                for _ in range(24):
+                    middle = (low + high) / 2.0
+                    if required_height(middle) <= rect.height():
+                        low = middle
+                    else:
+                        high = middle
+                scale_factor = low
+            else:
+                # Se nem a escala compacta comportar todas as linhas,
+                # garante cabeçalho e representação de cada categoria e
+                # distribui as linhas restantes por rodadas.
+                scale_factor = minimum_scale_factor
+
+        row_height, category_height, legend_height, category_gap = dimensions(
+            scale_factor
+        )
+        if len(visible_counts) and required_height(scale_factor) > rect.height():
+            fixed_height = (
+                legend_height
+                + len(categories) * (category_height + category_gap)
+            )
+            row_capacity = max(
+                0,
+                int((rect.height() - fixed_height + 1.0) // row_height),
+            )
+            visible_counts = self._allocate_category_row_counts(
+                categories,
+                row_capacity,
+            )
+
+        y = rect.top()
+        if show_legend:
+            # A legenda fica antes dos blocos: não pode separar o cabeçalho
+            # da primeira classe das suas linhas nem interromper as demais.
+            if y + legend_height <= rect.bottom() + 1.0:
+                self._draw_legend(
+                    painter,
+                    QRectF(rect.left(), y, rect.width(), legend_height),
+                )
                 y += legend_height
-            for row in category.rows:
-                if y + row_height > rect.bottom():
-                    self._draw_clipped_notice(painter, QRectF(rect.left(), max(rect.top(), rect.bottom() - row_height), rect.width(), row_height))
-                    return y - rect.top()
-                self._draw_row(painter, QRectF(rect.left(), y, rect.width(), row_height), row, category)
+
+        for category, visible_count in zip(categories, visible_counts):
+            if y + category_height > rect.bottom() + 1.0:
+                break
+            self._draw_category_header(
+                painter,
+                QRectF(rect.left(), y, rect.width(), category_height),
+                category,
+            )
+            y += category_height
+
+            for row in category.rows[:visible_count]:
+                if y + row_height > rect.bottom() + 1.0:
+                    break
+                self._draw_row(
+                    painter,
+                    QRectF(rect.left(), y, rect.width(), row_height),
+                    row,
+                    category,
+                )
                 y += row_height
-            y += max(2.0, 7.0 * self._scale)
+            y += category_gap
+
+        self._scale = original_scale
         return y - rect.top()
 
     def _draw_category_header(self, painter: QPainter, rect: QRectF, category: CategoryBlock) -> None:
