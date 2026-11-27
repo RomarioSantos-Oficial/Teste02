@@ -8,7 +8,11 @@ from PySide6.QtGui import QColor, QImage, QPainter
 
 from src.ui.overlay_manager import OverlayManager
 from src.widget.relative.relative_widget import RelativeWidget
-from src.widget.standings.standings_models import StandingRow, StandingsView
+from src.widget.standings.standings_models import (
+    CategoryBlock,
+    StandingRow,
+    StandingsView,
+)
 from src.widget.standings.standings_widget import (
     StandingsWidget,
     tyre_icon_fill,
@@ -17,6 +21,41 @@ from src.widget.standings.standings_widget import (
 
 
 class StandingsLayoutUnitTests(unittest.TestCase):
+    def test_category_rows_are_distributed_before_repeating_a_class(self) -> None:
+        categories = [
+            CategoryBlock(
+                class_key="LMP2",
+                rows=[StandingRow() for _ in range(4)],
+            ),
+            CategoryBlock(
+                class_key="LMP3",
+                rows=[StandingRow() for _ in range(2)],
+            ),
+            CategoryBlock(
+                class_key="LMGT3",
+                rows=[StandingRow() for _ in range(3)],
+            ),
+        ]
+
+        self.assertEqual(
+            StandingsWidget._allocate_category_row_counts(categories, 3),
+            [1, 1, 1],
+        )
+        self.assertEqual(
+            StandingsWidget._allocate_category_row_counts(categories, 6),
+            [2, 2, 2],
+        )
+        self.assertEqual(
+            StandingsWidget._allocate_category_row_counts(categories, 9),
+            [4, 2, 3],
+        )
+
+        categories[2].rows[-1].is_player = True
+        self.assertEqual(
+            StandingsWidget._allocate_category_row_counts(categories, 2),
+            [1, 0, 1],
+        )
+
     def test_player_highlight_excludes_position_brand_number_and_delta(self) -> None:
         for column in ("position", "brand", "number", "delta"):
             with self.subTest(column=column):

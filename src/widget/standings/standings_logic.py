@@ -264,6 +264,7 @@ class StandingsLogic:
             )
             for driver in drivers
         ]
+        self._identify_player_row(rows, session)
         self._apply_lap_states(rows, now)
         session_number = int(getattr(session, "session", 0) or 0)
         player = next((row for row in rows if row.is_player), None)
@@ -312,6 +313,47 @@ class StandingsLogic:
             track_name=str(getattr(session, "track_name", "") or ""),
             categories=categories,
         )
+
+    @staticmethod
+    def _identify_player_row(rows: list[StandingRow], session: Any) -> None:
+        """Recover the player row when LMU briefly omits the mIsPlayer flag.
+
+        The exact player name is preferred. A unique vehicle identity is used
+        only as a fallback, so a same-model opponent is never selected
+        ambiguously.
+        """
+        if any(row.is_player for row in rows):
+            return
+
+        player_name = normalize_identity(
+            getattr(session, "player_name", "")
+        )
+        if player_name:
+            matches = [
+                row for row in rows
+                if normalize_identity(row.driver_name) == player_name
+            ]
+            if len(matches) == 1:
+                matches[0].is_player = True
+                return
+
+        player_data = getattr(session, "player", None)
+        if player_data is None:
+            return
+        for row_field in ("vehicle_model", "vehicle_name"):
+            player_identity = normalize_identity(
+                getattr(player_data, row_field, "")
+            )
+            if not player_identity:
+                continue
+            matches = [
+                row for row in rows
+                if normalize_identity(getattr(row, row_field, ""))
+                == player_identity
+            ]
+            if len(matches) == 1:
+                matches[0].is_player = True
+                return
 
     @staticmethod
     def _delta_feature_enabled(config: dict[str, Any]) -> bool:
@@ -1370,10 +1412,26 @@ class StandingsLogic:
             row.best_lap_s for row in rows if row.best_lap_s > 0.0
         ]
         session_fastest = min(valid_best_times, default=0.0)
+        class_fastest: dict[str, float] = {}
         for row in rows:
             row.is_session_fastest = (
                 session_fastest > 0.0
                 and abs(row.best_lap_s - session_fastest) <= 0.0005
+            )
+            row.is_class_fastest = False
+            if row.best_lap_s > 0.0:
+                class_key = str(row.class_key or row.class_name or "UNKNOWN")
+                current_fastest = class_fastest.get(class_key)
+                if current_fastest is None or row.best_lap_s < current_fastest:
+                    class_fastest[class_key] = row.best_lap_s
+
+        for row in rows:
+            class_key = str(row.class_key or row.class_name or "UNKNOWN")
+            class_best = class_fastest.get(class_key, 0.0)
+            row.is_class_fastest = (
+                class_best > 0.0
+                and row.best_lap_s > 0.0
+                and abs(row.best_lap_s - class_best) <= 0.0005
             )
 
         self._observed_laps_once = True

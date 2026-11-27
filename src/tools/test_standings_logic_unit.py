@@ -9,6 +9,7 @@ from src.widget.standings.standings_logic import (
     format_driver_name,
 )
 from src.widget.standings.standings_models import DriverMetadata, StandingRow
+from src.widget.standings.standings_widget import StandingsWidget
 
 
 class StandingsLogicUnitTests(unittest.TestCase):
@@ -822,6 +823,147 @@ class StandingsLogicUnitTests(unittest.TestCase):
 
         self.assertEqual(row.vehicle_model, "Genesis GMR-001")
         self.assertEqual(row.manufacturer, "Genesis")
+
+
+    def test_multiclass_player_fallback_keeps_gt3_and_relative_reference(self) -> None:
+        drivers = [
+            DriverData(
+                slot_id=1, driver_name="LMP2 Leader", vehicle_class="LMP2",
+                position=1, lap_distance_m=500.0, time_into_lap_s=10.0,
+            ),
+            DriverData(
+                slot_id=2, driver_name="LMP2 Second", vehicle_class="LMP2",
+                position=2, lap_distance_m=600.0, time_into_lap_s=12.0,
+            ),
+            DriverData(
+                slot_id=3, driver_name="LMP3 Leader", vehicle_class="LMP3",
+                position=3, lap_distance_m=700.0, time_into_lap_s=14.0,
+            ),
+            DriverData(
+                slot_id=4, driver_name="LMP3 Second", vehicle_class="LMP3",
+                position=4, lap_distance_m=800.0, time_into_lap_s=16.0,
+            ),
+            DriverData(
+                slot_id=5, driver_name="GT3 Player", vehicle_class="GT3",
+                position=5, lap_distance_m=900.0, time_into_lap_s=18.0,
+            ),
+            DriverData(
+                slot_id=6, driver_name="GT3 Second", vehicle_class="GT3",
+                position=6, lap_distance_m=1000.0, time_into_lap_s=20.0,
+            ),
+        ]
+        session = SessionData(
+            connected=True,
+            session=10,
+            track_length_m=5000.0,
+            player_name="GT3 Player",
+            player=PlayerData(vehicle_name="GT3 Car"),
+            drivers=drivers,
+        )
+
+        standings = StandingsLogic({
+            "maximum_categories": 3,
+            "player_category_rows": 2,
+            "other_category_rows": 2,
+        }).build(session, {}, "MEM")
+
+        self.assertEqual(
+            [category.class_key for category in standings.categories],
+            ["LMP2", "LMP3", "LMGT3"],
+        )
+        player_category = next(
+            category for category in standings.categories
+            if category.class_key == "LMGT3"
+        )
+        player_row = next(row for row in player_category.rows if row.is_player)
+        self.assertEqual(player_row.driver_name, "GT3 Player")
+
+        relative = StandingsLogic({
+            "relative_mode": True,
+            "relative_cars_ahead": 5,
+            "relative_cars_behind": 5,
+        }).build(session, {}, "MEM")
+
+        self.assertTrue(relative.categories)
+        relative_rows = relative.categories[0].rows
+        self.assertTrue(any(row.is_player for row in relative_rows))
+        self.assertEqual(
+            {row.class_key for row in relative_rows},
+            {"LMP2", "LMP3", "LMGT3"},
+        )
+
+
+    def test_class_fastest_lap_is_tracked_independently_for_every_category(self) -> None:
+        session = SessionData(
+            connected=True,
+            session=5,  # Qualificacao: o marcador nao fica restrito a corridas.
+            drivers=[
+                DriverData(
+                    slot_id=1, driver_name="Hyper P1", vehicle_class="Hypercar",
+                    position=1, best_lap_s=100.0,
+                ),
+                DriverData(
+                    slot_id=2, driver_name="GT3 P1", vehicle_class="LMGT3",
+                    position=2, best_lap_s=110.0,
+                ),
+                DriverData(
+                    slot_id=3, driver_name="Hyper P2", vehicle_class="Hypercar",
+                    position=3, best_lap_s=101.0,
+                ),
+                DriverData(
+                    slot_id=4, driver_name="GT3 P2", vehicle_class="LMGT3",
+                    position=4, best_lap_s=111.0,
+                ),
+                DriverData(
+                    slot_id=5, driver_name="Player GT3", vehicle_class="LMGT3",
+                    position=5, best_lap_s=109.5, is_player=True,
+                ),
+            ],
+        )
+        rows = [
+            row
+            for category in StandingsLogic({}).build(session, {}, "MEM").categories
+            for row in category.rows
+        ]
+        by_name = {row.driver_name: row for row in rows}
+
+        self.assertTrue(by_name["Hyper P1"].is_class_fastest)
+        self.assertFalse(by_name["Hyper P2"].is_class_fastest)
+        self.assertFalse(by_name["GT3 P1"].is_class_fastest)
+        self.assertFalse(by_name["GT3 P2"].is_class_fastest)
+        self.assertTrue(by_name["Player GT3"].is_class_fastest)
+        # A categoria do player ganha seu proprio marcador, mesmo sem ser
+        # a volta mais rapida absoluta da sessao.
+        self.assertFalse(by_name["Player GT3"].is_session_fastest)
+
+
+
+    def test_class_fastest_clock_is_last_status_priority(self) -> None:
+        row = StandingRow(is_class_fastest=True)
+        self.assertEqual(StandingsWidget._automatic_status_kind(row), "fastest")
+
+        row.under_yellow = True
+        self.assertEqual(StandingsWidget._automatic_status_kind(row), "yellow")
+
+        row.under_yellow = False
+        row.in_garage = True
+        self.assertEqual(StandingsWidget._automatic_status_kind(row), "garage")
+
+        row.in_garage = False
+        row.in_pits = True
+        self.assertEqual(StandingsWidget._automatic_status_kind(row), "pit")
+
+        row.in_pits = False
+        row.penalty_text = "DT"
+        self.assertEqual(StandingsWidget._automatic_status_kind(row), "penalty")
+
+        row.penalty_text = ""
+        row.pit_status_visible = True  # tempo residual na coluna PIT separada
+        self.assertEqual(StandingsWidget._automatic_status_kind(row), "fastest")
+
+        row.in_pits = True
+        self.assertEqual(StandingsWidget._automatic_status_kind(row), "pit")
+
 
 
 if __name__ == "__main__":
