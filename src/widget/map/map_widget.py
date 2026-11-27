@@ -1845,14 +1845,9 @@ class TrackMapWidget(QWidget):
             )
         )
 
-        if bool(getattr(driver, "is_player", False)):
-            return QColor(
-                colors.get(
-                    "vehicle_player",
-                    "#FF54B8",
-                )
-            )
-
+        # A cor de preenchimento continua representando a categoria
+        # (ou o estado do carro). O jogador recebe destaque separado
+        # pelo anel em _draw_vehicle(), sem substituir a cor LMP2/LMGT3.
         if (
             (
                 bool(
