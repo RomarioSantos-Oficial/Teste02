@@ -281,22 +281,23 @@ class DriverPanelRenderer:
         raw_ratio = data.rpm / max(1.0, data.max_rpm)
         ratio = max(0.0, min(1.0, raw_ratio))
         rpm_layout = config.get("layout", {})
-        # Limiares exclusivos da barra de RPM: verde 88%, amarelos 90/92%,
-        # azuis 95/96,9%. As luzes superiores usam seus próprios limiares.
+        # Seis estágios da barra: verde 75/88%, amarelo 90/92% e azul 95/96,5%.
+        # As três luzes superiores continuam usando limites independentes.
         bar_thresholds = (
-            max(0.0, min(1.0, float(rpm_layout.get("rpm_green_start", 0.88)))),
+            max(0.0, min(1.0, float(rpm_layout.get("rpm_green_1_start", 0.75)))),
+            max(0.0, min(1.0, float(rpm_layout.get("rpm_green_2_start", 0.88)))),
             max(0.0, min(1.0, float(rpm_layout.get("rpm_yellow_1_start", 0.90)))),
             max(0.0, min(1.0, float(rpm_layout.get("rpm_yellow_2_start", 0.92)))),
             max(0.0, min(1.0, float(rpm_layout.get("rpm_blue_1_start", 0.95)))),
-            max(0.0, min(1.0, float(rpm_layout.get("rpm_blue_2_start", 0.969)))),
+            max(0.0, min(1.0, float(rpm_layout.get("rpm_blue_2_start", 0.965)))),
         )
         flash_at = max(
             0.0,
             min(1.2, float(rpm_layout.get("rpm_bar_flash_start", 0.97))),
         )
 
-        # Dez blocos espelhados: o preenchimento avança das duas extremidades
-        # verdes para o amarelo e termina nos dois blocos azuis centrais.
+        # Doze blocos espelhados: seis estágios, dois blocos por estágio,
+        # avançando das extremidades verdes para os blocos azuis centrais.
         bar_height_scale = max(0.5, min(1.5, float(config.get("rpm_bar_height_scale", 1.0))))
         bar_height = max(5.0 * scale, rect.height() * 0.46 * bar_height_scale)
         bar = QRectF(
@@ -312,10 +313,10 @@ class DriverPanelRenderer:
         purple = QColor(color_cfg.get("rpm_flash", "#9B5CFF"))
         flash_color = purple if data.rpm_flash_phase else red
         cell_colors = [
-            green, yellow, yellow, blue, blue,
-            blue, blue, yellow, yellow, green,
+            green, green, yellow, yellow, blue, blue,
+            blue, blue, yellow, yellow, green, green,
         ]
-        block_count = 10
+        block_count = 12
         block_gap = max(1.5, 3.0 * scale)
         block_width = max(
             1.0,

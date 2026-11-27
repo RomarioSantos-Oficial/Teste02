@@ -41,19 +41,20 @@
     "scale": 1
   },
   "layout": {
-    "rpm_segments": 10,
+    "rpm_segments": 12,
     "shift_start": 0.88,
     "red_start": 0.92,
     "shift_light_1": 0.91,
     "shift_light_2": 0.94,
     "shift_light_3": 0.96,
     "rpm_flash_start": 0.99,
-    "rpm_green_start": 0.88,
     "rpm_yellow_1_start": 0.9,
     "rpm_yellow_2_start": 0.92,
     "rpm_blue_1_start": 0.95,
-    "rpm_blue_2_start": 0.969,
-    "rpm_bar_flash_start": 0.97
+    "rpm_blue_2_start": 0.965,
+    "rpm_bar_flash_start": 0.97,
+    "rpm_green_1_start": 0.75,
+    "rpm_green_2_start": 0.88
   },
   "colors": {
     "text": "#FFFFFF",

@@ -351,16 +351,16 @@ class DriverPanelEditor(QDialog):
         layout = self.config.setdefault("layout", {})
 
         segments = QSpinBox()
-        segments.setRange(10, 10)
-        segments.setValue(10)
+        segments.setRange(12, 12)
+        segments.setValue(12)
         segments.setEnabled(False)
-        form.addRow("Blocos da faixa (10):", segments)
+        form.addRow("Blocos da faixa (12):", segments)
 
         def add_threshold(key: str, label: str, default: float, minimum: float = 0.50) -> None:
             spin = QDoubleSpinBox()
             spin.setRange(minimum, 1.20)
-            spin.setSingleStep(0.01)
-            spin.setDecimals(0)
+            spin.setSingleStep(0.1)
+            spin.setDecimals(1)
             spin.setSuffix("%")
             spin.setValue(float(layout.get(key, default)) * 100.0)
             spin.valueChanged.connect(
@@ -370,11 +370,12 @@ class DriverPanelEditor(QDialog):
             form.addRow(label, spin)
 
         form.addRow(QLabel("Barra de RPM — limiares das luzes:"))
-        add_threshold("rpm_green_start", "Luzes verdes:", 0.88, 0.0)
+        add_threshold("rpm_green_1_start", "1ª luz verde:", 0.75, 0.0)
+        add_threshold("rpm_green_2_start", "2ª luz verde:", 0.88, 0.0)
         add_threshold("rpm_yellow_1_start", "1ª luz amarela:", 0.90, 0.0)
         add_threshold("rpm_yellow_2_start", "2ª luz amarela:", 0.92, 0.0)
         add_threshold("rpm_blue_1_start", "1ª luz azul:", 0.95, 0.0)
-        add_threshold("rpm_blue_2_start", "2ª luz azul:", 0.969, 0.0)
+        add_threshold("rpm_blue_2_start", "2ª luz azul:", 0.965, 0.0)
         add_threshold("rpm_bar_flash_start", "Piscar barra em vermelho/roxo:", 0.97, 0.0)
         form.addRow(QLabel("Luzes superiores — mantidas como estavam:"))
         add_threshold("shift_light_1", "1ª luz superior:", 0.91)

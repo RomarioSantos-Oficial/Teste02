@@ -1042,12 +1042,19 @@
       "graph_vertical_lines": 8,
       "layout": {
         "red_start": 0.92,
-        "rpm_segments": 10,
+        "rpm_segments": 12,
         "shift_start": 0.88,
         "shift_light_1": 0.91,
         "shift_light_2": 0.94,
         "shift_light_3": 0.96,
-        "rpm_flash_start": 0.99
+        "rpm_flash_start": 0.99,
+        "rpm_green_1_start": 0.75,
+        "rpm_green_2_start": 0.88,
+        "rpm_yellow_1_start": 0.9,
+        "rpm_yellow_2_start": 0.92,
+        "rpm_blue_1_start": 0.95,
+        "rpm_blue_2_start": 0.965,
+        "rpm_bar_flash_start": 0.97
       },
       "monitor": 0,
       "opacity": 0.96,
@@ -2107,13 +2114,20 @@
         "scale": 1
       },
       "layout": {
-        "rpm_segments": 10,
+        "rpm_segments": 12,
         "shift_start": 0.88,
         "red_start": 0.92,
         "shift_light_1": 0.91,
         "shift_light_2": 0.94,
         "shift_light_3": 0.96,
-        "rpm_flash_start": 0.99
+        "rpm_flash_start": 0.99,
+        "rpm_green_1_start": 0.75,
+        "rpm_green_2_start": 0.88,
+        "rpm_yellow_1_start": 0.9,
+        "rpm_yellow_2_start": 0.92,
+        "rpm_blue_1_start": 0.95,
+        "rpm_blue_2_start": 0.965,
+        "rpm_bar_flash_start": 0.97
       },
       "colors": {
         "text": "#FFFFFF",
@@ -3159,12 +3173,19 @@
           "graph_vertical_lines": 8,
           "layout": {
             "red_start": 0.92,
-            "rpm_segments": 10,
+            "rpm_segments": 12,
             "shift_start": 0.88,
             "shift_light_1": 0.91,
             "shift_light_2": 0.94,
             "shift_light_3": 0.96,
-            "rpm_flash_start": 0.99
+            "rpm_flash_start": 0.99,
+            "rpm_green_1_start": 0.75,
+            "rpm_green_2_start": 0.88,
+            "rpm_yellow_1_start": 0.9,
+            "rpm_yellow_2_start": 0.92,
+            "rpm_blue_1_start": 0.95,
+            "rpm_blue_2_start": 0.965,
+            "rpm_bar_flash_start": 0.97
           },
           "monitor": 0,
           "opacity": 0.96,
@@ -3206,7 +3227,7 @@
           "pedal_show_labels": false,
           "pedal_show_peaks": false,
           "rpm_flash_interval_s": 0.06,
-      "rpm_flash_frequency_hz": 20,
+          "rpm_flash_frequency_hz": 20,
           "graph_show_scale_labels": false,
           "graph_extrema_markers": true,
           "graph_marker_scale": 1,
@@ -4137,13 +4158,20 @@
             "scale": 1
           },
           "layout": {
-            "rpm_segments": 10,
+            "rpm_segments": 12,
             "shift_start": 0.88,
             "red_start": 0.92,
             "shift_light_1": 0.91,
             "shift_light_2": 0.94,
             "shift_light_3": 0.96,
-            "rpm_flash_start": 0.99
+            "rpm_flash_start": 0.99,
+            "rpm_green_1_start": 0.75,
+            "rpm_green_2_start": 0.88,
+            "rpm_yellow_1_start": 0.9,
+            "rpm_yellow_2_start": 0.92,
+            "rpm_blue_1_start": 0.95,
+            "rpm_blue_2_start": 0.965,
+            "rpm_bar_flash_start": 0.97
           },
           "colors": {
             "text": "#FFFFFF",
@@ -4221,7 +4249,7 @@
           "pedal_show_labels": false,
           "pedal_show_peaks": false,
           "rpm_flash_interval_s": 0.06,
-      "rpm_flash_frequency_hz": 20,
+          "rpm_flash_frequency_hz": 20,
           "graph_show_scale_labels": false,
           "graph_extrema_markers": true,
           "graph_marker_scale": 1,

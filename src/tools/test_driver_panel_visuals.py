@@ -160,30 +160,30 @@ class DriverPanelVisualTests(unittest.TestCase):
         self.assertLess(at_limit.red(), 220)
 
 
-    def test_rpm_bar_uses_requested_color_thresholds_and_flashes_at_97(self) -> None:
+    def test_rpm_bar_has_six_requested_stages_and_flashes_at_97(self) -> None:
         renderer = DriverPanelRenderer()
-        colors = {
-            "rpm_green": "#2BD158",
-            "rpm_yellow": "#FFC400",
-            "rpm_blue": "#258DFF",
-            "rpm_high": "#FF2438",
-            "rpm_flash": "#9B5CFF",
-        }
         config = {
-            "colors": colors,
+            "colors": {
+                "rpm_green": "#2BD158",
+                "rpm_yellow": "#FFC400",
+                "rpm_blue": "#258DFF",
+                "rpm_high": "#FF2438",
+                "rpm_flash": "#9B5CFF",
+            },
             "layout": {
-                "rpm_green_start": 0.88,
+                "rpm_green_1_start": 0.75,
+                "rpm_green_2_start": 0.88,
                 "rpm_yellow_1_start": 0.90,
                 "rpm_yellow_2_start": 0.92,
                 "rpm_blue_1_start": 0.95,
-                "rpm_blue_2_start": 0.969,
+                "rpm_blue_2_start": 0.965,
                 "rpm_bar_flash_start": 0.97,
             },
         }
-        rect = QRectF(0, 0, 1000, 100)
+        rect = QRectF(0, 0, 1200, 100)
 
         def sample(ratio: float, phase: bool = False) -> list[QColor]:
-            image = QImage(1000, 100, QImage.Format.Format_ARGB32)
+            image = QImage(1200, 100, QImage.Format.Format_ARGB32)
             image.fill(QColor(0, 0, 0, 0))
             painter = QPainter(image)
             renderer._rpm(
@@ -192,22 +192,47 @@ class DriverPanelVisualTests(unittest.TestCase):
                 config, {}, QColor("#FFFFFF"), QColor("#AAAAAA"), 1.0,
             )
             painter.end()
-            # centers of the ten RPM blocks (the bar is inset 2px and has 3px gaps)
-            return [image.pixelColor(round(2 + (i + 0.5) * ((996 - 27) / 10 + 3)), 50) for i in range(10)]
+            block_gap = 3.0
+            block_width = (1196.0 - block_gap * 11) / 12
+            return [
+                image.pixelColor(round(2 + i * (block_width + block_gap) + block_width / 2), 50)
+                for i in range(12)
+            ]
 
-        at_green = sample(0.88)
-        self.assertEqual(at_green[0].name(), "#2bd158")
-        self.assertEqual(at_green[1].name(), "#171717")
-        at_yellow = sample(0.90)
-        self.assertEqual(at_yellow[1].name(), "#ffc400")
-        at_blue = sample(0.95)
-        self.assertEqual(at_blue[3].name(), "#258dff")
-        self.assertEqual(at_blue[4].name(), "#171717")
-        at_second_blue = sample(0.969)
-        self.assertEqual(at_second_blue[4].name(), "#258dff")
-        flashing = sample(0.97, True)
-        self.assertEqual(flashing[0].name(), "#9b5cff")
-        self.assertEqual(flashing[4].name(), "#9b5cff")
+        # Cada estágio ilumina um par espelhado, das extremidades para o centro.
+        at_75 = sample(0.75)
+        self.assertEqual(at_75[0].name(), "#2bd158")
+        self.assertEqual(at_75[11].name(), "#2bd158")
+        self.assertEqual(at_75[1].name(), "#171717")
+
+        at_88 = sample(0.88)
+        self.assertEqual(at_88[1].name(), "#2bd158")
+        self.assertEqual(at_88[10].name(), "#2bd158")
+        self.assertEqual(at_88[2].name(), "#171717")
+
+        at_90 = sample(0.90)
+        self.assertEqual(at_90[2].name(), "#ffc400")
+        self.assertEqual(at_90[9].name(), "#ffc400")
+
+        at_92 = sample(0.92)
+        self.assertEqual(at_92[3].name(), "#ffc400")
+        self.assertEqual(at_92[8].name(), "#ffc400")
+
+        at_95 = sample(0.95)
+        self.assertEqual(at_95[4].name(), "#258dff")
+        self.assertEqual(at_95[7].name(), "#258dff")
+        self.assertEqual(at_95[5].name(), "#171717")
+
+        at_965 = sample(0.965)
+        self.assertEqual(at_965[5].name(), "#258dff")
+        self.assertEqual(at_965[6].name(), "#258dff")
+
+        below_flash = sample(0.969, True)
+        self.assertEqual(below_flash[0].name(), "#2bd158")
+        at_flash = sample(0.97, True)
+        self.assertEqual(at_flash[0].name(), "#9b5cff")
+        self.assertEqual(at_flash[5].name(), "#9b5cff")
+
 
 if __name__ == "__main__":
     unittest.main()
