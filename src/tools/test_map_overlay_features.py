@@ -111,6 +111,44 @@ class MapOverlayFeaturesTest(unittest.TestCase):
             "#123456",
         )
 
+    def test_leader_markers_use_class_tint_and_allow_per_class_overrides(self) -> None:
+        driver = SimpleNamespace(
+            vehicle_class="HYPERCAR",
+            position=2,
+            position_in_class=1,
+        )
+        text, image, color = self.widget._leader_marker_style(driver, "class")
+        self.assertEqual(text, "🏆")
+        self.assertEqual(image, "")
+        self.assertEqual(color.name(), "#123456")
+
+        self.config["same_class_leader_marker"] = False
+        self.config["class_leader_marker_texts"] = {"HYPERCAR": "🥇"}
+        self.widget.update_config(self.config)
+        text, image, color = self.widget._leader_marker_style(driver, "class")
+        self.assertEqual(text, "🥇")
+        self.assertEqual(image, "")
+        self.assertEqual(color.name(), "#123456")
+
+    def test_overall_leader_has_distinct_default_emblem(self) -> None:
+        driver = SimpleNamespace(
+            vehicle_class="HYPERCAR",
+            position=1,
+            position_in_class=1,
+        )
+        text, image, color = self.widget._leader_marker_style(driver, "overall")
+        self.assertEqual(text, "👑")
+        self.assertEqual(image, "")
+        self.assertEqual(color.name(), "#f5c451")
+
+    def test_player_marker_ring_width_is_independently_configurable(self) -> None:
+        self.config["vehicle_outline_player_width"] = 6.5
+        self.config["colors"]["vehicle_player_marker"] = "#12ABCD"
+        editor = MapEditor(self.config)
+        self.assertEqual(editor.config["vehicle_outline_player_width"], 6.5)
+        self.assertEqual(editor.config["colors"]["vehicle_player_marker"], "#12ABCD")
+        editor.close()
+
     def test_interpolation_handles_world_position_and_lap_wrap(self) -> None:
         self.widget.session = SimpleNamespace(track_length_m=1000.0)
         driver = SimpleNamespace(
@@ -232,6 +270,18 @@ class MapOverlayFeaturesTest(unittest.TestCase):
             "leader_marker_text": "♛",
             "leader_marker_image": "",
             "player_marker_image": "",
+            "leader_marker_text": "👑",
+            "leader_marker_image": "",
+            "class_leader_marker_text": "🏆",
+            "class_leader_marker_image": "",
+            "same_class_leader_marker": True,
+            "class_leader_marker_texts": {
+                "HYPERCAR": "", "LMP2": "", "LMP3": "", "LMGT3": "", "GTE": ""
+            },
+            "class_leader_marker_images": {
+                "HYPERCAR": "", "LMP2": "", "LMP3": "", "LMGT3": "", "GTE": ""
+            },
+            "vehicle_outline_player_width": 3.0,
             "use_track_distance_positions": True,
             "vehicle_number_font_size": 10.0,
         }
@@ -239,6 +289,8 @@ class MapOverlayFeaturesTest(unittest.TestCase):
             for key, value in expected.items():
                 self.assertEqual(config[key], value, key)
             self.assertEqual(config["colors"]["vehicle_player"], "#FF54B8")
+            self.assertEqual(config["colors"]["vehicle_player_marker"], "#FF54B8")
+            self.assertEqual(config["colors"]["leader_marker_overall"], "#F5C451")
             self.assertEqual(config["colors"]["vehicle_player_marker"], "#FF54B8")
 
 
