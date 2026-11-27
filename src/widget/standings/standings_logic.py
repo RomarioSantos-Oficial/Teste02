@@ -264,6 +264,7 @@ class StandingsLogic:
             )
             for driver in drivers
         ]
+        self._identify_player_row(rows, session)
         self._apply_lap_states(rows, now)
         session_number = int(getattr(session, "session", 0) or 0)
         player = next((row for row in rows if row.is_player), None)
@@ -312,6 +313,47 @@ class StandingsLogic:
             track_name=str(getattr(session, "track_name", "") or ""),
             categories=categories,
         )
+
+    @staticmethod
+    def _identify_player_row(rows: list[StandingRow], session: Any) -> None:
+        """Recover the player row when LMU briefly omits the mIsPlayer flag.
+
+        The exact player name is preferred. A unique vehicle identity is used
+        only as a fallback, so a same-model opponent is never selected
+        ambiguously.
+        """
+        if any(row.is_player for row in rows):
+            return
+
+        player_name = normalize_identity(
+            getattr(session, "player_name", "")
+        )
+        if player_name:
+            matches = [
+                row for row in rows
+                if normalize_identity(row.driver_name) == player_name
+            ]
+            if len(matches) == 1:
+                matches[0].is_player = True
+                return
+
+        player_data = getattr(session, "player", None)
+        if player_data is None:
+            return
+        for row_field in ("vehicle_model", "vehicle_name"):
+            player_identity = normalize_identity(
+                getattr(player_data, row_field, "")
+            )
+            if not player_identity:
+                continue
+            matches = [
+                row for row in rows
+                if normalize_identity(getattr(row, row_field, ""))
+                == player_identity
+            ]
+            if len(matches) == 1:
+                matches[0].is_player = True
+                return
 
     @staticmethod
     def _delta_feature_enabled(config: dict[str, Any]) -> bool:
