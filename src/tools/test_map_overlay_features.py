@@ -43,6 +43,7 @@ class MapOverlayFeaturesTest(unittest.TestCase):
             "colors": {
                 "vehicle_player": "#FF54B8",
                 "vehicle_outline_player": "#FFFFFF",
+                "vehicle_player_marker": "#FF54B8",
             },
             "class_colors": {"HYPERCAR": "#123456"},
         }
@@ -193,6 +194,7 @@ class MapOverlayFeaturesTest(unittest.TestCase):
         painter.end()
         self.assertEqual(canvas.pixelColor(20, 20).alpha(), 0)
         self.assertGreater(canvas.pixelColor(30, 30).alpha(), 0)
+        self.assertEqual(canvas.pixelColor(19, 30).name(), "#ff54b8")
 
     def test_editor_exposes_and_emits_custom_marker_settings(self) -> None:
         editor = MapEditor(self.config)
@@ -237,6 +239,7 @@ class MapOverlayFeaturesTest(unittest.TestCase):
             for key, value in expected.items():
                 self.assertEqual(config[key], value, key)
             self.assertEqual(config["colors"]["vehicle_player"], "#FF54B8")
+            self.assertEqual(config["colors"]["vehicle_player_marker"], "#FF54B8")
 
 
 if __name__ == "__main__":
