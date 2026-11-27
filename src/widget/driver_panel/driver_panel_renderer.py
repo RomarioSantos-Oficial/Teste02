@@ -196,10 +196,14 @@ class DriverPanelRenderer:
         color_cfg = config.get("colors", {})
         layout = config.get("layout", {})
         raw_ratio = data.rpm / max(1.0, data.max_rpm)
-        shift_at = max(0.0, min(1.0, float(layout.get("shift_start", 0.78))))
-        red_at = max(shift_at, min(1.0, float(layout.get("red_start", 0.92))))
 
-        # Caixa de RPM à esquerda, limitada a 25% da largura do painel.
+        blue_at = max(0.0, min(1.0, float(layout.get("shift_start", 0.88))))
+        light_1_at = max(blue_at, min(1.1, float(layout.get("shift_light_1", 0.91))))
+        light_2_at = max(light_1_at, min(1.1, float(layout.get("shift_light_2", 0.94))))
+        light_3_at = max(light_2_at, min(1.1, float(layout.get("shift_light_3", 0.96))))
+        flash_at = max(light_3_at, min(1.2, float(layout.get("rpm_flash_start", 1.00))))
+
+        # Valor do RPM separado à esquerda, ocupando no máximo 25% da largura.
         value = f"{data.rpm:,.0f} RPM".replace(",", ".")
         font = self._font(config, max(8.0, header_height * 0.34), True)
         metrics = QFontMetricsF(font)
@@ -224,31 +228,26 @@ class DriverPanelRenderer:
         painter.setPen(text)
         painter.drawText(value_rect, Qt.AlignmentFlag.AlignCenter, value)
 
-        # Três caixas individuais centralizadas; o grupo nunca passa de 35%.
+        # Três luzes centralizadas, grupo limitado a 35% da largura do overlay.
         max_group_width = max(0.0, bounds.width() * 0.35)
-        group_width = min(max_group_width, max(108.0 * scale, bounds.width() * 0.12))
+        requested_group_width = min(max_group_width, max(108.0 * scale, bounds.width() * 0.12))
         light_gap = max(2.0 * scale, 4.0 * scale)
-        light_width = max(4.0 * scale, (group_width - 2.0 * light_gap) / 3.0)
+        light_width = max(1.0, (requested_group_width - 2.0 * light_gap) / 3.0)
         light_height = max(8.0 * scale, header_height * 0.58)
-        group_width = light_width * 3.0 + light_gap * 2.0
-        group_left = bounds.center().x() - group_width / 2.0
+        actual_group_width = light_width * 3.0 + light_gap * 2.0
+        group_left = bounds.center().x() - actual_group_width / 2.0
         light_top = panel_top - light_height
-
-        # Estágio 1: ponto de troca recomendado (centro azul).
-        # Estágio 2: passou da faixa ideal; estágio 3: acima do limitador.
-        stages = (
-            raw_ratio >= shift_at,
-            raw_ratio >= red_at,
-            raw_ratio >= 1.0,
-        )
+        thresholds = (light_1_at, light_2_at, light_3_at)
         red = QColor(color_cfg.get("rpm_high", "#FF2438"))
         purple = QColor(color_cfg.get("rpm_flash", "#9B5CFF"))
-        for index, active in enumerate(stages):
+
+        for index, threshold in enumerate(thresholds):
+            active = raw_ratio >= threshold
             light = QRectF(
                 group_left + index * (light_width + light_gap),
                 light_top, light_width, light_height,
             )
-            if index == 2 and active:
+            if index == 2 and raw_ratio >= flash_at:
                 fill = purple if data.rpm_flash_phase else red
             else:
                 fill = red if active else QColor("#321014")
@@ -267,7 +266,11 @@ class DriverPanelRenderer:
         ratio = max(0.0, min(1.0, raw_ratio))
         shift_at = max(
             0.0,
-            min(1.0, float(config.get("layout", {}).get("shift_start", 0.78))),
+            min(1.0, float(config.get("layout", {}).get("shift_start", 0.88))),
+        )
+        flash_at = max(
+            shift_at,
+            min(1.2, float(config.get("layout", {}).get("rpm_flash_start", 1.00))),
         )
 
         # Dez blocos espelhados: o preenchimento avança das duas extremidades
@@ -303,7 +306,7 @@ class DriverPanelRenderer:
             stage = min(index, block_count - 1 - index) + 1
             threshold = shift_at * stage / 5.0
             active = ratio + 1e-9 >= threshold
-            fill = flash_color if raw_ratio >= 1.0 and active else base_color if active else QColor("#171717")
+            fill = flash_color if raw_ratio >= flash_at and active else base_color if active else QColor("#171717")
             painter.setBrush(fill)
             painter.drawRect(cell)
 
@@ -587,17 +590,7 @@ class DriverPanelRenderer:
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawEllipse(QPointF(0.0, 0.0), radius, radius)
 
-            # Raios e cubo central restaurados do desenho circular anterior.
-            painter.setPen(QPen(wheel_color, max(1.4, radius * 0.055)))
-            painter.drawLine(QPointF(0.0, -radius * 0.82), QPointF(0.0, -radius * 0.25))
-            painter.drawLine(
-                QPointF(-radius * 0.72, radius * 0.42),
-                QPointF(-radius * 0.22, radius * 0.12),
-            )
-            painter.drawLine(
-                QPointF(radius * 0.72, radius * 0.42),
-                QPointF(radius * 0.22, radius * 0.12),
-            )
+            # Aro limpo, sem raios internos; somente a bolinha central.
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(center_color)
             hub_radius = max(2.5, radius * 0.07)

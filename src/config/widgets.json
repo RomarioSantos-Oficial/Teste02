@@ -1045,7 +1045,11 @@
       "layout": {
         "red_start": 0.92,
         "rpm_segments": 10,
-        "shift_start": 0.78
+        "shift_start": 0.88,
+        "shift_light_1": 0.91,
+        "shift_light_2": 0.94,
+        "shift_light_3": 0.96,
+        "rpm_flash_start": 1
       },
       "monitor": 0,
       "opacity": 0.96,
@@ -1086,7 +1090,7 @@
       "graph_curve_glow": true,
       "pedal_show_labels": false,
       "pedal_show_peaks": false,
-      "rpm_flash_interval_s": 0.2,
+      "rpm_flash_interval_s": 0.06,
       "graph_show_scale_labels": false,
       "graph_extrema_markers": true
     }
@@ -2098,8 +2102,12 @@
       },
       "layout": {
         "rpm_segments": 10,
-        "shift_start": 0.78,
-        "red_start": 0.92
+        "shift_start": 0.88,
+        "red_start": 0.92,
+        "shift_light_1": 0.91,
+        "shift_light_2": 0.94,
+        "shift_light_3": 0.96,
+        "rpm_flash_start": 1
       },
       "colors": {
         "text": "#FFFFFF",
@@ -2177,7 +2185,7 @@
       "graph_curve_glow": true,
       "pedal_show_labels": false,
       "pedal_show_peaks": false,
-      "rpm_flash_interval_s": 0.2,
+      "rpm_flash_interval_s": 0.06,
       "graph_show_scale_labels": false,
       "graph_extrema_markers": true
     }
@@ -3140,7 +3148,11 @@
           "layout": {
             "red_start": 0.92,
             "rpm_segments": 10,
-            "shift_start": 0.78
+            "shift_start": 0.88,
+            "shift_light_1": 0.91,
+            "shift_light_2": 0.94,
+            "shift_light_3": 0.96,
+            "rpm_flash_start": 1
           },
           "monitor": 0,
           "opacity": 0.96,
@@ -3181,7 +3193,7 @@
           "graph_curve_glow": true,
           "pedal_show_labels": false,
           "pedal_show_peaks": false,
-          "rpm_flash_interval_s": 0.2,
+          "rpm_flash_interval_s": 0.06,
           "graph_show_scale_labels": false,
           "graph_extrema_markers": true
         }
@@ -4106,8 +4118,12 @@
           },
           "layout": {
             "rpm_segments": 10,
-            "shift_start": 0.78,
-            "red_start": 0.92
+            "shift_start": 0.88,
+            "red_start": 0.92,
+            "shift_light_1": 0.91,
+            "shift_light_2": 0.94,
+            "shift_light_3": 0.96,
+            "rpm_flash_start": 1
           },
           "colors": {
             "text": "#FFFFFF",
@@ -4185,7 +4201,7 @@
           "graph_curve_glow": true,
           "pedal_show_labels": false,
           "pedal_show_peaks": false,
-          "rpm_flash_interval_s": 0.2,
+          "rpm_flash_interval_s": 0.06,
           "graph_show_scale_labels": false,
           "graph_extrema_markers": true
         }

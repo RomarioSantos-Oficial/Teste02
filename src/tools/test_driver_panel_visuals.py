@@ -54,7 +54,7 @@ class DriverPanelVisualTests(unittest.TestCase):
             max_brake_seen=0.86,
         )
         for width, height in ((1380, 420), (520, 190), (240, 100)):
-            for rpm_ratio, flash_phase in ((0.78, False), (0.94, False), (1.04, False), (1.04, True)):
+            for rpm_ratio, flash_phase in ((0.88, False), (0.91, False), (0.94, False), (0.96, False), (1.00, False), (1.00, True)):
                 image = QImage(width, height, QImage.Format.Format_ARGB32)
                 image.fill(QColor(0, 0, 0, 0))
                 painter = QPainter(image)
