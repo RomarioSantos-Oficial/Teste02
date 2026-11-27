@@ -103,12 +103,12 @@ class MapOverlayFeaturesTest(unittest.TestCase):
         self.assertEqual(self.widget._class_color("Hypercar").name(), "#123456")
         player = SimpleNamespace(
             is_player=True,
-            in_pits=True,
+            in_pits=False,
             vehicle_class="HYPERCAR",
         )
         self.assertEqual(
             self.widget._vehicle_color(player, None).name(),
-            "#ff54b8",
+            "#123456",
         )
 
     def test_interpolation_handles_world_position_and_lap_wrap(self) -> None:
