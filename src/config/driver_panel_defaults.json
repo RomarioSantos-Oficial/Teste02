@@ -75,7 +75,10 @@
     "steering_border": "#424B56",
     "pedal_track": "#0C1720",
     "personal_best_throttle": "#37B9FF",
-    "personal_best_brake": "#FFB547"
+    "personal_best_brake": "#FFB547",
+    "rpm_flash": "#9B5CFF",
+    "rpm_value_background": "#10151D",
+    "rpm_value_border": "#6B7280"
   },
   "elements": {
     "rpm": true,
@@ -98,6 +101,7 @@
   "reference_line_width": 2,
   "graph_show_grid": true,
   "graph_curve_glow": true,
-  "pedal_show_labels": true,
-  "pedal_show_peaks": true
+  "pedal_show_labels": false,
+  "pedal_show_peaks": true,
+  "rpm_flash_interval_s": 0.2
 }

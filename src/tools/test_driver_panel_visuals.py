@@ -54,19 +54,33 @@ class DriverPanelVisualTests(unittest.TestCase):
             max_brake_seen=0.86,
         )
         for width, height in ((1380, 420), (520, 190), (240, 100)):
-            image = QImage(width, height, QImage.Format.Format_ARGB32)
-            image.fill(QColor(0, 0, 0, 0))
-            painter = QPainter(image)
-            renderer.draw(
-                painter, QRectF(0, 0, width, height), data,
-                [0.1, 0.2, 0.4, 0.7, 0.82],
-                [0.0, 0.2, 0.9, 0.3, 0.12],
-                [0.0, 0.0, 0.0, 0.0, 0.0],
-                [], [], [], config,
-            )
-            painter.end()
-            self.assertFalse(image.isNull())
-            self.assertNotEqual(image.pixelColor(width // 2, height // 2).alpha(), 0)
+            for flash_phase in (False, True):
+                image = QImage(width, height, QImage.Format.Format_ARGB32)
+                image.fill(QColor(0, 0, 0, 0))
+                painter = QPainter(image)
+                flashing_data = DriverPanelViewData(
+                    speed_kmh=data.speed_kmh,
+                    rpm=data.max_rpm * 0.96,
+                    max_rpm=data.max_rpm,
+                    gear=data.gear,
+                    throttle=data.throttle,
+                    brake=data.brake,
+                    clutch=data.clutch,
+                    steering=data.steering,
+                    max_throttle_seen=data.max_throttle_seen,
+                    max_brake_seen=data.max_brake_seen,
+                    rpm_flash_phase=flash_phase,
+                )
+                renderer.draw(
+                    painter, QRectF(0, 0, width, height), flashing_data,
+                    [0.1, 0.2, 0.4, 0.7, 0.82],
+                    [0.0, 0.2, 0.9, 0.3, 0.12],
+                    [0.0, 0.0, 0.0, 0.0, 0.0],
+                    [], [], [], config,
+                )
+                painter.end()
+                self.assertFalse(image.isNull())
+                self.assertNotEqual(image.pixelColor(width // 2, height // 2).alpha(), 0)
 
 
 if __name__ == "__main__":

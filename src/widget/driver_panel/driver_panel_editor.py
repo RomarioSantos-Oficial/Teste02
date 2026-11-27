@@ -396,6 +396,17 @@ class DriverPanelEditor(QDialog):
             red,
         )
 
+        flash_interval = QDoubleSpinBox()
+        flash_interval.setRange(0.05, 1.00)
+        flash_interval.setSingleStep(0.05)
+        flash_interval.setDecimals(2)
+        flash_interval.setSuffix(" s")
+        flash_interval.setValue(float(self.config.get("rpm_flash_interval_s", 0.2)))
+        flash_interval.valueChanged.connect(
+            lambda value: self._set_root("rpm_flash_interval_s", value)
+        )
+        form.addRow("Intervalo do alerta roxo/vermelho:", flash_interval)
+
         self.content_layout.addWidget(group)
 
     def _build_steering_group(self) -> None:
@@ -542,6 +553,9 @@ class DriverPanelEditor(QDialog):
             ("rpm_low", "RPM azul"),
             ("rpm_shift", "RPM amarelo"),
             ("rpm_high", "RPM vermelho"),
+            ("rpm_flash", "RPM em alerta (roxo)"),
+            ("rpm_value_background", "Fundo da caixa de RPM"),
+            ("rpm_value_border", "Borda da caixa de RPM"),
             ("throttle", "Acelerador"),
             ("brake", "Freio"),
             ("clutch", "Embreagem"),

@@ -187,6 +187,11 @@ class DriverPanelWidget(QWidget):
         speed_kmh = max(0.0, float(getattr(player_data, "speed_kmh", 0.0)))
         gear = int(getattr(player_data, "gear", 0))
         now = time.monotonic()
+        flash_interval = max(
+            0.05,
+            min(1.0, float(self.config.get("rpm_flash_interval_s", 0.2))),
+        )
+        rpm_flash_phase = (int(now / flash_interval) % 2) == 0
         if gear != self._previous_gear:
             self._gear_flash_until = now + 0.22
             self._previous_gear = gear
@@ -226,6 +231,7 @@ class DriverPanelWidget(QWidget):
             throttle_abrupt=throttle - self._previous_throttle > 0.20,
             brake_abrupt=brake - self._previous_brake > 0.20,
             gear_flash=now < self._gear_flash_until,
+            rpm_flash_phase=rpm_flash_phase,
         )
         self._previous_throttle = throttle
         self._previous_brake = brake
