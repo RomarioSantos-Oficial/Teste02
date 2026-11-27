@@ -1442,7 +1442,9 @@ class StandingsWidget(QWidget):
                 background = QColor(colors.get("invalid_lap", "#FF3B45"))
             else:
                 text = f"{row.pit_time_s:.0f} s"
-                background = QColor("#D95B00")
+                background = QColor(
+                    "#FF54B8" if row.is_class_fastest and row.in_pits else "#D95B00"
+                )
             painter.setBrush(background)
             painter.drawRect(cell)
             self._text(
@@ -1562,8 +1564,33 @@ class StandingsWidget(QWidget):
                 text, background, foreground = "GAR", QColor("#666666"), QColor("#FFFFFF")
             elif status == "pit":
                 text = "PIT"
-                background = QColor(colors.get("pit", "#F97316"))
+                background = QColor(
+                    "#FF54B8"
+                    if row.is_class_fastest and row.in_pits
+                    else colors.get("pit", "#F97316")
+                )
                 foreground = QColor("#FFFFFF")
+            elif status == "fastest":
+                background = QColor("#FF54B8")
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(background)
+                painter.drawRect(cell)
+                clock_path = PROJECT_ROOT / "images" / "incos01" / "relogio.png"
+                clock = self._static_icon_pixmap(
+                    clock_path,
+                    max(1, int(cell.width() * 0.72)),
+                    max(1, int(cell.height() * 0.82)),
+                )
+                if clock is not None:
+                    target = QRectF(
+                        cell.center().x() - clock.width() / 2.0,
+                        cell.center().y() - clock.height() / 2.0,
+                        clock.width(),
+                        clock.height(),
+                    )
+                    painter.drawPixmap(target, clock, QRectF(clock.rect()))
+                    return
+                text, foreground = "BEST", QColor("#FFFFFF")
             elif status == "dnf":
                 text, background, foreground = "DNF", QColor(colors.get("invalid_lap", "#FF3B45")), QColor("#FFFFFF")
             elif status == "dq":
@@ -1678,6 +1705,10 @@ class StandingsWidget(QWidget):
             return "yellow"
         if str(getattr(row, "penalty_text", "") or "") not in {"", "--"}:
             return "penalty"
+        # Relogio e o ultimo estado: nunca substitui chegada, GAR/PIT, DNF/DQ,
+        # volta invalidada, bandeira amarela ou penalidade.
+        if bool(getattr(row, "is_class_fastest", False)):
+            return "fastest"
         return ""
 
     def _finish_flag_pixmap(self, width: int, height: int) -> QPixmap | None:

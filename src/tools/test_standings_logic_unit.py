@@ -9,6 +9,7 @@ from src.widget.standings.standings_logic import (
     format_driver_name,
 )
 from src.widget.standings.standings_models import DriverMetadata, StandingRow
+from src.widget.standings.standings_widget import StandingsWidget
 
 
 class StandingsLogicUnitTests(unittest.TestCase):
@@ -822,6 +823,72 @@ class StandingsLogicUnitTests(unittest.TestCase):
 
         self.assertEqual(row.vehicle_model, "Genesis GMR-001")
         self.assertEqual(row.manufacturer, "Genesis")
+
+
+    def test_class_fastest_lap_is_tracked_independently_for_every_category(self) -> None:
+        session = SessionData(
+            connected=True,
+            session=5,  # Qualificacao: o marcador nao fica restrito a corridas.
+            drivers=[
+                DriverData(
+                    slot_id=1, driver_name="Hyper P1", vehicle_class="Hypercar",
+                    position=1, best_lap_s=100.0,
+                ),
+                DriverData(
+                    slot_id=2, driver_name="GT3 P1", vehicle_class="LMGT3",
+                    position=2, best_lap_s=110.0,
+                ),
+                DriverData(
+                    slot_id=3, driver_name="Hyper P2", vehicle_class="Hypercar",
+                    position=3, best_lap_s=101.0,
+                ),
+                DriverData(
+                    slot_id=4, driver_name="GT3 P2", vehicle_class="LMGT3",
+                    position=4, best_lap_s=111.0,
+                ),
+                DriverData(
+                    slot_id=5, driver_name="Player GT3", vehicle_class="LMGT3",
+                    position=5, best_lap_s=109.5, is_player=True,
+                ),
+            ],
+        )
+        rows = [
+            row
+            for category in StandingsLogic({}).build(session, {}, "MEM").categories
+            for row in category.rows
+        ]
+        by_name = {row.driver_name: row for row in rows}
+
+        self.assertTrue(by_name["Hyper P1"].is_class_fastest)
+        self.assertFalse(by_name["Hyper P2"].is_class_fastest)
+        self.assertFalse(by_name["GT3 P1"].is_class_fastest)
+        self.assertFalse(by_name["GT3 P2"].is_class_fastest)
+        self.assertTrue(by_name["Player GT3"].is_class_fastest)
+        # A categoria do player ganha seu proprio marcador, mesmo sem ser
+        # a volta mais rapida absoluta da sessao.
+        self.assertFalse(by_name["Player GT3"].is_session_fastest)
+
+
+
+    def test_class_fastest_clock_is_last_status_priority(self) -> None:
+        row = StandingRow(is_class_fastest=True)
+        self.assertEqual(StandingsWidget._automatic_status_kind(row), "fastest")
+
+        row.under_yellow = True
+        self.assertEqual(StandingsWidget._automatic_status_kind(row), "yellow")
+
+        row.under_yellow = False
+        row.in_garage = True
+        self.assertEqual(StandingsWidget._automatic_status_kind(row), "garage")
+
+        row.in_garage = False
+        row.in_pits = True
+        self.assertEqual(StandingsWidget._automatic_status_kind(row), "pit")
+
+        row.in_pits = False
+        row.penalty_text = "DT"
+        self.assertEqual(StandingsWidget._automatic_status_kind(row), "penalty")
+
 
 
 if __name__ == "__main__":

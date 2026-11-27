@@ -1370,10 +1370,26 @@ class StandingsLogic:
             row.best_lap_s for row in rows if row.best_lap_s > 0.0
         ]
         session_fastest = min(valid_best_times, default=0.0)
+        class_fastest: dict[str, float] = {}
         for row in rows:
             row.is_session_fastest = (
                 session_fastest > 0.0
                 and abs(row.best_lap_s - session_fastest) <= 0.0005
+            )
+            row.is_class_fastest = False
+            if row.best_lap_s > 0.0:
+                class_key = str(row.class_key or row.class_name or "UNKNOWN")
+                current_fastest = class_fastest.get(class_key)
+                if current_fastest is None or row.best_lap_s < current_fastest:
+                    class_fastest[class_key] = row.best_lap_s
+
+        for row in rows:
+            class_key = str(row.class_key or row.class_name or "UNKNOWN")
+            class_best = class_fastest.get(class_key, 0.0)
+            row.is_class_fastest = (
+                class_best > 0.0
+                and row.best_lap_s > 0.0
+                and abs(row.best_lap_s - class_best) <= 0.0005
             )
 
         self._observed_laps_once = True

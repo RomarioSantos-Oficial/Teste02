@@ -11,6 +11,15 @@ from src.widget.standings.standings_assets import (
 
 
 class StandingsAssetsTests(unittest.TestCase):
+    def test_fastest_lap_clock_asset_exists(self) -> None:
+        from pathlib import Path
+
+        project_root = Path(__file__).resolve().parents[2]
+        self.assertTrue(
+            (project_root / "images" / "incos01" / "relogio.png").is_file()
+        )
+
+
     def test_installed_lmu_manufacturer_aliases(self) -> None:
         expected = {
             "Genesis_GMR001_2026": "Genesis",
