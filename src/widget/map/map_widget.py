@@ -1511,54 +1511,14 @@ class TrackMapWidget(QWidget):
         )
 
         if is_player:
-            outline_color = colors.get(
-                "vehicle_outline_player",
-                "#FFFFFF",
-            )
-            outline_width = max(
-                outline_width,
-                float(
-                    self.config.get(
-                        "vehicle_outline_player_width",
-                        3.0,
-                    )
-                )
-                * s,
-            )
-        elif player is not None and bool(
-            self.config.get(
-                "show_lap_difference_outline",
-                True,
-            )
-        ):
-            lap_difference = int(
-                getattr(driver, "laps", 0)
-                or 0
-            ) - int(
-                getattr(player, "laps", 0)
-                or 0
-            )
-
-            if lap_difference > 0:
-                outline_color = colors.get(
-                    "vehicle_outline_laps_ahead",
-                    "#8B4DFF",
-                )
-            elif lap_difference < 0:
-                outline_color = colors.get(
-                    "vehicle_outline_laps_behind",
-                    "#757575",
-                )
-
-        # O marcador do jogador possui uma cor de identificação
-        # independente da categoria e da imagem personalizada.
-        if is_player:
+            # A espessura do anel do jogador é independente do contorno
+            # dos demais carros e pode ser personalizada no editor.
             outline_color = colors.get(
                 "vehicle_player_marker",
                 "#FF54B8",
             )
             outline_width = max(
-                outline_width,
+                0.5,
                 float(
                     self.config.get(
                         "vehicle_outline_player_width",
@@ -1568,7 +1528,7 @@ class TrackMapWidget(QWidget):
                 * s,
             )
         else:
-            # Os demais carros mantêm o contorno na cor da categoria.
+            # Os carros adversários preservam o contorno de sua categoria.
             outline_color = fill
 
         rect = QRectF(
@@ -1588,7 +1548,7 @@ class TrackMapWidget(QWidget):
         painter.save()
         painter.setPen(
             QPen(QColor(outline_color), outline_width)
-            if outline_width > 0
+            if outline_width > 0 and not is_player
             else Qt.PenStyle.NoPen
         )
         if player_image is not None:
@@ -1625,7 +1585,7 @@ class TrackMapWidget(QWidget):
                             "#FF54B8",
                         )
                     ),
-                    max(1.0, outline_width),
+                    max(0.5, outline_width),
                 )
             )
             painter.drawEllipse(ring_rect)
@@ -1743,6 +1703,72 @@ class TrackMapWidget(QWidget):
                 self._marker_pixmap_cache[key] = cropped
         return self._marker_pixmap_cache[key]
 
+    @staticmethod
+    def _class_marker_category(class_name: str) -> str:
+        normalized = str(class_name or "UNKNOWN").strip().upper()
+        aliases = {
+            "HYPER": "HYPERCAR",
+            "HYPERCAR": "HYPERCAR",
+            "LMP2": "LMP2",
+            "LMP3": "LMP3",
+            "LMGT3": "LMGT3",
+            "GT3": "LMGT3",
+            "GTE": "GTE",
+        }
+        return aliases.get(
+            normalized,
+            next(
+                (
+                    target
+                    for marker, target in aliases.items()
+                    if marker in normalized
+                ),
+                normalized,
+            ),
+        )
+
+    def _leader_marker_style(
+        self,
+        driver: Any,
+        role: str,
+    ) -> tuple[str, str, QColor]:
+        if role == "overall":
+            return (
+                str(self.config.get("leader_marker_text", "👑") or ""),
+                str(self.config.get("leader_marker_image", "") or ""),
+                QColor(
+                    self.config.get("colors", {}).get(
+                        "leader_marker_overall",
+                        "#F5C451",
+                    )
+                ),
+            )
+
+        vehicle_class = str(
+            getattr(driver, "vehicle_class", "UNKNOWN") or "UNKNOWN"
+        )
+        category = self._class_marker_category(vehicle_class)
+        text = str(
+            self.config.get("class_leader_marker_text", "🏆") or ""
+        )
+        image = str(
+            self.config.get("class_leader_marker_image", "") or ""
+        )
+
+        if not bool(self.config.get("same_class_leader_marker", True)):
+            text_overrides = self.config.get(
+                "class_leader_marker_texts",
+                {},
+            )
+            image_overrides = self.config.get(
+                "class_leader_marker_images",
+                {},
+            )
+            text = str(text_overrides.get(category, "") or text)
+            image = str(image_overrides.get(category, "") or image)
+
+        return text, image, self._class_color(vehicle_class)
+
     def _draw_leader_markers(
         self,
         painter: QPainter,
@@ -1753,8 +1779,6 @@ class TrackMapWidget(QWidget):
         if not roles:
             return
 
-        icon_text = str(self.config.get("leader_marker_text", "♛") or "")
-        image_path = str(self.config.get("leader_marker_image", "") or "")
         s = self._responsive_scale
         badge_size = max(
             8.0,
@@ -1762,19 +1786,11 @@ class TrackMapWidget(QWidget):
         )
         gap = badge_size * 0.82
         count = len(roles)
-        vehicle_class = str(
-            getattr(driver, "vehicle_class", "UNKNOWN") or "UNKNOWN"
-        )
+
         for index, role in enumerate(roles):
-            color = (
-                QColor(
-                    self.config.get("colors", {}).get(
-                        "leader_marker_overall",
-                        "#C0C0C0",
-                    )
-                )
-                if role == "overall"
-                else self._class_color(vehicle_class)
+            icon_text, image_path, color = self._leader_marker_style(
+                driver,
+                role,
             )
             center_x = point.x() + (index - (count - 1) / 2.0) * gap
             badge = QRectF(
@@ -1783,21 +1799,28 @@ class TrackMapWidget(QWidget):
                 badge_size,
                 badge_size,
             )
+            inner = badge.adjusted(
+                badge_size * 0.14,
+                badge_size * 0.14,
+                -badge_size * 0.14,
+                -badge_size * 0.14,
+            )
             image = self._cached_marker_pixmap(
                 image_path,
                 badge_size * 0.72,
             )
+
             painter.save()
-            if image is not None:
-                painter.setPen(Qt.PenStyle.NoPen)
-                painter.setBrush(color)
-                painter.drawEllipse(badge)
-                inner = badge.adjusted(
-                    badge_size * 0.18,
-                    badge_size * 0.18,
-                    -badge_size * 0.18,
-                    -badge_size * 0.18,
+            painter.setPen(
+                QPen(
+                    QColor("#10151D"),
+                    max(1.0, badge_size * 0.07),
                 )
+            )
+            painter.setBrush(QBrush(color))
+            painter.drawEllipse(badge)
+
+            if image is not None:
                 clip = QPainterPath()
                 clip.addEllipse(inner)
                 painter.setClipPath(clip)
@@ -1809,11 +1832,11 @@ class TrackMapWidget(QWidget):
             elif icon_text:
                 font = QFont("Segoe UI Emoji")
                 font.setBold(True)
-                font.setPixelSize(max(8, round(badge_size * 0.92)))
+                font.setPixelSize(max(7, round(badge_size * 0.72)))
                 painter.setFont(font)
-                painter.setPen(color)
+                painter.setPen(QColor("#FFFFFF"))
                 painter.drawText(
-                    badge,
+                    inner,
                     Qt.AlignmentFlag.AlignCenter,
                     icon_text,
                 )
