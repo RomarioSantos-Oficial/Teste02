@@ -995,14 +995,38 @@
         "steering_marker": "#4CFF5E",
         "text": "#FFFFFF",
         "throttle": "#50DF42",
-        "wheel": "#445466"
+        "wheel": "#445466",
+        "clutch": "#29A8FF",
+        "speed": "#22D3EE",
+        "rpm_graph": "#FFD21F",
+        "steering_graph": "#C084FC",
+        "graph_background": "#080C12",
+        "pedals_background": "#080C12",
+        "rpm_background": "#080C12",
+        "steering_background": "#080C12",
+        "graph_border": "#424B56",
+        "pedals_border": "#424B56",
+        "rpm_border": "#424B56",
+        "steering_border": "#424B56",
+        "pedal_track": "#0C1720",
+        "personal_best_throttle": "#37B9FF",
+        "personal_best_brake": "#FFB547"
       },
       "design_base_height": 420,
       "design_base_width": 1380,
-      "elements": {},
+      "elements": {
+        "rpm": true,
+        "graph": true,
+        "steering": true,
+        "gear": true,
+        "speed": true,
+        "steering_marker": true,
+        "pedals": true
+      },
       "enabled": true,
       "font": {
-        "family": "Bahnschrift Light"
+        "family": "Bahnschrift Light",
+        "scale": 1
       },
       "graph_interval": "10 s",
       "compare_personal_best": false,
@@ -1026,7 +1050,33 @@
         "width": 0.72
       },
       "snap_to_edges": true,
-      "steering_visual_degrees": 180
+      "steering_visual_degrees": 180,
+      "steering_smoothing": 0.32,
+      "steering_center_tolerance": 1,
+      "steering_size_scale": 1,
+      "speed_font_scale": 1,
+      "gear_font_scale": 1,
+      "speed_unit": "km/h",
+      "speed_position": "inside",
+      "steering_style": "Circular",
+      "custom_wheel_image": "",
+      "sample_rate_hz": 60,
+      "pedal_bar_width": 42,
+      "pedal_bar_gap": 10,
+      "pedal_elements": {
+        "throttle": true,
+        "brake": true,
+        "clutch": true
+      },
+      "graph_line_width": 3.6,
+      "throttle_line_width": 3.6,
+      "brake_line_width": 3.6,
+      "clutch_line_width": 3.4,
+      "reference_line_width": 2,
+      "graph_show_grid": true,
+      "graph_curve_glow": true,
+      "pedal_show_labels": true,
+      "pedal_show_peaks": true
     }
   },
   "defaults": {
@@ -2031,7 +2081,8 @@
       "design_base_width": 1380,
       "design_base_height": 420,
       "font": {
-        "family": "Arial"
+        "family": "Arial",
+        "scale": 1
       },
       "layout": {
         "rpm_segments": 28,
@@ -2053,9 +2104,58 @@
         "steering_center": "#FFFFFF",
         "steering_marker": "#4CFF5E",
         "border": "#424B56",
-        "edit_border": "#8B5CF6"
+        "edit_border": "#8B5CF6",
+        "clutch": "#29A8FF",
+        "speed": "#22D3EE",
+        "rpm_graph": "#FFD21F",
+        "steering_graph": "#C084FC",
+        "graph_background": "#080C12",
+        "pedals_background": "#080C12",
+        "rpm_background": "#080C12",
+        "steering_background": "#080C12",
+        "graph_border": "#424B56",
+        "pedals_border": "#424B56",
+        "rpm_border": "#424B56",
+        "steering_border": "#424B56",
+        "pedal_track": "#0C1720",
+        "personal_best_throttle": "#37B9FF",
+        "personal_best_brake": "#FFB547"
       },
-      "elements": {}
+      "elements": {
+        "rpm": true,
+        "graph": true,
+        "steering": true,
+        "gear": true,
+        "speed": true,
+        "steering_marker": true,
+        "pedals": true
+      },
+      "steering_smoothing": 0.32,
+      "steering_center_tolerance": 1,
+      "steering_size_scale": 1,
+      "speed_font_scale": 1,
+      "gear_font_scale": 1,
+      "speed_unit": "km/h",
+      "speed_position": "inside",
+      "steering_style": "Circular",
+      "custom_wheel_image": "",
+      "sample_rate_hz": 60,
+      "pedal_bar_width": 42,
+      "pedal_bar_gap": 10,
+      "pedal_elements": {
+        "throttle": true,
+        "brake": true,
+        "clutch": true
+      },
+      "graph_line_width": 3.6,
+      "throttle_line_width": 3.6,
+      "brake_line_width": 3.6,
+      "clutch_line_width": 3.4,
+      "reference_line_width": 2,
+      "graph_show_grid": true,
+      "graph_curve_glow": true,
+      "pedal_show_labels": true,
+      "pedal_show_peaks": true
     }
   },
   "profiles": {
@@ -2966,14 +3066,38 @@
             "steering_marker": "#4CFF5E",
             "text": "#FFFFFF",
             "throttle": "#50DF42",
-            "wheel": "#445466"
+            "wheel": "#445466",
+            "clutch": "#29A8FF",
+            "speed": "#22D3EE",
+            "rpm_graph": "#FFD21F",
+            "steering_graph": "#C084FC",
+            "graph_background": "#080C12",
+            "pedals_background": "#080C12",
+            "rpm_background": "#080C12",
+            "steering_background": "#080C12",
+            "graph_border": "#424B56",
+            "pedals_border": "#424B56",
+            "rpm_border": "#424B56",
+            "steering_border": "#424B56",
+            "pedal_track": "#0C1720",
+            "personal_best_throttle": "#37B9FF",
+            "personal_best_brake": "#FFB547"
           },
           "design_base_height": 420,
           "design_base_width": 1380,
-          "elements": {},
+          "elements": {
+            "rpm": true,
+            "graph": true,
+            "steering": true,
+            "gear": true,
+            "speed": true,
+            "steering_marker": true,
+            "pedals": true
+          },
           "enabled": true,
           "font": {
-            "family": "Bahnschrift Light"
+            "family": "Bahnschrift Light",
+            "scale": 1
           },
           "graph_interval": "10 s",
           "compare_personal_best": false,
@@ -2997,7 +3121,33 @@
             "width": 0.72
           },
           "snap_to_edges": true,
-          "steering_visual_degrees": 180
+          "steering_visual_degrees": 180,
+          "steering_smoothing": 0.32,
+          "steering_center_tolerance": 1,
+          "steering_size_scale": 1,
+          "speed_font_scale": 1,
+          "gear_font_scale": 1,
+          "speed_unit": "km/h",
+          "speed_position": "inside",
+          "steering_style": "Circular",
+          "custom_wheel_image": "",
+          "sample_rate_hz": 60,
+          "pedal_bar_width": 42,
+          "pedal_bar_gap": 10,
+          "pedal_elements": {
+            "throttle": true,
+            "brake": true,
+            "clutch": true
+          },
+          "graph_line_width": 3.6,
+          "throttle_line_width": 3.6,
+          "brake_line_width": 3.6,
+          "clutch_line_width": 3.4,
+          "reference_line_width": 2,
+          "graph_show_grid": true,
+          "graph_curve_glow": true,
+          "pedal_show_labels": true,
+          "pedal_show_peaks": true
         }
       }
     },
@@ -3915,7 +4065,8 @@
           "design_base_width": 1380,
           "design_base_height": 420,
           "font": {
-            "family": "Arial"
+            "family": "Arial",
+            "scale": 1
           },
           "layout": {
             "rpm_segments": 28,
@@ -3937,9 +4088,58 @@
             "steering_center": "#FFFFFF",
             "steering_marker": "#4CFF5E",
             "border": "#424B56",
-            "edit_border": "#8B5CF6"
+            "edit_border": "#8B5CF6",
+            "clutch": "#29A8FF",
+            "speed": "#22D3EE",
+            "rpm_graph": "#FFD21F",
+            "steering_graph": "#C084FC",
+            "graph_background": "#080C12",
+            "pedals_background": "#080C12",
+            "rpm_background": "#080C12",
+            "steering_background": "#080C12",
+            "graph_border": "#424B56",
+            "pedals_border": "#424B56",
+            "rpm_border": "#424B56",
+            "steering_border": "#424B56",
+            "pedal_track": "#0C1720",
+            "personal_best_throttle": "#37B9FF",
+            "personal_best_brake": "#FFB547"
           },
-          "elements": {}
+          "elements": {
+            "rpm": true,
+            "graph": true,
+            "steering": true,
+            "gear": true,
+            "speed": true,
+            "steering_marker": true,
+            "pedals": true
+          },
+          "steering_smoothing": 0.32,
+          "steering_center_tolerance": 1,
+          "steering_size_scale": 1,
+          "speed_font_scale": 1,
+          "gear_font_scale": 1,
+          "speed_unit": "km/h",
+          "speed_position": "inside",
+          "steering_style": "Circular",
+          "custom_wheel_image": "",
+          "sample_rate_hz": 60,
+          "pedal_bar_width": 42,
+          "pedal_bar_gap": 10,
+          "pedal_elements": {
+            "throttle": true,
+            "brake": true,
+            "clutch": true
+          },
+          "graph_line_width": 3.6,
+          "throttle_line_width": 3.6,
+          "brake_line_width": 3.6,
+          "clutch_line_width": 3.4,
+          "reference_line_width": 2,
+          "graph_show_grid": true,
+          "graph_curve_glow": true,
+          "pedal_show_labels": true,
+          "pedal_show_peaks": true
         }
       }
     }

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import math
 from pathlib import Path
 from typing import Any, Sequence
+
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QFont, QFontMetricsF, QImage, QPainter, QPainterPath, QPen
 from src.i18n import tr
@@ -29,141 +30,525 @@ class DriverPanelViewData:
 
 
 class DriverPanelRenderer:
-    """Novo visual inspirado na referência; não conhece a fonte da telemetria."""
+    """Desenha o painel sem modificar ou filtrar os dados da telemetria."""
 
-    def draw(self, p: QPainter, bounds: QRectF, data: DriverPanelViewData,
-             throttle_history: Sequence[float], brake_history: Sequence[float],
-             clutch_history: Sequence[float], rpm_history: Sequence[float],
-             steering_history: Sequence[float], speed_history: Sequence[float],
-             config: dict[str, Any], edit_mode: bool = False,
-             reference_throttle_history: Sequence[float] = (),
-             reference_brake_history: Sequence[float] = ()) -> None:
-        p.save(); p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        c=config.get("colors",{}); bg=QColor(c.get("background","#05080C")); bg.setAlphaF(float(config.get("background_opacity",.92)))
-        panel=QColor(c.get("panel","#071014")); border=QColor(c.get("border","#18333A")); text=QColor(c.get("text","#F4F8FA")); muted=QColor(c.get("muted","#8CA0A8"))
-        colors={"rpm":QColor(c.get("rpm_graph","#FFD21F")),"throttle":QColor(c.get("throttle","#18E65A")),"brake":QColor(c.get("brake","#FF2638")),"clutch":QColor(c.get("clutch","#278BFF")),"steering":QColor(c.get("steering_graph","#C783FF")),"speed":QColor(c.get("speed","#20D4E8")),"throttle_reference":QColor(c.get("personal_best_throttle","#37B9FF")),"brake_reference":QColor(c.get("personal_best_brake","#FFB547"))}
-        s=max(.12,min(2.5,min(bounds.width()/1600,bounds.height()/650))); radius=max(5,float(config.get("border_radius",14))*s)
-        p.setPen(QPen(border,max(1,2*s))); p.setBrush(bg); p.drawRoundedRect(bounds.adjusted(1,1,-1,-1),radius,radius)
-        content=bounds.adjusted(max(7,16*s),max(7,16*s),-max(7,16*s),-max(7,16*s)); e=config.get("elements",{}); show=lambda k:bool(e.get(k,True))
-        wheel_w=content.width()*(.23 if show("steering") or show("gear") or show("speed") else 0)
-        pedal_flags=config.get("pedal_elements",{})
-        pedal_count=sum(bool(pedal_flags.get(key,True)) for key in ("brake","throttle","clutch")) if show("pedals") else 0
-        pedal_gap=max(3.0,float(config.get("pedal_bar_gap",9.0))*s)
-        pedal_bar_width=max(4.0,float(config.get("pedal_bar_width",38.0))*s)
-        pedals_w=(pedal_count*pedal_bar_width+(pedal_count+1)*pedal_gap) if pedal_count else 0
-        pedals_w=min(content.width()*.30,pedals_w)
-        rpm_h=content.height()*(.21 if show("rpm") else 0)
-        column_gap=8*s
-        rpm_w=content.width()-wheel_w-pedals_w-column_gap*2
-        rpm_rect=QRectF(content.left(),content.top(),max(0,rpm_w),rpm_h)
-        body=QRectF(content.left(),rpm_rect.bottom()+(8*s if rpm_h else 0),content.width(),content.height()-rpm_h-(8*s if rpm_h else 0))
-        if show("rpm"): self._rpm(p,rpm_rect,data,config,text,muted,panel,s)
-        gap=8*s
-        graph=QRectF(body.left(),body.top(),max(0,body.width()-wheel_w-pedals_w-gap*2),body.height())
-        pedals=QRectF(graph.right()+gap,content.top(),pedals_w,content.height())
-        wheel=QRectF(pedals.right()+gap,content.top(),wheel_w,content.height())
-        if show("graph"):
-            graph_series={"throttle":throttle_history,"brake":brake_history,"clutch":clutch_history,"throttle_reference":reference_throttle_history,"brake_reference":reference_brake_history}
-            self._graph(p,graph,graph_series,colors,text,muted,panel,border,config,s)
-        if show("pedals"): self._pedals(p,pedals,data,colors,text,muted,panel,border,config,s)
-        if wheel_w: self._wheel(p,wheel,data,colors,text,panel,border,config,s)
-        if edit_mode:
-            pen=QPen(QColor(c.get("edit_border","#8B5CF6")),max(1.5,2.5*s)); pen.setStyle(Qt.PenStyle.DashLine); p.setPen(pen); p.setBrush(Qt.BrushStyle.NoBrush); p.drawRoundedRect(bounds.adjusted(3,3,-3,-3),radius,radius)
-        p.restore()
+    def draw(
+        self, painter: QPainter, bounds: QRectF, data: DriverPanelViewData,
+        throttle_history: Sequence[float], brake_history: Sequence[float],
+        clutch_history: Sequence[float], rpm_history: Sequence[float],
+        steering_history: Sequence[float], speed_history: Sequence[float],
+        config: dict[str, Any], edit_mode: bool = False,
+        reference_throttle_history: Sequence[float] = (),
+        reference_brake_history: Sequence[float] = (),
+    ) -> None:
+        del rpm_history, steering_history, speed_history
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.setRenderHint(QPainter.RenderHint.TextAntialiasing, True)
 
-    def _rpm(self,p:QPainter,r:QRectF,d:DriverPanelViewData,cfg:dict[str,Any],text:QColor,muted:QColor,panel:QColor,s:float)->None:
-        ratio=max(0,min(1,d.rpm/max(1,d.max_rpm))); shift=float(cfg.get("layout",{}).get("shift_start",.78)); red=float(cfg.get("layout",{}).get("red_start",.92)); active=QColor("#21D760") if ratio<shift else QColor("#FFD21F") if ratio<red else QColor("#FF2638")
-        p.setPen(Qt.PenStyle.NoPen); p.setBrush(panel); p.drawRoundedRect(r,8*s,8*s); fill=QRectF(r.left(),r.top(),r.width()*ratio,r.height()); fc=QColor(active); fc.setAlpha(92); p.setBrush(fc); p.drawRoundedRect(fill,8*s,8*s)
-        x=r.left()+r.width()*red; p.setPen(QPen(QColor("#FF5B30"),max(2,3*s))); p.drawLine(QPointF(x,r.top()),QPointF(x,r.bottom()))
-        value=f"{d.rpm:,.0f}".replace(",","."); p.setFont(self._fit(cfg,r,value,r.height()*.68,12,True)); p.setPen(text); p.drawText(r,Qt.AlignmentFlag.AlignCenter,value)
+        color_cfg = config.get("colors", {})
+        outer_bg = QColor(color_cfg.get("background", "#10151D"))
+        outer_bg.setAlphaF(max(0.0, min(1.0, float(config.get("background_opacity", 0.88)))))
+        outer_border = QColor(color_cfg.get("border", "#424B56"))
+        text = QColor(color_cfg.get("text", "#FFFFFF"))
+        muted = QColor(color_cfg.get("muted", "#AAB2BD"))
+        colors = {
+            "rpm_low": QColor(color_cfg.get("rpm_low", "#1769E0")),
+            "rpm_shift": QColor(color_cfg.get("rpm_shift", "#FFC400")),
+            "rpm_high": QColor(color_cfg.get("rpm_high", "#FF2438")),
+            "throttle": QColor(color_cfg.get("throttle", "#50DF42")),
+            "brake": QColor(color_cfg.get("brake", "#FF2438")),
+            "clutch": QColor(color_cfg.get("clutch", "#29A8FF")),
+            "speed": QColor(color_cfg.get("speed", "#22D3EE")),
+            "steering": QColor(color_cfg.get("steering_graph", "#C084FC")),
+            "throttle_reference": QColor(color_cfg.get("personal_best_throttle", "#37B9FF")),
+            "brake_reference": QColor(color_cfg.get("personal_best_brake", "#FFB547")),
+        }
 
-    def _graph(self,p:QPainter,r:QRectF,series:dict[str,Sequence[float]],colors:dict[str,QColor],text:QColor,muted:QColor,panel:QColor,border:QColor,cfg:dict[str,Any],s:float)->None:
-        p.setPen(Qt.PenStyle.NoPen); p.setBrush(panel); p.drawRoundedRect(r,8*s,8*s); graph=r.adjusted(8*s,8*s,-8*s,-8*s)
-        enabled=cfg.get("pedal_elements",{})
-        p.save(); p.setClipRect(graph)
-        for name,values in series.items():
-            base_name=name.removesuffix("_reference")
-            if bool(enabled.get(base_name,True)):
-                self._path(p,graph,values,colors[name],max(1.3,2.1*s if name.endswith("_reference") else 2.5*s),name.endswith("_reference"))
-        p.restore()
-        if series.get("throttle_reference") or series.get("brake_reference"):
-            p.setFont(QFont("Arial", max(7, round(8*s))))
-            p.setPen(muted)
-            p.drawText(QRectF(graph.left(), graph.top(), graph.width(), 13*s), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop, tr("PB tracejada"))
+        scale = max(0.12, min(2.5, min(bounds.width() / 1600.0, bounds.height() / 650.0)))
+        radius = max(5.0, float(config.get("border_radius", 12.0)) * scale)
+        self._surface(painter, bounds.adjusted(1, 1, -1, -1), outer_bg, outer_border, scale, radius)
 
-    @staticmethod
-    def _path(p:QPainter,r:QRectF,values:Sequence[float],color:QColor,width:float,dashed:bool=False)->None:
-        if len(values)<2:return
-        path=QPainterPath()
-        for i,raw in enumerate(values):
-            if isinstance(raw,(tuple,list)) and len(raw)>=2:
-                x_ratio=float(raw[0]); value=float(raw[1])
-            else:
-                x_ratio=i/(len(values)-1); value=float(raw)
-            point=QPointF(r.left()+r.width()*x_ratio,r.bottom()-r.height()*max(0,min(1,value))); path.moveTo(point) if i==0 else path.lineTo(point)
-        pen=QPen(color,width); pen.setCapStyle(Qt.PenCapStyle.RoundCap); pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
-        if dashed: pen.setStyle(Qt.PenStyle.DashLine)
-        p.setPen(pen); p.setBrush(Qt.BrushStyle.NoBrush); p.drawPath(path)
+        content = bounds.adjusted(max(7.0, 16.0 * scale), max(7.0, 16.0 * scale),
+                                  -max(7.0, 16.0 * scale), -max(7.0, 16.0 * scale))
+        elements = config.get("elements", {})
+        show = lambda key: bool(elements.get(key, True))
+        pedal_flags = config.get("pedal_elements", {})
 
-    def _pedals(self,p:QPainter,r:QRectF,d:DriverPanelViewData,colors:dict[str,QColor],text:QColor,muted:QColor,panel:QColor,border:QColor,cfg:dict[str,Any],s:float)->None:
-        p.setPen(Qt.PenStyle.NoPen); p.setBrush(panel); p.drawRoundedRect(r,8*s,8*s); pe=cfg.get("pedal_elements",{}); items=[("",d.brake,d.max_brake_seen,"brake",d.brake_abrupt),("",d.throttle,d.max_throttle_seen,"throttle",d.throttle_abrupt),("",d.clutch,d.max_clutch_seen,"clutch",False)]; items=[i for i in items if bool(pe.get(i[3],True))]
-        if not items:return
-        gap=max(3.0,float(cfg.get("pedal_bar_gap",9.0))*s)
-        bw=min(
-            max(4.0,float(cfg.get("pedal_bar_width",38.0))*s),
-            max(4.0,(r.width()-gap*(len(items)+1))/len(items)),
+        wheel_visible = show("steering") or show("gear") or show("speed")
+        wheel_width = content.width() * (0.23 if wheel_visible else 0.0)
+        pedal_count = (
+            sum(bool(pedal_flags.get(key, True)) for key in ("brake", "throttle", "clutch"))
+            if show("pedals") else 0
         )
-        group_width=len(items)*bw+(len(items)-1)*gap
-        start_x=r.center().x()-group_width/2
-        value_h=max(24*s,r.height()*.17); top=r.top()+value_h; bottom=r.bottom()-8*s
-        for i,(label,value,maximum,key,alert) in enumerate(items):
-            x=start_x+i*(bw+gap); bar=QRectF(x,top,bw,bottom-top)
-            percent=f"{value*100:.0f}%"; percent_rect=QRectF(x,r.top()+4*s,bw,value_h-6*s)
-            p.setFont(self._fit(cfg,percent_rect,percent,max(12*s,value_h*.42),8,True)); p.setPen(colors[key]); p.drawText(percent_rect,Qt.AlignmentFlag.AlignCenter,percent)
-            p.setPen(QPen(colors[key].darker(160),max(1,s))); p.setBrush(QColor("#071B20")); p.drawRoundedRect(bar,4*s,4*s); fill=QRectF(bar.left(),bar.bottom()-bar.height()*value,bar.width(),bar.height()*value); p.setBrush(colors[key]); p.drawRoundedRect(fill,4*s,4*s)
+        pedal_gap = max(3.0, float(config.get("pedal_bar_gap", 10.0)) * scale)
+        pedal_bar_width = max(4.0, float(config.get("pedal_bar_width", 42.0)) * scale)
+        pedals_width = (
+            pedal_count * pedal_bar_width + (pedal_count + 1) * pedal_gap
+            if pedal_count else 0.0
+        )
+        pedals_width = min(content.width() * 0.32, pedals_width)
 
-    def _wheel(self,p:QPainter,r:QRectF,d:DriverPanelViewData,colors:dict[str,QColor],text:QColor,panel:QColor,border:QColor,cfg:dict[str,Any],s:float)->None:
-        wheel_scale=max(.35,min(2.0,float(cfg.get("steering_size_scale",1.0))))
-        base_radius=max(8,min(r.width()*.378,r.height()*.243))
-        p.setPen(Qt.PenStyle.NoPen); p.setBrush(panel); p.drawRoundedRect(r,8*s,8*s); e=cfg.get("elements",{}); center=QPointF(r.center().x(),r.top()+r.height()*.34); radius=base_radius*wheel_scale; max_deg=float(cfg.get("steering_visual_degrees",540)); angle=d.steering*max_deg
-        if bool(e.get("steering",True)):
-            marker_visible=bool(e.get("steering_marker",True))
-            dynamic=QColor(cfg.get("colors",{}).get("steering_marker","#FFD21F")); style=str(cfg.get("steering_style","Circular"))
-            if style!="Somente ângulo":
-                p.save(); p.translate(center); custom=str(cfg.get("custom_wheel_image","")).strip()
-                if style=="Imagem personalizada" and custom and Path(custom).is_file():
-                    p.rotate(angle); p.drawImage(QRectF(-radius,-radius,radius*2,radius*2),QImage(custom))
-                    if marker_visible:
-                        p.setPen(Qt.PenStyle.NoPen); p.setBrush(dynamic); p.drawEllipse(QPointF(0,-radius),max(4,radius*.105),max(4,radius*.105))
-                else:
-                    p.setPen(QPen(QColor(cfg.get("colors",{}).get("wheel","#0B4A50")),max(5,radius*.14))); p.setBrush(Qt.BrushStyle.NoBrush)
-                    if style=="GT":p.drawRoundedRect(QRectF(-radius,-radius*.78,radius*2,radius*1.56),radius*.28,radius*.28)
-                    elif style=="Fórmula":p.drawRoundedRect(QRectF(-radius,-radius*.62,radius*2,radius*1.24),radius*.16,radius*.16)
-                    else:p.drawEllipse(QPointF(0,0),radius,radius)
-                    if marker_visible:
-                        marker_angle=angle*3.141592653589793/180.0; marker=QPointF(radius*math.sin(marker_angle),-radius*math.cos(marker_angle)); p.setPen(Qt.PenStyle.NoPen); p.setBrush(dynamic); p.drawEllipse(marker,max(4,radius*.105),max(4,radius*.105))
-                p.restore()
-        ratio=d.rpm/max(1,d.max_rpm); gear_color=QColor("#FFFFFF") if d.gear_flash else QColor("#FF334D") if ratio>=float(cfg.get("layout",{}).get("red_start",.92)) else QColor("#FFD21F")
-        if bool(e.get("gear",True)):
-            gear_scale=max(.35,min(3.0,float(cfg.get("gear_font_scale",1.0))))
-            gear=self._format_gear(d.gear); box=QRectF(r.left(),center.y()+radius*1.12,r.width(),max(base_radius*1.02,42*s*gear_scale)); p.setFont(self._fit(cfg,box,gear,base_radius*.912*gear_scale,8,True)); p.setPen(gear_color); p.drawText(box,Qt.AlignmentFlag.AlignCenter,gear)
-        if bool(e.get("speed",True)):
-            speed_scale=max(.35,min(3.0,float(cfg.get("speed_font_scale",1.0))))
-            unit=str(cfg.get("speed_unit","km/h")); value=d.speed_kmh*.621371 if unit=="mph" else d.speed_kmh; speed_text=f"{value:.0f}"
-            if str(cfg.get("speed_position","inside")) == "beside_gear":
-                box=QRectF(center.x()+radius*.38,center.y()+radius*1.12,max(1,r.right()-center.x()-radius*.38),radius*1.02); p.setFont(self._fit(cfg,box,speed_text,base_radius*.588*speed_scale,7,True)); p.setPen(text); p.drawText(box,Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignVCenter,speed_text)
+        rpm_height = content.height() * (0.22 if show("rpm") else 0.0)
+        column_gap = 8.0 * scale
+        rpm_width = max(0.0, content.width() - wheel_width - pedals_width - column_gap * 2)
+        rpm_rect = QRectF(content.left(), content.top(), rpm_width, rpm_height)
+        if show("rpm") and rpm_rect.width() > 0 and rpm_rect.height() > 0:
+            self._rpm(painter, rpm_rect, data, config, colors, text, muted, scale)
+
+        gap = 8.0 * scale
+        body_top = rpm_rect.bottom() + (8.0 * scale if rpm_height else 0.0)
+        body = QRectF(content.left(), body_top, content.width(),
+                      max(0.0, content.bottom() - body_top))
+        graph_width = max(0.0, body.width() - wheel_width - pedals_width - gap * 2)
+        graph_rect = QRectF(body.left(), body.top(), graph_width, body.height())
+        pedals_rect = QRectF(graph_rect.right() + gap, content.top(), pedals_width, content.height())
+        wheel_rect = QRectF(pedals_rect.right() + gap, content.top(), wheel_width, content.height())
+
+        if show("graph") and graph_rect.width() > 0 and graph_rect.height() > 0:
+            graph_series = {
+                "throttle": throttle_history,
+                "brake": brake_history,
+                "clutch": clutch_history,
+                "throttle_reference": reference_throttle_history,
+                "brake_reference": reference_brake_history,
+            }
+            self._graph(painter, graph_rect, graph_series, colors, text, muted, config, scale)
+
+        if show("pedals") and pedals_rect.width() > 0 and pedals_rect.height() > 0:
+            self._pedals(painter, pedals_rect, data, colors, text, muted, config, scale)
+
+        if wheel_visible and wheel_rect.width() > 0 and wheel_rect.height() > 0:
+            self._wheel(painter, wheel_rect, data, colors, text, config, scale)
+
+        if edit_mode:
+            edit_pen = QPen(QColor(color_cfg.get("edit_border", "#8B5CF6")), max(1.5, 2.5 * scale))
+            edit_pen.setStyle(Qt.PenStyle.DashLine)
+            painter.setPen(edit_pen)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawRoundedRect(bounds.adjusted(3, 3, -3, -3), radius, radius)
+        painter.restore()
+
+    @staticmethod
+    def _surface(
+        painter: QPainter, rect: QRectF, background: QColor,
+        border: QColor, scale: float, radius: float = 8.0,
+    ) -> None:
+        painter.setPen(QPen(border, max(0.8, 1.0 * scale)))
+        painter.setBrush(background)
+        painter.drawRoundedRect(rect, radius * scale, radius * scale)
+
+    def _rpm(
+        self, painter: QPainter, rect: QRectF, data: DriverPanelViewData,
+        config: dict[str, Any], colors: dict[str, QColor],
+        text: QColor, muted: QColor, scale: float,
+    ) -> None:
+        color_cfg = config.get("colors", {})
+        panel = QColor(color_cfg.get("rpm_background", color_cfg.get("panel", "#080C12")))
+        border = QColor(color_cfg.get("rpm_border", color_cfg.get("border", "#424B56")))
+        self._surface(painter, rect, panel, border, scale, 8.0)
+
+        ratio = max(0.0, min(1.0, data.rpm / max(1.0, data.max_rpm)))
+        layout = config.get("layout", {})
+        shift_at = max(0.0, min(1.0, float(layout.get("shift_start", 0.78))))
+        red_at = max(shift_at, min(1.0, float(layout.get("red_start", 0.92))))
+
+        label_rect = QRectF(rect.left() + 10 * scale, rect.top() + 2 * scale,
+                            rect.width() * 0.22, rect.height() * 0.40)
+        value_rect = QRectF(rect.left() + rect.width() * 0.22, rect.top() + 1 * scale,
+                            rect.width() * 0.76, rect.height() * 0.43)
+        painter.setFont(self._font(config, max(8.0, rect.height() * 0.25), True))
+        painter.setPen(muted)
+        painter.drawText(label_rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, "RPM")
+        value = f"{data.rpm:,.0f}".replace(",", ".")
+        painter.setFont(self._fit(config, value_rect, value, rect.height() * 0.37, 9.0, True))
+        painter.setPen(text)
+        painter.drawText(value_rect, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, value)
+
+        bar = QRectF(rect.left() + 10 * scale, rect.top() + rect.height() * 0.53,
+                     max(0.0, rect.width() - 20 * scale),
+                     max(5.0 * scale, rect.height() * 0.30))
+        track = QColor(color_cfg.get("pedal_track", "#0C1720"))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(track)
+        painter.drawRoundedRect(bar, 4 * scale, 4 * scale)
+
+        segments = max(10, min(60, int(layout.get("rpm_segments", 28))))
+        segment_gap = max(1.0, 2.0 * scale)
+        segment_width = max(0.5, (bar.width() - segment_gap * (segments - 1)) / segments)
+        for index in range(segments):
+            start_ratio = index / segments
+            end_ratio = (index + 1) / segments
+            left = bar.left() + index * (segment_width + segment_gap)
+            segment = QRectF(left, bar.top(), segment_width, bar.height())
+            if end_ratio <= shift_at:
+                active_color = colors["rpm_low"]
+            elif end_ratio <= red_at:
+                active_color = colors["rpm_shift"]
             else:
-                box=QRectF(center.x()-radius*.90,center.y()-radius*.52,radius*1.80,radius*1.04); p.setFont(self._fit(cfg,box,speed_text,base_radius*.588*speed_scale,7,True)); p.setPen(text); p.drawText(box,Qt.AlignmentFlag.AlignCenter,speed_text)
+                active_color = colors["rpm_high"]
+            painter.setBrush(track)
+            painter.drawRoundedRect(segment, 2 * scale, 2 * scale)
+            filled_fraction = max(0.0, min(1.0, (ratio - start_ratio) * segments))
+            if filled_fraction > 0.0:
+                filled = QRectF(segment.left(), segment.top(),
+                                segment.width() * filled_fraction, segment.height())
+                painter.setBrush(active_color)
+                painter.drawRoundedRect(filled, 2 * scale, 2 * scale)
+
+        for threshold, threshold_color in (
+            (shift_at, colors["rpm_shift"]),
+            (red_at, colors["rpm_high"]),
+        ):
+            x = bar.left() + bar.width() * threshold
+            painter.setPen(QPen(threshold_color, max(1.0, 1.4 * scale)))
+            painter.drawLine(QPointF(x, bar.top() - 2 * scale),
+                             QPointF(x, bar.bottom() + 2 * scale))
+
+    def _graph(
+        self, painter: QPainter, rect: QRectF,
+        series: dict[str, Sequence[float]], colors: dict[str, QColor],
+        text: QColor, muted: QColor, config: dict[str, Any], scale: float,
+    ) -> None:
+        color_cfg = config.get("colors", {})
+        panel = QColor(color_cfg.get("graph_background", color_cfg.get("panel", "#080C12")))
+        border = QColor(color_cfg.get("graph_border", color_cfg.get("border", "#424B56")))
+        self._surface(painter, rect, panel, border, scale, 8.0)
+
+        title_rect = QRectF(rect.left() + 10 * scale, rect.top() + 3 * scale,
+                            rect.width() - 20 * scale, 14 * scale)
+        painter.setFont(self._font(config, max(7.0, 9.0 * scale), True))
+        painter.setPen(muted)
+        painter.drawText(title_rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                         tr("PEDAL INPUT"))
+        painter.drawText(title_rect, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+                         tr("LIVE"))
+
+        graph = rect.adjusted(36 * scale, 21 * scale, -9 * scale, -19 * scale)
+        if graph.width() <= 4 or graph.height() <= 4:
+            return
+
+        if bool(config.get("graph_show_grid", True)):
+            grid = QColor(color_cfg.get("grid", "#27313E"))
+            grid_pen = QPen(grid, max(0.6, 0.8 * scale))
+            grid_pen.setStyle(Qt.PenStyle.DotLine)
+            painter.setPen(grid_pen)
+            for index in range(5):
+                y = graph.bottom() - graph.height() * index / 4
+                painter.drawLine(QPointF(graph.left(), y), QPointF(graph.right(), y))
+            vertical_count = max(2, min(20, int(config.get("graph_vertical_lines", 8))))
+            for index in range(vertical_count + 1):
+                x = graph.left() + graph.width() * index / vertical_count
+                painter.drawLine(QPointF(x, graph.top()), QPointF(x, graph.bottom()))
+
+        painter.setFont(self._font(config, max(6.5, 8.0 * scale), False))
+        painter.setPen(muted)
+        for percent in (100, 75, 50, 25, 0):
+            y = graph.bottom() - graph.height() * percent / 100.0
+            label_rect = QRectF(rect.left() + 2 * scale, y - 5 * scale,
+                                29 * scale, 10 * scale)
+            painter.drawText(label_rect, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+                             f"{percent}%")
+
+        painter.setFont(self._font(config, max(6.5, 7.5 * scale), False))
+        painter.setPen(muted)
+        painter.drawText(
+            QRectF(graph.left(), graph.bottom() + 2 * scale, graph.width() * 0.5, 12 * scale),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, tr("HISTÓRICO"),
+        )
+        painter.drawText(
+            QRectF(graph.left() + graph.width() * 0.5, graph.bottom() + 2 * scale,
+                   graph.width() * 0.5, 12 * scale),
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, tr("AGORA"),
+        )
+
+        enabled = config.get("pedal_elements", {})
+        painter.save()
+        painter.setClipRect(graph)
+        glow = bool(config.get("graph_curve_glow", True))
+        for name, values in series.items():
+            base_name = name.removesuffix("_reference")
+            if not bool(enabled.get(base_name, True)):
+                continue
+            if name.endswith("_reference"):
+                width = float(config.get("reference_line_width", 2.0))
+                dashed = True
+            else:
+                width = float(config.get(
+                    f"{base_name}_line_width",
+                    config.get("graph_line_width", 3.6),
+                ))
+                dashed = False
+            self._draw_curve(
+                painter, graph, values, colors[name],
+                max(1.0, min(9.0, width * scale)), dashed, glow and not dashed,
+            )
+        painter.restore()
+
+        if series.get("throttle_reference") or series.get("brake_reference"):
+            legend_rect = QRectF(graph.right() - 88 * scale, graph.top() + 2 * scale,
+                                 84 * scale, 12 * scale)
+            painter.setFont(self._font(config, max(6.5, 7.0 * scale), False))
+            painter.setPen(muted)
+            painter.drawText(legend_rect, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+                             tr("PB tracejada"))
 
     @staticmethod
-    def _font(cfg:dict[str,Any],px:float,bold:bool=False)->QFont:
-        f=QFont(str(cfg.get("font",{}).get("family","Arial"))); f.setPixelSize(max(7,int(px))); f.setBold(bold); return f
-    def _fit(self,cfg:dict[str,Any],r:QRectF,value:str,preferred:float,minimum:float,bold:bool=False)->QFont:
-        size=max(minimum,preferred)
-        while size>minimum:
-            f=self._font(cfg,size,bold)
-            if QFontMetricsF(f).horizontalAdvance(value)<=r.width()*.88:return f
-            size-=1
-        return self._font(cfg,minimum,bold)
+    def _draw_curve(
+        painter: QPainter, rect: QRectF, values: Sequence[float],
+        color: QColor, width: float, dashed: bool = False, glow: bool = False,
+    ) -> None:
+        if len(values) < 2:
+            return
+        path = QPainterPath()
+        for index, raw in enumerate(values):
+            if isinstance(raw, (tuple, list)) and len(raw) >= 2:
+                x_ratio, value = float(raw[0]), float(raw[1])
+            else:
+                x_ratio, value = index / (len(values) - 1), float(raw)
+            x_ratio = max(0.0, min(1.0, x_ratio))
+            value = max(0.0, min(1.0, value))
+            point = QPointF(
+                rect.left() + rect.width() * x_ratio,
+                rect.bottom() - rect.height() * value,
+            )
+            if index == 0:
+                path.moveTo(point)
+            else:
+                path.lineTo(point)
+
+        if glow and not dashed:
+            glow_color = QColor(color)
+            glow_color.setAlpha(48)
+            glow_pen = QPen(glow_color, width * 2.4)
+            glow_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+            glow_pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+            painter.setPen(glow_pen)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawPath(path)
+
+        pen = QPen(color, width)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        if dashed:
+            pen.setStyle(Qt.PenStyle.DashLine)
+        painter.setPen(pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawPath(path)
+
+    def _pedals(
+        self, painter: QPainter, rect: QRectF, data: DriverPanelViewData,
+        colors: dict[str, QColor], text: QColor, muted: QColor,
+        config: dict[str, Any], scale: float,
+    ) -> None:
+        color_cfg = config.get("colors", {})
+        panel = QColor(color_cfg.get("pedals_background", color_cfg.get("panel", "#080C12")))
+        border = QColor(color_cfg.get("pedals_border", color_cfg.get("border", "#424B56")))
+        self._surface(painter, rect, panel, border, scale, 8.0)
+
+        pedal_flags = config.get("pedal_elements", {})
+        items = [
+            ("BRK", data.brake, data.max_brake_seen, "brake", data.brake_abrupt),
+            ("THR", data.throttle, data.max_throttle_seen, "throttle", data.throttle_abrupt),
+            ("CLT", data.clutch, data.max_clutch_seen, "clutch", False),
+        ]
+        items = [item for item in items if bool(pedal_flags.get(item[3], True))]
+        if not items:
+            return
+
+        gap = max(3.0, float(config.get("pedal_bar_gap", 10.0)) * scale)
+        bar_width = min(
+            max(4.0, float(config.get("pedal_bar_width", 42.0)) * scale),
+            max(4.0, (rect.width() - gap * (len(items) + 1)) / len(items)),
+        )
+        group_width = len(items) * bar_width + (len(items) - 1) * gap
+        start_x = rect.center().x() - group_width / 2
+        show_labels = bool(config.get("pedal_show_labels", True))
+        show_peaks = bool(config.get("pedal_show_peaks", True))
+        label_height = 13.0 * scale if show_labels else 4.0 * scale
+        value_height = max(22.0 * scale, rect.height() * 0.16)
+        bar_top = rect.top() + value_height + 3.0 * scale
+        bar_bottom = rect.bottom() - label_height - 7.0 * scale
+        track_color = QColor(color_cfg.get("pedal_track", "#0C1720"))
+        tick_color = QColor(color_cfg.get("grid", "#27313E"))
+
+        for index, (short_label, value, maximum, key, alert) in enumerate(items):
+            x = start_x + index * (bar_width + gap)
+            percent = f"{value * 100:.0f}%"
+            percent_rect = QRectF(x - 2 * scale, rect.top() + 2 * scale,
+                                  bar_width + 4 * scale, value_height - 3 * scale)
+            painter.setFont(self._fit(config, percent_rect, percent,
+                                      max(12.0 * scale, value_height * 0.42), 7.5, True))
+            painter.setPen(colors[key])
+            painter.drawText(percent_rect, Qt.AlignmentFlag.AlignCenter, percent)
+
+            bar = QRectF(x, bar_top, bar_width, max(6.0 * scale, bar_bottom - bar_top))
+            painter.setPen(QPen(colors[key].darker(160), max(0.8, 1.0 * scale)))
+            painter.setBrush(track_color)
+            painter.drawRoundedRect(bar, 4.0 * scale, 4.0 * scale)
+
+            painter.save()
+            painter.setClipRect(bar.adjusted(1, 1, -1, -1))
+            for tick in (0.25, 0.50, 0.75):
+                tick_y = bar.bottom() - bar.height() * tick
+                painter.setPen(QPen(tick_color, max(0.6, 0.8 * scale)))
+                painter.drawLine(QPointF(bar.left() + 1, tick_y),
+                                 QPointF(bar.right() - 1, tick_y))
+            fill_height = max(0.0, min(1.0, value)) * bar.height()
+            if fill_height > 0.0:
+                fill = QRectF(bar.left(), bar.bottom() - fill_height,
+                              bar.width(), fill_height)
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(colors[key])
+                painter.drawRoundedRect(fill, 4.0 * scale, 4.0 * scale)
+            if show_peaks and maximum > 0.0:
+                peak_y = bar.bottom() - bar.height() * max(0.0, min(1.0, maximum))
+                painter.setPen(QPen(text, max(1.0, 1.2 * scale)))
+                painter.drawLine(QPointF(bar.left() - 2 * scale, peak_y),
+                                 QPointF(bar.right() + 2 * scale, peak_y))
+            painter.restore()
+
+            if alert:
+                painter.setPen(QPen(colors[key], max(1.0, 1.3 * scale)))
+                painter.setBrush(Qt.BrushStyle.NoBrush)
+                painter.drawRoundedRect(percent_rect.adjusted(1, 1, -1, -1),
+                                        3 * scale, 3 * scale)
+
+            if show_labels:
+                label_rect = QRectF(x - 2 * scale, rect.bottom() - label_height - 3 * scale,
+                                    bar_width + 4 * scale, label_height)
+                painter.setFont(self._font(config, max(6.5, 8.0 * scale), True))
+                painter.setPen(muted)
+                painter.drawText(label_rect, Qt.AlignmentFlag.AlignCenter, tr(short_label))
+
+    def _wheel(
+        self, painter: QPainter, rect: QRectF, data: DriverPanelViewData,
+        colors: dict[str, QColor], text: QColor, config: dict[str, Any], scale: float,
+    ) -> None:
+        color_cfg = config.get("colors", {})
+        panel = QColor(color_cfg.get("steering_background", color_cfg.get("panel", "#080C12")))
+        border = QColor(color_cfg.get("steering_border", color_cfg.get("border", "#424B56")))
+        self._surface(painter, rect, panel, border, scale, 8.0)
+
+        wheel_scale = max(0.35, min(2.0, float(config.get("steering_size_scale", 1.0))))
+        base_radius = max(8.0, min(rect.width() * 0.378, rect.height() * 0.243))
+        center = QPointF(rect.center().x(), rect.top() + rect.height() * 0.34)
+        radius = base_radius * wheel_scale
+        angle = data.steering * float(config.get("steering_visual_degrees", 540))
+        elements = config.get("elements", {})
+        style = str(config.get("steering_style", "Circular"))
+        marker_color = QColor(color_cfg.get("steering_marker", "#4CFF5E"))
+
+        if bool(elements.get("steering", True)):
+            custom_image = str(config.get("custom_wheel_image", "")).strip()
+            painter.save()
+            painter.translate(center)
+            painter.rotate(angle)
+            if style == "Imagem personalizada" and custom_image and Path(custom_image).is_file():
+                painter.drawImage(QRectF(-radius, -radius, radius * 2, radius * 2),
+                                  QImage(custom_image))
+            elif style != "Somente ângulo":
+                wheel_color = QColor(color_cfg.get("wheel", "#445466"))
+                painter.setPen(QPen(wheel_color, max(4.0, radius * 0.13)))
+                painter.setBrush(Qt.BrushStyle.NoBrush)
+                if style == "GT":
+                    painter.drawRoundedRect(
+                        QRectF(-radius, -radius * 0.78, radius * 2, radius * 1.56),
+                        radius * 0.28, radius * 0.28,
+                    )
+                elif style == "Fórmula":
+                    painter.drawRoundedRect(
+                        QRectF(-radius, -radius * 0.62, radius * 2, radius * 1.24),
+                        radius * 0.16, radius * 0.16,
+                    )
+                else:
+                    painter.drawEllipse(QPointF(0, 0), radius, radius)
+                    painter.drawLine(QPointF(0, -radius * 0.82), QPointF(0, -radius * 0.32))
+                    painter.drawLine(QPointF(-radius * 0.72, radius * 0.42),
+                                     QPointF(-radius * 0.22, radius * 0.12))
+                    painter.drawLine(QPointF(radius * 0.72, radius * 0.42),
+                                     QPointF(radius * 0.22, radius * 0.12))
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(QColor(color_cfg.get("steering_center", "#FFFFFF")))
+                painter.drawEllipse(QPointF(0, 0), max(2.5, radius * 0.07),
+                                    max(2.5, radius * 0.07))
+            painter.restore()
+
+            if bool(elements.get("steering_marker", True)):
+                marker_angle = angle * math.pi / 180.0
+                marker = QPointF(
+                    center.x() + radius * math.sin(marker_angle),
+                    center.y() - radius * math.cos(marker_angle),
+                )
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(marker_color)
+                painter.drawEllipse(marker, max(4.0, radius * 0.105),
+                                    max(4.0, radius * 0.105))
+
+        rpm_ratio = data.rpm / max(1.0, data.max_rpm)
+        gear_color = (
+            QColor("#FFFFFF") if data.gear_flash
+            else QColor(color_cfg.get("rpm_high", "#FF2438"))
+            if rpm_ratio >= float(config.get("layout", {}).get("red_start", 0.92))
+            else QColor(color_cfg.get("rpm_shift", "#FFC400"))
+        )
+
+        if bool(elements.get("gear", True)):
+            gear_scale = max(0.35, min(3.0, float(config.get("gear_font_scale", 1.0))))
+            gear = self._format_gear(data.gear)
+            gear_rect = QRectF(
+                rect.left(), center.y() + radius * 1.12, rect.width(),
+                max(base_radius * 1.02, 42.0 * scale * gear_scale),
+            )
+            painter.setFont(self._fit(config, gear_rect, gear,
+                                      base_radius * 0.92 * gear_scale, 8.0, True))
+            painter.setPen(gear_color)
+            painter.drawText(gear_rect, Qt.AlignmentFlag.AlignCenter, gear)
+
+        if bool(elements.get("speed", True)):
+            speed_scale = max(0.35, min(3.0, float(config.get("speed_font_scale", 1.0))))
+            unit = str(config.get("speed_unit", "km/h"))
+            speed_value = data.speed_kmh * 0.621371 if unit == "mph" else data.speed_kmh
+            speed_text = f"{speed_value:.0f}"
+            if str(config.get("speed_position", "inside")) == "beside_gear":
+                speed_rect = QRectF(
+                    center.x() + radius * 0.38, center.y() + radius * 1.12,
+                    max(1.0, rect.right() - center.x() - radius * 0.38), radius * 1.02,
+                )
+                alignment = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+            else:
+                speed_rect = QRectF(
+                    center.x() - radius * 0.90, center.y() - radius * 0.52,
+                    radius * 1.80, radius * 1.04,
+                )
+                alignment = Qt.AlignmentFlag.AlignCenter
+            painter.setFont(self._fit(config, speed_rect, speed_text,
+                                      base_radius * 0.59 * speed_scale, 7.0, True))
+            painter.setPen(text)
+            painter.drawText(speed_rect, alignment, speed_text)
+
     @staticmethod
-    def _format_gear(gear:int)->str:return "R" if gear<0 else "N" if gear==0 else str(gear)
+    def _font(config: dict[str, Any], pixels: float, bold: bool = False) -> QFont:
+        font_config = config.get("font", {})
+        family = str(font_config.get("family", "Bahnschrift Light"))
+        font_scale = max(0.65, min(1.8, float(font_config.get("scale", 1.0))))
+        font = QFont(family)
+        font.setPixelSize(max(7, int(pixels * font_scale)))
+        font.setBold(bold)
+        return font
+
+    def _fit(
+        self, config: dict[str, Any], rect: QRectF, value: str,
+        preferred: float, minimum: float, bold: bool = False,
+    ) -> QFont:
+        size = max(minimum, preferred)
+        while size > minimum:
+            font = self._font(config, size, bold)
+            if QFontMetricsF(font).horizontalAdvance(value) <= rect.width() * 0.88:
+                return font
+            size -= 1
+        return self._font(config, minimum, bold)
+
+    @staticmethod
+    def _format_gear(gear: int) -> str:
+        return "R" if gear < 0 else "N" if gear == 0 else str(gear)

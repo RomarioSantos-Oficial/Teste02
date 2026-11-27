@@ -174,6 +174,16 @@ class DriverPanelEditor(QDialog):
             lambda value: self._set_root("pedal_bar_gap", value)
         )
         form.addRow("Espaço entre barras:", gap)
+
+        for key, label in (
+            ("pedal_show_labels", "Mostrar identificação dos pedais"),
+            ("pedal_show_peaks", "Mostrar marcador do pico máximo"),
+        ):
+            check = QCheckBox()
+            check.setChecked(bool(self.config.get(key, True)))
+            check.toggled.connect(lambda value, k=key: self._set_root(k, value))
+            form.addRow(label + ":", check)
+
         self.content_layout.addWidget(group)
 
     def _build_size_group(self) -> None:
@@ -271,6 +281,32 @@ class DriverPanelEditor(QDialog):
             "Linhas verticais:",
             vertical,
         )
+
+        for key, label, default in (
+            ("throttle_line_width", "Espessura do acelerador:", 3.6),
+            ("brake_line_width", "Espessura do freio:", 3.6),
+            ("clutch_line_width", "Espessura da embreagem:", 3.4),
+            ("reference_line_width", "Espessura da melhor volta:", 2.0),
+        ):
+            line_width = QDoubleSpinBox()
+            line_width.setRange(1.0, 9.0)
+            line_width.setSingleStep(0.2)
+            line_width.setDecimals(1)
+            line_width.setSuffix(" px")
+            line_width.setValue(float(self.config.get(key, default)))
+            line_width.valueChanged.connect(
+                lambda value, k=key: self._set_root(k, value)
+            )
+            form.addRow(label, line_width)
+
+        for key, label in (
+            ("graph_show_grid", "Mostrar grade e escala percentual"),
+            ("graph_curve_glow", "Realce suave das linhas"),
+        ):
+            check = QCheckBox()
+            check.setChecked(bool(self.config.get(key, True)))
+            check.toggled.connect(lambda value, k=key: self._set_root(k, value))
+            form.addRow(label + ":", check)
 
         compare_best = QCheckBox("Comparar com minha melhor volta salva")
         compare_best.setChecked(bool(self.config.get("compare_personal_best", False)))
@@ -425,8 +461,10 @@ class DriverPanelEditor(QDialog):
 
         font = QComboBox()
         font.addItems(QFontDatabase.families())
+        font.setEditable(True)
+        font.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         font.setCurrentText(
-            str(font_cfg.get("family", "Arial"))
+            str(font_cfg.get("family", "Bahnschrift Light"))
         )
         font.currentTextChanged.connect(
             lambda v:
@@ -467,7 +505,17 @@ class DriverPanelEditor(QDialog):
             )
         )
 
+        font_scale = QDoubleSpinBox()
+        font_scale.setRange(0.65, 1.80)
+        font_scale.setSingleStep(0.05)
+        font_scale.setDecimals(2)
+        font_scale.setValue(float(font_cfg.get("scale", 1.0)))
+        font_scale.valueChanged.connect(
+            lambda value: self._set_nested("font", "scale", value)
+        )
+
         form.addRow("Fonte:", font)
+        form.addRow("Escala dos textos:", font_scale)
         form.addRow("Opacidade:", opacity)
         form.addRow(
             "Opacidade do fundo:",
@@ -478,7 +526,18 @@ class DriverPanelEditor(QDialog):
             ("text", "Texto"),
             ("muted", "Texto secundário"),
             ("background", "Fundo"),
-            ("panel", "Painéis internos"),
+            ("panel", "Painéis internos (padrão)"),
+            ("graph_background", "Fundo do gráfico"),
+            ("graph_border", "Borda do gráfico"),
+            ("pedals_background", "Fundo das barras dos pedais"),
+            ("pedals_border", "Borda das barras dos pedais"),
+            ("rpm_background", "Fundo da área de RPM"),
+            ("rpm_border", "Borda da área de RPM"),
+            ("steering_background", "Fundo da área do volante"),
+            ("steering_border", "Borda da área do volante"),
+            ("pedal_track", "Fundo interno das barras"),
+            ("personal_best_throttle", "Melhor volta — acelerador"),
+            ("personal_best_brake", "Melhor volta — freio"),
             ("grid", "Grade"),
             ("rpm_low", "RPM azul"),
             ("rpm_shift", "RPM amarelo"),
