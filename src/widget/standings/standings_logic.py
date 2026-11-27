@@ -173,7 +173,6 @@ class StandingsLogic:
         self._pit_elapsed: dict[int, float] = {}
         self._pit_was_inside: dict[int, bool] = {}
         self._pit_exit_lap: dict[int, int] = {}
-        self._pit_parked_after_pit: set[int] = set()
         self._previous_best_laps: dict[int, float] = {}
         self._personal_best_until: dict[int, float] = {}
         self._observed_laps_once = False
@@ -212,7 +211,6 @@ class StandingsLogic:
         self._pit_elapsed.clear()
         self._pit_was_inside.clear()
         self._pit_exit_lap.clear()
-        self._pit_parked_after_pit.clear()
         self._previous_best_laps.clear()
         self._personal_best_until.clear()
         self._observed_laps_once = False
@@ -1076,18 +1074,14 @@ class StandingsLogic:
         finish_status = int(getattr(driver, "finish_status", 0) or 0)
         was_in_pits = self._pit_was_inside.get(slot_id, False)
         if in_garage:
-            if was_in_pits:
-                self._pit_parked_after_pit.add(slot_id)
             self._pit_started.pop(slot_id, None)
             self._pit_elapsed.pop(slot_id, None)
             self._pit_exit_lap.pop(slot_id, None)
         elif active_pit:
-            self._pit_parked_after_pit.discard(slot_id)
             self._pit_started.setdefault(slot_id, now)
             self._pit_elapsed[slot_id] = now - self._pit_started[slot_id]
             self._pit_exit_lap.pop(slot_id, None)
         else:
-            self._pit_parked_after_pit.discard(slot_id)
             if was_in_pits:
                 self._pit_exit_lap[slot_id] = completed_laps
             self._pit_started.pop(slot_id, None)
@@ -1102,7 +1096,7 @@ class StandingsLogic:
             "DNF"
             if in_garage and 10 <= session_number <= 13
             else "GAR"
-            if in_garage and slot_id in self._pit_parked_after_pit
+            if in_garage
             else ""
         )
         pit_status_visible = bool(

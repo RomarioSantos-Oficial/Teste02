@@ -55,8 +55,9 @@ class StandingsLogicUnitTests(unittest.TestCase):
         logic = StandingsLogic({"show_pit_status": True})
 
         row = logic.build(session, {}, "MEM").categories[0].rows[0]
-        self.assertFalse(row.pit_status_visible)
-        self.assertEqual(row.pit_status_label, "")
+        self.assertTrue(row.pit_status_visible)
+        self.assertEqual(row.pit_status_label, "GAR")
+        self.assertEqual(row.pit_time_s, 0.0)
 
         driver.in_garage = False
         driver.in_pits = True
