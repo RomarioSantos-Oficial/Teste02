@@ -99,13 +99,13 @@ class DriverPanelWidget(QWidget):
         )
 
         interval = "Volta" if bool(self.config.get("compare_personal_best", False)) else str(self.config.get("graph_interval", "10 s"))
-        seconds = {"5 s": 5, "10 s": 10, "30 s": 30, "Volta": 180, "Sessão": 3600}.get(interval, 10)
+        seconds = {"5 s": 5, "10 s": 10, "15 s": 15, "20 s": 20, "30 s": 30, "45 s": 45, "60 s": 60, "90 s": 90, "120 s": 120, "180 s": 180, "300 s": 300, "600 s": 600, "Volta": 180, "Sessão": 3600}.get(interval, 10)
         history_rate = min(
             120,
             max(1, int(self.config.get("sample_rate_hz", 60))),
         )
         self._history_interval_s = 1.0 / history_rate
-        history_size = max(30, min(108000, history_rate * seconds))
+        history_size = max(30, min(432000, history_rate * seconds))
 
         if self.throttle_history.maxlen != history_size:
             self.throttle_history = deque(
@@ -386,8 +386,8 @@ class DriverPanelWidget(QWidget):
             return tuple(series + [[], [], []])
 
         interval = "Volta" if bool(self.config.get("compare_personal_best", False)) else str(self.config.get("graph_interval", "10 s"))
-        seconds = {"5 s": 5.0, "10 s": 10.0, "30 s": 30.0}.get(interval)
-        points = max(2, int(self.config.get("graph_history_points", 240)))
+        seconds = {"5 s": 5.0, "10 s": 10.0, "15 s": 15.0, "20 s": 20.0, "30 s": 30.0, "45 s": 45.0, "60 s": 60.0, "90 s": 90.0, "120 s": 120.0, "180 s": 180.0, "300 s": 300.0, "600 s": 600.0}.get(interval)
+        points = max(2, min(6000, int(self.config.get("graph_history_points", 240))))
         if seconds is not None:
             checked_at = time.monotonic() if now is None else float(now)
             cutoff = checked_at - seconds
@@ -395,6 +395,11 @@ class DriverPanelWidget(QWidget):
             # borda esquerda sem mudar seu formato.
             start = max(0, bisect_right(times, cutoff) - 1)
             indexes = list(range(start, len(times)))
+            if len(indexes) > points:
+                indexes = [
+                    indexes[round(index * (len(indexes) - 1) / (points - 1))]
+                    for index in range(points)
+                ]
             timed: list[list[tuple[float, float]]] = []
             for values in series:
                 timed.append([

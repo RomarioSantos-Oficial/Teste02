@@ -1091,7 +1091,13 @@
       "pedal_show_peaks": false,
       "rpm_flash_interval_s": 0.06,
       "graph_show_scale_labels": false,
-      "graph_extrema_markers": true
+      "graph_extrema_markers": true,
+      "graph_marker_scale": 1,
+      "pedal_value_font_scale": 1,
+      "rpm_font_scale": 1,
+      "rpm_bar_height_scale": 1,
+      "steering_marker_scale": 1,
+      "steering_line_width": 4
     }
   },
   "defaults": {
@@ -2185,7 +2191,13 @@
       "pedal_show_peaks": false,
       "rpm_flash_interval_s": 0.06,
       "graph_show_scale_labels": false,
-      "graph_extrema_markers": true
+      "graph_extrema_markers": true,
+      "graph_marker_scale": 1,
+      "pedal_value_font_scale": 1,
+      "rpm_font_scale": 1,
+      "rpm_bar_height_scale": 1,
+      "steering_marker_scale": 1,
+      "steering_line_width": 4
     }
   },
   "profiles": {
@@ -3192,7 +3204,13 @@
           "pedal_show_peaks": false,
           "rpm_flash_interval_s": 0.06,
           "graph_show_scale_labels": false,
-          "graph_extrema_markers": true
+          "graph_extrema_markers": true,
+          "graph_marker_scale": 1,
+          "pedal_value_font_scale": 1,
+          "rpm_font_scale": 1,
+          "rpm_bar_height_scale": 1,
+          "steering_marker_scale": 1,
+          "steering_line_width": 4
         }
       }
     },
@@ -4199,7 +4217,13 @@
           "pedal_show_peaks": false,
           "rpm_flash_interval_s": 0.06,
           "graph_show_scale_labels": false,
-          "graph_extrema_markers": true
+          "graph_extrema_markers": true,
+          "graph_marker_scale": 1,
+          "pedal_value_font_scale": 1,
+          "rpm_font_scale": 1,
+          "rpm_bar_height_scale": 1,
+          "steering_marker_scale": 1,
+          "steering_line_width": 4
         }
       }
     }

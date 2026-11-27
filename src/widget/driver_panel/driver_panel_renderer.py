@@ -332,7 +332,7 @@ class DriverPanelRenderer:
             for index in range(1, 4):
                 y = graph.bottom() - graph.height() * index / 4
                 painter.drawLine(QPointF(graph.left(), y), QPointF(graph.right(), y))
-            vertical_count = max(2, min(20, int(config.get("graph_vertical_lines", 8))))
+            vertical_count = max(2, min(40, int(config.get("graph_vertical_lines", 8))))
             for index in range(1, vertical_count):
                 x = graph.left() + graph.width() * index / vertical_count
                 painter.drawLine(QPointF(x, graph.top()), QPointF(x, graph.bottom()))
@@ -366,10 +366,9 @@ class DriverPanelRenderer:
                 width = float(config.get("reference_line_width", 2.0))
                 dashed = True
             else:
-                width = float(config.get(
-                    f"{base_name}_line_width",
-                    config.get("graph_line_width", 3.6),
-                ))
+                individual_width = float(config.get(f"{base_name}_line_width", 3.6))
+                global_width = max(0.5, min(12.0, float(config.get("graph_line_width", 3.6))))
+                width = individual_width * (global_width / 3.6)
                 dashed = False
             self._draw_curve(
                 painter, graph, values, colors[name],
@@ -463,8 +462,9 @@ class DriverPanelRenderer:
         colors: dict[str, QColor], text: QColor, muted: QColor,
         config: dict[str, Any], scale: float,
     ) -> None:
-        del muted
         color_cfg = config.get("colors", {})
+        show_labels = bool(config.get("pedal_show_labels", False))
+        label_height = max(10.0 * scale, rect.height() * 0.12) if show_labels else 0.0
         panel = QColor(color_cfg.get("pedals_background", "#000000"))
         border = QColor(color_cfg.get("pedals_border", "#000000"))
         self._surface(painter, rect, panel, border, scale, 0.0)
@@ -488,7 +488,7 @@ class DriverPanelRenderer:
         start_x = rect.center().x() - group_width / 2.0
         value_height = max(20.0 * scale, rect.height() * 0.17)
         bar_top = rect.top() + value_height + 4.0 * scale
-        bar_bottom = rect.bottom() - 5.0 * scale
+        bar_bottom = rect.bottom() - 5.0 * scale - label_height
         track_color = QColor(color_cfg.get("pedal_track", "#292929"))
 
         for index, (_short_label, value, maximum, key, alert) in enumerate(items):
@@ -533,6 +533,15 @@ class DriverPanelRenderer:
                 painter.setPen(QPen(colors[key], max(1.0, 1.3 * scale)))
                 painter.setBrush(Qt.BrushStyle.NoBrush)
                 painter.drawRect(value_rect.adjusted(1, 1, -1, -1))
+
+            if show_labels:
+                label_rect = QRectF(
+                    x - 3.0 * scale, rect.bottom() - label_height,
+                    bar_width + 6.0 * scale, label_height,
+                )
+                painter.setFont(self._font(config, max(6.5, 8.0 * scale), True))
+                painter.setPen(muted)
+                painter.drawText(label_rect, Qt.AlignmentFlag.AlignCenter, tr(_short_label))
 
     def _gear(
         self, painter: QPainter, rect: QRectF, data: DriverPanelViewData,

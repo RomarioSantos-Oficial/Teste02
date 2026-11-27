@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSpinBox,
     QVBoxLayout,
+    QTabWidget,
     QWidget,
 )
 
@@ -39,28 +40,25 @@ class DriverPanelEditor(QDialog):
     ) -> None:
         super().__init__(parent)
 
-        self.setWindowTitle("Editar Telemetry")
-        self.resize(550, 720)
+        self.setWindowTitle("Editar Telemetry — Personalização completa")
+        self.resize(920, 780)
+        self.setMinimumSize(760, 620)
         self.config = deepcopy(config)
         self._color_buttons: dict[str, QPushButton] = {}
 
         root = QVBoxLayout(self)
+        tabs = QTabWidget()
+        root.addWidget(tabs, 1)
 
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        root.addWidget(scroll)
-
-        content = QWidget()
-        self.content_layout = QVBoxLayout(content)
-        scroll.setWidget(content)
-
-        self._build_size_group()
-        self._build_elements_group()
-        self._build_pedals_group()
-        self._build_graph_group()
-        self._build_rpm_group()
-        self._build_steering_group()
-        self._build_appearance_group()
+        self._add_settings_tab(tabs, "Geral", (
+            self._build_size_group,
+            self._build_elements_group,
+        ))
+        self._add_settings_tab(tabs, "Pedais", (self._build_pedals_group,))
+        self._add_settings_tab(tabs, "Histórico", (self._build_graph_group,))
+        self._add_settings_tab(tabs, "RPM", (self._build_rpm_group,))
+        self._add_settings_tab(tabs, "Volante e velocidade", (self._build_steering_group,))
+        self._add_settings_tab(tabs, "Aparência", (self._build_appearance_group,))
 
         buttons = QHBoxLayout()
 
@@ -77,6 +75,19 @@ class DriverPanelEditor(QDialog):
         buttons.addWidget(close)
 
         root.addLayout(buttons)
+
+    def _add_settings_tab(self, tabs: QTabWidget, title: str, builders: tuple) -> None:
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        page = QWidget()
+        self.content_layout = QVBoxLayout(page)
+        self.content_layout.setContentsMargins(12, 12, 12, 12)
+        self.content_layout.setSpacing(10)
+        for build in builders:
+            build()
+        self.content_layout.addStretch()
+        scroll.setWidget(page)
+        tabs.addTab(scroll, title)
 
     def _build_elements_group(self) -> None:
         group = QGroupBox("Elementos visíveis")
@@ -98,45 +109,6 @@ class DriverPanelEditor(QDialog):
             )
             form.addRow(label + ":", check)
 
-        speed_unit = QComboBox()
-        speed_unit.addItems(("km/h", "mph"))
-        speed_unit.setCurrentText(str(self.config.get("speed_unit", "km/h")))
-        speed_unit.currentTextChanged.connect(lambda value: self._set_root("speed_unit", value))
-        form.addRow("Unidade de velocidade:", speed_unit)
-
-        speed_position = QComboBox()
-        speed_position.addItem("Dentro do volante", "inside")
-        speed_position.addItem("Ao lado da marcha", "beside_gear")
-        current_position = str(self.config.get("speed_position", "inside"))
-        speed_position.setCurrentIndex(max(0, speed_position.findData(current_position)))
-        speed_position.currentIndexChanged.connect(
-            lambda _index: self._set_root("speed_position", speed_position.currentData())
-        )
-        form.addRow("Posição da velocidade:", speed_position)
-
-        style = QComboBox()
-        style.addItems(("Circular", "GT", "Fórmula", "Somente ângulo", "Imagem personalizada"))
-        style.setCurrentText(str(self.config.get("steering_style", "Circular")))
-        style.currentTextChanged.connect(lambda value: self._set_root("steering_style", value))
-        form.addRow("Estilo do volante:", style)
-
-        image_row = QHBoxLayout()
-        image_path = QLineEdit(str(self.config.get("custom_wheel_image", "")))
-        choose = QPushButton("Escolher…")
-        def choose_image() -> None:
-            path, _ = QFileDialog.getOpenFileName(
-                self,
-                tr("Imagem do volante"),
-                "",
-                tr("Imagens (*.png *.jpg *.jpeg *.webp)"),
-            )
-            if path:
-                image_path.setText(path)
-                self._set_root("custom_wheel_image", path)
-        choose.clicked.connect(choose_image)
-        image_path.editingFinished.connect(lambda: self._set_root("custom_wheel_image", image_path.text().strip()))
-        image_row.addWidget(image_path); image_row.addWidget(choose)
-        form.addRow("Imagem personalizada:", image_row)
         self.content_layout.addWidget(group)
 
     def _build_pedals_group(self) -> None:
@@ -174,6 +146,16 @@ class DriverPanelEditor(QDialog):
             lambda value: self._set_root("pedal_bar_gap", value)
         )
         form.addRow("Espaço entre barras:", gap)
+
+        value_scale = QSpinBox()
+        value_scale.setRange(35, 300)
+        value_scale.setSingleStep(5)
+        value_scale.setSuffix("%")
+        value_scale.setValue(round(float(self.config.get("pedal_value_font_scale", 1.0)) * 100))
+        value_scale.valueChanged.connect(
+            lambda value: self._set_root("pedal_value_font_scale", value / 100.0)
+        )
+        form.addRow("Tamanho dos números dos pedais:", value_scale)
 
         for key, label in (
             ("pedal_show_labels", "Mostrar identificação dos pedais"),
@@ -219,6 +201,15 @@ class DriverPanelEditor(QDialog):
         )
 
         form.addRow("Escala geral:", scale)
+
+        radius = QDoubleSpinBox()
+        radius.setRange(0.0, 32.0)
+        radius.setSingleStep(1.0)
+        radius.setDecimals(0)
+        radius.setSuffix(" px")
+        radius.setValue(float(self.config.get("border_radius", 0.0)))
+        radius.valueChanged.connect(lambda value: self._set_root("border_radius", value))
+        form.addRow("Arredondamento das bordas:", radius)
         self.content_layout.addWidget(group)
 
     def _build_graph_group(self) -> None:
@@ -228,7 +219,7 @@ class DriverPanelEditor(QDialog):
         form = QFormLayout(group)
 
         interval = QComboBox()
-        interval.addItems(("5 s", "10 s", "30 s", "Volta", "Sessão"))
+        interval.addItems(("5 s", "10 s", "15 s", "20 s", "30 s", "45 s", "60 s", "90 s", "120 s", "180 s", "300 s", "600 s", "Volta", "Sessão"))
         interval.setCurrentText(
             "Volta" if bool(self.config.get("compare_personal_best", False))
             else str(self.config.get("graph_interval", "10 s"))
@@ -237,7 +228,7 @@ class DriverPanelEditor(QDialog):
         form.addRow("Intervalo exibido:", interval)
 
         history = QSpinBox()
-        history.setRange(30, 1200)
+        history.setRange(30, 6000)
         history.setSingleStep(30)
         history.setValue(
             int(
@@ -273,24 +264,27 @@ class DriverPanelEditor(QDialog):
             )
         )
 
-        form.addRow(
-            "Pontos no histórico:",
-            history,
-        )
-        form.addRow(
-            "Linhas verticais:",
-            vertical,
-        )
+        form.addRow("Pontos no histórico:", history)
+        form.addRow("Linhas verticais:", vertical)
+
+        sample_rate = QSpinBox()
+        sample_rate.setRange(10, 120)
+        sample_rate.setSingleStep(5)
+        sample_rate.setSuffix(" amostras/s")
+        sample_rate.setValue(int(self.config.get("sample_rate_hz", 60)))
+        sample_rate.valueChanged.connect(lambda value: self._set_root("sample_rate_hz", value))
+        form.addRow("Frequência de amostragem:", sample_rate)
 
         for key, label, default in (
+            ("graph_line_width", "Espessura geral das curvas:", 3.6),
             ("throttle_line_width", "Espessura do acelerador:", 3.6),
             ("brake_line_width", "Espessura do freio:", 3.6),
             ("clutch_line_width", "Espessura da embreagem:", 3.4),
             ("reference_line_width", "Espessura da melhor volta:", 2.0),
         ):
             line_width = QDoubleSpinBox()
-            line_width.setRange(1.0, 9.0)
-            line_width.setSingleStep(0.2)
+            line_width.setRange(0.5, 12.0)
+            line_width.setSingleStep(0.1)
             line_width.setDecimals(1)
             line_width.setSuffix(" px")
             line_width.setValue(float(self.config.get(key, default)))
@@ -298,6 +292,14 @@ class DriverPanelEditor(QDialog):
                 lambda value, k=key: self._set_root(k, value)
             )
             form.addRow(label, line_width)
+
+        marker_scale = QDoubleSpinBox()
+        marker_scale.setRange(0.25, 3.0)
+        marker_scale.setSingleStep(0.05)
+        marker_scale.setDecimals(2)
+        marker_scale.setValue(float(self.config.get("graph_marker_scale", 1.0)))
+        marker_scale.valueChanged.connect(lambda value: self._set_root("graph_marker_scale", value))
+        form.addRow("Tamanho dos pontos de destaque:", marker_scale)
 
         for key, label in (
             ("graph_show_grid", "Mostrar grade do gráfico"),
@@ -373,11 +375,65 @@ class DriverPanelEditor(QDialog):
             lambda value: self._set_root("rpm_flash_interval_s", value)
         )
         form.addRow("Velocidade do pisca:", flash_interval)
+
+        for key, label, default, minimum, maximum in (
+            ("rpm_font_scale", "Tamanho do número de RPM", 1.0, 35, 300),
+            ("rpm_bar_height_scale", "Altura dos blocos de RPM", 1.0, 50, 150),
+        ):
+            control = QSpinBox()
+            control.setRange(minimum, maximum)
+            control.setSingleStep(5)
+            control.setSuffix("%")
+            control.setValue(round(float(self.config.get(key, default)) * 100))
+            control.valueChanged.connect(
+                lambda value, config_key=key: self._set_root(config_key, value / 100.0)
+            )
+            form.addRow(label + ":", control)
         self.content_layout.addWidget(group)
 
     def _build_steering_group(self) -> None:
-        group = QGroupBox("Volante")
+        group = QGroupBox("Volante, imagem e velocidade")
         form = QFormLayout(group)
+
+        speed_unit = QComboBox()
+        speed_unit.addItems(("km/h", "mph"))
+        speed_unit.setCurrentText(str(self.config.get("speed_unit", "km/h")))
+        speed_unit.currentTextChanged.connect(lambda value: self._set_root("speed_unit", value))
+        form.addRow("Unidade de velocidade:", speed_unit)
+
+        speed_position = QComboBox()
+        speed_position.addItem("Dentro do círculo", "inside")
+        speed_position.addItem("Ao lado da marcha", "beside_gear")
+        speed_position.setCurrentIndex(max(0, speed_position.findData(str(self.config.get("speed_position", "inside")))))
+        speed_position.currentIndexChanged.connect(
+            lambda _index: self._set_root("speed_position", speed_position.currentData())
+        )
+        form.addRow("Posição da velocidade:", speed_position)
+
+        style = QComboBox()
+        style.addItems(("Circular", "GT", "Fórmula", "Somente ângulo", "Imagem personalizada"))
+        style.setCurrentText(str(self.config.get("steering_style", "Circular")))
+        style.currentTextChanged.connect(lambda value: self._set_root("steering_style", value))
+        form.addRow("Estilo do volante:", style)
+
+        image_row = QHBoxLayout()
+        image_path = QLineEdit(str(self.config.get("custom_wheel_image", "")))
+        choose = QPushButton("Escolher imagem…")
+        def choose_image() -> None:
+            path, _ = QFileDialog.getOpenFileName(
+                self, tr("Imagem do volante"), "",
+                tr("Imagens (*.png *.jpg *.jpeg *.webp)"),
+            )
+            if path:
+                image_path.setText(path)
+                self._set_root("custom_wheel_image", path)
+        choose.clicked.connect(choose_image)
+        image_path.editingFinished.connect(
+            lambda: self._set_root("custom_wheel_image", image_path.text().strip())
+        )
+        image_row.addWidget(image_path)
+        image_row.addWidget(choose)
+        form.addRow("Arquivo do volante:", image_row)
 
         angle = QSpinBox()
         angle.setRange(45, 540)
@@ -424,6 +480,25 @@ class DriverPanelEditor(QDialog):
         smoothing.setValue(float(self.config.get("steering_smoothing", 0.32)))
         smoothing.valueChanged.connect(lambda value: self._set_root("steering_smoothing", value))
         form.addRow("Suavização:", smoothing)
+
+        line_width = QDoubleSpinBox()
+        line_width.setRange(1.0, 14.0)
+        line_width.setSingleStep(0.5)
+        line_width.setDecimals(1)
+        line_width.setSuffix(" px")
+        line_width.setValue(float(self.config.get("steering_line_width", 4.0)))
+        line_width.valueChanged.connect(lambda value: self._set_root("steering_line_width", value))
+        form.addRow("Espessura do aro:", line_width)
+
+        marker_scale = QSpinBox()
+        marker_scale.setRange(35, 250)
+        marker_scale.setSingleStep(5)
+        marker_scale.setSuffix("%")
+        marker_scale.setValue(round(float(self.config.get("steering_marker_scale", 1.0)) * 100))
+        marker_scale.valueChanged.connect(
+            lambda value: self._set_root("steering_marker_scale", value / 100.0)
+        )
+        form.addRow("Tamanho da bolinha indicadora:", marker_scale)
 
         self.content_layout.addWidget(group)
 
