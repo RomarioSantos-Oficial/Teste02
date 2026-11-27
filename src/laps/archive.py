@@ -536,6 +536,11 @@ class LapRecorder:
         if self._driver_slot != int(getattr(driver, "slot_id", -1)):
             self._samples.clear()
             self._last_recorded_distance_m = None
+            self._lap_marker = None
+            self._last_scoring_laps = None
+            self._pending_samples = None
+            self._pending_since = 0.0
+            self._pending_scoring_laps = None
         self._driver_slot = int(getattr(driver, "slot_id", -1))
 
         live = getattr(driver, "live_scoring", None)

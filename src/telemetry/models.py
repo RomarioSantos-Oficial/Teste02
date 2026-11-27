@@ -66,7 +66,6 @@ class DriverData:
     vehicle_class: str = ""
     position: int = 0
     laps: int = 0
-    lap_number: int = 0
     current_sector: int = 0
 
     best_lap_s: float = 0.0
@@ -153,6 +152,8 @@ class DriverData:
     radar_elapsed_time_s: float = 0.0
     radar_position_valid: bool = False
     is_player: bool = False
+    # Higher-rate LMU telemetry lap counter; appended to preserve positional API.
+    lap_number: int = 0
 
 
 @dataclass
