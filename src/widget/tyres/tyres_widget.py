@@ -456,7 +456,7 @@ class WheelGroup(QWidget):
         )
         gap = max(
             1,
-            round(4 * s),
+            round(3 * s),
         )
 
         self.group_layout.setSpacing(
@@ -465,7 +465,7 @@ class WheelGroup(QWidget):
         self.wheel_box_layout.setSpacing(
             max(
                 1,
-                round(3 * s),
+                round(2 * s),
             )
         )
         self.tyre_layout.setSpacing(
@@ -483,7 +483,7 @@ class WheelGroup(QWidget):
 
         tyre_padding = max(
             1,
-            round(3 * s),
+            round(2 * s),
         )
         self.tyre_layout.setContentsMargins(
             tyre_padding,
@@ -669,7 +669,7 @@ class WheelGroup(QWidget):
             QFrame#TyreFrame {{
                 {tyre_background}
                 border-radius: {radius}px;
-                border: {max(1, round(2 * self.scale))}px solid {border};
+                border: {max(1.0, round(2 * self.scale * 1.265, 1))}px solid {border};
             }}
             """
         )
@@ -1071,7 +1071,7 @@ class TyresWidget(QWidget):
         margin = tyres_panel_margin(self.config, s)
         row_gap = max(
             3,
-            round(6 * s),
+            round(5 * s),
         )
 
         self.main_layout.setContentsMargins(
@@ -1095,7 +1095,7 @@ class TyresWidget(QWidget):
         self.center_gap.setFixedHeight(
             max(
                 4,
-                round(14 * s),
+                round(9 * s),
             )
         )
 
@@ -1191,17 +1191,12 @@ class TyresWidget(QWidget):
                 )
             ),
         )
-        main_size = max(
-            8,
-            round(
-                base_font * scale
-            ),
-        )
         wear_size = tyres_wear_font_size(
             self.config,
             base_font,
             scale,
         )
+        main_size = wear_size
         detail_size = max(
             5,
             round(

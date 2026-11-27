@@ -35,9 +35,9 @@ class TyresLayoutUnitTests(unittest.TestCase):
 
     def test_default_background_is_tighter(self) -> None:
         config = self._default_config()
-        self.assertEqual(config["panel_margin"], 6.0)
-        self.assertEqual(tyres_panel_margin(config, 1.0), 6)
-        self.assertEqual(tyres_panel_margin(config, 0.55), 3)
+        self.assertEqual(config["panel_margin"], 4.0)
+        self.assertEqual(tyres_panel_margin(config, 1.0), 4)
+        self.assertEqual(tyres_panel_margin(config, 0.55), 2)
 
     def test_background_can_be_disabled(self) -> None:
         style = tyres_main_frame_style(
@@ -77,7 +77,7 @@ class TyresLayoutUnitTests(unittest.TestCase):
         margins = widget.main_layout.contentsMargins()
         self.assertEqual(
             (margins.left(), margins.top(), margins.right(), margins.bottom()),
-            (6, 6, 6, 6),
+            (4, 4, 4, 4),
         )
         self.assertIn(
             "background: transparent; border: none;",
