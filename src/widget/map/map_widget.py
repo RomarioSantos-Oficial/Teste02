@@ -80,18 +80,19 @@ def map_leader_roles(
     driver: Any,
     config: dict[str, Any],
 ) -> tuple[str, ...]:
-    roles: list[str] = []
     if (
         bool(config.get("show_overall_leader_marker", True))
         and int(getattr(driver, "position", 0) or 0) == 1
     ):
-        roles.append("overall")
+        # O líder geral já é, necessariamente, o destaque máximo. Não
+        # desenhe uma segunda coroa de categoria sobre a mesma bolinha.
+        return ("overall",)
     if (
         bool(config.get("show_class_leader_markers", True))
         and int(getattr(driver, "position_in_class", 0) or 0) == 1
     ):
-        roles.append("class")
-    return tuple(roles)
+        return ("class",)
+    return ()
 
 
 class TrackMapWidget(QWidget):
@@ -1719,8 +1720,8 @@ class TrackMapWidget(QWidget):
             color = (
                 QColor(
                     self.config.get("colors", {}).get(
-                        "vehicle_leader",
-                        "#E040FB",
+                        "leader_marker_overall",
+                        "#C0C0C0",
                     )
                 )
                 if role == "overall"

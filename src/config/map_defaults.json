@@ -81,6 +81,7 @@
     "sector_line": "#FFC42E",
     "vehicle_player": "#FF54B8",
     "vehicle_leader": "#E040FB",
+    "leader_marker_overall": "#C0C0C0",
     "vehicle_in_pit": "#616A75",
     "vehicle_yellow": "#FFC400",
     "vehicle_same_lap": "#2196F3",

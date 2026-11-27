@@ -723,6 +723,7 @@ class MapEditor(QDialog):
             "sector_line": "Linhas de setor",
             "vehicle_player": "Jogador (rosa)",
             "vehicle_leader": "Líder geral",
+            "leader_marker_overall": "Coroa do líder geral",
             "vehicle_in_pit": "Carro nos boxes",
             "vehicle_yellow": "Carro em amarela",
             "vehicle_same_lap": "Mesma volta",
