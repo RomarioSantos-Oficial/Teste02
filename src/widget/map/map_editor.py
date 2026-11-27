@@ -58,6 +58,7 @@ class MapEditor(QDialog):
             str,
             QPushButton,
         ] = {}
+        self.class_marker_override_widgets: list[QWidget] = []
 
         self.setWindowTitle(
             "Editar Mapa"
@@ -550,6 +551,15 @@ class MapEditor(QDialog):
                 2.0,
                 " px",
             ),
+            (
+                "vehicle_outline_player_width",
+                "Espessura do anel do jogador:",
+                0.5,
+                12.0,
+                0.5,
+                3.0,
+                " px",
+            ),
         ]
 
         for (
@@ -732,7 +742,7 @@ class MapEditor(QDialog):
             "sector_line": "Linhas de setor",
             "vehicle_player_marker": "Anel de identificação do jogador",
             "vehicle_leader": "Líder geral",
-            "leader_marker_overall": "Coroa do líder geral",
+            "leader_marker_overall": "Cor do emblema do líder geral",
             "vehicle_in_pit": "Carro nos boxes",
             "vehicle_yellow": "Carro em amarela",
             "vehicle_same_lap": "Mesma volta",
@@ -774,20 +784,20 @@ class MapEditor(QDialog):
             )
 
         leader_icon = QLineEdit(
-            str(self.config.get("leader_marker_text", "♛"))
+            str(self.config.get("leader_marker_text", "👑"))
         )
-        leader_icon.setPlaceholderText("Ex.: ♛ ou 👑")
+        leader_icon.setPlaceholderText("Ex.: 👑, 🏆 ou 🥇")
         leader_icon.editingFinished.connect(
             lambda: self._set(
                 "leader_marker_text",
                 leader_icon.text(),
             )
         )
-        form.addRow("Símbolo dos líderes:", leader_icon)
+        form.addRow("Símbolo do líder geral:", leader_icon)
         self._add_image_picker(
             form,
             "leader_marker_image",
-            "Imagem do ícone de líder:",
+            "Imagem do líder geral:",
         )
         self._add_image_picker(
             form,
@@ -799,7 +809,7 @@ class MapEditor(QDialog):
             group
         )
 
-        class_group = QGroupBox("Cores das categorias e líderes")
+        class_group = QGroupBox("Cores das categorias")
         class_form = QFormLayout(class_group)
         class_labels = {
             "HYPERCAR": "Hypercar",
@@ -820,6 +830,61 @@ class MapEditor(QDialog):
             self.class_color_buttons[category] = button
             class_form.addRow(label + ":", button)
         self.content_layout.addWidget(class_group)
+
+        marker_group = QGroupBox("Emblemas dos líderes por categoria")
+        marker_form = QFormLayout(marker_group)
+        same_marker = QCheckBox("Usar o mesmo emblema em todas as categorias")
+        same_marker.setChecked(
+            bool(self.config.get("same_class_leader_marker", True))
+        )
+        same_marker.toggled.connect(self._set_same_class_marker)
+        marker_form.addRow(same_marker)
+
+        shared_text = QLineEdit(
+            str(self.config.get("class_leader_marker_text", "🏆"))
+        )
+        shared_text.setPlaceholderText("Ex.: 🏆, 🥇 ou 🏁")
+        shared_text.editingFinished.connect(
+            lambda: self._set(
+                "class_leader_marker_text",
+                shared_text.text().strip(),
+            )
+        )
+        marker_form.addRow("Emblema padrão das categorias:", shared_text)
+        self._add_image_picker(
+            marker_form,
+            "class_leader_marker_image",
+            "Imagem padrão das categorias:",
+        )
+
+        overrides_group = QGroupBox(
+            "Personalização individual (ative o modo individual)"
+        )
+        overrides_form = QFormLayout(overrides_group)
+        marker_texts = self.config.setdefault(
+            "class_leader_marker_texts",
+            {},
+        )
+        for category, label in class_labels.items():
+            text_edit = QLineEdit(str(marker_texts.get(category, "") or ""))
+            text_edit.setPlaceholderText("Herdar emblema padrão")
+            text_edit.editingFinished.connect(
+                lambda current=category, edit=text_edit:
+                self._set_class_marker_text(current, edit.text())
+            )
+            overrides_form.addRow(label + " — símbolo:", text_edit)
+            self.class_marker_override_widgets.append(text_edit)
+            image_row = self._add_class_image_picker(
+                overrides_form,
+                category,
+                label + " — imagem:",
+            )
+            self.class_marker_override_widgets.append(image_row)
+
+        self.content_layout.addWidget(marker_group)
+        self.content_layout.addWidget(overrides_group)
+        for widget in self.class_marker_override_widgets:
+            widget.setEnabled(not same_marker.isChecked())
         self.content_layout.addStretch()
 
     def _request_rebuild(self) -> None:
@@ -932,6 +997,82 @@ class MapEditor(QDialog):
     ) -> None:
         path_edit.setText(path)
         self._set(key, path)
+
+    def _set_same_class_marker(self, enabled: bool) -> None:
+        self.config["same_class_leader_marker"] = bool(enabled)
+        for widget in self.class_marker_override_widgets:
+            widget.setEnabled(not enabled)
+        self._emit()
+
+    def _set_class_marker_text(
+        self,
+        category: str,
+        value: str,
+    ) -> None:
+        self.config.setdefault(
+            "class_leader_marker_texts",
+            {},
+        )[category] = str(value or "").strip()
+        self._emit()
+
+    def _set_class_marker_image(
+        self,
+        category: str,
+        path_edit: QLineEdit,
+        path: str,
+    ) -> None:
+        path_edit.setText(path)
+        self.config.setdefault(
+            "class_leader_marker_images",
+            {},
+        )[category] = path
+        self._emit()
+
+    def _add_class_image_picker(
+        self,
+        form: QFormLayout,
+        category: str,
+        label: str,
+    ) -> QWidget:
+        row = QWidget()
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(0, 0, 0, 0)
+        image_paths = self.config.setdefault(
+            "class_leader_marker_images",
+            {},
+        )
+        path_edit = QLineEdit(str(image_paths.get(category, "") or ""))
+        path_edit.setReadOnly(True)
+        path_edit.setPlaceholderText("Herdar imagem padrão")
+        select = QPushButton("Escolher…")
+        clear = QPushButton("Limpar")
+        select.clicked.connect(
+            lambda checked=False, current=category, edit=path_edit:
+            self._select_class_marker_image(current, edit)
+        )
+        clear.clicked.connect(
+            lambda checked=False, current=category, edit=path_edit:
+            self._set_class_marker_image(current, edit, "")
+        )
+        layout.addWidget(path_edit, 1)
+        layout.addWidget(select)
+        layout.addWidget(clear)
+        form.addRow(label, row)
+        return row
+
+    def _select_class_marker_image(
+        self,
+        category: str,
+        path_edit: QLineEdit,
+    ) -> None:
+        path, _selected_filter = QFileDialog.getOpenFileName(
+            self,
+            "Selecione uma imagem para o líder da categoria",
+            path_edit.text(),
+            "Imagens (*.png *.jpg *.jpeg *.webp *.bmp)",
+        )
+        if path:
+            self._set_class_marker_image(category, path_edit, path)
 
     def _set(
         self,
