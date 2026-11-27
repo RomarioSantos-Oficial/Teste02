@@ -130,6 +130,16 @@ class MapOverlayFeaturesTest(unittest.TestCase):
         self.assertEqual(image, "")
         self.assertEqual(color.name(), "#123456")
 
+        # A escolha individual por imagem também deve substituir o padrão.
+        self.config["class_leader_marker_image"] = "/shared/trophy.png"
+        self.config["class_leader_marker_images"] = {
+            "HYPERCAR": "/classes/hypercar.png"
+        }
+        self.widget.update_config(self.config)
+        text, image, color = self.widget._leader_marker_style(driver, "class")
+        self.assertEqual(text, "🥇")
+        self.assertEqual(image, "/classes/hypercar.png")
+
     def test_overall_leader_has_distinct_default_emblem(self) -> None:
         driver = SimpleNamespace(
             vehicle_class="HYPERCAR",
