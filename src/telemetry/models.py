@@ -66,6 +66,7 @@ class DriverData:
     vehicle_class: str = ""
     position: int = 0
     laps: int = 0
+    lap_number: int = 0
     current_sector: int = 0
 
     best_lap_s: float = 0.0

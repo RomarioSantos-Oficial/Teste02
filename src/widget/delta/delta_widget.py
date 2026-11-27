@@ -19,6 +19,7 @@ from .delta_session_tracker import DeltaSessionTracker
 from .delta_personal_best import (
     completed_lap_delta,
     interpolate_trace_elapsed,
+    DeltaPositionSynchronizer,
 )
 from src.laps.archive import LapArchiveStore, local_owner_key
 from src.widget.standings.standings_logic import StandingsLogic
@@ -82,6 +83,7 @@ class DeltaWidget(QWidget):
         self._completed_lap_delta: float | None = None
         self._completed_lap_delta_until = 0.0
         self._next_personal_best_check = 0.0
+        self._delta_position_sync = DeltaPositionSynchronizer()
 
         self.view_data = DeltaViewData()
         self._target_delta = 0.0
@@ -356,6 +358,7 @@ class DeltaWidget(QWidget):
             self._personal_best_lap_count = None
             self._completed_lap_delta = None
             self._completed_lap_delta_until = 0.0
+            self._delta_position_sync.reset()
 
         personal_best_delta = self._personal_best_delta(session, player)
         if personal_best_delta is not None:
@@ -535,7 +538,13 @@ class DeltaWidget(QWidget):
 
         live = getattr(driver, "live_scoring", None)
         live = live if isinstance(live, dict) else {}
-        lap_count = int(live.get("laps", getattr(driver, "laps", 0)) or 0)
+        scoring_laps = int(live.get("laps", getattr(driver, "laps", 0)) or 0)
+        telemetry_laps = int(
+            live.get("lap_number", getattr(driver, "lap_number", scoring_laps)) or 0
+        )
+        # LMU may publish the telemetry lap number before mTotalLaps changes.
+        # TinyPedal uses the maximum of both counters for the same reason.
+        lap_count = max(scoring_laps, telemetry_laps)
         previous_lap_count = self._personal_best_lap_count
 
         # mLapDist/mTimeIntoLap reset at the start/finish line. Capture the
@@ -597,7 +606,15 @@ class DeltaWidget(QWidget):
             or len(trace) < 2
         ):
             return None
-        fraction = max(0.0, min(1.0, distance / track_length))
+        synced_distance = self._delta_position_sync.update(
+            raw_distance_m=distance,
+            elapsed_s=elapsed,
+            speed_kmh=float(getattr(player, "speed_kmh", 0.0) or 0.0),
+            lap_marker=lap_count,
+        )
+        if synced_distance is None:
+            return None
+        fraction = max(0.0, min(1.0, synced_distance / track_length))
         reference_elapsed = interpolate_trace_elapsed(trace, fraction)
         if reference_elapsed is None:
             return None
@@ -645,6 +662,7 @@ class DeltaWidget(QWidget):
         self._personal_best_lap_count = None
         self._completed_lap_delta = None
         self._completed_lap_delta_until = 0.0
+        self._delta_position_sync.reset()
         self._fastest_fade.reset()
         self._fastest_data = []
         self._delta_history.clear()

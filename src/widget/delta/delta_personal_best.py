@@ -90,3 +90,82 @@ def completed_lap_delta(
     ):
         return None
     return current - reference
+
+ 
+class DeltaPositionSynchronizer:
+    """Keep lap distance monotonic through small Shared Memory position jitters."""
+
+    def __init__(self, max_backward_m: float = 200.0, max_desync: int = 20) -> None:
+        self.max_backward_m = max(1.0, float(max_backward_m))
+        self.max_desync = max(1, int(max_desync))
+        self.reset()
+
+    def reset(self) -> None:
+        self._lap_marker: int | None = None
+        self._last_raw_distance: float | None = None
+        self._last_elapsed: float | None = None
+        self._last_speed_kmh = 0.0
+        self._estimated_distance = 0.0
+        self._synced_distance = 0.0
+        self._desync_count = 0
+
+    def update(
+        self,
+        raw_distance_m: float,
+        elapsed_s: float,
+        speed_kmh: float,
+        lap_marker: int | None = None,
+    ) -> float | None:
+        try:
+            raw = float(raw_distance_m)
+            elapsed = float(elapsed_s)
+            speed = max(0.0, float(speed_kmh))
+            marker = int(lap_marker) if lap_marker is not None else None
+        except (TypeError, ValueError, OverflowError):
+            return None
+        if not all(math.isfinite(value) for value in (raw, elapsed, speed)):
+            return None
+        if raw < 0.0 or elapsed < 0.0:
+            return None
+
+        if self._last_elapsed is None or (
+            marker is not None and marker != self._lap_marker
+        ):
+            self._lap_marker = marker
+            self._last_raw_distance = raw
+            self._last_elapsed = elapsed
+            self._last_speed_kmh = speed
+            self._estimated_distance = raw
+            self._synced_distance = raw
+            self._desync_count = 0
+            return raw
+
+        delta_elapsed = elapsed - self._last_elapsed
+        delta_distance = 0.0
+        if 0.0 < delta_elapsed < 1.0:
+            average_speed_ms = (speed + self._last_speed_kmh) / 7.2
+            delta_distance = average_speed_ms * delta_elapsed
+
+        if self._last_raw_distance is None or raw != self._last_raw_distance:
+            estimated = raw
+        else:
+            estimated = self._estimated_distance + delta_distance
+
+        synced = self._synced_distance
+        if synced > estimated:
+            backwards = synced - estimated
+            if backwards > self.max_backward_m or self._desync_count > self.max_desync:
+                synced = estimated
+                self._desync_count = 0
+            else:
+                self._desync_count += 1
+        elif synced < estimated:
+            synced = estimated
+            self._desync_count = 0
+
+        self._last_raw_distance = raw
+        self._last_elapsed = elapsed
+        self._last_speed_kmh = speed
+        self._estimated_distance = estimated
+        self._synced_distance = max(0.0, synced)
+        return self._synced_distance

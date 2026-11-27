@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHeaderView,
     QLabel,
+    QMessageBox,
+    QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -56,7 +59,13 @@ class LapArchivePage(QWidget):
         )
         self.local_table.horizontalHeader().setStretchLastSection(True)
         self.local_table.setAlternatingRowColors(True)
+        self.local_table.itemSelectionChanged.connect(self._update_delete_button)
         root.addWidget(self.local_table, 1)
+
+        self.delete_lap_button = QPushButton(tr("Excluir volta selecionada"))
+        self.delete_lap_button.setEnabled(False)
+        self.delete_lap_button.clicked.connect(self._delete_selected_lap)
+        root.addWidget(self.delete_lap_button)
 
     @staticmethod
     def _format_time(seconds: float) -> str:
@@ -83,7 +92,10 @@ class LapArchivePage(QWidget):
                 record.car_number,
             )
             for column, value in enumerate(values):
-                self.local_table.setItem(row, column, QTableWidgetItem(str(value)))
+                item = QTableWidgetItem(str(value))
+                if column == 0:
+                    item.setData(Qt.ItemDataRole.UserRole, record.record_id)
+                self.local_table.setItem(row, column, item)
 
         if not records:
             self.archive_status.setText(
@@ -96,10 +108,37 @@ class LapArchivePage(QWidget):
                 )
             )
 
+    def _update_delete_button(self) -> None:
+        self.delete_lap_button.setEnabled(self.local_table.currentRow() >= 0)
+
+    def _delete_selected_lap(self) -> None:
+        row = self.local_table.currentRow()
+        if row < 0:
+            return
+        item = self.local_table.item(row, 0)
+        record_id = str(item.data(Qt.ItemDataRole.UserRole) or "") if item else ""
+        if not record_id:
+            return
+        answer = QMessageBox.question(
+            self,
+            tr("Excluir volta de referência"),
+            tr("Esta ação remove somente a volta rápida selecionada do arquivo local. O jogo não será alterado. Deseja continuar?"),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        if self.store.delete_personal_best(record_id, self._owner_key):
+            self.refresh_local_records()
+            self.archive_status.setText(
+                tr("Referência removida. A próxima volta válida poderá criar uma nova referência do Delta.")
+            )
+
     def retranslate(self) -> None:
         headers = (
             "Escopo", "Pista", "Categoria", "Carro", "Nome", "Volta",
             "S1", "S2", "S3", "N\u00ba carro",
         )
         self.local_table.setHorizontalHeaderLabels([tr(value) for value in headers])
+        self.delete_lap_button.setText(tr("Excluir volta selecionada"))
         self.refresh_local_records()

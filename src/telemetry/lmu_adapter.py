@@ -253,6 +253,10 @@ class LMUAdapter:
                 right = score_ori[0] if score_ori is not None else None
                 forward = score_ori[2] if score_ori is not None else None
                 raw_vehicle = telemetry_by_slot.get(slot_id)
+                lap_number = (
+                    safe_int(getattr(raw_vehicle, "mLapNumber", completed_laps), completed_laps)
+                    if raw_vehicle is not None else completed_laps
+                )
                 radar_pos = getattr(raw_vehicle, "mPos", None) if raw_vehicle is not None else None
                 radar_ori = getattr(raw_vehicle, "mOri", None) if raw_vehicle is not None else None
                 radar_forward = radar_ori[2] if radar_ori is not None else None
@@ -306,6 +310,7 @@ class LMUAdapter:
                         vehicle_class=decode_text(score.mVehicleClass),
                         position=safe_int(score.mPlace),
                         laps=completed_laps,
+                        lap_number=lap_number,
                         current_sector=safe_int(getattr(score, "mSector", 0)),
                         best_lap_s=best_lap,
                         estimated_lap_s=safe_float(
@@ -334,6 +339,7 @@ class LMUAdapter:
                         live_scoring={
                             "position": safe_int(score.mPlace),
                             "laps": completed_laps,
+                            "lap_number": lap_number,
                             "lap_distance_m": safe_float(score.mLapDist),
                             "time_into_lap_s": safe_float(
                                 getattr(score, "mTimeIntoLap", 0.0)

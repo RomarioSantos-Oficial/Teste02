@@ -15,6 +15,8 @@ from typing import Any
 
 
 TRACE_POINTS = 240
+TRACE_MAX_POINTS = 3000
+DELTA_SAMPLE_DISTANCE_M = 5.0
 _OWNER_CONTEXT_LOCK = threading.Lock()
 _ACTIVE_OWNER_KEY = "offline"
 _OWNER_CONTEXT_CHECKED_AT = 0.0
@@ -329,6 +331,18 @@ class LapArchiveStore:
             ).fetchall()
         return [self._from_row(row) for row in rows]
 
+    def delete_personal_best(self, record_id: str, owner_key: str | None = None) -> bool:
+        """Delete one saved local personal-best reference for its owner only."""
+        normalized_id = _clean(record_id)
+        if not normalized_id:
+            return False
+        with self._connection() as db:
+            cursor = db.execute(
+                "DELETE FROM personal_bests WHERE record_id=? AND owner_key=?",
+                (normalized_id, owner_key or local_owner_key()),
+            )
+        return cursor.rowcount > 0
+
     def copy_profiles_to_local(self) -> int:
         """Copy existing profile records into the local-only profile without deleting originals."""
         with self._connection() as db:
@@ -448,6 +462,7 @@ class LapRecorder:
         self._lap_marker: int | None = None
         self._samples: list[tuple[float, float, float, float, float]] = []
         self._last_sample_at = 0.0
+        self._last_recorded_distance_m: float | None = None
         self._active = False
         self._last_finished_key = ""
         self._last_trace_time = 0.0
@@ -464,6 +479,7 @@ class LapRecorder:
         self._owner_key = normalized
         self._lap_marker = None
         self._samples.clear()
+        self._last_recorded_distance_m = None
 
     @staticmethod
     def _player_driver(session: Any) -> Any | None:
@@ -511,9 +527,18 @@ class LapRecorder:
         self._driver_name = _clean(getattr(driver, "driver_name", ""))
         if self._driver_slot != int(getattr(driver, "slot_id", -1)):
             self._samples.clear()
+            self._last_recorded_distance_m = None
         self._driver_slot = int(getattr(driver, "slot_id", -1))
 
-        lap_marker = int(getattr(driver, "laps", getattr(player, "lap", 0)) or 0)
+        live = getattr(driver, "live_scoring", None)
+        live = live if isinstance(live, dict) else {}
+        scoring_laps = int(
+            live.get("laps", getattr(driver, "laps", getattr(player, "lap", 0))) or 0
+        )
+        telemetry_laps = int(
+            live.get("lap_number", getattr(driver, "lap_number", scoring_laps)) or 0
+        )
+        lap_marker = max(scoring_laps, telemetry_laps)
         if self._lap_marker is None:
             self._lap_marker = lap_marker
         elif lap_marker > self._lap_marker:
@@ -522,9 +547,11 @@ class LapRecorder:
                 if record is not None:
                     saved.extend(self.store.save_if_better(record))
             self._samples.clear()
+            self._last_recorded_distance_m = None
             self._lap_marker = lap_marker
         elif lap_marker < self._lap_marker:
             self._samples.clear()
+            self._last_recorded_distance_m = None
             self._lap_marker = lap_marker
 
         now = time.monotonic()
@@ -532,21 +559,29 @@ class LapRecorder:
             self._last_sample_at = now
             if bool(getattr(player, "current_lap_invalidated", False)):
                 self._samples.clear()
+                self._last_recorded_distance_m = None
             else:
                 length = float(getattr(session, "track_length_m", 0.0) or 0.0)
-                distance = float(getattr(driver, "lap_distance_m", 0.0) or 0.0)
-                elapsed = float(getattr(driver, "time_into_lap_s", 0.0) or 0.0)
+                distance = float(live.get("lap_distance_m", getattr(driver, "lap_distance_m", 0.0)) or 0.0)
+                elapsed = float(live.get("time_into_lap_s", getattr(driver, "time_into_lap_s", 0.0)) or 0.0)
                 if elapsed <= 0.0:
                     event = float(getattr(session, "current_event_time_s", 0.0) or getattr(session, "current_time_s", 0.0) or 0.0)
                     start = float(getattr(driver, "lap_start_event_time_s", 0.0) or 0.0)
                     elapsed = event - start if event > start > 0.0 else 0.0
-                if length > 0.0 and -1.0 <= distance <= length * 1.05 and elapsed >= 0.0:
+                if (
+                    length > 0.0 and -1.0 <= distance <= length * 1.05 and elapsed >= 0.0
+                    and (
+                        self._last_recorded_distance_m is None
+                        or distance - self._last_recorded_distance_m >= DELTA_SAMPLE_DISTANCE_M
+                    )
+                ):
                     self._samples.append((
                         max(0.0, min(1.0, distance / length)), elapsed,
                         max(0.0, min(1.0, float(getattr(player, "throttle", 0.0) or 0.0))),
                         max(0.0, min(1.0, float(getattr(player, "brake", 0.0) or 0.0))),
                         max(0.0, float(getattr(player, "speed_kmh", 0.0) or 0.0)),
                     ))
+                    self._last_recorded_distance_m = distance
 
         if bool(getattr(session, "race_finished", False)):
             self.finish_session()
@@ -601,8 +636,12 @@ class LapRecorder:
             return None
         output: list[dict[str, float]] = []
         cursor = 0
-        for index in range(TRACE_POINTS):
-            x = index / (TRACE_POINTS - 1)
+        point_count = max(
+            TRACE_POINTS,
+            min(TRACE_MAX_POINTS, int(math.ceil(track_length / DELTA_SAMPLE_DISTANCE_M)) + 1),
+        )
+        for index in range(point_count):
+            x = index / (point_count - 1)
             while cursor + 1 < len(unique) and unique[cursor + 1][0] < x:
                 cursor += 1
             left = unique[cursor]
@@ -612,7 +651,7 @@ class LapRecorder:
             values = [left[column] + (right[column] - left[column]) * ratio for column in range(1, 5)]
             elapsed_at_point = max(0.0, values[0])
             if (
-                index == TRACE_POINTS - 1
+                index == point_count - 1
                 and lap_seconds is not None
                 and math.isfinite(float(lap_seconds))
                 and float(lap_seconds) > 0.0
@@ -635,4 +674,5 @@ class LapRecorder:
         self._session_identity_key = ""
         self._lap_marker = None
         self._samples.clear()
+        self._last_recorded_distance_m = None
         self._active = False

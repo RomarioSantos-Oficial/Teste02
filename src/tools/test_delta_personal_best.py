@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import unittest
 
-from src.widget.delta.delta_personal_best import interpolate_trace_elapsed
+from src.widget.delta.delta_personal_best import (
+    DeltaPositionSynchronizer,
+    interpolate_trace_elapsed,
+)
 
 
 class DeltaPersonalBestTests(unittest.TestCase):
@@ -41,6 +44,20 @@ class DeltaPersonalBestTests(unittest.TestCase):
         self.assertAlmostEqual(completed_lap_delta(50.0, 52.0), -2.0)
         self.assertIsNone(completed_lap_delta(56.0, 52.0, invalidated=True))
         self.assertIsNone(completed_lap_delta(0.0, 52.0))
+
+    def test_position_sync_estimates_distance_when_shared_memory_is_static(self) -> None:
+        sync = DeltaPositionSynchronizer()
+        self.assertAlmostEqual(sync.update(100.0, 2.0, 100.0, 1), 100.0)
+        estimated = sync.update(100.0, 2.1, 100.0, 1)
+        self.assertAlmostEqual(estimated, 100.0 + (100.0 / 3.6) * 0.1, places=5)
+
+    def test_position_sync_holds_small_backward_jitter_and_resets_on_new_lap(self) -> None:
+        sync = DeltaPositionSynchronizer()
+        start = sync.update(1000.0, 20.0, 180.0, 5)
+        held = sync.update(995.0, 20.05, 180.0, 5)
+        self.assertEqual(start, held)
+        next_lap = sync.update(3.0, 0.1, 100.0, 6)
+        self.assertEqual(next_lap, 3.0)
 
     def test_returns_none_when_trace_has_insufficient_valid_points(self) -> None:
         self.assertIsNone(interpolate_trace_elapsed([], 0.5))

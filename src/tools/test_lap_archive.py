@@ -52,6 +52,17 @@ class LapArchiveStoreTests(unittest.TestCase):
         self.assertEqual(len(self.store.all_personal_bests("account-a")), 2)
         self.assertEqual(len(self.store.all_personal_bests("account-b")), 2)
 
+    def test_delete_personal_best_removes_only_selected_record_and_owner(self) -> None:
+        self.store.save_if_better(make_record("account-a", 100.0))
+        records = self.store.all_personal_bests("account-a")
+        self.assertEqual(len(records), 2)
+        selected = records[0]
+        self.assertFalse(self.store.delete_personal_best(selected.record_id, "account-b"))
+        self.assertTrue(self.store.delete_personal_best(selected.record_id, "account-a"))
+        remaining = self.store.all_personal_bests("account-a")
+        self.assertEqual(len(remaining), 1)
+        self.assertNotEqual(remaining[0].record_id, selected.record_id)
+
     def test_offline_import_is_explicit_and_retains_source_records(self) -> None:
         self.store.save_if_better(make_record("offline", 100.0))
         self.assertEqual(self.store.import_offline_records("account-a"), 2)
@@ -123,7 +134,7 @@ class LapArchiveStoreTests(unittest.TestCase):
         self.assertTrue(all(record.owner_key == "discord-account-a" for record in saved))
         self.assertTrue(all(record.driver_name == "R. Lima" for record in saved))
         self.assertTrue(all(record.car_number == "17" for record in saved))
-        self.assertTrue(all(len(record.trace) == 240 for record in saved))
+        self.assertTrue(all(len(record.trace) >= 1000 for record in saved))
 
     def test_resampled_trace_uses_official_completed_lap_time_at_finish(self) -> None:
         samples = [
