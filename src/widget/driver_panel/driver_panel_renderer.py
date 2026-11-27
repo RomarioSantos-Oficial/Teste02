@@ -280,13 +280,19 @@ class DriverPanelRenderer:
         color_cfg = config.get("colors", {})
         raw_ratio = data.rpm / max(1.0, data.max_rpm)
         ratio = max(0.0, min(1.0, raw_ratio))
-        shift_at = max(
-            0.0,
-            min(1.0, float(config.get("layout", {}).get("shift_start", 0.88))),
+        rpm_layout = config.get("layout", {})
+        # Limiares exclusivos da barra de RPM: verde 88%, amarelos 90/92%,
+        # azuis 95/96,9%. As luzes superiores usam seus próprios limiares.
+        bar_thresholds = (
+            max(0.0, min(1.0, float(rpm_layout.get("rpm_green_start", 0.88)))),
+            max(0.0, min(1.0, float(rpm_layout.get("rpm_yellow_1_start", 0.90)))),
+            max(0.0, min(1.0, float(rpm_layout.get("rpm_yellow_2_start", 0.92)))),
+            max(0.0, min(1.0, float(rpm_layout.get("rpm_blue_1_start", 0.95)))),
+            max(0.0, min(1.0, float(rpm_layout.get("rpm_blue_2_start", 0.969)))),
         )
         flash_at = max(
-            shift_at,
-            min(1.2, float(config.get("layout", {}).get("rpm_flash_start", 1.00))),
+            0.0,
+            min(1.2, float(rpm_layout.get("rpm_bar_flash_start", 0.97))),
         )
 
         # Dez blocos espelhados: o preenchimento avança das duas extremidades
@@ -306,8 +312,8 @@ class DriverPanelRenderer:
         purple = QColor(color_cfg.get("rpm_flash", "#9B5CFF"))
         flash_color = purple if data.rpm_flash_phase else red
         cell_colors = [
-            green, green, yellow, yellow, blue,
-            blue, yellow, yellow, green, green,
+            green, yellow, yellow, blue, blue,
+            blue, blue, yellow, yellow, green,
         ]
         block_count = 10
         block_gap = max(1.5, 3.0 * scale)
@@ -321,8 +327,8 @@ class DriverPanelRenderer:
                 bar.left() + index * (block_width + block_gap),
                 bar.top(), block_width, bar.height(),
             )
-            stage = min(index, block_count - 1 - index) + 1
-            threshold = shift_at * stage / 5.0
+            stage = min(index, block_count - 1 - index)
+            threshold = bar_thresholds[stage]
             active = ratio + 1e-9 >= threshold
             fill = flash_color if raw_ratio >= flash_at and active else base_color if active else QColor("#171717")
             painter.setBrush(fill)

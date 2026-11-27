@@ -160,5 +160,54 @@ class DriverPanelVisualTests(unittest.TestCase):
         self.assertLess(at_limit.red(), 220)
 
 
+    def test_rpm_bar_uses_requested_color_thresholds_and_flashes_at_97(self) -> None:
+        renderer = DriverPanelRenderer()
+        colors = {
+            "rpm_green": "#2BD158",
+            "rpm_yellow": "#FFC400",
+            "rpm_blue": "#258DFF",
+            "rpm_high": "#FF2438",
+            "rpm_flash": "#9B5CFF",
+        }
+        config = {
+            "colors": colors,
+            "layout": {
+                "rpm_green_start": 0.88,
+                "rpm_yellow_1_start": 0.90,
+                "rpm_yellow_2_start": 0.92,
+                "rpm_blue_1_start": 0.95,
+                "rpm_blue_2_start": 0.969,
+                "rpm_bar_flash_start": 0.97,
+            },
+        }
+        rect = QRectF(0, 0, 1000, 100)
+
+        def sample(ratio: float, phase: bool = False) -> list[QColor]:
+            image = QImage(1000, 100, QImage.Format.Format_ARGB32)
+            image.fill(QColor(0, 0, 0, 0))
+            painter = QPainter(image)
+            renderer._rpm(
+                painter, rect,
+                DriverPanelViewData(rpm=9000 * ratio, max_rpm=9000, rpm_flash_phase=phase),
+                config, {}, QColor("#FFFFFF"), QColor("#AAAAAA"), 1.0,
+            )
+            painter.end()
+            # centers of the ten RPM blocks (the bar is inset 2px and has 3px gaps)
+            return [image.pixelColor(round(2 + (i + 0.5) * ((996 - 27) / 10 + 3)), 50) for i in range(10)]
+
+        at_green = sample(0.88)
+        self.assertEqual(at_green[0].name(), "#2bd158")
+        self.assertEqual(at_green[1].name(), "#171717")
+        at_yellow = sample(0.90)
+        self.assertEqual(at_yellow[1].name(), "#ffc400")
+        at_blue = sample(0.95)
+        self.assertEqual(at_blue[3].name(), "#258dff")
+        self.assertEqual(at_blue[4].name(), "#171717")
+        at_second_blue = sample(0.969)
+        self.assertEqual(at_second_blue[4].name(), "#258dff")
+        flashing = sample(0.97, True)
+        self.assertEqual(flashing[0].name(), "#9b5cff")
+        self.assertEqual(flashing[4].name(), "#9b5cff")
+
 if __name__ == "__main__":
     unittest.main()
