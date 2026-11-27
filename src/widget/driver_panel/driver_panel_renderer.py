@@ -69,7 +69,7 @@ class DriverPanelRenderer:
         }
 
         scale = max(0.12, min(2.5, min(bounds.width() / 1600.0, bounds.height() / 650.0)))
-        radius = 0.0
+        radius = max(0.0, min(48.0, float(config.get("border_radius", 0.0))) * scale)
         elements = config.get("elements", {})
         show = lambda key: bool(elements.get(key, True))
         pedal_flags = config.get("pedal_elements", {})
@@ -86,7 +86,7 @@ class DriverPanelRenderer:
         )
         self._surface(
             painter, main_bounds.adjusted(1, 0, -1, -1),
-            outer_bg, outer_border, scale, 0.0,
+            outer_bg, outer_border, scale, radius,
         )
         if show("rpm") and rpm_header_height > 0.0:
             self._rpm_header(
@@ -100,7 +100,11 @@ class DriverPanelRenderer:
         )
         pedal_flags = config.get("pedal_elements", {})
 
-        wheel_visible = show("steering") or show("speed")
+        speed_beside_gear = (
+            str(config.get("speed_position", "inside")) == "beside_gear"
+            and show("gear")
+        )
+        wheel_visible = show("steering") or (show("speed") and not speed_beside_gear)
         pedal_count = (
             sum(bool(pedal_flags.get(key, True)) for key in ("brake", "throttle", "clutch"))
             if show("pedals") else 0
@@ -186,7 +190,10 @@ class DriverPanelRenderer:
     ) -> None:
         painter.setPen(QPen(border, max(0.8, 1.0 * scale)))
         painter.setBrush(background)
-        painter.drawRect(rect)
+        if radius > 0.0:
+            painter.drawRoundedRect(rect, radius, radius)
+        else:
+            painter.drawRect(rect)
 
     def _rpm_header(
         self, painter: QPainter, bounds: QRectF, panel_top: float,
@@ -224,7 +231,11 @@ class DriverPanelRenderer:
         painter.setPen(QPen(value_border, max(0.8, 1.0 * scale)))
         painter.setBrush(value_bg)
         painter.drawRect(value_rect)
-        painter.setFont(self._fit(config, value_rect, value, header_height * 0.34, 7.0, True))
+        rpm_font_scale = max(0.35, min(3.0, float(config.get("rpm_font_scale", 1.0))))
+        painter.setFont(self._fit(
+            config, value_rect, value,
+            header_height * 0.34 * rpm_font_scale, 7.0, True,
+        ))
         painter.setPen(text)
         painter.drawText(value_rect, Qt.AlignmentFlag.AlignCenter, value)
 
@@ -275,11 +286,13 @@ class DriverPanelRenderer:
 
         # Dez blocos espelhados: o preenchimento avança das duas extremidades
         # verdes para o amarelo e termina nos dois blocos azuis centrais.
+        bar_height_scale = max(0.5, min(1.5, float(config.get("rpm_bar_height_scale", 1.0))))
+        bar_height = max(5.0 * scale, rect.height() * 0.46 * bar_height_scale)
         bar = QRectF(
             rect.left() + 2.0 * scale,
-            rect.top() + rect.height() * 0.27,
+            rect.center().y() - bar_height / 2.0,
             max(0.0, rect.width() - 4.0 * scale),
-            max(5.0 * scale, rect.height() * 0.46),
+            bar_height,
         )
         green = QColor(color_cfg.get("rpm_green", "#2BD158"))
         yellow = QColor(color_cfg.get("rpm_yellow", color_cfg.get("rpm_shift", "#FFC400")))
@@ -372,7 +385,7 @@ class DriverPanelRenderer:
                 dashed = False
             self._draw_curve(
                 painter, graph, values, colors[name],
-                max(1.0, min(9.0, width * (1.35 if not dashed else 1.0) * scale)), dashed, glow and not dashed,
+                max(0.5, min(12.0, width * (1.35 if not dashed else 1.0) * scale)), dashed, glow and not dashed,
             )
         painter.restore()
 
@@ -396,7 +409,8 @@ class DriverPanelRenderer:
             painter.setClipRect(graph)
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor(color_cfg.get("graph_marker", "#FFD21F")))
-            marker_radius = max(2.0, 3.2 * scale)
+            marker_scale = max(0.25, min(3.0, float(config.get("graph_marker_scale", 1.0))))
+            marker_radius = max(1.0, 3.2 * scale * marker_scale)
             for index in marker_indices:
                 x_ratio, value = normalized[index]
                 point = QPointF(
@@ -500,7 +514,9 @@ class DriverPanelRenderer:
             )
             painter.setFont(self._fit(
                 config, value_rect, value_text,
-                max(12.0 * scale, value_height * 0.56), 7.5, True,
+                max(12.0 * scale, value_height * 0.56)
+                * max(0.35, min(3.0, float(config.get("pedal_value_font_scale", 1.0)))),
+                7.5, True,
             ))
             painter.setPen(text)
             painter.drawText(value_rect, Qt.AlignmentFlag.AlignCenter, value_text)
@@ -553,27 +569,35 @@ class DriverPanelRenderer:
             else config.get("colors", {}).get("gear", "#FFD21F")
         )
         gear_scale = max(0.35, min(3.0, float(config.get("gear_font_scale", 1.0))))
-        gear_rect = rect.adjusted(3.0 * scale, 2.0 * scale, -3.0 * scale, -2.0 * scale)
-        preferred = min(rect.height() * 0.68, rect.width() * 0.88) * gear_scale
-        painter.setFont(self._fit(config, gear_rect, gear, preferred, 9.0, True))
-        painter.setPen(gear_color)
-        painter.drawText(gear_rect, Qt.AlignmentFlag.AlignCenter, gear)
-
-    def _gear(
-        self, painter: QPainter, rect: QRectF, data: DriverPanelViewData,
-        config: dict[str, Any], scale: float,
-    ) -> None:
-        gear = self._format_gear(data.gear)
-        gear_color = QColor(
-            "#FFFFFF" if data.gear_flash
-            else config.get("colors", {}).get("gear", "#FFD21F")
+        speed_beside = (
+            bool(config.get("elements", {}).get("speed", True))
+            and str(config.get("speed_position", "inside")) == "beside_gear"
         )
-        gear_scale = max(0.35, min(3.0, float(config.get("gear_font_scale", 1.0))))
-        gear_rect = rect.adjusted(3.0 * scale, 2.0 * scale, -3.0 * scale, -2.0 * scale)
-        preferred = min(rect.height() * 0.68, rect.width() * 0.88) * gear_scale
-        painter.setFont(self._fit(config, gear_rect, gear, preferred, 9.0, True))
-        painter.setPen(gear_color)
-        painter.drawText(gear_rect, Qt.AlignmentFlag.AlignCenter, gear)
+        inner = rect.adjusted(3.0 * scale, 2.0 * scale, -3.0 * scale, -2.0 * scale)
+        if speed_beside:
+            gear_rect = QRectF(inner.left(), inner.top(), inner.width() * 0.42, inner.height())
+            speed_rect = QRectF(
+                inner.left() + inner.width() * 0.44, inner.top(),
+                inner.width() * 0.56, inner.height(),
+            )
+            gear_preferred = min(inner.height() * 0.68, gear_rect.width() * 0.88) * gear_scale
+            painter.setFont(self._fit(config, gear_rect, gear, gear_preferred, 8.0, True))
+            painter.setPen(gear_color)
+            painter.drawText(gear_rect, Qt.AlignmentFlag.AlignCenter, gear)
+
+            unit = str(config.get("speed_unit", "km/h"))
+            speed_value = data.speed_kmh * 0.621371 if unit == "mph" else data.speed_kmh
+            speed_text = f"{speed_value:.0f}"
+            speed_scale = max(0.35, min(3.0, float(config.get("speed_font_scale", 1.0))))
+            speed_preferred = min(inner.height() * 0.58, speed_rect.width() * 0.45) * speed_scale
+            painter.setFont(self._fit(config, speed_rect, speed_text, speed_preferred, 7.0, True))
+            painter.setPen(QColor(config.get("colors", {}).get("speed", "#FFFFFF")))
+            painter.drawText(speed_rect, Qt.AlignmentFlag.AlignCenter, speed_text)
+        else:
+            preferred = min(inner.height() * 0.68, inner.width() * 0.88) * gear_scale
+            painter.setFont(self._fit(config, inner, gear, preferred, 9.0, True))
+            painter.setPen(gear_color)
+            painter.drawText(inner, Qt.AlignmentFlag.AlignCenter, gear)
 
     def _wheel(
         self, painter: QPainter, rect: QRectF, data: DriverPanelViewData,
@@ -586,30 +610,73 @@ class DriverPanelRenderer:
             7.0 * scale,
             min(rect.width() * 0.39, rect.height() * 0.43) * wheel_scale,
         )
+        angle = data.steering * float(config.get("steering_visual_degrees", 540))
+        color_cfg = config.get("colors", {})
+        style = str(config.get("steering_style", "Circular"))
+        wheel_color = QColor(color_cfg.get("wheel", "#292929"))
 
         if bool(elements.get("steering", True)):
-            angle = data.steering * float(config.get("steering_visual_degrees", 540))
-            wheel_color = QColor(config.get("colors", {}).get("wheel", "#445466"))
-            painter.save()
-            painter.setPen(QPen(wheel_color, max(2.2, radius * 0.105)))
-            painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.drawEllipse(center, radius, radius)
-            painter.restore()
+            line_width = max(1.0, float(config.get("steering_line_width", 4.0)) * scale)
+            custom_image = str(config.get("custom_wheel_image", "")).strip()
+            image_is_valid = (
+                style == "Imagem personalizada"
+                and bool(custom_image)
+                and Path(custom_image).is_file()
+            )
 
-            # O ponto amarelo percorre a circunferência conforme o ângulo
-            # real do volante. Não há cubo ou ponto fixo no centro.
+            if style != "Somente ângulo":
+                painter.save()
+                painter.translate(center)
+                painter.rotate(angle)
+                if image_is_valid:
+                    wheel_image = QImage(custom_image)
+                    if not wheel_image.isNull():
+                        painter.drawImage(
+                            QRectF(-radius, -radius, radius * 2.0, radius * 2.0),
+                            wheel_image,
+                        )
+                    else:
+                        painter.setPen(QPen(wheel_color, line_width))
+                        painter.setBrush(Qt.BrushStyle.NoBrush)
+                        painter.drawEllipse(QPointF(0.0, 0.0), radius, radius)
+                elif style == "GT":
+                    painter.setPen(QPen(wheel_color, line_width))
+                    painter.setBrush(Qt.BrushStyle.NoBrush)
+                    painter.drawRoundedRect(
+                        QRectF(-radius, -radius * 0.78, radius * 2.0, radius * 1.56),
+                        radius * 0.28, radius * 0.28,
+                    )
+                elif style == "Fórmula":
+                    painter.setPen(QPen(wheel_color, line_width))
+                    painter.setBrush(Qt.BrushStyle.NoBrush)
+                    painter.drawRoundedRect(
+                        QRectF(-radius, -radius * 0.62, radius * 2.0, radius * 1.24),
+                        radius * 0.16, radius * 0.16,
+                    )
+                else:
+                    # Circular é o padrão atual: apenas o aro, sem raios ou cubo.
+                    painter.setPen(QPen(wheel_color, line_width))
+                    painter.setBrush(Qt.BrushStyle.NoBrush)
+                    painter.drawEllipse(QPointF(0.0, 0.0), radius, radius)
+                painter.restore()
+
+            # A bolinha amarela acompanha o contorno do volante e gira com o ângulo.
             if bool(elements.get("steering_marker", True)):
                 marker_angle = math.radians(angle)
                 marker_center = QPointF(
                     center.x() + radius * math.sin(marker_angle),
                     center.y() - radius * math.cos(marker_angle),
                 )
-                marker_radius = max(3.5 * scale, radius * 0.10)
+                marker_scale = max(0.35, min(2.5, float(config.get("steering_marker_scale", 1.0))))
+                marker_radius = max(3.5 * scale, radius * 0.10 * marker_scale)
                 painter.setPen(QPen(QColor("#050505"), max(0.7, 1.0 * scale)))
-                painter.setBrush(QColor(config.get("colors", {}).get("steering_marker", "#FFD21F")))
+                painter.setBrush(QColor(color_cfg.get("steering_marker", "#FFD21F")))
                 painter.drawEllipse(marker_center, marker_radius, marker_radius)
 
-        if bool(elements.get("speed", True)):
+        speed_position = str(config.get("speed_position", "inside"))
+        gear_visible = bool(elements.get("gear", True))
+        draw_speed_inside = speed_position != "beside_gear" or not gear_visible
+        if bool(elements.get("speed", True)) and draw_speed_inside:
             unit = str(config.get("speed_unit", "km/h"))
             speed_value = data.speed_kmh * 0.621371 if unit == "mph" else data.speed_kmh
             speed_text = f"{speed_value:.0f}"
