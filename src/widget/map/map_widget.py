@@ -1764,8 +1764,15 @@ class TrackMapWidget(QWidget):
                 "class_leader_marker_images",
                 {},
             )
-            text = str(text_overrides.get(category, "") or text)
-            image = str(image_overrides.get(category, "") or image)
+            category_text = str(text_overrides.get(category, "") or "")
+            category_image = str(image_overrides.get(category, "") or "")
+            if category_image:
+                image = category_image
+            elif category_text:
+                # Um símbolo escolhido individualmente substitui a imagem
+                # global, em vez de ficar escondido por ela.
+                text = category_text
+                image = ""
 
         return text, image, self._class_color(vehicle_class)
 
