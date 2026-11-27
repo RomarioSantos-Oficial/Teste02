@@ -113,6 +113,7 @@
   "pedal_show_labels": false,
   "pedal_show_peaks": false,
   "rpm_flash_interval_s": 0.06,
+      "rpm_flash_frequency_hz": 20,
   "graph_show_scale_labels": false,
   "graph_extrema_markers": true,
   "graph_marker_scale": 1,

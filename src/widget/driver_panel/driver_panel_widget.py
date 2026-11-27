@@ -187,11 +187,7 @@ class DriverPanelWidget(QWidget):
         speed_kmh = max(0.0, float(getattr(player_data, "speed_kmh", 0.0)))
         gear = int(getattr(player_data, "gear", 0))
         now = time.monotonic()
-        flash_interval = max(
-            0.05,
-            min(1.0, float(self.config.get("rpm_flash_interval_s", 0.2))),
-        )
-        rpm_flash_phase = (int(now / flash_interval) % 2) == 0
+        rpm_flash_phase = self.view_data.rpm_flash_phase
         if gear != self._previous_gear:
             self._gear_flash_until = now + 0.22
             self._previous_gear = gear
@@ -238,6 +234,31 @@ class DriverPanelWidget(QWidget):
         self._update_personal_best_trace(player_data, throttle, brake, now)
 
         self.update()
+
+    @staticmethod
+    def _rpm_flash_phase_at(now: float, frequency_hz: float) -> bool:
+        """Alterna a cor na frequência pedida; não cria timers adicionais."""
+        frequency = max(10.0, min(100.0, float(frequency_hz)))
+        return (int(max(0.0, now) * frequency) % 2) == 0
+
+    def update_rpm_flash(self, now: float | None = None) -> None:
+        """Atualiza apenas a fase visual enquanto o motor está no limitador."""
+        current_time = time.monotonic() if now is None else float(now)
+        layout = self.config.get("layout", {})
+        light_3_at = max(0.0, min(1.1, float(layout.get("shift_light_3", 0.96))))
+        flash_at = max(light_3_at, min(1.2, float(layout.get("rpm_flash_start", 0.99))))
+        ratio = self.view_data.rpm / max(1.0, self.view_data.max_rpm)
+        active = ratio >= flash_at
+        phase = (
+            self._rpm_flash_phase_at(
+                current_time,
+                float(self.config.get("rpm_flash_frequency_hz", 20.0)),
+            )
+            if active else False
+        )
+        if phase != self.view_data.rpm_flash_phase:
+            self.view_data.rpm_flash_phase = phase
+            self.update()
 
     def _update_personal_best_trace(
         self,

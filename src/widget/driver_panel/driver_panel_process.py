@@ -249,6 +249,8 @@ class _DriverPanelHost:
             self.widget.hide()
 
         if should_show and driving:
+            # A fase do alerta usa o relógio do painel, mesmo entre pacotes de telemetria.
+            self.widget.update_rpm_flash(now)
             frame = self.fast_telemetry.snapshot()
             if frame.sequence != self._last_fast_sequence and frame.has_player:
                 self._last_fast_sequence = frame.sequence

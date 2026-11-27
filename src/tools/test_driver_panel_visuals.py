@@ -13,6 +13,7 @@ from src.widget.driver_panel.driver_panel_renderer import (
     DriverPanelRenderer,
     DriverPanelViewData,
 )
+from src.widget.driver_panel.driver_panel_widget import DriverPanelWidget
 
 
 class DriverPanelVisualTests(unittest.TestCase):
@@ -108,6 +109,14 @@ class DriverPanelVisualTests(unittest.TestCase):
         self.assertGreater(marker_color.green(), 150)
         self.assertLess(marker_color.blue(), 80)
 
+
+    def test_rpm_flash_phase_uses_configured_frequency(self) -> None:
+        phase = DriverPanelWidget._rpm_flash_phase_at
+        self.assertTrue(phase(0.000, 10))
+        self.assertFalse(phase(0.100, 10))
+        self.assertTrue(phase(0.200, 10))
+        self.assertFalse(phase(0.010, 100))
+        self.assertTrue(phase(0.020, 100))
 
     def test_rpm_warning_starts_at_exactly_99_percent(self) -> None:
         renderer = DriverPanelRenderer()

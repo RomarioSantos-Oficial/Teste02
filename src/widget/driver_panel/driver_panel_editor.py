@@ -375,16 +375,15 @@ class DriverPanelEditor(QDialog):
         add_threshold("shift_light_3", "3ª luz superior:", 0.96)
         add_threshold("rpm_flash_start", "Piscar vermelho/roxo (a partir de 99%):", 0.99, 0.99)
 
-        flash_interval = QDoubleSpinBox()
-        flash_interval.setRange(0.05, 1.00)
-        flash_interval.setSingleStep(0.01)
-        flash_interval.setDecimals(2)
-        flash_interval.setSuffix(" s")
-        flash_interval.setValue(float(self.config.get("rpm_flash_interval_s", 0.06)))
-        flash_interval.valueChanged.connect(
-            lambda value: self._set_root("rpm_flash_interval_s", value)
+        flash_frequency = QSpinBox()
+        flash_frequency.setRange(10, 100)
+        flash_frequency.setSingleStep(5)
+        flash_frequency.setSuffix(" Hz")
+        flash_frequency.setValue(int(self.config.get("rpm_flash_frequency_hz", 20)))
+        flash_frequency.valueChanged.connect(
+            lambda value: self._set_root("rpm_flash_frequency_hz", value)
         )
-        form.addRow("Velocidade do pisca:", flash_interval)
+        form.addRow("Frequência do pisca no limitador:", flash_frequency)
 
         for key, label, default, minimum, maximum in (
             ("rpm_font_scale", "Tamanho do número de RPM", 1.1, 35, 300),
