@@ -2279,9 +2279,11 @@ class StandingsWidget(QWidget):
         painter.drawText(target, Qt.AlignmentFlag.AlignCenter, str(text))
 
     def _row_font(self, bold: bool) -> QFont:
-        """Fonte uniforme usada exclusivamente nas linhas dos pilotos."""
+        """Fonte uniforme em negrito para todas as linhas de pilotos."""
         font = QFont(str(self.config.get("font_name", "Bahnschrift Condensed")))
-        font.setBold(bold)
+        # O argumento e mantido por compatibilidade com os chamadores antigos,
+        # mas STR e Relative usam sempre peso em negrito para letras e numeros.
+        font.setBold(True)
         row_scale = max(
             0.70,
             min(
@@ -2311,7 +2313,9 @@ class StandingsWidget(QWidget):
     def _font(self, multiplier: float, bold: bool, emoji: bool = False) -> QFont:
         family = "Segoe UI Emoji" if emoji else str(self.config.get("font_name", "Bahnschrift Condensed"))
         font = QFont(family)
-        font.setBold(bold)
+        # Mantem todas as informacoes do painel em negrito, inclusive chamadas
+        # que historicamente pediam fonte normal (ex.: textos auxiliares).
+        font.setBold(True)
         row_scale = max(
             0.70,
             min(1.55, (float(self.config.get("row_height", 54.0)) / 54.0) ** 0.5),
