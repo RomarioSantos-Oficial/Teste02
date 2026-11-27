@@ -57,8 +57,8 @@ class FuelTimeWidget(QWidget):
         )
 
         status = f"{self.data.sample_count}/{int(self.config.get('average_laps', 5))} VOLTAS"
-        font.setPixelSize(max(8, int(title_height * 0.38)))
-        font.setBold(False)
+        font.setPixelSize(max(8, int(title_height * 0.42)))
+        font.setBold(True)
         painter.setFont(font)
         painter.setPen(muted)
         painter.drawText(
@@ -107,8 +107,8 @@ class FuelTimeWidget(QWidget):
                 painter.setBrush(accent)
                 painter.drawRoundedRect(marker, 1, 1)
 
-                font.setPixelSize(max(7, int(row_height * 0.28)))
-                font.setBold(False)
+                font.setPixelSize(max(7, int(row_height * 0.31)))
+                font.setBold(True)
                 painter.setFont(font)
                 painter.setPen(muted)
                 painter.drawText(
