@@ -29,6 +29,7 @@
   "show_overall_leader_marker": true,
   "show_class_leader_markers": true,
   "smooth_vehicle_motion": true,
+  "use_track_distance_positions": true,
   "show_lap_difference_outline": true,
   "show_only_same_class": false,
   "maximum_visible_lap_difference": 99,

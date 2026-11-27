@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import math
 import time
+from bisect import bisect_right
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
@@ -164,6 +165,8 @@ class TrackMapWidget(QWidget):
         ] = {}
         self._class_color_cache: dict[str, QColor] = {}
         self._vehicle_font_cache: dict[tuple[str, int], QFont] = {}
+        self._track_distance_cache_key: int | None = None
+        self._track_distances_cache: list[float] = []
         self._motion_timer = QTimer(self)
         self._motion_timer.setTimerType(Qt.TimerType.PreciseTimer)
         self._motion_timer.setInterval(16)
@@ -726,6 +729,7 @@ class TrackMapWidget(QWidget):
                 painter,
                 projection,
                 map_rect,
+                data,
             )
         else:
             self._draw_circle_map(
@@ -1187,11 +1191,23 @@ class TrackMapWidget(QWidget):
         painter: QPainter,
         projection: MapProjection,
         map_rect: QRectF,
+        data: TrackMapData | None = None,
     ) -> None:
         for driver in self._render_drivers:
-            world_x, world_z, _distance = (
+            world_x, world_z, distance = (
                 self._interpolated_driver_position(driver)
             )
+            if data is not None and data.complete and bool(
+                self.config.get("use_track_distance_positions", True)
+            ):
+                track_position = self._track_position_at_distance(
+                    data.points,
+                    distance,
+                    data.track_length_m,
+                )
+                if track_position is not None:
+                    world_x, track_y = track_position
+                    world_z = -track_y
             point = projection.project(
                 world_x,
                 -world_z,
@@ -1211,6 +1227,64 @@ class TrackMapWidget(QWidget):
                 driver,
                 self._player_driver,
             )
+
+    def _track_position_at_distance(
+        self,
+        points: list[MapPoint],
+        distance_m: float,
+        track_length_m: float,
+    ) -> tuple[float, float] | None:
+        """Interpolate a marker on the recorded centerline.
+
+        LMU world coordinates can move by a few centimetres between shared
+        memory reads, especially in corners. Lap distance is monotonic and
+        is a more stable key for a map marker when a complete map exists.
+        """
+        if len(points) < 2:
+            return None
+        try:
+            distance = float(distance_m)
+            track_length = float(track_length_m)
+        except (TypeError, ValueError):
+            return None
+        if not math.isfinite(distance) or not math.isfinite(track_length):
+            return None
+
+        cache_key = id(points)
+        if cache_key != self._track_distance_cache_key:
+            self._track_distance_cache_key = cache_key
+            self._track_distances_cache = [
+                point.distance_m for point in points
+            ]
+        distances = self._track_distances_cache
+        if track_length > 0.0:
+            distance %= track_length
+        index = bisect_right(distances, distance)
+
+        if index <= 0:
+            first, second = points[0], points[1]
+            sample_distance = distance
+        elif index >= len(points):
+            first, second = points[-1], points[0]
+            sample_distance = distance
+            if sample_distance < first.distance_m:
+                sample_distance += track_length
+            span = max(0.001, track_length + second.distance_m - first.distance_m)
+            ratio = max(0.0, min(1.0, (sample_distance - first.distance_m) / span))
+            return (
+                first.world_x + (second.world_x - first.world_x) * ratio,
+                first.world_y + (second.world_y - first.world_y) * ratio,
+            )
+        else:
+            first, second = points[index - 1], points[index]
+            sample_distance = distance
+
+        span = max(0.001, second.distance_m - first.distance_m)
+        ratio = max(0.0, min(1.0, (sample_distance - first.distance_m) / span))
+        return (
+            first.world_x + (second.world_x - first.world_x) * ratio,
+            first.world_y + (second.world_y - first.world_y) * ratio,
+        )
 
     def _draw_circle_map(
         self,
