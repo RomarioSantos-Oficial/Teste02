@@ -890,8 +890,11 @@ class StandingsLogicUnitTests(unittest.TestCase):
         self.assertEqual(StandingsWidget._automatic_status_kind(row), "penalty")
 
         row.penalty_text = ""
-        row.pit_status_visible = True  # mantem o tempo apos sair dos boxes
-        self.assertEqual(StandingsWidget._automatic_status_kind(row), "")
+        row.pit_status_visible = True  # tempo residual na coluna PIT separada
+        self.assertEqual(StandingsWidget._automatic_status_kind(row), "fastest")
+
+        row.in_pits = True
+        self.assertEqual(StandingsWidget._automatic_status_kind(row), "pit")
 
 
 
