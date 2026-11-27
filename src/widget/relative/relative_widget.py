@@ -53,20 +53,17 @@ class RelativeWidget(StandingsWidget):
 
     def _desired_content_height(self) -> int:
         desired = super()._desired_content_height()
-        category_count = len(self.view.categories)
-        # A lista Relative nao desenha cabecalho nem espacamento entre blocos.
-        # Remove exatamente a altura que a classe-base reservou para esses
-        # elementos, usando as mesmas metricas do desenho.
-        category_height = self._category_header_height()
-        category_gap = max(2.0, 7.0 * self._scale)
-        unused_height = (category_height + category_gap) * category_count
-        return max(self.minimumHeight(), round(desired - unused_height))
+        category_height = max(
+            14.0,
+            float(self.config.get("category_header_height", 50.0)) * self._scale,
+        )
+        return max(self.minimumHeight(), round(desired - category_height * len(self.view.categories)))
 
     def _draw_categories(self, painter: QPainter, rect: QRectF) -> float:
         """Relative não possui cabeçalho de categoria."""
         y = rect.top()
         row_height = max(14.0, float(self.config.get("row_height", 54.0)) * self._scale)
-        legend_height = self._legend_height()
+        legend_height = max(12.0, 30.0 * self._scale)
         for category_index, category in enumerate(self.view.categories):
             if bool(self.config.get("show_column_legend", False)) and category_index == 0:
                 if y + legend_height > rect.bottom():

@@ -854,152 +854,28 @@ class StandingsWidget(QWidget):
         painter.setPen(QPen(QColor(colors.get("header_line", "#175C9C")), max(1.0, 2.0 * self._scale)))
         painter.drawLine(rect.bottomLeft(), rect.bottomRight())
 
-    @staticmethod
-    def _allocate_category_row_counts(
-        categories: list[CategoryBlock],
-        row_capacity: int,
-    ) -> list[int]:
-        """Distribui espaço por todas as categorias antes de repetir linhas."""
-        counts = [0] * len(categories)
-        remaining = max(0, int(row_capacity))
-
-        # Reserva primeiro uma linha para o jogador, caso a classe dele
-        # esteja no fim da lista, e depois uma linha para cada outra classe.
-        player_indices = [
-            index
-            for index, category in enumerate(categories)
-            if any(row.is_player for row in category.rows)
-        ]
-        allocation_order = player_indices + [
-            index for index in range(len(categories))
-            if index not in player_indices
-        ]
-        for index in allocation_order:
-            if remaining <= 0:
-                break
-            if categories[index].rows:
-                counts[index] = 1
-                remaining -= 1
-
-        # As linhas adicionais são distribuídas em rodadas, respeitando o
-        # limite de cada categoria e mantendo todas representadas.
-        while remaining > 0:
-            changed = False
-            for index in allocation_order:
-                if remaining <= 0:
-                    break
-                category = categories[index]
-                if counts[index] < len(category.rows):
-                    counts[index] += 1
-                    remaining -= 1
-                    changed = True
-            if not changed:
-                break
-        return counts
-
     def _draw_categories(self, painter: QPainter, rect: QRectF) -> float:
-        categories = self.view.categories
-        if not categories:
-            return 0.0
-
-        original_scale = self._scale
-        show_legend = bool(self.config.get("show_column_legend", False))
-        minimum_scale_factor = 0.12
-
-        def dimensions(scale_factor: float) -> tuple[float, float, float, float]:
-            self._scale = original_scale * scale_factor
-            row_height = max(
-                14.0,
-                float(self.config.get("row_height", 54.0)) * self._scale,
-            )
-            category_height = self._category_header_height()
-            legend_height = self._legend_height() if show_legend else 0.0
-            category_gap = max(2.0, 7.0 * self._scale)
-            return row_height, category_height, legend_height, category_gap
-
-        def required_height(scale_factor: float) -> float:
-            row_height, category_height, legend_height, category_gap = dimensions(
-                scale_factor
-            )
-            return legend_height + sum(
-                category_height
-                + len(category.rows) * row_height
-                + category_gap
-                for category in categories
-            )
-
-        scale_factor = 1.0
-        visible_counts = [len(category.rows) for category in categories]
-        if required_height(scale_factor) > rect.height():
-            if required_height(minimum_scale_factor) <= rect.height():
-                # Reduz os elementos de forma proporcional antes de omitir
-                # qualquer piloto. A escala final é a maior que cabe.
-                low = minimum_scale_factor
-                high = 1.0
-                for _ in range(24):
-                    middle = (low + high) / 2.0
-                    if required_height(middle) <= rect.height():
-                        low = middle
-                    else:
-                        high = middle
-                scale_factor = low
-            else:
-                # Se nem a escala compacta comportar todas as linhas,
-                # garante cabeçalho e representação de cada categoria e
-                # distribui as linhas restantes por rodadas.
-                scale_factor = minimum_scale_factor
-
-        row_height, category_height, legend_height, category_gap = dimensions(
-            scale_factor
-        )
-        if len(visible_counts) and required_height(scale_factor) > rect.height():
-            fixed_height = (
-                legend_height
-                + len(categories) * (category_height + category_gap)
-            )
-            row_capacity = max(
-                0,
-                int((rect.height() - fixed_height + 1.0) // row_height),
-            )
-            visible_counts = self._allocate_category_row_counts(
-                categories,
-                row_capacity,
-            )
-
         y = rect.top()
-        if show_legend:
-            # A legenda fica antes dos blocos: não pode separar o cabeçalho
-            # da primeira classe das suas linhas nem interromper as demais.
-            if y + legend_height <= rect.bottom() + 1.0:
-                self._draw_legend(
-                    painter,
-                    QRectF(rect.left(), y, rect.width(), legend_height),
-                )
-                y += legend_height
-
-        for category, visible_count in zip(categories, visible_counts):
-            if y + category_height > rect.bottom() + 1.0:
+        row_height = max(14.0, float(self.config.get("row_height", 54.0)) * self._scale)
+        category_height = self._category_header_height()
+        legend_height = self._legend_height()
+        for category_index, category in enumerate(self.view.categories):
+            if y + category_height > rect.bottom():
                 break
-            self._draw_category_header(
-                painter,
-                QRectF(rect.left(), y, rect.width(), category_height),
-                category,
-            )
+            self._draw_category_header(painter, QRectF(rect.left(), y, rect.width(), category_height), category)
             y += category_height
-
-            for row in category.rows[:visible_count]:
-                if y + row_height > rect.bottom() + 1.0:
+            if bool(self.config.get("show_column_legend", False)) and category_index == 0:
+                if y + legend_height > rect.bottom():
                     break
-                self._draw_row(
-                    painter,
-                    QRectF(rect.left(), y, rect.width(), row_height),
-                    row,
-                    category,
-                )
+                self._draw_legend(painter, QRectF(rect.left(), y, rect.width(), legend_height))
+                y += legend_height
+            for row in category.rows:
+                if y + row_height > rect.bottom():
+                    self._draw_clipped_notice(painter, QRectF(rect.left(), max(rect.top(), rect.bottom() - row_height), rect.width(), row_height))
+                    return y - rect.top()
+                self._draw_row(painter, QRectF(rect.left(), y, rect.width(), row_height), row, category)
                 y += row_height
-            y += category_gap
-
-        self._scale = original_scale
+            y += max(2.0, 7.0 * self._scale)
         return y - rect.top()
 
     def _draw_category_header(self, painter: QPainter, rect: QRectF, category: CategoryBlock) -> None:
@@ -1566,9 +1442,7 @@ class StandingsWidget(QWidget):
                 background = QColor(colors.get("invalid_lap", "#FF3B45"))
             else:
                 text = f"{row.pit_time_s:.0f} s"
-                background = QColor(
-                    "#FF54B8" if row.is_class_fastest and row.in_pits else "#D95B00"
-                )
+                background = QColor("#D95B00")
             painter.setBrush(background)
             painter.drawRect(cell)
             self._text(
@@ -1688,33 +1562,8 @@ class StandingsWidget(QWidget):
                 text, background, foreground = "GAR", QColor("#666666"), QColor("#FFFFFF")
             elif status == "pit":
                 text = "PIT"
-                background = QColor(
-                    "#FF54B8"
-                    if row.is_class_fastest and row.in_pits
-                    else colors.get("pit", "#F97316")
-                )
+                background = QColor(colors.get("pit", "#F97316"))
                 foreground = QColor("#FFFFFF")
-            elif status == "fastest":
-                background = QColor("#FF54B8")
-                painter.setPen(Qt.PenStyle.NoPen)
-                painter.setBrush(background)
-                painter.drawRect(cell)
-                clock_path = PROJECT_ROOT / "images" / "incos01" / "relogio.png"
-                clock = self._static_icon_pixmap(
-                    clock_path,
-                    max(1, int(cell.width() * 0.72)),
-                    max(1, int(cell.height() * 0.82)),
-                )
-                if clock is not None:
-                    target = QRectF(
-                        cell.center().x() - clock.width() / 2.0,
-                        cell.center().y() - clock.height() / 2.0,
-                        clock.width(),
-                        clock.height(),
-                    )
-                    painter.drawPixmap(target, clock, QRectF(clock.rect()))
-                    return
-                text, foreground = "BEST", QColor("#FFFFFF")
             elif status == "dnf":
                 text, background, foreground = "DNF", QColor(colors.get("invalid_lap", "#FF3B45")), QColor("#FFFFFF")
             elif status == "dq":
@@ -1829,13 +1678,6 @@ class StandingsWidget(QWidget):
             return "yellow"
         if str(getattr(row, "penalty_text", "") or "") not in {"", "--"}:
             return "penalty"
-        # O tempo residual de PIT fica em outra coluna; nao deve esconder
-        # o relogio depois que o carro ja saiu dos boxes.
-        # Enquanto estiver efetivamente no pit, o ramo "pit" acima tem prioridade.
-        # Relogio e o ultimo estado: nunca substitui chegada, GAR/PIT, DNF/DQ,
-        # volta invalidada, bandeira amarela ou penalidade.
-        if bool(getattr(row, "is_class_fastest", False)):
-            return "fastest"
         return ""
 
     def _finish_flag_pixmap(self, width: int, height: int) -> QPixmap | None:

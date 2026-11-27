@@ -72,7 +72,6 @@ class StandingRow:
     estimated_lap_s: float = 0.0
     last_lap_s: float = 0.0
     is_session_fastest: bool = False
-    is_class_fastest: bool = False
     personal_best_highlight: bool = False
     current_lap_invalidated: bool = False
     last_lap_invalidated: bool = False
