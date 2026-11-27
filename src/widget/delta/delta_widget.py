@@ -22,6 +22,7 @@ from .delta_personal_best import (
     DeltaPositionSynchronizer,
 )
 from src.laps.archive import LapArchiveStore, local_owner_key
+from src.laps.timing import resolve_live_lap_elapsed
 from src.widget.standings.standings_logic import StandingsLogic
 
 
@@ -582,21 +583,22 @@ class DeltaWidget(QWidget):
         distance = float(
             live.get("lap_distance_m", getattr(driver, "lap_distance_m", 0.0)) or 0.0
         )
-        elapsed = float(
+        raw_elapsed = float(
             live.get("time_into_lap_s", getattr(driver, "time_into_lap_s", 0.0)) or 0.0
         )
-        if elapsed <= 0.0:
-            event_time = float(
-                getattr(session, "current_event_time_s", 0.0)
-                or getattr(session, "current_time_s", 0.0)
-                or 0.0
-            )
-            lap_start = float(
-                live.get("lap_start_event_time_s", getattr(driver, "lap_start_event_time_s", 0.0))
-                or 0.0
-            )
-            if event_time > lap_start > 0.0:
-                elapsed = event_time - lap_start
+        lap_start = float(
+            live.get("lap_start_event_time_s")
+            or getattr(driver, "lap_start_event_time_s", 0.0)
+            or 0.0
+        )
+        event_time = float(
+            getattr(session, "current_time_s", 0.0)
+            or getattr(session, "current_event_time_s", 0.0)
+            or 0.0
+        )
+        elapsed = resolve_live_lap_elapsed(
+            raw_elapsed, event_time, lap_start
+        )
         if (
             not math.isfinite(track_length)
             or track_length <= 0.0

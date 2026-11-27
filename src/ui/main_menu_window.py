@@ -75,6 +75,9 @@ class MainMenuWindow(QMainWindow):
         self.content_tabs.addTab(self.lap_archive_page, tr("Voltas"))
         self.lap_recorder = LapRecorder(self.lap_archive_page.store)
         self.lap_recorder.set_owner_key(self.lap_archive_page.owner_key)
+        self.lap_archive_page.reference_deleted.connect(
+            self.lap_recorder.discard_pending_lap
+        )
         root.addWidget(self.content_tabs, 1)
         root.addWidget(self._build_footer())
         self._apply_style()

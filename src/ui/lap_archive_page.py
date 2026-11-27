@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHeaderView,
@@ -19,6 +19,8 @@ from src.laps.archive import LapArchiveStore, local_owner_key, set_active_owner_
 
 class LapArchivePage(QWidget):
     """Local-only view of the driver's saved personal-best laps."""
+
+    reference_deleted = Signal()
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -122,13 +124,14 @@ class LapArchivePage(QWidget):
         answer = QMessageBox.question(
             self,
             tr("Excluir volta de referência"),
-            tr("Esta ação remove somente a volta rápida selecionada do arquivo local. O jogo não será alterado. Deseja continuar?"),
+            tr("Esta ação remove a volta selecionada e sua cópia correspondente de Categoria/Modelo, quando forem da mesma volta. O jogo não será alterado. Deseja continuar?"),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
         if answer != QMessageBox.StandardButton.Yes:
             return
         if self.store.delete_personal_best(record_id, self._owner_key):
+            self.reference_deleted.emit()
             self.refresh_local_records()
             self.archive_status.setText(
                 tr("Referência removida. A próxima volta válida poderá criar uma nova referência do Delta.")

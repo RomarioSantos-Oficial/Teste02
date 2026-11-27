@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from src.laps.timing import resolve_live_lap_elapsed
+
 
 TRACE_POINTS = 240
 TRACE_MAX_POINTS = 3000
@@ -332,14 +334,47 @@ class LapArchiveStore:
         return [self._from_row(row) for row in rows]
 
     def delete_personal_best(self, record_id: str, owner_key: str | None = None) -> bool:
-        """Delete one saved local personal-best reference for its owner only."""
+        """Delete the selected PB and its matching category/model copy, if any."""
         normalized_id = _clean(record_id)
+        normalized_owner = owner_key or local_owner_key()
         if not normalized_id:
             return False
         with self._connection() as db:
+            selected_row = db.execute(
+                "SELECT * FROM personal_bests WHERE record_id=? AND owner_key=?",
+                (normalized_id, normalized_owner),
+            ).fetchone()
+            if selected_row is None:
+                return False
+
+            selected = self._from_row(selected_row)
+            candidates = db.execute(
+                """SELECT * FROM personal_bests
+                   WHERE owner_key=? AND track_key=? AND category_key=?
+                   AND session_key=? AND car_model=? AND car_filename=?
+                   AND ABS(lap_seconds - ?) <= 0.000001""",
+                (
+                    normalized_owner,
+                    selected_row["track_key"],
+                    selected_row["category_key"],
+                    selected.session_key,
+                    selected.car_model,
+                    selected.car_filename,
+                    selected.lap_seconds,
+                ),
+            ).fetchall()
+            matching_ids = [
+                str(row["record_id"])
+                for row in candidates
+                if self._from_row(row).trace == selected.trace
+            ]
+            if normalized_id not in matching_ids:
+                matching_ids.append(normalized_id)
+
+            placeholders = ",".join("?" for _ in matching_ids)
             cursor = db.execute(
-                "DELETE FROM personal_bests WHERE record_id=? AND owner_key=?",
-                (normalized_id, owner_key or local_owner_key()),
+                f"DELETE FROM personal_bests WHERE owner_key=? AND record_id IN ({placeholders})",
+                (normalized_owner, *matching_ids),
             )
         return cursor.rowcount > 0
 
@@ -602,11 +637,22 @@ class LapRecorder:
             else:
                 length = float(getattr(session, "track_length_m", 0.0) or 0.0)
                 distance = float(live.get("lap_distance_m", getattr(driver, "lap_distance_m", 0.0)) or 0.0)
-                elapsed = float(live.get("time_into_lap_s", getattr(driver, "time_into_lap_s", 0.0)) or 0.0)
-                if elapsed <= 0.0:
-                    event = float(getattr(session, "current_event_time_s", 0.0) or getattr(session, "current_time_s", 0.0) or 0.0)
-                    start = float(getattr(driver, "lap_start_event_time_s", 0.0) or 0.0)
-                    elapsed = event - start if event > start > 0.0 else 0.0
+                raw_elapsed = float(
+                    live.get("time_into_lap_s", getattr(driver, "time_into_lap_s", 0.0)) or 0.0
+                )
+                lap_start = float(
+                    live.get("lap_start_event_time_s")
+                    or getattr(driver, "lap_start_event_time_s", 0.0)
+                    or 0.0
+                )
+                event_time = float(
+                    getattr(session, "current_time_s", 0.0)
+                    or getattr(session, "current_event_time_s", 0.0)
+                    or 0.0
+                )
+                elapsed = resolve_live_lap_elapsed(
+                    raw_elapsed, event_time, lap_start
+                )
                 if (
                     length > 0.0 and -1.0 <= distance <= length * 1.05 and elapsed >= 0.0
                     and (
@@ -711,6 +757,12 @@ class LapRecorder:
                 "speed_kmh": max(0.0, values[3]),
             })
         return output
+
+    def discard_pending_lap(self) -> None:
+        """Drop a just-finished lap waiting for official timing after PB deletion."""
+        self._pending_samples = None
+        self._pending_since = 0.0
+        self._pending_scoring_laps = None
 
     def finish_session(self) -> None:
         if self._session_key and self._session_key != self._last_finished_key:

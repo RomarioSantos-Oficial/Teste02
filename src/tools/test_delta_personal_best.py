@@ -6,6 +6,7 @@ from src.widget.delta.delta_personal_best import (
     DeltaPositionSynchronizer,
     interpolate_trace_elapsed,
 )
+from src.laps.timing import resolve_live_lap_elapsed
 
 
 class DeltaPersonalBestTests(unittest.TestCase):
@@ -44,6 +45,12 @@ class DeltaPersonalBestTests(unittest.TestCase):
         self.assertAlmostEqual(completed_lap_delta(50.0, 52.0), -2.0)
         self.assertIsNone(completed_lap_delta(56.0, 52.0, invalidated=True))
         self.assertIsNone(completed_lap_delta(0.0, 52.0))
+
+    def test_live_elapsed_uses_shared_memory_clock_when_time_into_lap_is_stale(self) -> None:
+        self.assertAlmostEqual(resolve_live_lap_elapsed(0.0, 130.0, 100.0), 30.0)
+        self.assertAlmostEqual(resolve_live_lap_elapsed(10.0, 130.0, 100.0), 30.0)
+        self.assertAlmostEqual(resolve_live_lap_elapsed(29.6, 130.0, 100.0), 29.6)
+        self.assertAlmostEqual(resolve_live_lap_elapsed(12.0, 0.0, 100.0), 12.0)
 
     def test_position_sync_estimates_distance_when_shared_memory_is_static(self) -> None:
         sync = DeltaPositionSynchronizer()

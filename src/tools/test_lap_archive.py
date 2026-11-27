@@ -60,8 +60,14 @@ class LapArchiveStoreTests(unittest.TestCase):
         self.assertFalse(self.store.delete_personal_best(selected.record_id, "account-b"))
         self.assertTrue(self.store.delete_personal_best(selected.record_id, "account-a"))
         remaining = self.store.all_personal_bests("account-a")
-        self.assertEqual(len(remaining), 1)
-        self.assertNotEqual(remaining[0].record_id, selected.record_id)
+        self.assertEqual(remaining, [])
+
+        # Once the matching category/model references are gone, even a slower
+        # valid lap can establish a fresh reference in both scopes.
+        replacements = self.store.save_if_better(make_record("account-a", 101.0))
+        self.assertEqual(len(replacements), 2)
+        self.assertEqual(len(self.store.all_personal_bests("account-a")), 2)
+        self.assertTrue(all(record.lap_seconds == 101.0 for record in replacements))
 
     def test_offline_import_is_explicit_and_retains_source_records(self) -> None:
         self.store.save_if_better(make_record("offline", 100.0))
