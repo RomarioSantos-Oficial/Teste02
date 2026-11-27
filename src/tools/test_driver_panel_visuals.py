@@ -14,11 +14,15 @@ from src.widget.driver_panel.driver_panel_renderer import (
     DriverPanelViewData,
     scaled_rpm_indicator_height,
     steering_ring_line_width,
+    RPM_READOUT_FONT_MULTIPLIER,
 )
 from src.widget.driver_panel.driver_panel_widget import DriverPanelWidget
 
 
 class DriverPanelVisualTests(unittest.TestCase):
+    def test_rpm_readout_font_is_increased_by_30_percent(self) -> None:
+        self.assertAlmostEqual(RPM_READOUT_FONT_MULTIPLIER, 1.30)
+
     def test_rpm_indicator_heights_are_reduced_by_30_percent(self) -> None:
         self.assertAlmostEqual(scaled_rpm_indicator_height(20.0), 14.0)
         self.assertAlmostEqual(scaled_rpm_indicator_height(8.0), 5.6)

@@ -48,6 +48,7 @@ def format_rpm_readout(rpm: float) -> str:
 
 
 RPM_INDICATOR_HEIGHT_MULTIPLIER = 0.70
+RPM_READOUT_FONT_MULTIPLIER = 1.30
 STEERING_RING_THICKNESS_MULTIPLIER = 1.60
 
 
@@ -282,7 +283,8 @@ class DriverPanelRenderer:
         rpm_font_scale = max(0.35, min(3.0, float(config.get("rpm_font_scale", 1.1))))
         painter.setFont(self._fit(
             config, value_rect, value,
-            header_height * 0.34 * rpm_font_scale, 7.0, True,
+            header_height * 0.34 * rpm_font_scale * RPM_READOUT_FONT_MULTIPLIER,
+            7.0, True,
         ))
         painter.setPen(text)
         painter.drawText(value_rect, Qt.AlignmentFlag.AlignCenter, value)
