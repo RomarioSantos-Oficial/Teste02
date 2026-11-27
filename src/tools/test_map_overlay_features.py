@@ -99,7 +99,7 @@ class MapOverlayFeaturesTest(unittest.TestCase):
             ("class",),
         )
 
-    def test_class_color_and_player_pink_are_configurable(self) -> None:
+    def test_player_fill_preserves_category_color(self) -> None:
         self.assertEqual(self.widget._class_color("Hypercar").name(), "#123456")
         player = SimpleNamespace(
             is_player=True,
