@@ -67,7 +67,7 @@ class MapOverlayFeaturesTest(unittest.TestCase):
         driver = SimpleNamespace(position=1, position_in_class=1)
         self.assertEqual(
             map_leader_roles(driver, {}),
-            ("overall", "class"),
+            ("overall",),
         )
         self.assertEqual(
             map_leader_roles(
@@ -85,6 +85,17 @@ class MapOverlayFeaturesTest(unittest.TestCase):
                 {"show_class_leader_markers": False},
             ),
             (),
+        )
+
+    def test_overall_leader_crown_takes_priority_over_class_crown(self) -> None:
+        driver = SimpleNamespace(position=1, position_in_class=1)
+        self.assertEqual(map_leader_roles(driver, {}), ("overall",))
+        self.assertEqual(
+            map_leader_roles(
+                SimpleNamespace(position=2, position_in_class=1),
+                {},
+            ),
+            ("class",),
         )
 
     def test_class_color_and_player_pink_are_configurable(self) -> None:
