@@ -1705,6 +1705,10 @@ class StandingsWidget(QWidget):
             return "yellow"
         if str(getattr(row, "penalty_text", "") or "") not in {"", "--"}:
             return "penalty"
+        # Se o indicador de PIT ainda esta ativo (inclusive os segundos
+        # apos sair dos boxes), ele continua ocupando a prioridade visual.
+        if bool(getattr(row, "pit_status_visible", False)):
+            return ""
         # Relogio e o ultimo estado: nunca substitui chegada, GAR/PIT, DNF/DQ,
         # volta invalidada, bandeira amarela ou penalidade.
         if bool(getattr(row, "is_class_fastest", False)):
