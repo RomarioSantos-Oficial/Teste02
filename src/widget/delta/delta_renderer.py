@@ -205,6 +205,40 @@ class DeltaRenderer:
 
         return False
 
+    @staticmethod
+    def _draw_section_panel(
+        painter: QPainter,
+        rect: QRectF,
+        config: dict[str, Any],
+        section: str,
+        scale: float,
+        fallback_background: str,
+        fallback_border: str,
+        fallback_radius: float,
+    ) -> None:
+        styles = config.get("section_styles", {})
+        style = styles.get(section, {}) if isinstance(styles, dict) else {}
+        if not isinstance(style, dict):
+            style = {}
+        if not bool(style.get("enabled", True)):
+            return
+
+        background = QColor(str(style.get("background", fallback_background)))
+        opacity = max(0.0, min(1.0, float(style.get("opacity", 1.0))))
+        background.setAlphaF(background.alphaF() * opacity)
+
+        border_enabled = bool(style.get("border_enabled", True))
+        border_width = max(0.0, float(style.get("border_width", 0.8))) * scale
+        if border_enabled and border_width > 0.0:
+            border = QColor(str(style.get("border", fallback_border)))
+            painter.setPen(QPen(border, border_width))
+        else:
+            painter.setPen(Qt.PenStyle.NoPen)
+
+        painter.setBrush(background)
+        radius = max(0.0, float(style.get("radius", fallback_radius)) * scale)
+        painter.drawRoundedRect(rect, radius, radius)
+
     def _draw_header(
         self,
         painter: QPainter,
@@ -222,7 +256,6 @@ class DeltaRenderer:
         text = QColor(colors.get("text", "#F4F6F8"))
         label_color = QColor(colors.get("header_label", "#A7B0BA"))
         value_color = QColor(colors.get("header_value", "#F4F6F8"))
-        container = QColor(colors.get("header_background", "#080B10"))
         cell_background = QColor(colors.get("header_cell_background", "#10151D"))
         separator = QColor(colors.get("header_separator", "#2A3540"))
         accent = QColor(colors.get("header_accent", "#FF54B8"))
@@ -302,9 +335,12 @@ class DeltaRenderer:
 
         radius = max(3.0, float(config.get("header_radius", 6.0)) * scale)
         border_width = max(0.6, float(config.get("header_border_width", 0.8)) * scale)
-        painter.setPen(QPen(separator, border_width))
-        painter.setBrush(container)
-        painter.drawRoundedRect(rect, radius, radius)
+        self._draw_section_panel(
+            painter, rect, config, "header", scale,
+            colors.get("header_background", "#080B10"),
+            colors.get("header_separator", "#2A3540"),
+            6.0,
+        )
 
         gap = max(1.0, float(config.get("header_cell_gap", 3.0)) * scale)
         inner = rect.adjusted(2.0 * scale, 2.0 * scale, -2.0 * scale, -2.0 * scale)
@@ -344,14 +380,19 @@ class DeltaRenderer:
             x += width + gap
 
             highlighted = key == highlight_item and highlight_item != "none"
-            fill = highlight_background if highlighted else cell_background
-            border = accent if highlighted else separator
-            painter.setPen(QPen(border, border_width))
-            painter.setBrush(fill)
-            painter.drawRoundedRect(
-                cell,
-                max(2.0, radius * 0.72),
-                max(2.0, radius * 0.72),
+            self._draw_section_panel(
+                painter, cell, config,
+                "header_highlight" if highlighted else "header_cells",
+                scale,
+                (
+                    colors.get("header_highlight_background", "#B51B69")
+                    if highlighted else colors.get("header_cell_background", "#10151D")
+                ),
+                (
+                    colors.get("header_accent", "#FF54B8")
+                    if highlighted else colors.get("header_separator", "#2A3540")
+                ),
+                max(2.0, radius * 0.72) / max(0.35, scale),
             )
 
             label_rect = QRectF(
@@ -443,17 +484,14 @@ class DeltaRenderer:
         gain = QColor(colors.get("gain", "#55D98A"))
         loss = QColor(colors.get("loss", "#FF2828"))
         neutral = QColor(colors.get("neutral", "#5A5A5A"))
-        panel = QColor(colors.get("panel", "#12171D"))
         muted = QColor(colors.get("muted", "#A7B0BA"))
 
-        if bool(config.get("section_backgrounds", True)):
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(panel)
-            painter.drawRoundedRect(
-                rect,
-                max(3.0, 8.0 * scale),
-                max(3.0, 8.0 * scale),
-            )
+        self._draw_section_panel(
+            painter, rect, config, "delta_bar", scale,
+            colors.get("panel", "#12171D"),
+            colors.get("border", "#2A3540"),
+            8.0,
+        )
 
         inner = rect.adjusted(
             max(8.0, 24.0 * scale),
@@ -581,19 +619,12 @@ class DeltaRenderer:
         loss = QColor(colors.get("loss", "#FF2828"))
         muted = QColor(colors.get("muted", "#A7B0BA"))
 
-        if bool(config.get("section_backgrounds", True)):
-            painter.setPen(
-                QPen(
-                    grid.lighter(130),
-                    max(0.8, scale),
-                )
-            )
-            painter.setBrush(panel)
-            painter.drawRoundedRect(
-                rect,
-                max(3.0, 7.0 * scale),
-                max(3.0, 7.0 * scale),
-            )
+        self._draw_section_panel(
+            painter, rect, config, "history", scale,
+            colors.get("history_background", "#12171D"),
+            colors.get("history_border", "#26303A"),
+            7.0,
+        )
 
         graph = rect.adjusted(
             10 * scale,
@@ -770,19 +801,12 @@ class DeltaRenderer:
             )
         )
 
-        if bool(config.get("section_backgrounds", True)):
-            painter.setPen(
-                QPen(
-                    purple.darker(140),
-                    max(1.0, 1.5 * scale),
-                )
-            )
-            painter.setBrush(panel)
-            painter.drawRoundedRect(
-                rect,
-                max(4.0, 8.0 * scale),
-                max(4.0, 8.0 * scale),
-            )
+        self._draw_section_panel(
+            painter, rect, config, "fastest_lap", scale,
+            colors.get("fastest_panel", "#0E1319"),
+            colors.get("fastest_border", "#6036AE"),
+            8.0,
+        )
 
         padding = max(
             5.0,
@@ -1057,24 +1081,13 @@ class DeltaRenderer:
 
         color = color_by_status.get(sector.status, neutral)
 
-        background = QColor(colors.get("fastest", "#8B4DFF"))
-        background.setAlphaF(
-            max(
-                0.0,
-                min(
-                    1.0,
-                    float(config.get("sector_background_opacity", 0.72)),
-                ),
-            )
+        self._draw_section_panel(
+            painter, box.adjusted(scale, scale, -scale, -scale),
+            config, "sectors", scale,
+            colors.get("sector_panel", "#8B4DFF"),
+            colors.get("sector_border", "#8B4DFF"),
+            7.0,
         )
-        if bool(config.get("section_backgrounds", True)):
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(background)
-            painter.drawRoundedRect(
-                box.adjusted(scale, scale, -scale, -scale),
-                max(3.0, 7.0 * scale),
-                max(3.0, 7.0 * scale),
-            )
 
         if sector.delta_s is not None:
             label = f"{sector.label}  {sector.delta_s:+.3f}"

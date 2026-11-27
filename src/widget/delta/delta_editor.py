@@ -47,6 +47,7 @@ class DeltaEditor(QDialog):
             str,
             QPushButton,
         ] = {}
+        self._section_style_buttons: dict[tuple[str, str], QPushButton] = {}
 
         root = QVBoxLayout(self)
         scroll = QScrollArea()
@@ -739,23 +740,7 @@ class DeltaEditor(QDialog):
             )
         )
 
-        section_backgrounds = QCheckBox()
-        section_backgrounds.setChecked(
-            bool(
-                self.config.get(
-                    "section_backgrounds",
-                    True,
-                )
-            )
-        )
-        section_backgrounds.toggled.connect(
-            lambda value:
-            self._set_root(
-                "section_backgrounds",
-                value,
-            )
-        )
-
+ 
         form.addRow("Fonte:", font)
         form.addRow(
             "Opacidade geral:",
@@ -769,26 +754,20 @@ class DeltaEditor(QDialog):
             "Fundo principal:",
             background_enabled,
         )
-        form.addRow(
-            "Fundos das seções:",
-            section_backgrounds,
-        )
+ 
 
         for key, label in (
             ("text", "Texto"),
             ("muted", "Texto secundário"),
             ("background", "Fundo geral"),
-            ("header_background", "Fundo externo do cabeçalho"),
-            ("header_cell_background", "Fundo dos blocos"),
-            ("header_separator", "Bordas / separadores"),
+ 
             ("header_accent", "Destaque e filete do cabeçalho"),
             ("header_label", "Texto pequeno dos rótulos"),
             ("header_value", "Valores dos blocos"),
-            ("header_highlight_background", "Fundo do bloco destacado"),
+ 
             ("header_highlight_text", "Texto do bloco destacado"),
             ("header_limit_danger", "Cor ao atingir limite de pista"),
-            ("panel", "Painéis internos"),
-            ("fastest_panel", "Painel da volta rápida"),
+ 
             ("grid", "Grade do histórico"),
             ("gain", "Ganho / lado direito"),
             ("loss", "Perda / lado esquerdo"),
@@ -819,7 +798,127 @@ class DeltaEditor(QDialog):
             )
 
         self.content_layout.addWidget(group)
+        self._build_independent_section_styles()
         self.content_layout.addStretch()
+
+    def _build_independent_section_styles(self) -> None:
+        styles = self.config.setdefault("section_styles", {})
+        sections = (
+            ("header", "Fundo externo do cabeçalho", "#080B10", "#2A3540", 1.0, 6.0),
+            ("header_cells", "Blocos normais do cabeçalho", "#10151D", "#2A3540", 1.0, 4.0),
+            ("header_highlight", "Bloco destacado do cabeçalho", "#B51B69", "#FF54B8", 1.0, 4.0),
+            ("delta_bar", "Linha principal do Delta", "#12171D", "#2A3540", 0.95, 8.0),
+            ("history", "Histórico do Delta", "#12171D", "#26303A", 0.95, 7.0),
+            ("fastest_lap", "Cartão de volta mais rápida", "#0E1319", "#6036AE", 0.96, 8.0),
+            ("sectors", "Cartão de setores", "#8B4DFF", "#8B4DFF", 0.72, 7.0),
+        )
+        for key, title, background, border, opacity, radius in sections:
+            style = styles.setdefault(key, {})
+            style.setdefault("enabled", True)
+            style.setdefault("background", background)
+            style.setdefault("border", border)
+            style.setdefault("opacity", opacity)
+            style.setdefault("border_enabled", True)
+            style.setdefault("border_width", 0.8)
+            style.setdefault("radius", radius)
+
+            group = QGroupBox(title)
+            form = QFormLayout(group)
+
+            enabled = QCheckBox()
+            enabled.setChecked(bool(style.get("enabled", True)))
+            enabled.toggled.connect(
+                lambda value, section=key: self._set_section_style(
+                    section, "enabled", value
+                )
+            )
+
+            background_button = QPushButton(str(style.get("background", background)))
+            background_button.clicked.connect(
+                lambda checked=False, section=key, button=background_button:
+                    self._choose_section_style_color(section, "background", button)
+            )
+
+            opacity_spin = QDoubleSpinBox()
+            opacity_spin.setRange(0.0, 100.0)
+            opacity_spin.setDecimals(0)
+            opacity_spin.setSuffix(" %")
+            opacity_spin.setValue(float(style.get("opacity", opacity)) * 100.0)
+            opacity_spin.valueChanged.connect(
+                lambda value, section=key: self._set_section_style(
+                    section, "opacity", value / 100.0
+                )
+            )
+
+            border_enabled = QCheckBox()
+            border_enabled.setChecked(bool(style.get("border_enabled", True)))
+            border_enabled.toggled.connect(
+                lambda value, section=key: self._set_section_style(
+                    section, "border_enabled", value
+                )
+            )
+
+            border_button = QPushButton(str(style.get("border", border)))
+            border_button.clicked.connect(
+                lambda checked=False, section=key, button=border_button:
+                    self._choose_section_style_color(section, "border", button)
+            )
+
+            border_width = QDoubleSpinBox()
+            border_width.setRange(0.0, 8.0)
+            border_width.setDecimals(1)
+            border_width.setSingleStep(0.2)
+            border_width.setSuffix(" px")
+            border_width.setValue(float(style.get("border_width", 0.8)))
+            border_width.valueChanged.connect(
+                lambda value, section=key: self._set_section_style(
+                    section, "border_width", value
+                )
+            )
+
+            radius_spin = QDoubleSpinBox()
+            radius_spin.setRange(0.0, 24.0)
+            radius_spin.setDecimals(1)
+            radius_spin.setSingleStep(1.0)
+            radius_spin.setSuffix(" px")
+            radius_spin.setValue(float(style.get("radius", radius)))
+            radius_spin.valueChanged.connect(
+                lambda value, section=key: self._set_section_style(
+                    section, "radius", value
+                )
+            )
+
+            form.addRow("Fundo ativado:", enabled)
+            form.addRow("Cor do fundo:", background_button)
+            form.addRow("Opacidade do fundo:", opacity_spin)
+            form.addRow("Borda ativada:", border_enabled)
+            form.addRow("Cor da borda:", border_button)
+            form.addRow("Espessura da borda:", border_width)
+            form.addRow("Arredondamento:", radius_spin)
+
+            self._section_style_buttons[(key, "background")] = background_button
+            self._section_style_buttons[(key, "border")] = border_button
+            self.content_layout.addWidget(group)
+
+    def _set_section_style(self, section: str, key: str, value: Any) -> None:
+        self.config.setdefault("section_styles", {}).setdefault(section, {})[key] = value
+        self._emit()
+
+    def _choose_section_style_color(
+        self,
+        section: str,
+        key: str,
+        button: QPushButton,
+    ) -> None:
+        style = self.config.setdefault("section_styles", {}).setdefault(section, {})
+        current = QColor(str(style.get(key, "#FFFFFF")))
+        selected = QColorDialog.getColor(current, self)
+        if not selected.isValid():
+            return
+        value = selected.name(QColor.NameFormat.HexRgb)
+        style[key] = value
+        button.setText(value)
+        self._emit()
 
     def _choose_logo_directory(self) -> None:
         selected = QFileDialog.getExistingDirectory(

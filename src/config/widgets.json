@@ -123,6 +123,71 @@
         "track_state": "TRACK",
         "split": "SPLIT",
         "penalties": "PEN"
+      },
+      "section_styles": {
+        "header": {
+          "enabled": true,
+          "background": "#080B10",
+          "opacity": 1,
+          "border_enabled": true,
+          "border": "#2A3540",
+          "border_width": 0.8,
+          "radius": 6
+        },
+        "header_cells": {
+          "enabled": true,
+          "background": "#10151D",
+          "opacity": 1,
+          "border_enabled": true,
+          "border": "#2A3540",
+          "border_width": 0.8,
+          "radius": 4
+        },
+        "header_highlight": {
+          "enabled": true,
+          "background": "#B51B69",
+          "opacity": 1,
+          "border_enabled": true,
+          "border": "#FF54B8",
+          "border_width": 0.8,
+          "radius": 4
+        },
+        "delta_bar": {
+          "enabled": true,
+          "background": "#12171D",
+          "opacity": 0.95,
+          "border_enabled": true,
+          "border": "#2A3540",
+          "border_width": 0.8,
+          "radius": 8
+        },
+        "history": {
+          "enabled": true,
+          "background": "#12171D",
+          "opacity": 0.95,
+          "border_enabled": true,
+          "border": "#26303A",
+          "border_width": 0.8,
+          "radius": 7
+        },
+        "fastest_lap": {
+          "enabled": true,
+          "background": "#0E1319",
+          "opacity": 0.96,
+          "border_enabled": true,
+          "border": "#6036AE",
+          "border_width": 1.2,
+          "radius": 8
+        },
+        "sectors": {
+          "enabled": true,
+          "background": "#8B4DFF",
+          "opacity": 0.72,
+          "border_enabled": true,
+          "border": "#8B4DFF",
+          "border_width": 0.8,
+          "radius": 7
+        }
       }
     },
     "flags": {
@@ -1087,6 +1152,71 @@
         "track_state": "TRACK",
         "split": "SPLIT",
         "penalties": "PEN"
+      },
+      "section_styles": {
+        "header": {
+          "enabled": true,
+          "background": "#080B10",
+          "opacity": 1,
+          "border_enabled": true,
+          "border": "#2A3540",
+          "border_width": 0.8,
+          "radius": 6
+        },
+        "header_cells": {
+          "enabled": true,
+          "background": "#10151D",
+          "opacity": 1,
+          "border_enabled": true,
+          "border": "#2A3540",
+          "border_width": 0.8,
+          "radius": 4
+        },
+        "header_highlight": {
+          "enabled": true,
+          "background": "#B51B69",
+          "opacity": 1,
+          "border_enabled": true,
+          "border": "#FF54B8",
+          "border_width": 0.8,
+          "radius": 4
+        },
+        "delta_bar": {
+          "enabled": true,
+          "background": "#12171D",
+          "opacity": 0.95,
+          "border_enabled": true,
+          "border": "#2A3540",
+          "border_width": 0.8,
+          "radius": 8
+        },
+        "history": {
+          "enabled": true,
+          "background": "#12171D",
+          "opacity": 0.95,
+          "border_enabled": true,
+          "border": "#26303A",
+          "border_width": 0.8,
+          "radius": 7
+        },
+        "fastest_lap": {
+          "enabled": true,
+          "background": "#0E1319",
+          "opacity": 0.96,
+          "border_enabled": true,
+          "border": "#6036AE",
+          "border_width": 1.2,
+          "radius": 8
+        },
+        "sectors": {
+          "enabled": true,
+          "background": "#8B4DFF",
+          "opacity": 0.72,
+          "border_enabled": true,
+          "border": "#8B4DFF",
+          "border_width": 0.8,
+          "radius": 7
+        }
       }
     },
     "flags": {
