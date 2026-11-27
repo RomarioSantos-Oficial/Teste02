@@ -1434,12 +1434,21 @@ class StandingsWidget(QWidget):
                 -5 * self._scale,
             )
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor("#D95B00"))
+            if row.pit_status_label == "GAR":
+                text = "GAR"
+                background = QColor("#FF54B8")
+            elif row.pit_status_label == "DNF":
+                text = "DNF"
+                background = QColor(colors.get("invalid_lap", "#FF3B45"))
+            else:
+                text = f"{row.pit_time_s:.0f} s"
+                background = QColor("#D95B00")
+            painter.setBrush(background)
             painter.drawRect(cell)
             self._text(
                 painter,
                 cell,
-                f"{row.pit_time_s:.0f} s",
+                text,
                 0.54,
                 True,
                 QColor("#FFFFFF"),

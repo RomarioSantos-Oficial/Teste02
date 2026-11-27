@@ -103,6 +103,7 @@ class StandingRow:
     is_player: bool = False
     pit_time_s: float = 0.0
     pit_status_visible: bool = False
+    pit_status_label: str = ""
 
 
 @dataclass(slots=True)

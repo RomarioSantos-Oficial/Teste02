@@ -86,6 +86,45 @@ class StandingsLayoutUnitTests(unittest.TestCase):
         self.assertEqual(image.pixelColor(8, 8).name(), "#123456")
         self.assertEqual(image.pixelColor(39, 31).name(), "#123456")
 
+    def test_pit_cell_uses_garage_pink_and_race_dnf_red(self) -> None:
+        class PitWidgetProbe:
+            config = {"colors": {"invalid_lap": "#FF3B45"}}
+            _scale = 1.0
+
+            def __init__(self) -> None:
+                self.drawn_text: list[str] = []
+
+            def _row_class_color(self, _row, _category):
+                return QColor("#123456")
+
+            def _text(self, _painter, _rect, text, *_args):
+                self.drawn_text.append(text)
+
+        for label, expected_text, expected_color in (
+            ("GAR", "GAR", "#ff54b8"),
+            ("DNF", "DNF", "#ff3b45"),
+        ):
+            with self.subTest(label=label):
+                probe = PitWidgetProbe()
+                image = QImage(60, 30, QImage.Format.Format_ARGB32)
+                image.fill(Qt.GlobalColor.transparent)
+                painter = QPainter(image)
+                StandingsWidget._draw_cell(
+                    probe,
+                    painter,
+                    "pit",
+                    QRectF(0.0, 0.0, 60.0, 30.0),
+                    StandingRow(
+                        pit_status_visible=True,
+                        pit_status_label=label,
+                    ),
+                    object(),
+                )
+                painter.end()
+
+                self.assertEqual(probe.drawn_text, [expected_text])
+                self.assertEqual(image.pixelColor(30, 15).name(), expected_color)
+
     def test_large_grids_use_adaptive_render_interval(self) -> None:
         self.assertEqual(
             StandingsWidget._adaptive_render_interval(0.20, 30),

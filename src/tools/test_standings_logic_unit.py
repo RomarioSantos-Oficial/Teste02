@@ -43,6 +43,53 @@ class StandingsLogicUnitTests(unittest.TestCase):
         row = logic.build(session, {}, "MEM").categories[0].rows[0]
         self.assertFalse(row.pit_status_visible)
 
+    def test_practice_garage_hides_pit_time_then_shows_gar_after_pit(self) -> None:
+        driver = DriverData(
+            slot_id=1,
+            driver_name="Garage Driver",
+            vehicle_class="LMGT3",
+            position=1,
+            in_garage=True,
+        )
+        session = SessionData(connected=True, session=1, drivers=[driver])
+        logic = StandingsLogic({"show_pit_status": True})
+
+        row = logic.build(session, {}, "MEM").categories[0].rows[0]
+        self.assertFalse(row.pit_status_visible)
+        self.assertEqual(row.pit_status_label, "")
+
+        driver.in_garage = False
+        driver.in_pits = True
+        row = logic.build(session, {}, "MEM").categories[0].rows[0]
+        self.assertTrue(row.pit_status_visible)
+        self.assertEqual(row.pit_status_label, "")
+
+        driver.in_garage = True
+        row = logic.build(session, {}, "MEM").categories[0].rows[0]
+        self.assertTrue(row.pit_status_visible)
+        self.assertEqual(row.pit_status_label, "GAR")
+        self.assertEqual(row.pit_time_s, 0.0)
+
+    def test_race_garage_replaces_pit_time_with_dnf(self) -> None:
+        driver = DriverData(
+            slot_id=1,
+            driver_name="Race Driver",
+            vehicle_class="LMGT3",
+            position=1,
+            in_pits=True,
+        )
+        session = SessionData(connected=True, session=10, drivers=[driver])
+        logic = StandingsLogic({"show_pit_status": True})
+
+        row = logic.build(session, {}, "MEM").categories[0].rows[0]
+        self.assertTrue(row.pit_status_visible)
+
+        driver.in_garage = True
+        row = logic.build(session, {}, "MEM").categories[0].rows[0]
+        self.assertTrue(row.pit_status_visible)
+        self.assertEqual(row.pit_status_label, "DNF")
+        self.assertEqual(row.pit_time_s, 0.0)
+
     def test_driver_name_display_formats(self) -> None:
         self.assertEqual(format_driver_name("Romario Santos", "full"), "Romario Santos")
         self.assertEqual(
@@ -613,7 +660,7 @@ class StandingsLogicUnitTests(unittest.TestCase):
         self.assertEqual(by_name["Player"].overall_position, 2)
         self.assertEqual(by_name["Leader"].gap_text, "-1L")
 
-    def test_relative_excludes_dnf_dq_and_garage(self) -> None:
+    def test_relative_keeps_garage_rows_but_excludes_dnf_and_dq(self) -> None:
         session = SessionData(
             connected=True,
             session=10,
@@ -629,7 +676,12 @@ class StandingsLogicUnitTests(unittest.TestCase):
         rows = StandingsLogic(
             {"relative_mode": True, "relative_cars_ahead": 5, "relative_cars_behind": 5}
         ).build(session, {}, "API").categories[0].rows
-        self.assertEqual({row.driver_name for row in rows}, {"Player", "Active"})
+        self.assertEqual(
+            {row.driver_name for row in rows},
+            {"Player", "Active", "Garage"},
+        )
+        garage = next(row for row in rows if row.driver_name == "Garage")
+        self.assertEqual(garage.pit_status_label, "DNF")
 
     def test_relative_matches_lmu_circular_lists_before_start(self) -> None:
         session = SessionData(

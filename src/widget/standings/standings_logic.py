@@ -173,6 +173,7 @@ class StandingsLogic:
         self._pit_elapsed: dict[int, float] = {}
         self._pit_was_inside: dict[int, bool] = {}
         self._pit_exit_lap: dict[int, int] = {}
+        self._pit_parked_after_pit: set[int] = set()
         self._previous_best_laps: dict[int, float] = {}
         self._personal_best_until: dict[int, float] = {}
         self._observed_laps_once = False
@@ -211,6 +212,7 @@ class StandingsLogic:
         self._pit_elapsed.clear()
         self._pit_was_inside.clear()
         self._pit_exit_lap.clear()
+        self._pit_parked_after_pit.clear()
         self._previous_best_laps.clear()
         self._personal_best_until.clear()
         self._observed_laps_once = False
@@ -847,11 +849,12 @@ class StandingsLogic:
 
     @staticmethod
     def _is_relative_car_visible(row: StandingRow) -> bool:
-        """Relative contém somente carros ainda ativos fora da garagem."""
+        """Relative conserva carros na garagem para exibir o estado do pit."""
         finish = str(row.finish_state or "").strip().casefold()
+        if row.in_garage:
+            return True
         return not (
-            row.in_garage
-            or row.finish_status in {2, 3}
+            row.finish_status in {2, 3}
             or finish in {
                 "dnf", "didnotfinish", "did not finish", "fstat_dnf", "2",
                 "dq", "disqualified", "fstat_dq", "3",
@@ -1064,32 +1067,52 @@ class StandingsLogic:
         # litros disponiveis.
         if fuel_liters is not None:
             energy = None
+        in_garage = bool(getattr(driver, "in_garage", False))
         in_pits = bool(getattr(driver, "in_pits", False)) or bool(
             getattr(driver, "pitting", False)
         )
+        active_pit = in_pits and not in_garage
         completed_laps = int(_live_scoring_value(driver, "laps", 0) or 0)
         finish_status = int(getattr(driver, "finish_status", 0) or 0)
         was_in_pits = self._pit_was_inside.get(slot_id, False)
-        if in_pits:
+        if in_garage:
+            if was_in_pits:
+                self._pit_parked_after_pit.add(slot_id)
+            self._pit_started.pop(slot_id, None)
+            self._pit_elapsed.pop(slot_id, None)
+            self._pit_exit_lap.pop(slot_id, None)
+        elif active_pit:
+            self._pit_parked_after_pit.discard(slot_id)
             self._pit_started.setdefault(slot_id, now)
             self._pit_elapsed[slot_id] = now - self._pit_started[slot_id]
             self._pit_exit_lap.pop(slot_id, None)
         else:
+            self._pit_parked_after_pit.discard(slot_id)
             if was_in_pits:
                 self._pit_exit_lap[slot_id] = completed_laps
             self._pit_started.pop(slot_id, None)
-        self._pit_was_inside[slot_id] = in_pits
+        self._pit_was_inside[slot_id] = active_pit
         pit_status_laps = max(
             0,
             int(self.config.get("pit_status_laps", 2) or 0),
         )
         pit_exit_lap = self._pit_exit_lap.get(slot_id)
+        session_number = int(getattr(session, "session", 0) or 0)
+        pit_status_label = (
+            "DNF"
+            if in_garage and 10 <= session_number <= 13
+            else "GAR"
+            if in_garage and slot_id in self._pit_parked_after_pit
+            else ""
+        )
         pit_status_visible = bool(
             self.config.get("show_pit_status", True)
         ) and (
-            in_pits
+            bool(pit_status_label)
+            or active_pit
             or (
-                pit_exit_lap is not None
+                not in_garage
+                and pit_exit_lap is not None
                 and completed_laps < pit_exit_lap + pit_status_laps
             )
         )
@@ -1240,7 +1263,7 @@ class StandingsLogic:
             ),
             finish_status=finish_status,
             in_pits=in_pits,
-            in_garage=bool(getattr(driver, "in_garage", False)),
+            in_garage=in_garage,
             under_yellow=(
                 bool(getattr(driver, "under_yellow", False))
                 or int(getattr(driver, "flag", 0) or 0) in {1, 2}
@@ -1258,6 +1281,7 @@ class StandingsLogic:
             is_player=is_player,
             pit_time_s=self._pit_elapsed.get(slot_id, 0.0),
             pit_status_visible=pit_status_visible,
+            pit_status_label=pit_status_label,
         )
 
     @staticmethod
