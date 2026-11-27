@@ -1,6 +1,6 @@
-# Build Guide - SectorFlow Overley 1.1
+# Build Guide - SectorFlow Overley 1.2
 
-Este diretório contém o pipeline para gerar o pacote portátil e o instalador do **SectorFlow Overley 1.1** para Windows.
+Este diretório contém o pipeline para gerar o pacote portátil e o instalador do **SectorFlow Overley 1.2** para Windows.
 
 ---
 
@@ -27,17 +27,17 @@ powershell -ExecutionPolicy Bypass -File build\build_all.ps1
 
 O build completo usa PyInstaller e Inno Setup 6 e gera:
 - `app\SectorFlow\` — pasta portátil pronta para executar;
-- `app\SectorFlow_Portable_1.1.zip` — pacote para copiar para outro PC;
-- `app\SectorFlow_Setup_1.1.exe` — instalador profissional.
+- `app\SectorFlow_Portable_1.2.zip` — pacote para copiar para outro PC;
+- `app\SectorFlow_Setup_1.2.exe` — instalador profissional.
 
 ### 3. Distribuir para Outro PC
 
 **Opção A - Sem instalador (portátil):**
-Extraia `app\SectorFlow_Portable_1.1.zip` em uma pasta nova no PC destino e execute `SectorFlow.exe`.
+Extraia `app\SectorFlow_Portable_1.2.zip` em uma pasta nova no PC destino e execute `SectorFlow.exe`.
 Para atualizar, feche o programa, remova a pasta anterior e extraia o ZIP novo.
 
 **Opção B - Com instalador:**
-Distribua `app\SectorFlow_Setup_1.1.exe`. Em atualizações, o instalador substitui os arquivos do programa e limpa os caches da instalação.
+Distribua `app\SectorFlow_Setup_1.2.exe`. Em atualizações, o instalador substitui os arquivos do programa e limpa os caches da instalação.
 
 ---
 
@@ -68,8 +68,8 @@ app/
 │   ├── data/                      ← Dados empacotados
 │   └── vendor/                    ← Aviso de licença da biblioteca LMU
 │
-├── SectorFlow_Portable_1.1.zip    ← Pacote portátil
-└── SectorFlow_Setup_1.1.exe       ← Instalador
+├── SectorFlow_Portable_1.2.zip    ← Pacote portátil
+└── SectorFlow_Setup_1.2.exe       ← Instalador
 ```
 
 ---

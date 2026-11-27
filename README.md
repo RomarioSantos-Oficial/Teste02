@@ -2,7 +2,7 @@
 
 Overlay de telemetria para **Le Mans Ultimate (LMU)** no Windows. O SectorFlow lê dados locais do jogo, apresenta informações da corrida em janelas transparentes e permite configurar cada elemento pelo menu principal.
 
-> Versão atual: **1.1**<br>
+> Versão atual: **1.2**<br>
 > Plataforma: **Windows 10/11 x64**<br>
 > O programa permite somente uma instância por usuário.
 
@@ -25,7 +25,7 @@ Python, PySide6 e Inno Setup **não são necessários** no computador do usuári
 
 ## Versão portátil
 
-1. Copie `SectorFlow_Portable_1.1.zip` para o computador.
+1. Copie `SectorFlow_Portable_1.2.zip` para o computador.
 2. Extraia o ZIP para uma pasta nova.
 3. Execute `SectorFlow.exe` dentro da pasta extraída.
 
@@ -33,7 +33,7 @@ Para atualizar a versão portátil, feche o SectorFlow, remova a pasta antiga e 
 
 ## Instalação normal
 
-1. Copie `SectorFlow_Setup_1.1.exe` para o computador.
+1. Copie `SectorFlow_Setup_1.2.exe` para o computador.
 2. Feche versões antigas pela bandeja: botão direito no ícone e **Sair**.
 3. Execute o instalador.
 4. Escolha **Português Brasileiro** ou **English**.
@@ -61,19 +61,19 @@ Abra o **Prompt de Comando** na pasta do instalador.
 Assistente visual:
 
 ```bat
-SectorFlow_Setup_1.1.exe
+SectorFlow_Setup_1.2.exe
 ```
 
 Instalação silenciosa:
 
 ```bat
-SectorFlow_Setup_1.1.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS
+SectorFlow_Setup_1.2.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS
 ```
 
 Instalação silenciosa com log:
 
 ```bat
-SectorFlow_Setup_1.1.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /LOG="%TEMP%\SectorFlow-install.log"
+SectorFlow_Setup_1.2.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /LOG="%TEMP%\SectorFlow-install.log"
 ```
 
 Verifique o resultado:
@@ -106,7 +106,7 @@ taskkill /IM SectorFlow.exe /F
 
 ## Atualização
 
-Não desinstale a versão anterior. Execute o instalador novo por cima dela. A versão 1.1 remove os arquivos da instalação anterior e instala o pacote completo atualizado.
+Não desinstale a versão anterior. Execute o instalador novo por cima dela. A versão 1.2 remove os arquivos da instalação anterior e instala o pacote completo atualizado.
 
 - O mesmo `AppId` identifica a instalação existente.
 - A pasta e as tarefas escolhidas anteriormente são reutilizadas.
@@ -125,7 +125,7 @@ SectorFlow_Setup_NOVA_VERSAO.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSE
 ## Verificação do arquivo
 
 ```bat
-powershell -NoProfile -Command "Get-FileHash '.\SectorFlow_Setup_1.1.exe' -Algorithm SHA256"
+powershell -NoProfile -Command "Get-FileHash '.\SectorFlow_Setup_1.2.exe' -Algorithm SHA256"
 ```
 
 Compare o hash do instalador com o valor publicado junto ao pacote de distribuição antes de executá-lo.
@@ -158,7 +158,7 @@ A configuração pessoal pode permanecer em `%LOCALAPPDATA%\SectorFlow` para per
 
 ## Usar uma versão pelo Git
 
-Esta seção é para quem deseja executar o programa diretamente pelo código-fonte. Quem usa `SectorFlow_Setup_1.1.exe` não precisa instalar Git, Python nem criar `.venv`.
+Esta seção é para quem deseja executar o programa diretamente pelo código-fonte. Quem usa `SectorFlow_Setup_1.2.exe` não precisa instalar Git, Python nem criar `.venv`.
 
 ### 1. Instalar as ferramentas
 
@@ -332,8 +332,8 @@ Somente o instalador, depois de gerar `dist\SectorFlow`:
 O resultado é criado em `app`:
 
 - `SectorFlow\` — pasta portátil pronta para executar;
-- `SectorFlow_Portable_1.1.zip` — pacote portátil para copiar para outro PC;
-- `SectorFlow_Setup_1.1.exe` — instalador que substitui os arquivos antigos e limpa os caches da instalação.
+- `SectorFlow_Portable_1.2.zip` — pacote portátil para copiar para outro PC;
+- `SectorFlow_Setup_1.2.exe` — instalador que substitui os arquivos antigos e limpa os caches da instalação.
 
 ## Problemas comuns
 

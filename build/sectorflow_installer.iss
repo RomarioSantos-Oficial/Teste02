@@ -8,7 +8,7 @@
 ; ============================================================
 
 #define MyAppName "SectorFlow Overley"
-#define MyAppVersion "1.1"
+#define MyAppVersion "1.2"
 #define MyAppPublisher "Sector Flow"
 #define MyAppURL "https://github.com/RomarioSantos-Oficial/Teste02"
 #define MyAppExeName "SectorFlow.exe"

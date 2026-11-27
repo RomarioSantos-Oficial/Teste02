@@ -132,7 +132,7 @@ class MainMenuWindow(QMainWindow):
     @staticmethod
     def _load_header_config() -> dict[str, str]:
         defaults = {
-            "version": "1.1",
+            "version": "1.2",
             "update_note": "Novidades e correções da versão atual.",
             "update_note_key": "",
             "update_note_addendum": "",
@@ -320,7 +320,7 @@ class MainMenuWindow(QMainWindow):
 
     def _refresh_dynamic_translations(self) -> None:
         """Reaplica textos que mudam depois que a janela foi traduzida."""
-        version = str(self.version_label.property("sectorflowVersion") or "1.1")
+        version = str(self.version_label.property("sectorflowVersion") or "1.2")
         self.version_label.setText(f"{tr('Versão')} {version}")
         if hasattr(self, "discord_button"):
             self.discord_button.setToolTip(tr("Abrir servidor do Discord"))

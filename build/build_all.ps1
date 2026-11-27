@@ -1,5 +1,5 @@
 # ============================================================
-#   Build Completo - SectorFlow Overley 1.1
+#   Build Completo - SectorFlow Overley 1.2
 #   Gera pacote portatil + instalador para Windows
 # ============================================================
 # Uso: .\build_all.ps1 [-SignWithCert "C:\cert\cert.pfx" -CertPassword "senha"]
@@ -16,7 +16,7 @@ Set-Location $ProjectRoot
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  SectorFlow Overley 1.1 - Build Completo" -ForegroundColor Cyan
+Write-Host "  SectorFlow Overley 1.2 - Build Completo" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -99,7 +99,7 @@ if ($SignWithCert -ne "") {
     Write-Host "  Assinatura pulada (sem certificado)" -ForegroundColor Gray
 }
 
-$PortableZip = Join-Path $ProjectRoot "app\SectorFlow_Portable_1.1.zip"
+$PortableZip = Join-Path $ProjectRoot "app\SectorFlow_Portable_1.2.zip"
 if (Test-Path $PortableZip) { Remove-Item -LiteralPath $PortableZip -Force }
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 [System.IO.Compression.ZipFile]::CreateFromDirectory(
@@ -130,8 +130,8 @@ if (-not $InnoCompiler) {
 Write-Host "[7/7] Gerando instalador com Inno Setup 6..." -ForegroundColor Yellow
 & $InnoCompiler "/Q" "build\sectorflow_installer.iss"
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup falhou." }
-Write-Host "  Instalador: app\SectorFlow_Setup_1.1.exe" -ForegroundColor Green
+Write-Host "  Instalador: app\SectorFlow_Setup_1.2.exe" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Para distribuir SEM instalador:" -ForegroundColor Yellow
-Write-Host "  Extraia SectorFlow_Portable_1.1.zip em uma pasta limpa e execute SectorFlow.exe" -ForegroundColor Yellow
+Write-Host "  Extraia SectorFlow_Portable_1.2.zip em uma pasta limpa e execute SectorFlow.exe" -ForegroundColor Yellow
 Write-Host ""
