@@ -300,7 +300,9 @@ class DriverPanelEditor(QDialog):
             form.addRow(label, line_width)
 
         for key, label in (
-            ("graph_show_grid", "Mostrar grade e escala percentual"),
+            ("graph_show_grid", "Mostrar grade do gráfico"),
+            ("graph_show_scale_labels", "Mostrar escala numérica"),
+            ("graph_extrema_markers", "Destacar pontos mínimo e máximo do acelerador"),
             ("graph_curve_glow", "Realce suave das linhas"),
         ):
             check = QCheckBox()
@@ -343,10 +345,9 @@ class DriverPanelEditor(QDialog):
         )
 
         segments = QSpinBox()
-        segments.setRange(10, 60)
-        segments.setValue(
-            int(layout.get("rpm_segments", 28))
-        )
+        segments.setRange(10, 10)
+        segments.setValue(10)
+        segments.setEnabled(False)
         segments.valueChanged.connect(
             lambda v:
             self._set_nested(
@@ -386,7 +387,7 @@ class DriverPanelEditor(QDialog):
             )
         )
 
-        form.addRow("Segmentos:", segments)
+        form.addRow("Blocos da faixa (10):", segments)
         form.addRow(
             "Começo do amarelo:",
             shift,
@@ -550,9 +551,13 @@ class DriverPanelEditor(QDialog):
             ("personal_best_throttle", "Melhor volta — acelerador"),
             ("personal_best_brake", "Melhor volta — freio"),
             ("grid", "Grade"),
-            ("rpm_low", "RPM azul"),
-            ("rpm_shift", "RPM amarelo"),
+            ("rpm_green", "RPM verde"),
+            ("rpm_yellow", "RPM amarelo"),
+            ("rpm_blue", "RPM azul"),
             ("rpm_high", "RPM vermelho"),
+            ("gear", "Marcha"),
+            ("graph_reference", "Linha superior do gráfico"),
+            ("graph_marker", "Pontos de destaque do gráfico"),
             ("rpm_flash", "RPM em alerta (roxo)"),
             ("rpm_value_background", "Fundo da caixa de RPM"),
             ("rpm_value_border", "Borda da caixa de RPM"),
