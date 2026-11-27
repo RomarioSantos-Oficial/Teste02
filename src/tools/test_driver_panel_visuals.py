@@ -36,7 +36,7 @@ class DriverPanelVisualTests(unittest.TestCase):
             },
             "elements": {},
             "pedal_elements": {},
-            "layout": {"rpm_segments": 28, "shift_start": 0.78, "red_start": 0.92},
+            "layout": {"rpm_segments": 10, "shift_start": 0.88, "rpm_flash_start": 0.99},
             "font": {"family": "Sans Serif", "scale": 1.0},
             "graph_show_grid": True,
             "graph_curve_glow": True,
@@ -54,7 +54,7 @@ class DriverPanelVisualTests(unittest.TestCase):
             max_brake_seen=0.86,
         )
         for width, height in ((1380, 420), (520, 190), (240, 100)):
-            for rpm_ratio, flash_phase in ((0.88, False), (0.91, False), (0.94, False), (0.96, False), (1.00, False), (1.00, True)):
+            for rpm_ratio, flash_phase in ((0.88, False), (0.91, False), (0.94, False), (0.96, False), (0.99, False), (0.991, False), (1.00, False), (1.00, True), (1.02, False)):
                 image = QImage(width, height, QImage.Format.Format_ARGB32)
                 image.fill(QColor(0, 0, 0, 0))
                 painter = QPainter(image)
@@ -81,6 +81,32 @@ class DriverPanelVisualTests(unittest.TestCase):
                 painter.end()
                 self.assertFalse(image.isNull())
                 self.assertNotEqual(image.pixelColor(width // 2, height // 2).alpha(), 0)
+
+
+    def test_steering_marker_tracks_the_rim_without_a_center_dot(self) -> None:
+        renderer = DriverPanelRenderer()
+        image = QImage(200, 200, QImage.Format.Format_ARGB32)
+        image.fill(QColor(0, 0, 0, 0))
+        painter = QPainter(image)
+        renderer._wheel(
+            painter,
+            QRectF(0, 0, 200, 200),
+            DriverPanelViewData(steering=0.25),
+            {},
+            QColor("#FFFFFF"),
+            {
+                "elements": {"steering": True, "steering_marker": True, "speed": False},
+                "steering_visual_degrees": 180,
+                "colors": {"wheel": "#292929", "steering_marker": "#FFD21F"},
+            },
+            1.0,
+        )
+        painter.end()
+        self.assertEqual(image.pixelColor(100, 100).alpha(), 0)
+        marker_color = image.pixelColor(155, 45)
+        self.assertGreater(marker_color.red(), 220)
+        self.assertGreater(marker_color.green(), 150)
+        self.assertLess(marker_color.blue(), 80)
 
 
 if __name__ == "__main__":

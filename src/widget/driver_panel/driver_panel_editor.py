@@ -361,7 +361,7 @@ class DriverPanelEditor(QDialog):
         add_threshold("shift_light_1", "1ª luz superior:", 0.91)
         add_threshold("shift_light_2", "2ª luz superior:", 0.94)
         add_threshold("shift_light_3", "3ª luz superior:", 0.96)
-        add_threshold("rpm_flash_start", "Piscar vermelho/roxo:", 1.00, 0.80)
+        add_threshold("rpm_flash_start", "Piscar vermelho/roxo (acima de 99%):", 0.99, 0.80)
 
         flash_interval = QDoubleSpinBox()
         flash_interval.setRange(0.05, 1.00)
@@ -533,8 +533,7 @@ class DriverPanelEditor(QDialog):
             ("rpm_graph", "RPM no gráfico"),
             ("steering_graph", "Volante no gráfico"),
             ("wheel", "Volante"),
-            ("steering_center", "Linha central"),
-            ("steering_marker", "Marca do volante"),
+            ("steering_marker", "Bolinha indicadora do volante"),
             ("border", "Borda"),
         ):
             button = QPushButton(

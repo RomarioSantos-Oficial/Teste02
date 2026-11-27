@@ -247,7 +247,7 @@ class DriverPanelRenderer:
                 group_left + index * (light_width + light_gap),
                 light_top, light_width, light_height,
             )
-            if index == 2 and raw_ratio >= flash_at:
+            if raw_ratio > flash_at and active:
                 fill = purple if data.rpm_flash_phase else red
             else:
                 fill = red if active else QColor("#321014")
@@ -306,7 +306,7 @@ class DriverPanelRenderer:
             stage = min(index, block_count - 1 - index) + 1
             threshold = shift_at * stage / 5.0
             active = ratio + 1e-9 >= threshold
-            fill = flash_color if raw_ratio >= flash_at and active else base_color if active else QColor("#171717")
+            fill = flash_color if raw_ratio > flash_at and active else base_color if active else QColor("#171717")
             painter.setBrush(fill)
             painter.drawRect(cell)
 
@@ -581,38 +581,24 @@ class DriverPanelRenderer:
         if bool(elements.get("steering", True)):
             angle = data.steering * float(config.get("steering_visual_degrees", 540))
             wheel_color = QColor(config.get("colors", {}).get("wheel", "#445466"))
-            center_color = QColor(config.get("colors", {}).get("steering_center", "#FFFFFF"))
-
             painter.save()
-            painter.translate(center)
-            painter.rotate(angle)
             painter.setPen(QPen(wheel_color, max(2.2, radius * 0.105)))
             painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.drawEllipse(QPointF(0.0, 0.0), radius, radius)
-
-            # Aro limpo, sem raios internos; somente a bolinha central.
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(center_color)
-            hub_radius = max(2.5, radius * 0.07)
-            painter.drawEllipse(QPointF(0.0, 0.0), hub_radius, hub_radius)
+            painter.drawEllipse(center, radius, radius)
             painter.restore()
 
+            # O ponto amarelo percorre a circunferência conforme o ângulo
+            # real do volante. Não há cubo ou ponto fixo no centro.
             if bool(elements.get("steering_marker", True)):
                 marker_angle = math.radians(angle)
                 marker_center = QPointF(
                     center.x() + radius * math.sin(marker_angle),
                     center.y() - radius * math.cos(marker_angle),
                 )
-                marker_width = max(9.0 * scale, radius * 0.30)
-                marker_height = max(3.5 * scale, radius * 0.105)
-                marker = QRectF(
-                    marker_center.x() - marker_width / 2.0,
-                    marker_center.y() - marker_height / 2.0,
-                    marker_width, marker_height,
-                )
-                painter.setPen(Qt.PenStyle.NoPen)
+                marker_radius = max(3.5 * scale, radius * 0.10)
+                painter.setPen(QPen(QColor("#050505"), max(0.7, 1.0 * scale)))
                 painter.setBrush(QColor(config.get("colors", {}).get("steering_marker", "#FFD21F")))
-                painter.drawRoundedRect(marker, marker_height / 2.0, marker_height / 2.0)
+                painter.drawEllipse(marker_center, marker_radius, marker_radius)
 
         if bool(elements.get("speed", True)):
             unit = str(config.get("speed_unit", "km/h"))
