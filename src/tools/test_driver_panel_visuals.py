@@ -109,5 +109,47 @@ class DriverPanelVisualTests(unittest.TestCase):
         self.assertLess(marker_color.blue(), 80)
 
 
+    def test_rpm_warning_starts_at_exactly_99_percent(self) -> None:
+        renderer = DriverPanelRenderer()
+
+        def sample_light(ratio: float) -> QColor:
+            image = QImage(1000, 100, QImage.Format.Format_ARGB32)
+            image.fill(QColor(0, 0, 0, 0))
+            painter = QPainter(image)
+            renderer._rpm_header(
+                painter,
+                QRectF(0, 0, 1000, 100),
+                20.0,
+                20.0,
+                DriverPanelViewData(
+                    rpm=9000.0 * ratio,
+                    max_rpm=9000.0,
+                    rpm_flash_phase=True,
+                ),
+                {
+                    "layout": {
+                        "shift_start": 0.88,
+                        "shift_light_1": 0.91,
+                        "shift_light_2": 0.94,
+                        "shift_light_3": 0.96,
+                        "rpm_flash_start": 0.99,
+                    },
+                    "colors": {"rpm_high": "#FF2438", "rpm_flash": "#9B5CFF"},
+                    "font": {"family": "Sans Serif", "scale": 1.0},
+                },
+                QColor("#FFFFFF"),
+                1.0,
+            )
+            painter.end()
+            return image.pixelColor(541, 14)
+
+        below_limit = sample_light(0.989)
+        at_limit = sample_light(0.99)
+        self.assertGreater(below_limit.red(), 220)
+        self.assertLess(below_limit.blue(), 100)
+        self.assertGreater(at_limit.blue(), 200)
+        self.assertLess(at_limit.red(), 220)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -125,7 +125,8 @@ class DriverPanelRenderer:
         # Proporções da referência: gráfico, pedais, marcha e velocímetro.
         sections: list[tuple[str, float]] = []
         if show("graph"):
-            sections.append(("graph", 0.42))
+            graph_width_scale = max(0.5, min(2.5, float(config.get("graph_width_scale", 1.0))))
+            sections.append(("graph", 0.42 * graph_width_scale))
         if show("pedals") and pedal_count:
             sections.append(("pedals", 0.18))
         if show("gear"):
@@ -231,7 +232,7 @@ class DriverPanelRenderer:
         painter.setPen(QPen(value_border, max(0.8, 1.0 * scale)))
         painter.setBrush(value_bg)
         painter.drawRect(value_rect)
-        rpm_font_scale = max(0.35, min(3.0, float(config.get("rpm_font_scale", 1.0))))
+        rpm_font_scale = max(0.35, min(3.0, float(config.get("rpm_font_scale", 1.1))))
         painter.setFont(self._fit(
             config, value_rect, value,
             header_height * 0.34 * rpm_font_scale, 7.0, True,
@@ -241,10 +242,14 @@ class DriverPanelRenderer:
 
         # Três luzes centralizadas, grupo limitado a 35% da largura do overlay.
         max_group_width = max(0.0, bounds.width() * 0.35)
-        requested_group_width = min(max_group_width, max(108.0 * scale, bounds.width() * 0.12))
+        lights_scale = max(0.35, min(2.5, float(config.get("rpm_lights_scale", 1.2))))
+        requested_group_width = min(
+            max_group_width,
+            max(108.0 * scale, bounds.width() * 0.12) * lights_scale,
+        )
         light_gap = max(2.0 * scale, 4.0 * scale)
         light_width = max(1.0, (requested_group_width - 2.0 * light_gap) / 3.0)
-        light_height = max(8.0 * scale, header_height * 0.58)
+        light_height = max(8.0 * scale, header_height * 0.58) * lights_scale
         actual_group_width = light_width * 3.0 + light_gap * 2.0
         group_left = bounds.center().x() - actual_group_width / 2.0
         light_top = panel_top - light_height
@@ -258,7 +263,7 @@ class DriverPanelRenderer:
                 group_left + index * (light_width + light_gap),
                 light_top, light_width, light_height,
             )
-            if raw_ratio > flash_at and active:
+            if raw_ratio >= flash_at and active:
                 fill = purple if data.rpm_flash_phase else red
             else:
                 fill = red if active else QColor("#321014")
@@ -319,7 +324,7 @@ class DriverPanelRenderer:
             stage = min(index, block_count - 1 - index) + 1
             threshold = shift_at * stage / 5.0
             active = ratio + 1e-9 >= threshold
-            fill = flash_color if raw_ratio > flash_at and active else base_color if active else QColor("#171717")
+            fill = flash_color if raw_ratio >= flash_at and active else base_color if active else QColor("#171717")
             painter.setBrush(fill)
             painter.drawRect(cell)
 

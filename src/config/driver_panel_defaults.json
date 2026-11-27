@@ -117,8 +117,10 @@
   "graph_extrema_markers": true,
   "graph_marker_scale": 1,
   "pedal_value_font_scale": 1,
-  "rpm_font_scale": 1,
+  "rpm_font_scale": 1.1,
   "rpm_bar_height_scale": 1,
   "steering_marker_scale": 1,
-  "steering_line_width": 4
+  "steering_line_width": 4,
+  "graph_width_scale": 1,
+  "rpm_lights_scale": 1.2
 }

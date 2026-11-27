@@ -227,6 +227,16 @@ class DriverPanelEditor(QDialog):
         interval.currentTextChanged.connect(lambda value: self._set_root("graph_interval", value))
         form.addRow("Intervalo exibido:", interval)
 
+        graph_width = QSpinBox()
+        graph_width.setRange(50, 250)
+        graph_width.setSingleStep(5)
+        graph_width.setSuffix("%")
+        graph_width.setValue(round(float(self.config.get("graph_width_scale", 1.0)) * 100))
+        graph_width.valueChanged.connect(
+            lambda value: self._set_root("graph_width_scale", value / 100.0)
+        )
+        form.addRow("Largura da área do histórico:", graph_width)
+
         history = QSpinBox()
         history.setRange(30, 6000)
         history.setSingleStep(30)
@@ -363,7 +373,7 @@ class DriverPanelEditor(QDialog):
         add_threshold("shift_light_1", "1ª luz superior:", 0.91)
         add_threshold("shift_light_2", "2ª luz superior:", 0.94)
         add_threshold("shift_light_3", "3ª luz superior:", 0.96)
-        add_threshold("rpm_flash_start", "Piscar vermelho/roxo (acima de 99%):", 0.99, 0.80)
+        add_threshold("rpm_flash_start", "Piscar vermelho/roxo (a partir de 99%):", 0.99, 0.99)
 
         flash_interval = QDoubleSpinBox()
         flash_interval.setRange(0.05, 1.00)
@@ -377,7 +387,8 @@ class DriverPanelEditor(QDialog):
         form.addRow("Velocidade do pisca:", flash_interval)
 
         for key, label, default, minimum, maximum in (
-            ("rpm_font_scale", "Tamanho do número de RPM", 1.0, 35, 300),
+            ("rpm_font_scale", "Tamanho do número de RPM", 1.1, 35, 300),
+            ("rpm_lights_scale", "Tamanho das três luzes superiores", 1.2, 35, 250),
             ("rpm_bar_height_scale", "Altura dos blocos de RPM", 1.0, 50, 150),
         ):
             control = QSpinBox()
