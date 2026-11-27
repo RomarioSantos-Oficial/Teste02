@@ -30,6 +30,21 @@ class DriverPanelViewData:
     rpm_flash_phase: bool = False
 
 
+RPM_READOUT_MULTIPLIER = 1.25
+
+
+def format_rpm_readout(rpm: float) -> str:
+    """Format the display-only RPM readout with the requested 25% increase."""
+    try:
+        value = float(rpm)
+    except (TypeError, ValueError, OverflowError):
+        value = 0.0
+    if not math.isfinite(value):
+        value = 0.0
+    displayed_rpm = max(0.0, value) * RPM_READOUT_MULTIPLIER
+    return f"{displayed_rpm:,.0f} RPM".replace(",", ".")
+
+
 class DriverPanelRenderer:
     """Desenha o painel sem modificar ou filtrar os dados da telemetria."""
 
@@ -211,8 +226,8 @@ class DriverPanelRenderer:
         light_3_at = max(light_2_at, min(1.1, float(layout.get("shift_light_3", 0.96))))
         flash_at = max(light_3_at, min(1.2, float(layout.get("rpm_flash_start", 1.00))))
 
-        # Valor do RPM separado à esquerda, ocupando no máximo 25% da largura.
-        value = f"{data.rpm:,.0f} RPM".replace(",", ".")
+        # Apenas o número exibido recebe +25%; barra e luzes usam o RPM real.
+        value = format_rpm_readout(data.rpm)
         font = self._font(config, max(8.0, header_height * 0.34), True)
         metrics = QFontMetricsF(font)
         max_value_width = bounds.width() * 0.25
