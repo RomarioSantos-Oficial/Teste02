@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
+    QLabel,
     QLineEdit,
     QPushButton,
     QScrollArea,
@@ -97,7 +98,7 @@ class DeltaEditor(QDialog):
             "session_type": "Tipo da sessão",
             "track_state": "Estado da pista",
             "split": "Split da sessão",
-            "penalties": "Limite de pista / punições",
+            "penalties": "Limites de pista (PEN) e punições esportivas (INFO)",
             "history": "Histórico do Delta",
             "fastest_lap": "Anúncio de melhor volta da categoria",
             "sectors": "Setores S1 / S2 / S3",
@@ -466,59 +467,18 @@ class DeltaEditor(QDialog):
 
     def _build_penalties(self) -> None:
         group = QGroupBox(
-            "Limite de pista / punições"
+            "Limites de pista e punições"
         )
-        form = QFormLayout(group)
-
-        fallback = QDoubleSpinBox()
-        fallback.setRange(0.0, 20.0)
-        fallback.setDecimals(2)
-        fallback.setSingleStep(0.25)
-        fallback.setValue(
-            float(
-                self.config.get(
-                    "penalty_limit_fallback",
-                    0.0,
-                )
-            )
+        layout = QVBoxLayout(group)
+        note = QLabel(
+            "PEN mostra os pontos/limite de pista recebidos da telemetria. "
+            "INFO mostra a penalidade esportiva do jogador (DT, SG, tempo, DQ "
+            "ou PEN sem tipo informado). O Delta usa os mesmos formatadores "
+            "do Standings; uma penalidade não será convertida em pontos de "
+            "limite de pista."
         )
-        fallback.valueChanged.connect(
-            lambda value:
-            self._set_root(
-                "penalty_limit_fallback",
-                value,
-            )
-        )
-
-        increment = QDoubleSpinBox()
-        increment.setRange(0.01, 1.00)
-        increment.setDecimals(2)
-        increment.setSingleStep(0.25)
-        increment.setValue(
-            float(
-                self.config.get(
-                    "penalty_increment",
-                    0.25,
-                )
-            )
-        )
-        increment.valueChanged.connect(
-            lambda value:
-            self._set_root(
-                "penalty_increment",
-                value,
-            )
-        )
-
-        form.addRow(
-            "Reserva (0 = somente sessão):",
-            fallback,
-        )
-        form.addRow(
-            "Incremento da punição:",
-            increment,
-        )
-
+        note.setWordWrap(True)
+        layout.addWidget(note)
         self.content_layout.addWidget(group)
 
     def _build_sectors(self) -> None:
@@ -636,7 +596,7 @@ class DeltaEditor(QDialog):
             str(
                 font_cfg.get(
                     "family",
-                    "Arial",
+                    "Bahnschrift Condensed",
                 )
             )
         )
@@ -743,6 +703,10 @@ class DeltaEditor(QDialog):
             ("text", "Texto"),
             ("muted", "Texto secundário"),
             ("background", "Fundo"),
+            ("header_background", "Fundo do cabeçalho"),
+            ("header_separator", "Separadores do cabeçalho"),
+            ("header_line", "Linha de destaque ciano"),
+            ("penalty_danger", "Punição / desclassificação"),
             ("panel", "Painéis internos"),
             ("fastest_panel", "Painel da volta rápida"),
             ("grid", "Grade do histórico"),

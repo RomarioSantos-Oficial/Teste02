@@ -71,8 +71,8 @@ class DeltaRenderer:
         )
 
         colors = config.get("colors", {})
-        background = QColor(colors.get("background", "#070B12"))
-        border = QColor(colors.get("border", "#3A4452"))
+        background = QColor(colors.get("background", "#090D12"))
+        border = QColor(colors.get("border", "#2A3540"))
         background.setAlphaF(
             float(config.get("background_opacity", 0.86))
         )
@@ -216,11 +216,13 @@ class DeltaRenderer:
         colors = config.get("colors", {})
         elements = config.get("elements", {})
 
-        text = QColor(colors.get("text", "#FFFFFF"))
-        muted = QColor(colors.get("muted", "#AAB2BD"))
-        warning = QColor(colors.get("warning", "#FFC42E"))
-        danger = QColor(colors.get("loss", "#FF2828"))
-        panel = QColor(colors.get("panel", "#121821"))
+        text = QColor(colors.get("text", "#F4F6F8"))
+        muted = QColor(colors.get("muted", "#A7B0BA"))
+        warning = QColor(colors.get("warning", "#E49127"))
+        danger = QColor(colors.get("penalty_danger", "#FF3B45"))
+        panel = QColor(colors.get("header_background", "#080B10"))
+        separator = QColor(colors.get("header_separator", "#2A3540"))
+        accent = QColor(colors.get("header_line", "#43BDCA"))
 
         if bool(config.get("section_backgrounds", True)):
             painter.setPen(Qt.PenStyle.NoPen)
@@ -257,24 +259,21 @@ class DeltaRenderer:
         if self._enabled(elements, "penalties"):
             current = max(0.0, data.penalties_current)
             limit = max(0.0, data.penalties_limit)
+            track_label = str(data.track_limits_text or "--").strip()
 
-            if limit > 0:
-                label = (
-                    f"PEN  {self._format_counter(current)}"
-                    f"/{self._format_counter(limit)}"
-                )
-
-                if current >= limit:
-                    color = danger
-                elif current > 0:
-                    color = warning
-                else:
-                    color = muted
+            if limit > 0 and current >= limit:
+                track_color = danger
+            elif current > 0:
+                track_color = warning
             else:
-                label = f"PEN  {data.penalties}"
-                color = warning if data.penalties > 0 else muted
+                track_color = muted
 
-            items.append((label, color))
+            # PEN é reservado aos limites de pista, como no Standings.
+            # INFO mostra a mesma classificação esportiva usada no campo INFO.
+            items.append((f"PEN  {track_label}", track_color))
+            penalty_status = str(data.penalty_status or "--").strip().upper()
+            penalty_color = danger if penalty_status not in {"", "--"} else muted
+            items.append((f"INFO  {penalty_status or '--'}", penalty_color))
 
         if not items:
             return
@@ -288,6 +287,12 @@ class DeltaRenderer:
                 slot_width,
                 rect.height(),
             )
+            if index > 0:
+                painter.setPen(QPen(separator, max(0.7, 0.8 * scale)))
+                painter.drawLine(
+                    QPointF(slot.left(), rect.top() + 4.0 * scale),
+                    QPointF(slot.left(), rect.bottom() - 3.0 * scale),
+                )
             painter.setFont(
                 self._fit_font(
                     config,
@@ -304,6 +309,13 @@ class DeltaRenderer:
                 Qt.AlignmentFlag.AlignCenter,
                 label,
             )
+
+        painter.setPen(QPen(accent, max(0.8, 1.35 * scale)))
+        accent_y = rect.bottom() - max(0.5, 0.7 * scale)
+        painter.drawLine(
+            QPointF(rect.left(), accent_y),
+            QPointF(rect.right(), accent_y),
+        )
 
     def _draw_delta_bar(
         self,
@@ -323,12 +335,12 @@ class DeltaRenderer:
         posição visual usa -delta_s.
         """
         colors = config.get("colors", {})
-        text = QColor(colors.get("text", "#FFFFFF"))
-        gain = QColor(colors.get("gain", "#00A000"))
+        text = QColor(colors.get("text", "#F4F6F8"))
+        gain = QColor(colors.get("gain", "#55D98A"))
         loss = QColor(colors.get("loss", "#FF2828"))
         neutral = QColor(colors.get("neutral", "#5A5A5A"))
-        panel = QColor(colors.get("panel", "#121821"))
-        muted = QColor(colors.get("muted", "#AAB2BD"))
+        panel = QColor(colors.get("panel", "#12171D"))
+        muted = QColor(colors.get("muted", "#A7B0BA"))
 
         if bool(config.get("section_backgrounds", True)):
             painter.setPen(Qt.PenStyle.NoPen)
@@ -459,11 +471,11 @@ class DeltaRenderer:
         scale: float,
     ) -> None:
         colors = config.get("colors", {})
-        grid = QColor(colors.get("grid", "#27313E"))
-        panel = QColor(colors.get("panel", "#121821"))
-        gain = QColor(colors.get("gain", "#00A000"))
+        grid = QColor(colors.get("grid", "#26303A"))
+        panel = QColor(colors.get("panel", "#12171D"))
+        gain = QColor(colors.get("gain", "#55D98A"))
         loss = QColor(colors.get("loss", "#FF2828"))
-        muted = QColor(colors.get("muted", "#AAB2BD"))
+        muted = QColor(colors.get("muted", "#A7B0BA"))
 
         if bool(config.get("section_backgrounds", True)):
             painter.setPen(
@@ -632,13 +644,13 @@ class DeltaRenderer:
         panel = QColor(
             colors.get(
                 "fastest_panel",
-                "#111720",
+                "#0E1319",
             )
         )
         text = QColor(
             colors.get(
                 "text",
-                "#FFFFFF",
+                "#F4F6F8",
             )
         )
         purple = QColor(
@@ -650,7 +662,7 @@ class DeltaRenderer:
         muted = QColor(
             colors.get(
                 "muted",
-                "#AAB2BD",
+                "#A7B0BA",
             )
         )
 
@@ -899,7 +911,7 @@ class DeltaRenderer:
         text = QColor(
             colors.get(
                 "text",
-                "#FFFFFF",
+                "#F4F6F8",
             )
         )
         neutral = QColor(
@@ -911,7 +923,7 @@ class DeltaRenderer:
         better = QColor(
             colors.get(
                 "sector_better",
-                "#00A000",
+                "#55D98A",
             )
         )
         worse = QColor(
@@ -1017,7 +1029,7 @@ class DeltaRenderer:
                     {},
                 ).get(
                     "family",
-                    "Arial",
+                    "Bahnschrift Condensed",
                 )
             )
         )

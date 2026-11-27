@@ -16,6 +16,7 @@ from .delta_renderer import DeltaRenderer
 from .delta_sector_tracker import DeltaSectorTracker
 from .delta_session_tracker import DeltaSessionTracker
 from src.laps.archive import LapArchiveStore, local_owner_key
+from src.widget.standings.standings_logic import StandingsLogic
 
 
 class DeltaWidget(QWidget):
@@ -435,17 +436,33 @@ class DeltaWidget(QWidget):
             self._track_state(session)
         )
 
-        outstanding = self._player_penalties(
-            session
+        player_driver = next(
+            (
+                row for row in (getattr(session, "drivers", []) or [])
+                if bool(getattr(row, "is_player", False))
+            ),
+            None,
         )
-        current, limit = self._track_limit_data(
-            session,
-            outstanding,
-        )
+        outstanding = self._player_penalties(session)
+        current, limit = self._track_limit_data(session, player_driver)
 
         self.view_data.penalties = outstanding
         self.view_data.penalties_current = current
         self.view_data.penalties_limit = limit
+        self.view_data.track_limits_text = (
+            StandingsLogic._driver_track_limits_text(
+                player_driver, session, True
+            )
+            if player_driver is not None
+            else "--"
+        )
+        self.view_data.penalty_status = (
+            StandingsLogic._penalty_text(
+                player_driver, session, True
+            )
+            if player_driver is not None
+            else "--"
+        )
         sector_values = self.sector_tracker.update(session, result.session_key)
         changed_index = self.sector_tracker.last_changed_index
         if changed_index is not None:
@@ -887,51 +904,44 @@ class DeltaWidget(QWidget):
     def _track_limit_data(
         self,
         session: Any,
-        outstanding_penalties: int,
+        player_driver: Any = None,
     ) -> tuple[float, float]:
         """
-        Prefere os valores reais calculados pelo SessionData atualizado.
+        Lê somente pontos/limite de pista, usando a mesma prioridade do STR.
 
-        O denominador vem exclusivamente dos dados da sessão do LMU.
-        Quando a API não fornece o limite, nenhum valor inventado é usado.
+        A quantidade ou o tipo de punição esportiva nunca é usado como
+        substituto dos pontos de limite de pista.
         """
-        # Não inventa um limite fixo. O valor deve vir da sessão.
-        fallback_limit = 0.0
-
         current = self._read_number(
-            session,
-            "track_limits_current",
+            player_driver,
+            "track_limits_points",
         )
-        limit = self._read_number(
-            session,
-            "track_limits_limit",
-        )
-
         if current is None:
-            player = getattr(
-                session,
-                "player",
-                None,
-            )
             steps = self._read_number(
-                player,
+                player_driver,
                 "track_limits_steps",
             )
             steps_per_point = self._read_number(
                 session,
                 "track_limits_steps_per_point",
             )
-
             if (
                 steps is not None
                 and steps_per_point is not None
                 and steps_per_point > 0
             ):
-                current = (
-                    steps
-                    / steps_per_point
-                )
+                current = steps / steps_per_point
 
+        if current is None:
+            current = self._read_number(
+                session,
+                "track_limits_current",
+            )
+
+        limit = self._read_number(
+            session,
+            "track_limits_limit",
+        )
         if limit is None or limit <= 0:
             steps_per_penalty = self._read_number(
                 session,
@@ -941,46 +951,17 @@ class DeltaWidget(QWidget):
                 session,
                 "track_limits_steps_per_point",
             )
-
             if (
                 steps_per_penalty is not None
                 and steps_per_penalty > 0
                 and steps_per_point is not None
                 and steps_per_point > 0
             ):
-                limit = (
-                    steps_per_penalty
-                    / steps_per_point
-                )
-
-        if current is None:
-            current = float(
-                max(
-                    0,
-                    outstanding_penalties,
-                )
-            )
-
-        if limit is None or limit <= 0:
-            limit = fallback_limit
-
-        increment = max(
-            0.01,
-            float(
-                self.config.get(
-                    "penalty_increment",
-                    0.25,
-                )
-            ),
-        )
-
-        # Mantém a leitura visual nos intervalos usados pelo jogo:
-        # 0.00, 0.25, 0.50, 0.75, 1.00...
-        current = round(current / increment) * increment
+                limit = steps_per_penalty / steps_per_point
 
         return (
-            max(0.0, current),
-            max(0.0, limit),
+            max(0.0, current or 0.0),
+            max(0.0, limit or 0.0),
         )
 
     @staticmethod

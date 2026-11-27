@@ -12,7 +12,7 @@
         "width": 0.72,
         "height": 0.3
       },
-      "scale": 1.0,
+      "scale": 1,
       "opacity": 0.96,
       "background_opacity": 0.88,
       "border_radius": 12,
@@ -62,18 +62,18 @@
         "width": 0.56,
         "height": 0.42
       },
-      "scale": 1.0,
+      "scale": 1,
       "opacity": 0.96,
       "background_opacity": 0.86,
       "border_radius": 12,
       "always_on_top": true,
       "click_through": true,
       "snap_to_edges": true,
-      "max_delta_seconds": 5.0,
+      "max_delta_seconds": 5,
       "design_base_width": 1500,
       "design_base_height": 620,
       "font": {
-        "family": "Arial"
+        "family": "Bahnschrift Condensed"
       },
       "elements": {
         "header": {
@@ -110,17 +110,29 @@
         }
       },
       "colors": {
-        "text": "#FFFFFF",
-        "muted": "#AAB2BD",
-        "background": "#070B12",
-        "panel": "#121821",
+        "text": "#F4F6F8",
+        "muted": "#A7B0BA",
+        "background": "#090D12",
+        "panel": "#12171D",
         "gain": "#009B00",
         "loss": "#FF2828",
         "neutral": "#5A5A5A",
         "purple": "#8B4DFF",
         "yellow": "#FFC42E",
-        "border": "#3A4452",
-        "edit_border": "#9B5CFF"
+        "border": "#2A3540",
+        "edit_border": "#9B5CFF",
+        "header_background": "#080B10",
+        "header_separator": "#2A3540",
+        "header_line": "#43BDCA",
+        "fastest_panel": "#0E1319",
+        "grid": "#26303A",
+        "fastest": "#8B4DFF",
+        "warning": "#E49127",
+        "penalty_danger": "#FF3B45",
+        "sector_neutral": "#5A5A5A",
+        "sector_better": "#55D98A",
+        "sector_worse": "#FFC42E",
+        "sector_session_best": "#8B4DFF"
       }
     }
   },
@@ -136,18 +148,18 @@
         "width": 0.56,
         "height": 0.42
       },
-      "scale": 1.0,
+      "scale": 1,
       "opacity": 0.96,
       "background_opacity": 0.86,
       "border_radius": 12,
       "always_on_top": true,
       "click_through": true,
       "snap_to_edges": true,
-      "max_delta_seconds": 5.0,
+      "max_delta_seconds": 5,
       "design_base_width": 1500,
       "design_base_height": 620,
       "font": {
-        "family": "Arial"
+        "family": "Bahnschrift Condensed"
       },
       "elements": {
         "header": {
@@ -184,17 +196,29 @@
         }
       },
       "colors": {
-        "text": "#FFFFFF",
-        "muted": "#AAB2BD",
-        "background": "#070B12",
-        "panel": "#121821",
+        "text": "#F4F6F8",
+        "muted": "#A7B0BA",
+        "background": "#090D12",
+        "panel": "#12171D",
         "gain": "#009B00",
         "loss": "#FF2828",
         "neutral": "#5A5A5A",
         "purple": "#8B4DFF",
         "yellow": "#FFC42E",
-        "border": "#3A4452",
-        "edit_border": "#9B5CFF"
+        "border": "#2A3540",
+        "edit_border": "#9B5CFF",
+        "header_background": "#080B10",
+        "header_separator": "#2A3540",
+        "header_line": "#43BDCA",
+        "fastest_panel": "#0E1319",
+        "grid": "#26303A",
+        "fastest": "#8B4DFF",
+        "warning": "#E49127",
+        "penalty_danger": "#FF3B45",
+        "sector_neutral": "#5A5A5A",
+        "sector_better": "#55D98A",
+        "sector_worse": "#FFC42E",
+        "sector_session_best": "#8B4DFF"
       }
     }
   }

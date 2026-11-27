@@ -33,7 +33,7 @@
       "show_manufacturer_logo": true,
       "logo_directory": "images/logos",
       "font": {
-        "family": "Arial"
+        "family": "Bahnschrift Condensed"
       },
       "elements": {
         "header": {
@@ -74,23 +74,27 @@
         }
       },
       "colors": {
-        "text": "#FFFFFF",
-        "muted": "#AAB2BD",
-        "background": "#070B12",
-        "panel": "#121821",
-        "fastest_panel": "#111720",
-        "grid": "#27313E",
+        "text": "#F4F6F8",
+        "muted": "#A7B0BA",
+        "background": "#090D12",
+        "panel": "#12171D",
+        "fastest_panel": "#0E1319",
+        "grid": "#26303A",
         "gain": "#009B00",
         "loss": "#FF2828",
         "neutral": "#5A5A5A",
         "fastest": "#8B4DFF",
-        "warning": "#FFC42E",
+        "warning": "#E49127",
         "sector_neutral": "#5A5A5A",
-        "border": "#3A4452",
+        "border": "#2A3540",
         "edit_border": "#9B5CFF",
-        "sector_better": "#00A000",
+        "sector_better": "#55D98A",
         "sector_worse": "#FFC42E",
-        "sector_session_best": "#8B4DFF"
+        "sector_session_best": "#8B4DFF",
+        "header_background": "#080B10",
+        "header_separator": "#2A3540",
+        "header_line": "#43BDCA",
+        "penalty_danger": "#FF3B45"
       },
       "penalty_limit_fallback": 0,
       "sector_tolerance_seconds": 0.001,
@@ -971,7 +975,7 @@
       "show_manufacturer_logo": true,
       "logo_directory": "images/logos",
       "font": {
-        "family": "Arial"
+        "family": "Bahnschrift Condensed"
       },
       "elements": {
         "header": {
@@ -1012,23 +1016,27 @@
         }
       },
       "colors": {
-        "text": "#FFFFFF",
-        "muted": "#AAB2BD",
-        "background": "#070B12",
-        "panel": "#121821",
-        "fastest_panel": "#111720",
-        "grid": "#27313E",
+        "text": "#F4F6F8",
+        "muted": "#A7B0BA",
+        "background": "#090D12",
+        "panel": "#12171D",
+        "fastest_panel": "#0E1319",
+        "grid": "#26303A",
         "gain": "#009B00",
         "loss": "#FF2828",
         "neutral": "#5A5A5A",
         "fastest": "#8B4DFF",
-        "warning": "#FFC42E",
+        "warning": "#E49127",
         "sector_neutral": "#5A5A5A",
-        "border": "#3A4452",
+        "border": "#2A3540",
         "edit_border": "#9B5CFF",
-        "sector_better": "#00A000",
+        "sector_better": "#55D98A",
         "sector_worse": "#FFC42E",
-        "sector_session_best": "#8B4DFF"
+        "sector_session_best": "#8B4DFF",
+        "header_background": "#080B10",
+        "header_separator": "#2A3540",
+        "header_line": "#43BDCA",
+        "penalty_danger": "#FF3B45"
       },
       "penalty_limit_fallback": 0,
       "sector_tolerance_seconds": 0.001,
