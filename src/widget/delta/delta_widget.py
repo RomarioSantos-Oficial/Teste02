@@ -515,7 +515,8 @@ class DeltaWidget(QWidget):
         owner = local_owner_key()
         cache_key = (owner, track.casefold(), category.casefold(), model.casefold(), filename.casefold(), scope)
         now = time.monotonic()
-        if cache_key != self._personal_best_cache_key or now >= self._next_personal_best_check:
+        cache_key_changed = cache_key != self._personal_best_cache_key
+        if cache_key_changed:
             if self.lap_archive is None:
                 self.lap_archive = LapArchiveStore()
             record = self.lap_archive.best(
@@ -566,6 +567,32 @@ class DeltaWidget(QWidget):
             self._personal_best_lap_count = scoring_laps
             self._completed_lap_delta = None
             self._completed_lap_delta_until = 0.0
+
+        # Compare the lap that just crossed the line against the reference
+        # that was active during that lap BEFORE refreshing a newly saved PB.
+        # Otherwise the archive can replace the reference first and make a
+        # record lap compare against itself (zero delta), or erase the delta
+        # from the completed lap entirely.
+        if not cache_key_changed and now >= self._next_personal_best_check:
+            if self.lap_archive is None:
+                self.lap_archive = LapArchiveStore()
+            record = self.lap_archive.best(
+                track, category, model, filename, scope, owner,
+            )
+            self._personal_best_trace = record.trace if record is not None else []
+            self._personal_best_lap_seconds = (
+                float(record.lap_seconds) if record is not None else 0.0
+            )
+            self._personal_best_sectors = (
+                (
+                    float(record.sector1) if record.sector1 > 0.0 else None,
+                    float(record.sector2) if record.sector2 > 0.0 else None,
+                    float(record.sector3) if record.sector3 > 0.0 else None,
+                )
+                if record is not None
+                else (None, None, None)
+            )
+            self._next_personal_best_check = now + 0.25
 
         if (
             self._completed_lap_delta is not None
