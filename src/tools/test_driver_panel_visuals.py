@@ -12,11 +12,23 @@ from PySide6.QtWidgets import QApplication
 from src.widget.driver_panel.driver_panel_renderer import (
     DriverPanelRenderer,
     DriverPanelViewData,
+    scaled_rpm_indicator_height,
+    steering_ring_line_width,
 )
 from src.widget.driver_panel.driver_panel_widget import DriverPanelWidget
 
 
 class DriverPanelVisualTests(unittest.TestCase):
+    def test_rpm_indicator_heights_are_reduced_by_30_percent(self) -> None:
+        self.assertAlmostEqual(scaled_rpm_indicator_height(20.0), 14.0)
+        self.assertAlmostEqual(scaled_rpm_indicator_height(8.0), 5.6)
+        self.assertEqual(scaled_rpm_indicator_height(-4.0), 0.0)
+
+    def test_steering_wheel_ring_is_60_percent_thicker(self) -> None:
+        self.assertAlmostEqual(steering_ring_line_width(4.0, 1.0), 6.4)
+        self.assertAlmostEqual(steering_ring_line_width(6.0, 1.5), 14.4)
+        self.assertAlmostEqual(steering_ring_line_width(0.1, 1.0), 1.6)
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.app = QApplication.instance() or QApplication([])

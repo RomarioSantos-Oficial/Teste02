@@ -45,6 +45,36 @@ def format_rpm_readout(rpm: float) -> str:
     return f"{displayed_rpm:,.0f} RPM".replace(",", ".")
 
 
+RPM_INDICATOR_HEIGHT_MULTIPLIER = 0.70
+STEERING_RING_THICKNESS_MULTIPLIER = 1.60
+
+
+def scaled_rpm_indicator_height(height: float) -> float:
+    """Apply the display-only 30% height reduction to RPM indicators."""
+    try:
+        value = float(height)
+    except (TypeError, ValueError, OverflowError):
+        value = 0.0
+    if not math.isfinite(value):
+        value = 0.0
+    return max(0.0, value) * RPM_INDICATOR_HEIGHT_MULTIPLIER
+
+
+def steering_ring_line_width(configured_width: float, scale: float) -> float:
+    """Increase the steering wheel ring thickness by 60%."""
+    try:
+        width = float(configured_width)
+        factor = float(scale)
+    except (TypeError, ValueError, OverflowError):
+        width, factor = 1.0, 1.0
+    if not math.isfinite(width):
+        width = 1.0
+    if not math.isfinite(factor):
+        factor = 1.0
+    current_width = max(1.0, width * max(0.0, factor))
+    return current_width * STEERING_RING_THICKNESS_MULTIPLIER
+
+
 class DriverPanelRenderer:
     """Desenha o painel sem modificar ou filtrar os dados da telemetria."""
 
@@ -264,7 +294,9 @@ class DriverPanelRenderer:
         )
         light_gap = max(2.0 * scale, 4.0 * scale)
         light_width = max(1.0, (requested_group_width - 2.0 * light_gap) / 3.0)
-        light_height = max(8.0 * scale, header_height * 0.58) * lights_scale
+        light_height = scaled_rpm_indicator_height(
+            max(8.0 * scale, header_height * 0.58) * lights_scale
+        )
         actual_group_width = light_width * 3.0 + light_gap * 2.0
         group_left = bounds.center().x() - actual_group_width / 2.0
         light_top = panel_top - light_height
@@ -314,7 +346,9 @@ class DriverPanelRenderer:
         # Doze blocos espelhados: seis estágios, dois blocos por estágio,
         # avançando das extremidades verdes para os blocos azuis centrais.
         bar_height_scale = max(0.5, min(1.5, float(config.get("rpm_bar_height_scale", 1.0))))
-        bar_height = max(5.0 * scale, rect.height() * 0.46 * bar_height_scale)
+        bar_height = scaled_rpm_indicator_height(
+            max(5.0 * scale, rect.height() * 0.46 * bar_height_scale)
+        )
         bar = QRectF(
             rect.left() + 2.0 * scale,
             rect.center().y() - bar_height / 2.0,
@@ -643,7 +677,9 @@ class DriverPanelRenderer:
         wheel_color = QColor(color_cfg.get("wheel", "#292929"))
 
         if bool(elements.get("steering", True)):
-            line_width = max(1.0, float(config.get("steering_line_width", 4.0)) * scale)
+            line_width = steering_ring_line_width(
+                config.get("steering_line_width", 4.0), scale
+            )
             custom_image = str(config.get("custom_wheel_image", "")).strip()
             image_is_valid = (
                 style == "Imagem personalizada"
