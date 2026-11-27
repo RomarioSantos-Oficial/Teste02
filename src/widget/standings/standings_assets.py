@@ -44,6 +44,17 @@ COUNTRY_NAMES = {
     "usa": "US", "uruguay": "UY",
 }
 
+COUNTRY_ALPHA3 = {
+    "arg": "AR", "aus": "AU", "aut": "AT", "bel": "BE", "bra": "BR",
+    "can": "CA", "chl": "CL", "chn": "CN", "col": "CO", "hrv": "HR",
+    "cze": "CZ", "dnk": "DK", "fin": "FI", "fra": "FR", "deu": "DE",
+    "gbr": "GB", "hun": "HU", "ind": "IN", "irl": "IE", "ita": "IT",
+    "jpn": "JP", "mex": "MX", "nld": "NL", "nzl": "NZ", "nor": "NO",
+    "pol": "PL", "prt": "PT", "rou": "RO", "zaf": "ZA", "kor": "KR",
+    "esp": "ES", "swe": "SE", "che": "CH", "tur": "TR", "usa": "US",
+    "ury": "UY",
+}
+
 # Países resolvidos pelo Standings durante a sessão. O Delta consulta apenas
 # este pequeno índice para reutilizar exatamente a mesma identificação e a
 # mesma bandeira, sem depender de o cache em disco já ter sido atualizado.
@@ -549,8 +560,13 @@ def country_code(nationality: str, code: str) -> str:
     clean_code = str(code or "").strip().upper()
     if len(clean_code) == 2 and clean_code.isalpha():
         return clean_code
+    alpha3_code = COUNTRY_ALPHA3.get(clean_code.casefold())
+    if alpha3_code:
+        return alpha3_code
     key = _clean(nationality)
-    return COUNTRY_NAMES.get(key, clean_code if len(clean_code) == 2 else "")
+    if key in COUNTRY_ALPHA3:
+        return COUNTRY_ALPHA3[key]
+    return COUNTRY_NAMES.get(key, "")
 
 
 def flag_emoji(nationality: str, code: str) -> str:
