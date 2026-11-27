@@ -730,7 +730,6 @@ class MapEditor(QDialog):
             "map_background": "Área interna",
             "start_line": "Linha de chegada",
             "sector_line": "Linhas de setor",
-            "vehicle_player": "Preenchimento do jogador",
             "vehicle_player_marker": "Anel de identificação do jogador",
             "vehicle_leader": "Líder geral",
             "leader_marker_overall": "Coroa do líder geral",
