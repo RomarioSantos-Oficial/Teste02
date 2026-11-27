@@ -1402,6 +1402,10 @@ class StandingsWidget(QWidget):
             return QColor(color)
         return QColor(category.color)
 
+    def _driver_name_color(self, row: StandingRow, colors: dict[str, Any]) -> QColor:
+        """Cor padrão do nome; widgets especializados podem sobrescrever."""
+        return QColor(colors.get("text", "#FFFFFF"))
+
     def _draw_cell(self, painter: QPainter, key: str, rect: QRectF, row: StandingRow, category: CategoryBlock) -> None:
         colors = self.config.get("colors", {})
         row_color = self._row_class_color(row, category)
@@ -1477,7 +1481,7 @@ class StandingsWidget(QWidget):
         elif key == "driver":
             target = rect.adjusted(8 * self._scale, 0, -6 * self._scale, 0)
             painter.setFont(self._row_font(row.is_player))
-            painter.setPen(QColor(colors.get("text", "#FFFFFF")))
+            painter.setPen(self._driver_name_color(row, colors))
             display_name = format_driver_name(
                 row.driver_name,
                 str(self.config.get("driver_name_format", "full")),

@@ -10,6 +10,7 @@ from src.widget.standings.standings_logic import (
 )
 from src.widget.standings.standings_models import DriverMetadata, StandingRow
 from src.widget.standings.standings_widget import StandingsWidget
+from src.widget.relative.relative_widget import RelativeWidget
 
 
 class StandingsLogicUnitTests(unittest.TestCase):
@@ -706,6 +707,51 @@ class StandingsLogicUnitTests(unittest.TestCase):
         player.finish_status = 2
         player.finish_status_name = "DNF"
         self.assertEqual(logic.build(session, {}, "API").categories, [])
+
+    def test_relative_name_tone_is_lap_based_only_in_races(self) -> None:
+        player = StandingRow(laps=10, lap_distance_m=1000.0)
+        same_lap = StandingRow(laps=10, lap_distance_m=2500.0)
+        one_lap_ahead = StandingRow(laps=11, lap_distance_m=1000.0)
+        one_lap_behind = StandingRow(laps=9, lap_distance_m=1000.0)
+
+        self.assertEqual(
+            RelativeWidget._relative_name_tone(same_lap, player, "Race", 5000.0),
+            "normal",
+        )
+        self.assertEqual(
+            RelativeWidget._relative_name_tone(one_lap_ahead, player, "Race", 5000.0),
+            "ahead",
+        )
+        self.assertEqual(
+            RelativeWidget._relative_name_tone(one_lap_behind, player, "Race", 5000.0),
+            "behind",
+        )
+        self.assertEqual(
+            RelativeWidget._relative_name_tone(one_lap_ahead, player, "Practice", 5000.0),
+            "normal",
+        )
+        self.assertEqual(
+            RelativeWidget._relative_name_tone(one_lap_behind, player, "Quali", 5000.0),
+            "normal",
+        )
+
+    def test_relative_name_tone_handles_finish_line_crossing(self) -> None:
+        player = StandingRow(laps=10, lap_distance_m=4950.0)
+        rival_just_after_line = StandingRow(laps=11, lap_distance_m=50.0)
+        rival_just_before_line = StandingRow(laps=10, lap_distance_m=4900.0)
+
+        self.assertEqual(
+            RelativeWidget._relative_name_tone(
+                rival_just_after_line, player, "Race", 5000.0
+            ),
+            "normal",
+        )
+        self.assertEqual(
+            RelativeWidget._relative_name_tone(
+                rival_just_before_line, player, "Race", 5000.0
+            ),
+            "normal",
+        )
 
     def test_relative_matches_lmu_circular_lists_before_start(self) -> None:
         session = SessionData(

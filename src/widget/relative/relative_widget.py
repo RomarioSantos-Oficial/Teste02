@@ -46,6 +46,79 @@ class RelativeWidget(StandingsWidget):
         config["show_last_lap"] = False
         super().update_config(config)
 
+    @staticmethod
+    def _relative_name_tone(
+        row,
+        player,
+        session_type: str,
+        track_length_m: float,
+    ) -> str:
+        """Classifica a diferença de voltas somente durante uma corrida.
+
+        Usa o progresso completo (voltas concluídas + fração da volta) para
+        não marcar como uma volta de diferença dois carros que acabaram de
+        cruzar a linha de chegada em momentos diferentes.
+        """
+        if session_type != "Race" or row.is_player:
+            return "normal"
+
+        try:
+            track_length = float(track_length_m or 0.0)
+            row_laps = max(0, int(row.laps))
+            player_laps = max(0, int(player.laps))
+            if track_length > 1.0:
+                row_fraction = max(
+                    0.0,
+                    min(1.0, float(row.lap_distance_m or 0.0) / track_length),
+                )
+                player_fraction = max(
+                    0.0,
+                    min(1.0, float(player.lap_distance_m or 0.0) / track_length),
+                )
+                progress_delta = (
+                    row_laps + row_fraction
+                    - player_laps - player_fraction
+                )
+            else:
+                progress_delta = float(row_laps - player_laps)
+        except (TypeError, ValueError, OverflowError):
+            return "normal"
+
+        if progress_delta >= 1.0 - 1e-6:
+            return "ahead"
+        if progress_delta <= -1.0 + 1e-6:
+            return "behind"
+        return "normal"
+
+    def _driver_name_color(self, row, colors: dict[str, Any]) -> QColor:
+        normal = QColor(colors.get("text", "#FFFFFF"))
+        if row.is_player or self.view.session_type != "Race":
+            return normal
+
+        player = next(
+            (
+                candidate
+                for category in self.view.categories
+                for candidate in category.rows
+                if candidate.is_player
+            ),
+            None,
+        )
+        if player is None:
+            return normal
+
+        tone = self._relative_name_tone(
+            row,
+            player,
+            self.view.session_type,
+            float(getattr(self.session, "track_length_m", 0.0) or 0.0),
+        )
+        if tone == "ahead":
+            return QColor("#268CFF")
+        if tone == "behind":
+            return QColor("#F04452")
+        return normal
+
     def _enabled_columns(self) -> dict[str, bool]:
         enabled = super()._enabled_columns()
         enabled.update({"laps": False, "best": False, "last": False, "interval": False, "gap": True})
