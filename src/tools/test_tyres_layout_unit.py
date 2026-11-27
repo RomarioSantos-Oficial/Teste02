@@ -7,6 +7,7 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+from PySide6.QtCore import QPoint
 from PySide6.QtWidgets import QApplication
 
 from src.widget.tyres.tyres_widget import (
@@ -66,6 +67,14 @@ class TyresLayoutUnitTests(unittest.TestCase):
         previous = round(20 * 0.78)
         self.assertEqual(current, 19)
         self.assertGreater(current, previous)
+        self.assertEqual(
+            tyres_wear_font_size(config, 20, 0.55),
+            current,
+        )
+        self.assertEqual(
+            tyres_wear_font_size(config, 20, 2.2),
+            current,
+        )
 
     def test_widget_applies_compact_margin_and_transparent_background(self) -> None:
         config = self._default_config()
@@ -84,6 +93,45 @@ class TyresLayoutUnitTests(unittest.TestCase):
             widget.styleSheet(),
         )
         widget.deleteLater()
+
+    def test_resizing_keeps_wheels_separate_and_wear_centered(self) -> None:
+        for width in (230, 292, 390, 600):
+            with self.subTest(width=width):
+                config = self._default_config()
+                config["internal_scale"] = 2.2
+                widget = TyresWidget("tires", config)
+                widget.resize(width, 500)
+                widget.show()
+                self.app.processEvents()
+                widget._apply_responsive_metrics()
+                self.app.processEvents()
+
+                for group in widget.wheel_groups:
+                    self.assertFalse(
+                        group.tyre_frame.geometry().intersects(
+                            group.brake_frame.geometry()
+                        )
+                    )
+                    tire_center = group.tyre_frame.mapTo(
+                        group,
+                        QPoint(group.tyre_frame.width() // 2, 0),
+                    ).x()
+                    wear_center = group.wear_label.mapTo(
+                        group,
+                        QPoint(group.wear_label.width() // 2, 0),
+                    ).x()
+                    self.assertEqual(tire_center, wear_center)
+                    tire_bottom = group.tyre_frame.mapTo(
+                        group,
+                        QPoint(0, group.tyre_frame.height()),
+                    ).y()
+                    wear_top = group.wear_label.mapTo(
+                        group,
+                        QPoint(0, 0),
+                    ).y()
+                    self.assertGreaterEqual(wear_top, tire_bottom)
+
+                widget.close()
 
 
 if __name__ == "__main__":

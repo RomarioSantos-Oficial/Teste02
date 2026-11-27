@@ -59,7 +59,7 @@ def tyres_wear_font_size(
     scale: float,
 ) -> int:
     wear_scale = max(0.50, float(config.get("wear_font_scale", 0.95)))
-    return max(8, round(base_font * wear_scale * float(scale)))
+    return max(8, round(base_font * wear_scale))
 
 
 def tyres_main_frame_style(
@@ -111,6 +111,33 @@ class WheelGroup(QWidget):
         self.wear_label.setAlignment(
             Qt.AlignmentFlag.AlignCenter
         )
+
+        self.wear_box = QWidget()
+        self.wear_box_layout = QHBoxLayout(
+            self.wear_box
+        )
+        self.wear_box_layout.setContentsMargins(
+            0,
+            0,
+            0,
+            0,
+        )
+        self.wear_box_layout.setSpacing(0)
+        self.wear_offset = QWidget()
+        if self.is_left:
+            self.wear_box_layout.addWidget(
+                self.wear_label
+            )
+            self.wear_box_layout.addWidget(
+                self.wear_offset
+            )
+        else:
+            self.wear_box_layout.addWidget(
+                self.wear_offset
+            )
+            self.wear_box_layout.addWidget(
+                self.wear_label
+            )
 
         self.wheel_box = QWidget()
         self.wheel_box_layout = QHBoxLayout(
@@ -311,20 +338,17 @@ class WheelGroup(QWidget):
                 | Qt.AlignmentFlag.AlignVCenter
             )
 
-        if self.is_front:
-            self.group_layout.addWidget(
-                self.wheel_box
-            )
-            self.group_layout.addWidget(
-                self.wear_label
-            )
-        else:
-            self.group_layout.addWidget(
-                self.wear_label
-            )
-            self.group_layout.addWidget(
-                self.wheel_box
-            )
+        self.group_layout.addWidget(
+            self.wheel_box
+        )
+        self.group_layout.addWidget(
+            self.wear_box,
+            alignment=(
+                Qt.AlignmentFlag.AlignRight
+                if self.is_left
+                else Qt.AlignmentFlag.AlignLeft
+            ),
+        )
 
     def apply_visibility(
         self,
@@ -458,15 +482,16 @@ class WheelGroup(QWidget):
             1,
             round(3 * s),
         )
+        wheel_gap = max(
+            1,
+            round(2 * s),
+        )
 
         self.group_layout.setSpacing(
             gap
         )
         self.wheel_box_layout.setSpacing(
-            max(
-                1,
-                round(2 * s),
-            )
+            wheel_gap
         )
         self.tyre_layout.setSpacing(
             max(
@@ -504,6 +529,15 @@ class WheelGroup(QWidget):
         self.brake_frame.setFixedSize(
             brake_width,
             brake_height,
+        )
+        self.wear_label.setFixedWidth(
+            tyre_width
+        )
+        self.wear_offset.setFixedWidth(
+            brake_width + wheel_gap
+        )
+        self.wear_box.setFixedWidth(
+            tyre_width + brake_width + wheel_gap
         )
 
     def render(
@@ -1058,7 +1092,7 @@ class TyresWidget(QWidget):
                 )
             ),
         )
-        self._responsive_scale = max(
+        requested_scale = max(
             minimum,
             min(
                 maximum,
@@ -1066,6 +1100,32 @@ class TyresWidget(QWidget):
                 / self.BASE_WIDTH
                 * internal,
             ),
+        )
+        tyre_base_width = max(
+            36.0,
+            float(self.config.get("tyre_base_width", 70)),
+        )
+        brake_base_width = max(
+            22.0,
+            float(self.config.get("brake_base_width", 38)),
+        )
+        panel_margin_base = max(
+            0.0,
+            float(self.config.get("panel_margin", 6.0)),
+        )
+        fit_denominator = (
+            2.0 * (tyre_base_width + brake_base_width + 2.0)
+            + 5.0
+            + 2.0 * panel_margin_base
+            + 4.0
+        )
+        fit_scale = max(
+            0.35,
+            self.width() / max(1.0, fit_denominator),
+        )
+        self._responsive_scale = min(
+            requested_scale,
+            fit_scale,
         )
         s = self._responsive_scale
         margin = tyres_panel_margin(self.config, s)
@@ -1200,17 +1260,13 @@ class TyresWidget(QWidget):
         detail_size = max(
             5,
             round(
-                base_font
-                * 0.55
-                * scale
+                base_font * 0.55
             ),
         )
         brake_size = max(
             6,
             round(
-                base_font
-                * 0.72
-                * scale
+                base_font * 0.72
             ),
         )
         radius = max(
