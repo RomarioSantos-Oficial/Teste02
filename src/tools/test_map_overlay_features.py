@@ -231,6 +231,7 @@ class MapOverlayFeaturesTest(unittest.TestCase):
             "leader_marker_image": "",
             "player_marker_image": "",
             "use_track_distance_positions": True,
+            "vehicle_number_font_size": 10.0,
         }
         for config in [defaults, *configs]:
             for key, value in expected.items():

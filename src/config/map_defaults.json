@@ -44,6 +44,7 @@
   "sector_line_width": 2.0,
   "sector_line_length": 14.0,
   "vehicle_size": 18.0,
+  "vehicle_number_font_size": 10.0,
   "player_marker_scale": 1.1,
   "leader_marker_size": 14.0,
   "leader_marker_text": "♛",
