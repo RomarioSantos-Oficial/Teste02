@@ -68,7 +68,8 @@ class WeatherEditor(QDialog):
 
         root = QVBoxLayout(self)
         build_editor_tabs(root, self, (
-            ("Geral", (self._build_content, self._build_forecast,)),
+            ("Geral", (self._build_content,)),
+            ("Previsão", (self._build_forecast,)),
             ("Layout", (self._build_responsive,)),
             ("Aparência", (self._build_appearance,)),
         ))
@@ -127,11 +128,6 @@ class WeatherEditor(QDialog):
                 "show_wet_indicator",
                 "Indicador de pista molhada:",
                 True,
-            ),
-            (
-                "show_wind",
-                "Velocidade do vento:",
-                False,
             ),
             (
                 "show_forecast_rain",

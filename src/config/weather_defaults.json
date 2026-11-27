@@ -34,7 +34,6 @@
   "show_wet_indicator": true,
   "rain_indicator_icon": "images/tempo/gotas.png",
   "wet_indicator_icon": "images/tempo/Pista_molhada.png",
-  "show_wind": false,
   "rain_alert_threshold": 0.01,
   "wet_alert_threshold": 0.02,
   "sample_interval_seconds": 2.0,

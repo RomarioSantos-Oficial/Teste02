@@ -226,15 +226,6 @@ class WeatherWidget(QWidget):
         )
         self.wet_status.hide()
 
-        self.wind_status = QLabel("")
-        self.wind_status.setObjectName(
-            "WindStatus"
-        )
-        self.wind_status.setAlignment(
-            Qt.AlignmentFlag.AlignCenter
-        )
-        self.wind_status.hide()
-
         self.current_grid.addWidget(
             self.track_icon,
             0,
@@ -413,17 +404,10 @@ class WeatherWidget(QWidget):
         self.status_layout.addWidget(self.rain_indicator)
         self.status_layout.addSpacing(8)
         self.status_layout.addWidget(self.wet_indicator)
-        self.status_layout.addWidget(
-            self.wind_status
-        )
         self.status_layout.addStretch(1)
         self.wet_status.hide()
         self.rain_indicator.hide()
         self.wet_indicator.hide()
-        self.wind_status.setSizePolicy(
-            QSizePolicy.Policy.Maximum,
-            QSizePolicy.Policy.Fixed,
-        )
         self.main_layout.addWidget(
             self.status_panel
         )
@@ -745,24 +729,8 @@ class WeatherWidget(QWidget):
                 "Pista molhada",
             )
 
-        show_wind = bool(
-            self.config.get(
-                "show_wind",
-                False,
-            )
-        )
-
-        if show_wind:
-            self.wind_status.setText(
-                f"{tr('VENTO')} "
-                f"{sample.wind_speed_kmh:.1f} km/h"
-            )
-            self.wind_status.show()
-        else:
-            self.wind_status.hide()
-
         self.status_panel.setVisible(
-            show_rain_metric or show_wet_metric or show_wind
+            show_rain_metric or show_wet_metric
         )
 
         show_forecast_rain = bool(
@@ -1254,15 +1222,6 @@ class WeatherWidget(QWidget):
                 padding: 0px;
                 font-size: {forecast_size}px;
                 font-weight: 900;
-            }}
-
-            QLabel#WindStatus {{
-                background-color: {background};
-                color: {muted};
-                border-radius: {radius}px;
-                padding: {padding}px;
-                font-size: {time_size}px;
-                font-weight: bold;
             }}
 
             QFrame#ForecastCard {{
