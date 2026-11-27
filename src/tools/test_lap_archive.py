@@ -129,6 +129,8 @@ class LapArchiveStoreTests(unittest.TestCase):
             driver.time_into_lap_s = 0.0
             driver.last_lap_s = 100.0
             saved.extend(recorder.observe(session))
+            for _ in range(22):
+                saved.extend(recorder.observe(session))
 
         self.assertEqual(len(saved), 2)
         self.assertTrue(all(record.owner_key == "discord-account-a" for record in saved))

@@ -542,16 +542,16 @@ class DeltaWidget(QWidget):
         telemetry_laps = int(
             live.get("lap_number", getattr(driver, "lap_number", scoring_laps)) or 0
         )
-        # LMU may publish the telemetry lap number before mTotalLaps changes.
-        # TinyPedal uses the maximum of both counters for the same reason.
-        lap_count = max(scoring_laps, telemetry_laps)
+        # The telemetry counter resets distance early, but mTotalLaps is the
+        # counter paired with the official last_lap_s value. Keep those jobs
+        # separate: the max value resets position sync, scoring_laps confirms
+        # the completed time.
+        lap_marker = max(scoring_laps, telemetry_laps)
         previous_lap_count = self._personal_best_lap_count
 
-        # mLapDist/mTimeIntoLap reset at the start/finish line. Capture the
-        # completed lap against the PB lap time before reading the new lap.
         if previous_lap_count is None:
-            self._personal_best_lap_count = lap_count
-        elif lap_count > previous_lap_count:
+            self._personal_best_lap_count = scoring_laps
+        elif scoring_laps > previous_lap_count:
             self._completed_lap_delta = completed_lap_delta(
                 getattr(driver, "last_lap_s", 0.0),
                 self._personal_best_lap_seconds,
@@ -561,8 +561,8 @@ class DeltaWidget(QWidget):
                 now + 1.35 if self._completed_lap_delta is not None else 0.0
             )
             self._personal_best_lap_count = lap_count
-        elif lap_count < previous_lap_count:
-            self._personal_best_lap_count = lap_count
+        elif scoring_laps < previous_lap_count:
+            self._personal_best_lap_count = scoring_laps
             self._completed_lap_delta = None
             self._completed_lap_delta_until = 0.0
 
@@ -610,7 +610,7 @@ class DeltaWidget(QWidget):
             raw_distance_m=distance,
             elapsed_s=elapsed,
             speed_kmh=float(getattr(player, "speed_kmh", 0.0) or 0.0),
-            lap_marker=lap_count,
+            lap_marker=lap_marker,
         )
         if synced_distance is None:
             return None

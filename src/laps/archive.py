@@ -463,6 +463,10 @@ class LapRecorder:
         self._samples: list[tuple[float, float, float, float, float]] = []
         self._last_sample_at = 0.0
         self._last_recorded_distance_m: float | None = None
+        self._last_scoring_laps: int | None = None
+        self._pending_samples: list[tuple[float, float, float, float, float]] | None = None
+        self._pending_since = 0.0
+        self._pending_scoring_laps: int | None = None
         self._active = False
         self._last_finished_key = ""
         self._last_trace_time = 0.0
@@ -480,6 +484,10 @@ class LapRecorder:
         self._lap_marker = None
         self._samples.clear()
         self._last_recorded_distance_m = None
+        self._last_scoring_laps = None
+        self._pending_samples = None
+        self._pending_since = 0.0
+        self._pending_scoring_laps = None
 
     @staticmethod
     def _player_driver(session: Any) -> Any | None:
@@ -539,22 +547,48 @@ class LapRecorder:
             live.get("lap_number", getattr(driver, "lap_number", scoring_laps)) or 0
         )
         lap_marker = max(scoring_laps, telemetry_laps)
+        now = time.monotonic()
+        if self._last_scoring_laps is None:
+            self._last_scoring_laps = scoring_laps
+
         if self._lap_marker is None:
             self._lap_marker = lap_marker
         elif lap_marker > self._lap_marker:
-            if lap_marker == self._lap_marker + 1:
-                record = self._complete_lap(session, driver)
-                if record is not None:
-                    saved.extend(self.store.save_if_better(record))
+            if lap_marker == self._lap_marker + 1 and self._samples:
+                # Keep the just-finished lap apart from the new lap. LMU can
+                # advance mLapNumber before mTotalLaps/last_lap_s are ready.
+                self._pending_samples = list(self._samples)
+                self._pending_since = now
+                self._pending_scoring_laps = self._last_scoring_laps
+            else:
+                self._pending_samples = None
+                self._pending_since = 0.0
+                self._pending_scoring_laps = None
             self._samples.clear()
             self._last_recorded_distance_m = None
             self._lap_marker = lap_marker
         elif lap_marker < self._lap_marker:
             self._samples.clear()
             self._last_recorded_distance_m = None
+            self._pending_samples = None
+            self._pending_since = 0.0
+            self._pending_scoring_laps = None
             self._lap_marker = lap_marker
 
-        now = time.monotonic()
+        if (
+            self._pending_samples is not None
+            and self._pending_scoring_laps is not None
+            and scoring_laps > self._pending_scoring_laps
+            and now - self._pending_since >= 1.0
+        ):
+            record = self._complete_lap(
+                session, driver, samples=self._pending_samples
+            )
+            if record is not None:
+                saved.extend(self.store.save_if_better(record))
+            self._pending_samples = None
+            self._pending_since = 0.0
+            self._pending_scoring_laps = None
         if now - self._last_sample_at >= 0.035:
             self._last_sample_at = now
             if bool(getattr(player, "current_lap_invalidated", False)):
@@ -583,18 +617,24 @@ class LapRecorder:
                     ))
                     self._last_recorded_distance_m = distance
 
+        self._last_scoring_laps = scoring_laps
         if bool(getattr(session, "race_finished", False)):
             self.finish_session()
         return saved
 
-    def _complete_lap(self, session: Any, driver: Any) -> LapRecord | None:
+    def _complete_lap(
+        self,
+        session: Any,
+        driver: Any,
+        *,
+        samples: list[tuple[float, float, float, float, float]] | None = None,
+    ) -> LapRecord | None:
         lap_seconds = float(getattr(driver, "last_lap_s", 0.0) or 0.0)
         if bool(getattr(driver, "last_lap_invalidated", False)) or not (1.0 < lap_seconds < 3600.0):
-            self._samples.clear()
             return None
         length = float(getattr(session, "track_length_m", 0.0) or 0.0)
-        trace = self._resample(self._samples, length, lap_seconds=lap_seconds)
-        self._samples.clear()
+        lap_samples = self._samples if samples is None else samples
+        trace = self._resample(lap_samples, length, lap_seconds=lap_seconds)
         if trace is None:
             return None
         sector1 = float(getattr(driver, "last_sector1_s", 0.0) or 0.0)
@@ -675,4 +715,8 @@ class LapRecorder:
         self._lap_marker = None
         self._samples.clear()
         self._last_recorded_distance_m = None
+        self._last_scoring_laps = None
+        self._pending_samples = None
+        self._pending_since = 0.0
+        self._pending_scoring_laps = None
         self._active = False
