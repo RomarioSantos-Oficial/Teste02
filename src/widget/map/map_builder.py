@@ -521,10 +521,9 @@ class TrackMapBuilder:
         # A volta em gravação não é publicada. O mapa só aparece depois da
         # passagem pela linha e da confirmação de uma volta válida.
         points: list[MapPoint] = []
-        recorded = sorted(
-            self.current_points,
-            key=lambda item: item.distance_m,
-        )
+        # _should_record aceita somente distâncias estritamente crescentes;
+        # portanto current_points já está ordenado durante a gravação.
+        recorded = self.current_points
         length = max(
             self.track_length_m,
             recorded[-1].distance_m if recorded else 0.0,

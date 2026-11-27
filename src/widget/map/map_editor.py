@@ -25,9 +25,11 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDoubleSpinBox,
+    QFileDialog,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
+    QLineEdit,
     QPushButton,
     QScrollArea,
     QSpinBox,
@@ -49,6 +51,10 @@ class MapEditor(QDialog):
 
         self.config = deepcopy(config)
         self.color_buttons: dict[
+            str,
+            QPushButton,
+        ] = {}
+        self.class_color_buttons: dict[
             str,
             QPushButton,
         ] = {}
@@ -152,6 +158,21 @@ class MapEditor(QDialog):
             (
                 "show_lap_difference_outline",
                 "Contorno por diferença de volta:",
+                True,
+            ),
+            (
+                "show_overall_leader_marker",
+                "Ícone do líder geral:",
+                True,
+            ),
+            (
+                "show_class_leader_markers",
+                "Ícones dos líderes por categoria:",
+                True,
+            ),
+            (
+                "smooth_vehicle_motion",
+                "Suavizar movimento dos carros:",
                 True,
             ),
             (
@@ -498,6 +519,15 @@ class MapEditor(QDialog):
                 " px",
             ),
             (
+                "leader_marker_size",
+                "Tamanho dos ícones de líder:",
+                6.0,
+                32.0,
+                1.0,
+                14.0,
+                " px",
+            ),
+            (
                 "vehicle_outline_width",
                 "Contorno dos carros:",
                 0.0,
@@ -545,6 +575,21 @@ class MapEditor(QDialog):
                 label,
                 spin,
             )
+
+        player_scale = QDoubleSpinBox()
+        player_scale.setRange(100.0, 200.0)
+        player_scale.setSingleStep(5.0)
+        player_scale.setSuffix(" %")
+        player_scale.setValue(
+            float(self.config.get("player_marker_scale", 1.10)) * 100.0
+        )
+        player_scale.valueChanged.connect(
+            lambda value: self._set(
+                "player_marker_scale",
+                value / 100.0,
+            )
+        )
+        form.addRow("Destaque de tamanho do jogador:", player_scale)
 
         self.content_layout.addWidget(
             group
@@ -671,8 +716,8 @@ class MapEditor(QDialog):
             "map_background": "Área interna",
             "start_line": "Linha de chegada",
             "sector_line": "Linhas de setor",
-            "vehicle_player": "Jogador",
-            "vehicle_leader": "Líder",
+            "vehicle_player": "Jogador (rosa)",
+            "vehicle_leader": "Líder geral",
             "vehicle_in_pit": "Carro nos boxes",
             "vehicle_yellow": "Carro em amarela",
             "vehicle_same_lap": "Mesma volta",
@@ -713,9 +758,53 @@ class MapEditor(QDialog):
                 button,
             )
 
+        leader_icon = QLineEdit(
+            str(self.config.get("leader_marker_text", "♛"))
+        )
+        leader_icon.setPlaceholderText("Ex.: ♛ ou 👑")
+        leader_icon.editingFinished.connect(
+            lambda: self._set(
+                "leader_marker_text",
+                leader_icon.text(),
+            )
+        )
+        form.addRow("Símbolo dos líderes:", leader_icon)
+        self._add_image_picker(
+            form,
+            "leader_marker_image",
+            "Imagem do ícone de líder:",
+        )
+        self._add_image_picker(
+            form,
+            "player_marker_image",
+            "Imagem do marcador do jogador:",
+        )
+
         self.content_layout.addWidget(
             group
         )
+
+        class_group = QGroupBox("Cores das categorias e líderes")
+        class_form = QFormLayout(class_group)
+        class_labels = {
+            "HYPERCAR": "Hypercar",
+            "LMGT3": "LMGT3",
+            "LMP2": "LMP2",
+            "LMP3": "LMP3",
+            "GTE": "GTE",
+        }
+        class_colors = self.config.setdefault("class_colors", {})
+        for category, label in class_labels.items():
+            button = QPushButton(
+                str(class_colors.get(category, "#FFFFFF"))
+            )
+            button.clicked.connect(
+                lambda checked=False, current=category:
+                self._choose_class_color(current)
+            )
+            self.class_color_buttons[category] = button
+            class_form.addRow(label + ":", button)
+        self.content_layout.addWidget(class_group)
         self.content_layout.addStretch()
 
     def _request_rebuild(self) -> None:
@@ -762,6 +851,72 @@ class MapEditor(QDialog):
             value
         )
         self._emit()
+
+    def _choose_class_color(
+        self,
+        category: str,
+    ) -> None:
+        class_colors = self.config.setdefault("class_colors", {})
+        current = QColor(class_colors.get(category, "#FFFFFF"))
+        selected = QColorDialog.getColor(current, self)
+        if not selected.isValid():
+            return
+        value = selected.name(QColor.NameFormat.HexRgb)
+        class_colors[category] = value
+        self.class_color_buttons[category].setText(value)
+        self._emit()
+
+    def _add_image_picker(
+        self,
+        form: QFormLayout,
+        key: str,
+        label: str,
+    ) -> None:
+        row = QWidget()
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(0, 0, 0, 0)
+        path_edit = QLineEdit(
+            str(self.config.get(key, "") or "")
+        )
+        path_edit.setReadOnly(True)
+        path_edit.setPlaceholderText("Sem imagem personalizada")
+        select = QPushButton("Escolher…")
+        clear = QPushButton("Limpar")
+        select.clicked.connect(
+            lambda checked=False, current=key, edit=path_edit:
+            self._select_image(current, edit)
+        )
+        clear.clicked.connect(
+            lambda checked=False, current=key, edit=path_edit:
+            self._set_image_path(current, edit, "")
+        )
+        layout.addWidget(path_edit, 1)
+        layout.addWidget(select)
+        layout.addWidget(clear)
+        form.addRow(label, row)
+
+    def _select_image(
+        self,
+        key: str,
+        path_edit: QLineEdit,
+    ) -> None:
+        path, _selected_filter = QFileDialog.getOpenFileName(
+            self,
+            "Selecione uma imagem",
+            path_edit.text(),
+            "Imagens (*.png *.jpg *.jpeg *.webp *.bmp)",
+        )
+        if path:
+            self._set_image_path(key, path_edit, path)
+
+    def _set_image_path(
+        self,
+        key: str,
+        path_edit: QLineEdit,
+        path: str,
+    ) -> None:
+        path_edit.setText(path)
+        self._set(key, path)
 
     def _set(
         self,

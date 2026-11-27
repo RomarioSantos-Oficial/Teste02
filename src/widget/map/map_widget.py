@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
@@ -36,6 +37,7 @@ from PySide6.QtGui import (
     QPainter,
     QPainterPath,
     QPen,
+    QPixmap,
     QResizeEvent,
 )
 from PySide6.QtWidgets import (
@@ -61,6 +63,34 @@ class MapProjection:
     scale: float
     world_center_x: float
     world_center_y: float
+
+
+def map_vehicle_marker_size(
+    vehicle_size: float,
+    scale: float,
+    is_player: bool = False,
+    player_scale: float = 1.10,
+) -> float:
+    size = max(7.0, float(vehicle_size) * float(scale))
+    return size * max(1.0, float(player_scale)) if is_player else size
+
+
+def map_leader_roles(
+    driver: Any,
+    config: dict[str, Any],
+) -> tuple[str, ...]:
+    roles: list[str] = []
+    if (
+        bool(config.get("show_overall_leader_marker", True))
+        and int(getattr(driver, "position", 0) or 0) == 1
+    ):
+        roles.append("overall")
+    if (
+        bool(config.get("show_class_leader_markers", True))
+        and int(getattr(driver, "position_in_class", 0) or 0) == 1
+    ):
+        roles.append("class")
+    return tuple(roles)
 
 
 class TrackMapWidget(QWidget):
@@ -112,6 +142,32 @@ class TrackMapWidget(QWidget):
             QPainterPath,
             bool,
         ] | None = None
+        self._raw_drivers: list[Any] = []
+        self._render_drivers: list[Any] = []
+        self._player_driver: Any | None = None
+        self._motion_start_positions: dict[
+            tuple[str, str],
+            tuple[float, float, float],
+        ] = {}
+        self._motion_target_positions: dict[
+            tuple[str, str],
+            tuple[float, float, float],
+        ] = {}
+        self._motion_start_time = 0.0
+        self._motion_duration = 0.0
+        self._last_motion_snapshot_time: float | None = None
+        self._preview_map_data: TrackMapData | None = None
+        self._preview_driver_cache: list[Any] | None = None
+        self._marker_pixmap_cache: dict[
+            tuple[str, int],
+            QPixmap | None,
+        ] = {}
+        self._class_color_cache: dict[str, QColor] = {}
+        self._vehicle_font_cache: dict[tuple[str, int], QFont] = {}
+        self._motion_timer = QTimer(self)
+        self._motion_timer.setTimerType(Qt.TimerType.PreciseTimer)
+        self._motion_timer.setInterval(16)
+        self._motion_timer.timeout.connect(self._animate_motion)
 
         self.setWindowTitle(
             "Sector Flow Drive - Track Map"
@@ -134,6 +190,10 @@ class TrackMapWidget(QWidget):
         self.builder.update_config(
             self.config
         )
+        self._marker_pixmap_cache.clear()
+        self._class_color_cache.clear()
+        self._vehicle_font_cache.clear()
+        self._refresh_render_drivers()
         request = int(
             self.config.get(
                 "rebuild_request",
@@ -264,6 +324,10 @@ class TrackMapWidget(QWidget):
         self.map_data = self.builder.update(
             session
         )
+        self._refresh_render_drivers()
+        self._capture_vehicle_positions(
+            self._raw_drivers
+        )
         self.update()
 
     def set_edit_mode(
@@ -275,6 +339,7 @@ class TrackMapWidget(QWidget):
         if self.edit_mode:
             self.show()
 
+        self._refresh_render_drivers()
         self.setCursor(
             Qt.CursorShape.SizeAllCursor
             if self.edit_mode
@@ -282,10 +347,198 @@ class TrackMapWidget(QWidget):
         )
         self.update()
 
+    @staticmethod
+    def _driver_motion_key(
+        driver: Any,
+    ) -> tuple[str, str]:
+        for name in (
+            "slot_id",
+            "vehicle_id",
+            "driver_id",
+            "driver_name",
+            "car_number",
+        ):
+            value = getattr(driver, name, None)
+            if value not in (None, ""):
+                return name, str(value)
+        return "object", str(id(driver))
+
+    @staticmethod
+    def _float_attribute(
+        driver: Any,
+        name: str,
+    ) -> float:
+        try:
+            value = float(getattr(driver, name, 0.0) or 0.0)
+        except (TypeError, ValueError):
+            return 0.0
+        return value if math.isfinite(value) else 0.0
+
+    def _refresh_render_drivers(self) -> None:
+        if self.edit_mode and self.session is None:
+            drivers = self._preview_drivers()
+        else:
+            drivers = list(
+                getattr(self.session, "drivers", []) or []
+            )
+        self._raw_drivers = drivers
+        self._player_driver = next(
+            (
+                driver
+                for driver in drivers
+                if bool(getattr(driver, "is_player", False))
+            ),
+            None,
+        )
+        self._render_drivers = self._filter_drivers(
+            drivers,
+            self._player_driver,
+        )
+        self._render_drivers.sort(
+            key=lambda driver: (
+                bool(getattr(driver, "is_player", False)),
+                int(getattr(driver, "position", 999) or 999) == 1,
+            )
+        )
+
+    def _capture_vehicle_positions(
+        self,
+        drivers: list[Any],
+        now: float | None = None,
+    ) -> None:
+        captured_at = time.monotonic() if now is None else float(now)
+        targets = {
+            self._driver_motion_key(driver): (
+                self._float_attribute(driver, "world_x"),
+                self._float_attribute(driver, "world_z"),
+                self._float_attribute(driver, "lap_distance_m"),
+            )
+            for driver in drivers
+        }
+        previous_sample = self._last_motion_snapshot_time
+        self._motion_start_positions = (
+            self._positions_at(captured_at)
+            if previous_sample is not None
+            else dict(targets)
+        )
+        interval = (
+            captured_at - previous_sample
+            if previous_sample is not None
+            else 0.0
+        )
+        smoothing_enabled = bool(
+            self.config.get("smooth_vehicle_motion", True)
+        )
+        if not smoothing_enabled or interval <= 0.0 or interval > 0.30:
+            self._motion_start_positions = dict(targets)
+            self._motion_duration = 0.0
+            self._motion_timer.stop()
+        else:
+            self._motion_duration = max(0.016, min(0.150, interval))
+        self._motion_target_positions = targets
+        self._motion_start_time = captured_at
+        self._last_motion_snapshot_time = captured_at
+
+        moving = any(
+            key in self._motion_start_positions
+            and any(
+                abs(start - target) > 0.01
+                for start, target in zip(
+                    self._motion_start_positions[key],
+                    target_values,
+                )
+            )
+            for key, target_values in targets.items()
+        )
+        if smoothing_enabled and self._motion_duration > 0.0 and moving:
+            self._motion_timer.start()
+        else:
+            self._motion_timer.stop()
+
+    def _positions_at(
+        self,
+        now: float,
+    ) -> dict[tuple[str, str], tuple[float, float, float]]:
+        if not self._motion_target_positions:
+            return {}
+        if self._motion_duration <= 0.0:
+            return dict(self._motion_target_positions)
+        return {
+            key: self._position_at(key, now)
+            for key in self._motion_target_positions
+        }
+
+    def _position_at(
+        self,
+        key: tuple[str, str],
+        now: float,
+    ) -> tuple[float, float, float]:
+        target = self._motion_target_positions[key]
+        if self._motion_duration <= 0.0:
+            return target
+
+        start = self._motion_start_positions.get(key, target)
+        progress = max(
+            0.0,
+            min(
+                1.0,
+                (now - self._motion_start_time) / self._motion_duration,
+            ),
+        )
+        distance_delta = target[2] - start[2]
+        track_length = max(
+            0.0,
+            self._float_attribute(self.session, "track_length_m"),
+        )
+        if track_length > 0.0:
+            if distance_delta < -track_length * 0.5:
+                distance_delta += track_length
+            elif distance_delta > track_length * 0.5:
+                distance_delta -= track_length
+        distance = start[2] + distance_delta * progress
+        if track_length > 0.0:
+            distance %= track_length
+        return (
+            start[0] + (target[0] - start[0]) * progress,
+            start[1] + (target[1] - start[1]) * progress,
+            distance,
+        )
+
+    def _interpolated_driver_position(
+        self,
+        driver: Any,
+    ) -> tuple[float, float, float]:
+        key = self._driver_motion_key(driver)
+        if key in self._motion_target_positions:
+            return self._position_at(
+                key,
+                time.monotonic(),
+            )
+        return (
+            self._float_attribute(driver, "world_x"),
+            self._float_attribute(driver, "world_z"),
+            self._float_attribute(driver, "lap_distance_m"),
+        )
+
+    def _animate_motion(self) -> None:
+        if (
+            not bool(self.config.get("smooth_vehicle_motion", True))
+            or self._motion_duration <= 0.0
+            or time.monotonic() >= self._motion_start_time + self._motion_duration
+        ):
+            self._motion_timer.stop()
+        self.update()
+
     def reset_session_state(self) -> None:
         self.builder.reset()
         self.map_data = TrackMapData()
         self.session = None
+        self._motion_timer.stop()
+        self._motion_start_positions = {}
+        self._motion_target_positions = {}
+        self._motion_duration = 0.0
+        self._last_motion_snapshot_time = None
+        self._refresh_render_drivers()
         self._clear_map_geometry_cache()
         self.update()
 
@@ -457,7 +710,7 @@ class TrackMapWidget(QWidget):
         )
 
         data = (
-            self.builder.preview()
+            self._preview_map()
             if self.edit_mode
             and len(self.map_data.points) < 3
             else self.map_data
@@ -935,75 +1188,13 @@ class TrackMapWidget(QWidget):
         projection: MapProjection,
         map_rect: QRectF,
     ) -> None:
-        if self.edit_mode and self.session is None:
-            drivers = self._preview_drivers()
-        else:
-            drivers = list(
-                getattr(
-                    self.session,
-                    "drivers",
-                    [],
-                )
-                or []
+        for driver in self._render_drivers:
+            world_x, world_z, _distance = (
+                self._interpolated_driver_position(driver)
             )
-
-        player = next(
-            (
-                driver
-                for driver in drivers
-                if bool(
-                    getattr(
-                        driver,
-                        "is_player",
-                        False,
-                    )
-                )
-            ),
-            None,
-        )
-        drivers = self._filter_drivers(
-            drivers,
-            player,
-        )
-        drivers.sort(
-            key=lambda driver: (
-                bool(
-                    getattr(
-                        driver,
-                        "is_player",
-                        False,
-                    )
-                ),
-                int(
-                    getattr(
-                        driver,
-                        "position",
-                        999,
-                    )
-                    or 999
-                )
-                == 1,
-            )
-        )
-
-        for driver in drivers:
             point = projection.project(
-                float(
-                    getattr(
-                        driver,
-                        "world_x",
-                        0.0,
-                    )
-                    or 0.0
-                ),
-                -float(
-                    getattr(
-                        driver,
-                        "world_z",
-                        0.0,
-                    )
-                    or 0.0
-                ),
+                world_x,
+                -world_z,
             )
 
             if not map_rect.adjusted(
@@ -1018,7 +1209,7 @@ class TrackMapWidget(QWidget):
                 painter,
                 point,
                 driver,
-                player,
+                self._player_driver,
             )
 
     def _draw_circle_map(
@@ -1158,17 +1349,8 @@ class TrackMapWidget(QWidget):
             )
 
         if self.edit_mode and self.session is None:
-            drivers = self._preview_drivers()
             track_length = 13626.0
         else:
-            drivers = list(
-                getattr(
-                    self.session,
-                    "drivers",
-                    [],
-                )
-                or []
-            )
             track_length = max(
                 1.0,
                 float(
@@ -1181,35 +1363,12 @@ class TrackMapWidget(QWidget):
                 ),
             )
 
-        player = next(
-            (
-                driver
-                for driver in drivers
-                if bool(
-                    getattr(
-                        driver,
-                        "is_player",
-                        False,
-                    )
-                )
-            ),
-            None,
-        )
-
-        for driver in self._filter_drivers(
-            drivers,
-            player,
-        ):
+        for driver in self._render_drivers:
+            _world_x, _world_z, lap_distance = (
+                self._interpolated_driver_position(driver)
+            )
             progress = (
-                float(
-                    getattr(
-                        driver,
-                        "lap_distance_m",
-                        0.0,
-                    )
-                    or 0.0
-                )
-                / track_length
+                lap_distance / track_length
             ) % 1.0
             angle = (
                 -math.pi
@@ -1229,7 +1388,7 @@ class TrackMapWidget(QWidget):
                 painter,
                 point,
                 driver,
-                player,
+                self._player_driver,
             )
 
     def _draw_vehicle(
@@ -1244,22 +1403,18 @@ class TrackMapWidget(QWidget):
             {},
         )
         s = self._responsive_scale
-        size = max(
-            7.0,
-            float(
-                self.config.get(
-                    "vehicle_size",
-                    18.0,
-                )
-            )
-            * s,
-        )
         is_player = bool(
             getattr(
                 driver,
                 "is_player",
                 False,
             )
+        )
+        size = map_vehicle_marker_size(
+            float(self.config.get("vehicle_size", 18.0)),
+            s,
+            is_player,
+            float(self.config.get("player_marker_scale", 1.10)),
         )
         fill = self._vehicle_color(
             driver,
@@ -1324,26 +1479,42 @@ class TrackMapWidget(QWidget):
         # uma borda visual de outra cor ao redor da bolinha.
         outline_color = fill
 
-        painter.setPen(
-            (
-                QPen(
-                    QColor(outline_color),
-                    outline_width,
-                )
-                if outline_width > 0
-                else Qt.PenStyle.NoPen
-            )
-        )
-        painter.setBrush(
-            QBrush(fill)
-        )
         rect = QRectF(
             point.x() - size / 2.0,
             point.y() - size / 2.0,
             size,
             size,
         )
-        painter.drawEllipse(rect)
+        player_image = (
+            self._cached_marker_pixmap(
+                str(self.config.get("player_marker_image", "") or ""),
+                size,
+            )
+            if is_player
+            else None
+        )
+        painter.save()
+        painter.setPen(
+            QPen(QColor(outline_color), outline_width)
+            if outline_width > 0
+            else Qt.PenStyle.NoPen
+        )
+        if player_image is not None:
+            clip = QPainterPath()
+            clip.addEllipse(rect)
+            painter.setClipPath(clip)
+            painter.drawPixmap(
+                rect,
+                player_image,
+                QRectF(player_image.rect()),
+            )
+            painter.setClipping(False)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawEllipse(rect)
+        else:
+            painter.setBrush(QBrush(fill))
+            painter.drawEllipse(rect)
+        painter.restore()
 
         if bool(
             self.config.get(
@@ -1383,30 +1554,18 @@ class TrackMapWidget(QWidget):
                     or 0
                 )
 
-            font = QFont(
-                str(
-                    self.config.get(
-                        "font_name",
-                        "Arial",
-                    )
-                )
+            font_name = str(self.config.get("font_name", "Arial"))
+            font_size = max(
+                6,
+                round(float(self.config.get("font_size", 14)) * 0.62 * s),
             )
-            font.setBold(True)
-            font.setPixelSize(
-                max(
-                    6,
-                    round(
-                        float(
-                            self.config.get(
-                                "font_size",
-                                14,
-                            )
-                        )
-                        * 0.62
-                        * s
-                    ),
-                )
-            )
+            font_key = (font_name, font_size)
+            font = self._vehicle_font_cache.get(font_key)
+            if font is None:
+                font = QFont(font_name)
+                font.setBold(True)
+                font.setPixelSize(font_size)
+                self._vehicle_font_cache[font_key] = font
             painter.setFont(font)
             painter.setPen(
                 QColor(
@@ -1425,6 +1584,116 @@ class TrackMapWidget(QWidget):
                 if position > 0
                 else "",
             )
+
+        self._draw_leader_markers(
+            painter,
+            point,
+            driver,
+        )
+
+    def _cached_marker_pixmap(
+        self,
+        path: str,
+        size: float,
+    ) -> QPixmap | None:
+        path = path.strip()
+        if not path:
+            return None
+        pixels = max(2, round(float(size) * 2.0))
+        key = (path, pixels)
+        if key not in self._marker_pixmap_cache:
+            source = QPixmap(path)
+            if source.isNull():
+                self._marker_pixmap_cache[key] = None
+            else:
+                scaled = source.scaled(
+                    pixels,
+                    pixels,
+                    Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+                left = (scaled.width() - pixels) // 2
+                top = (scaled.height() - pixels) // 2
+                cropped = scaled.copy(left, top, pixels, pixels)
+                cropped.setDevicePixelRatio(2.0)
+                self._marker_pixmap_cache[key] = cropped
+        return self._marker_pixmap_cache[key]
+
+    def _draw_leader_markers(
+        self,
+        painter: QPainter,
+        point: QPointF,
+        driver: Any,
+    ) -> None:
+        roles = map_leader_roles(driver, self.config)
+        if not roles:
+            return
+
+        icon_text = str(self.config.get("leader_marker_text", "♛") or "")
+        image_path = str(self.config.get("leader_marker_image", "") or "")
+        s = self._responsive_scale
+        badge_size = max(
+            8.0,
+            float(self.config.get("leader_marker_size", 14.0)) * s,
+        )
+        gap = badge_size * 0.82
+        count = len(roles)
+        vehicle_class = str(
+            getattr(driver, "vehicle_class", "UNKNOWN") or "UNKNOWN"
+        )
+        for index, role in enumerate(roles):
+            color = (
+                QColor(
+                    self.config.get("colors", {}).get(
+                        "vehicle_leader",
+                        "#E040FB",
+                    )
+                )
+                if role == "overall"
+                else self._class_color(vehicle_class)
+            )
+            center_x = point.x() + (index - (count - 1) / 2.0) * gap
+            badge = QRectF(
+                center_x - badge_size / 2.0,
+                point.y() - badge_size * 1.45,
+                badge_size,
+                badge_size,
+            )
+            image = self._cached_marker_pixmap(
+                image_path,
+                badge_size * 0.72,
+            )
+            painter.save()
+            if image is not None:
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(color)
+                painter.drawEllipse(badge)
+                inner = badge.adjusted(
+                    badge_size * 0.18,
+                    badge_size * 0.18,
+                    -badge_size * 0.18,
+                    -badge_size * 0.18,
+                )
+                clip = QPainterPath()
+                clip.addEllipse(inner)
+                painter.setClipPath(clip)
+                painter.drawPixmap(
+                    inner,
+                    image,
+                    QRectF(image.rect()),
+                )
+            elif icon_text:
+                font = QFont("Segoe UI Emoji")
+                font.setBold(True)
+                font.setPixelSize(max(8, round(badge_size * 0.92)))
+                painter.setFont(font)
+                painter.setPen(color)
+                painter.drawText(
+                    badge,
+                    Qt.AlignmentFlag.AlignCenter,
+                    icon_text,
+                )
+            painter.restore()
 
     def _vehicle_color(
         self,
@@ -1451,6 +1720,14 @@ class TrackMapWidget(QWidget):
                 )
             )
         )
+
+        if bool(getattr(driver, "is_player", False)):
+            return QColor(
+                colors.get(
+                    "vehicle_player",
+                    "#FF54B8",
+                )
+            )
 
         if (
             (
@@ -1505,20 +1782,6 @@ class TrackMapWidget(QWidget):
                 )
             )
 
-        if bool(
-            getattr(
-                driver,
-                "is_player",
-                False,
-            )
-        ):
-            return QColor(
-                colors.get(
-                    "vehicle_player",
-                    "#00D084",
-                )
-            )
-
         if int(
             getattr(
                 driver,
@@ -1569,6 +1832,10 @@ class TrackMapWidget(QWidget):
         self,
         class_name: str,
     ) -> QColor:
+        cache_key = class_name.strip().casefold()
+        cached = self._class_color_cache.get(cache_key)
+        if cached is not None:
+            return QColor(cached)
         user_colors = self.config.get(
             "class_colors",
             {},
@@ -1597,9 +1864,11 @@ class TrackMapWidget(QWidget):
         )
 
         if category in user_colors:
-            return QColor(
+            color = QColor(
                 user_colors[category]
             )
+            self._class_color_cache[cache_key] = color
+            return QColor(color)
 
         digest = hashlib.sha1(
             class_name.encode(
@@ -1611,11 +1880,13 @@ class TrackMapWidget(QWidget):
             digest[:2],
             "little",
         ) % 360
-        return QColor.fromHsl(
+        color = QColor.fromHsl(
             hue,
             185,
             128,
         )
+        self._class_color_cache[cache_key] = color
+        return QColor(color)
 
     def _filter_drivers(
         self,
@@ -1813,10 +2084,18 @@ class TrackMapWidget(QWidget):
             ),
         )
 
+    def _preview_map(self) -> TrackMapData:
+        if self._preview_map_data is None:
+            self._preview_map_data = self.builder.preview()
+        return self._preview_map_data
+
     def _preview_drivers(
         self,
     ) -> list[Any]:
-        data = self.builder.preview()
+        if self._preview_driver_cache is not None:
+            return self._preview_driver_cache
+
+        data = self._preview_map()
         indexes = [
             8,
             34,
@@ -1869,6 +2148,7 @@ class TrackMapWidget(QWidget):
                 )
             )
 
+        self._preview_driver_cache = drivers
         return drivers
 
     def mousePressEvent(
