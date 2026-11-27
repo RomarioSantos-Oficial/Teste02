@@ -1550,9 +1550,26 @@ class TrackMapWidget(QWidget):
                     "#757575",
                 )
 
-        # O contorno acompanha a cor oficial da categoria, sem criar
-        # uma borda visual de outra cor ao redor da bolinha.
-        outline_color = fill
+        # O marcador do jogador possui uma cor de identificação
+        # independente da categoria e da imagem personalizada.
+        if is_player:
+            outline_color = colors.get(
+                "vehicle_player_marker",
+                "#FF54B8",
+            )
+            outline_width = max(
+                outline_width,
+                float(
+                    self.config.get(
+                        "vehicle_outline_player_width",
+                        3.0,
+                    )
+                )
+                * s,
+            )
+        else:
+            # Os demais carros mantêm o contorno na cor da categoria.
+            outline_color = fill
 
         rect = QRectF(
             point.x() - size / 2.0,
@@ -1589,6 +1606,30 @@ class TrackMapWidget(QWidget):
         else:
             painter.setBrush(QBrush(fill))
             painter.drawEllipse(rect)
+
+        # Desenha o anel depois da imagem/preenchimento para que o destaque
+        # do jogador nunca seja encoberto por um marcador personalizado.
+        if is_player:
+            ring_rect = rect.adjusted(
+                -outline_width / 2.0,
+                -outline_width / 2.0,
+                outline_width / 2.0,
+                outline_width / 2.0,
+            )
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.setPen(
+                QPen(
+                    QColor(
+                        colors.get(
+                            "vehicle_player_marker",
+                            "#FF54B8",
+                        )
+                    ),
+                    max(1.0, outline_width),
+                )
+            )
+            painter.drawEllipse(ring_rect)
+
         painter.restore()
 
         if bool(
