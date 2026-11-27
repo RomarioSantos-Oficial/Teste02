@@ -194,7 +194,10 @@ class VisibleUiTranslationTests(unittest.TestCase):
         )
         self.assertEqual(window.releases_button.text(), tr("Atualizações"))
         self.assertEqual(window.DISCORD_URL, "https://discord.gg/pVShUkfbtN")
-        self.assertTrue(window.RELEASES_URL.endswith("/releases/"))
+        self.assertEqual(
+            window.RELEASES_URL,
+            "https://github.com/RomarioSantos-Oficial/SectorFlowOverley/releases",
+        )
         footer_widgets = [
             footer.layout().itemAt(index).widget()
             for index in range(footer.layout().count())

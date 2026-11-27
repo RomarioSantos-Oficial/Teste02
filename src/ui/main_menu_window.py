@@ -48,7 +48,7 @@ from src.ui.lap_archive_page import LapArchivePage
 
 class MainMenuWindow(QMainWindow):
     DISCORD_URL = "https://discord.gg/pVShUkfbtN"
-    RELEASES_URL = "https://github.com/RomarioSantos-Oficial/Teste02/releases/"
+    RELEASES_URL = "https://github.com/RomarioSantos-Oficial/SectorFlowOverley/releases"
 
     def __init__(self, overlay_manager, edit_mode_manager, parent=None) -> None:
         super().__init__(parent)
