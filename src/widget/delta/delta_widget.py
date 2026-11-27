@@ -560,7 +560,7 @@ class DeltaWidget(QWidget):
             self._completed_lap_delta_until = (
                 now + 1.35 if self._completed_lap_delta is not None else 0.0
             )
-            self._personal_best_lap_count = lap_count
+            self._personal_best_lap_count = scoring_laps
         elif scoring_laps < previous_lap_count:
             self._personal_best_lap_count = scoring_laps
             self._completed_lap_delta = None
