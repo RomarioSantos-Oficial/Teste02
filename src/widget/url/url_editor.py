@@ -6,16 +6,16 @@ from typing import Any
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
-    QApplication, QCheckBox, QDialog, QFormLayout, QHBoxLayout, QLabel,
-    QLineEdit, QPushButton, QSpinBox, QVBoxLayout, QWidget,
+    QApplication, QCheckBox, QDialog, QFormLayout, QGroupBox, QHBoxLayout,
+    QLabel, QLineEdit, QPushButton, QSpinBox, QVBoxLayout, QWidget, QTabWidget,
 )
 
 from src.ui.widget_registry import WIDGET_DEFINITIONS
 from src.i18n import tr
+from src.widget.base.editor_layout import add_editor_tab
 
 AVAILABLE = tuple(
-    definition.widget_id
-    for definition in WIDGET_DEFINITIONS
+    definition.widget_id for definition in WIDGET_DEFINITIONS
     if definition.implemented and definition.widget_id != "url"
 )
 
@@ -29,50 +29,70 @@ class UrlEditor(QDialog):
         self.config = deepcopy(config)
         self.url_rows: dict[str, tuple[QLineEdit, QPushButton]] = {}
         self.setWindowTitle("Editar servidor URL")
+        self.resize(820, 700)
         root = QVBoxLayout(self)
-        root.addWidget(QLabel(
-            "Ative os widgets que deseja publicar. Cada URL pode ser usada "
-            "separadamente no OBS."
-        ))
-        form = QFormLayout()
-        root.addLayout(form)
+        tabs = QTabWidget()
+        tabs.setDocumentMode(True)
+        root.addWidget(tabs, 1)
 
+        connection_page = add_editor_tab(tabs, "Conexão")
+        connection_page.addWidget(QLabel(
+            "Configure o servidor que publica os overlays. Cada widget possui "
+            "um endereço próprio para usar como fonte de navegador no OBS."
+        ))
+        connection = QGroupBox("Servidor")
+        form = QFormLayout(connection)
         host = QLineEdit(str(self.config.get("bind_host", "0.0.0.0")))
-        host.editingFinished.connect(
-            lambda: self._set("bind_host", host.text().strip() or "0.0.0.0")
-        )
-        form.addRow("Escutar em:", host)
-        port = QSpinBox(); port.setRange(1024, 65535)
+        host.editingFinished.connect(lambda: self._set("bind_host", host.text().strip() or "0.0.0.0"))
+        form.addRow("Endereço de escuta:", host)
+        port = QSpinBox()
+        port.setRange(1024, 65535)
         port.setValue(int(self.config.get("port", 8765)))
         port.valueChanged.connect(lambda value: self._set("port", value))
         form.addRow("Porta:", port)
-        fps = QSpinBox(); fps.setRange(1, 30)
+        fps = QSpinBox()
+        fps.setRange(1, 30)
         fps.setValue(int(self.config.get("fps", 10)))
         fps.valueChanged.connect(lambda value: self._set("fps", value))
-        form.addRow("Atualizações/segundo:", fps)
+        form.addRow("Atualizações por segundo:", fps)
+        connection_page.addWidget(connection)
+        connection_page.addStretch(1)
 
+        widgets_page = add_editor_tab(tabs, "Widgets publicados")
+        widgets_page.addWidget(QLabel(
+            "Ative somente os widgets que deseja disponibilizar. Copie a URL "
+            "correspondente para adicioná-la ao OBS."
+        ))
+        group = QGroupBox("Publicação individual")
+        widgets_form = QFormLayout(group)
         chosen = set(self.config.get("published_widgets", []))
         for key in AVAILABLE:
             box = QCheckBox("Publicar")
             box.setChecked(key in chosen)
             box.toggled.connect(lambda value, current=key: self._toggle(current, value))
-            form.addRow(key.replace("_", " ").title() + ":", box)
-
-            url_line = QLineEdit(); url_line.setReadOnly(True)
+            widgets_form.addRow(key.replace("_", " ").title() + ":", box)
+            url_line = QLineEdit()
+            url_line.setReadOnly(True)
             copy_button = QPushButton("Copiar")
-            copy_button.clicked.connect(
-                lambda _checked=False, current=key: self._copy_url(current)
-            )
-            line = QWidget(); line_layout = QHBoxLayout(line)
-            line_layout.setContentsMargins(0, 0, 0, 6)
-            line_layout.addWidget(url_line, 1); line_layout.addWidget(copy_button)
-            form.addRow("", line)
+            copy_button.clicked.connect(lambda _checked=False, current=key: self._copy_url(current))
+            row = QWidget()
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(0, 0, 0, 6)
+            row_layout.addWidget(url_line, 1)
+            row_layout.addWidget(copy_button)
+            widgets_form.addRow("Endereço:", row)
             self.url_rows[key] = (url_line, copy_button)
+        widgets_page.addWidget(group)
+        widgets_page.addStretch(1)
 
         actions = QHBoxLayout()
-        restore = QPushButton("Restaurar"); close = QPushButton("Fechar")
-        restore.clicked.connect(self.restore_requested.emit); close.clicked.connect(self.accept)
-        actions.addWidget(restore); actions.addStretch(); actions.addWidget(close)
+        restore = QPushButton("Restaurar padrão")
+        close = QPushButton("Fechar")
+        restore.clicked.connect(self.restore_requested.emit)
+        close.clicked.connect(self.accept)
+        actions.addWidget(restore)
+        actions.addStretch()
+        actions.addWidget(close)
         root.addLayout(actions)
         self._refresh_links()
 
@@ -83,7 +103,8 @@ class UrlEditor(QDialog):
 
     def _toggle(self, key: str, value: bool) -> None:
         selected = [item for item in self.config.get("published_widgets", []) if item != key]
-        if value: selected.append(key)
+        if value:
+            selected.append(key)
         self._set("published_widgets", selected)
 
     def _network_ip(self) -> str:
@@ -94,20 +115,20 @@ class UrlEditor(QDialog):
             return "127.0.0.1"
 
     def _refresh_links(self) -> None:
-        host = self._network_ip(); port = int(self.config.get("port", 8765))
+        host = self._network_ip()
+        port = int(self.config.get("port", 8765))
         selected = set(self.config.get("published_widgets", []))
         for key, (line, button) in self.url_rows.items():
             line.setText(f"http://{host}:{port}/widget/{key}")
             active = key in selected
-            line.setEnabled(active); button.setEnabled(active)
-            line.setToolTip(
-                tr("URL ativa para OBS")
-                if active
-                else tr("Ative Publicar para liberar esta URL")
-            )
+            line.setEnabled(active)
+            button.setEnabled(active)
+            line.setToolTip(tr("URL ativa para OBS") if active else tr("Ative Publicar para liberar esta URL"))
 
     def _copy_url(self, key: str) -> None:
         line, _button = self.url_rows[key]
-        if not line.isEnabled(): return
+        if not line.isEnabled():
+            return
         clipboard = QApplication.clipboard()
-        if clipboard is not None: clipboard.setText(line.text())
+        if clipboard is not None:
+            clipboard.setText(line.text())
