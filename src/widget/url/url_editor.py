@@ -32,7 +32,6 @@ class UrlEditor(QDialog):
         self.resize(820, 700)
         root = QVBoxLayout(self)
         tabs = QTabWidget()
-        tabs.setDocumentMode(True)
         root.addWidget(tabs, 1)
 
         connection_page = add_editor_tab(tabs, "Conexão")

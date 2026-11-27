@@ -23,7 +23,6 @@ class FuelTimeEditor(QDialog):
         self.resize(760, 620)
         root = QVBoxLayout(self)
         tabs = QTabWidget()
-        tabs.setDocumentMode(True)
         root.addWidget(tabs, 1)
 
         strategy_page = add_editor_tab(tabs, "Estratégia")

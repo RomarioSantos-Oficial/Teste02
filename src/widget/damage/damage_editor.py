@@ -23,7 +23,6 @@ class DamageEditor(QDialog):
         self.resize(760, 620)
         root = QVBoxLayout(self)
         tabs = QTabWidget()
-        tabs.setDocumentMode(True)
         root.addWidget(tabs, 1)
         page = add_editor_tab(tabs, "Exibição")
         group = QGroupBox("Elementos do painel")
