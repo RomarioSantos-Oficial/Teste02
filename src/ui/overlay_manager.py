@@ -74,8 +74,8 @@ class OverlayManager(QObject):
         # Mantido para compatibilidade com chamadas e testes anteriores.
         self.external_driver_panel = "driver_panel" in self.external_widget_ids
         self.config_data = self._load_config()
-        self._ensure_profiles()
-        migrated = self._migrate_player_background()
+        migrated = self._ensure_profiles()
+        migrated = self._migrate_player_background() or migrated
         migrated = self._migrate_race_widget_visual_theme() or migrated
         if migrated:
             self.save_config()
@@ -185,8 +185,26 @@ class OverlayManager(QObject):
         self.save_config()
         self.profile_changed.emit(profile_id)
 
-    def _ensure_profiles(self) -> None:
+    @staticmethod
+    def _ensure_delta_personal_best_default(widget_configs: dict[str, Any]) -> bool:
+        delta_config = widget_configs.get("delta")
+        if not isinstance(delta_config, dict):
+            return False
+        changed = False
+        if "compare_personal_best" not in delta_config:
+            delta_config["compare_personal_best"] = True
+            changed = True
+        if "personal_best_scope" not in delta_config:
+            delta_config["personal_best_scope"] = "category"
+            changed = True
+        return changed
+
+    def _ensure_profiles(self) -> bool:
         widgets = deepcopy(self.config_data.setdefault("widgets", {}))
+        defaults = self.config_data.setdefault("defaults", {})
+        migrated = self._ensure_delta_personal_best_default(widgets)
+        if isinstance(defaults, dict):
+            migrated = self._ensure_delta_personal_best_default(defaults) or migrated
         profiles = self.config_data.setdefault("profiles", {})
         profiles.setdefault("standard", {
             "name": "Padrão", "mode": "standard", "widgets": deepcopy(widgets)
@@ -203,11 +221,13 @@ class OverlayManager(QObject):
             profile_widgets = profile.setdefault("widgets", {})
             for widget_id, config in widgets.items():
                 profile_widgets.setdefault(widget_id, deepcopy(config))
+            migrated = self._ensure_delta_personal_best_default(profile_widgets) or migrated
         active = str(self.config_data.get("active_profile", "standard"))
         if active not in profiles:
             active = "standard"
         self.config_data["active_profile"] = active
         self.config_data["widgets"] = deepcopy(profiles[active].get("widgets", widgets))
+        return migrated
 
     def _sync_active_profile(self) -> None:
         profiles = self.config_data.setdefault("profiles", {})

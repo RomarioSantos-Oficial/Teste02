@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import time
 from collections import deque
 from pathlib import Path
@@ -15,6 +16,7 @@ from .delta_models import DeltaViewData, FastestLapData
 from .delta_renderer import DeltaRenderer
 from .delta_sector_tracker import DeltaSectorTracker
 from .delta_session_tracker import DeltaSessionTracker
+from .delta_personal_best import interpolate_trace_elapsed
 from src.laps.archive import LapArchiveStore, local_owner_key
 from src.widget.standings.standings_logic import StandingsLogic
 
@@ -469,7 +471,7 @@ class DeltaWidget(QWidget):
         self.update()
 
     def _personal_best_delta(self, session: Any, player: Any) -> float | None:
-        if not bool(self.config.get("compare_personal_best", False)) or player is None:
+        if not bool(self.config.get("compare_personal_best", True)) or player is None:
             return None
         driver = next(
             (row for row in (getattr(session, "drivers", []) or []) if bool(getattr(row, "is_player", False))),
@@ -481,7 +483,9 @@ class DeltaWidget(QWidget):
         category = str(getattr(driver, "vehicle_class", "") or "")
         model = str(getattr(driver, "vehicle_model", "") or "")
         filename = str(getattr(driver, "vehicle_filename", "") or "")
-        scope = str(self.config.get("personal_best_scope", "category") or "category")
+        scope = str(self.config.get("personal_best_scope", "category") or "category").casefold()
+        if scope not in {"category", "model"}:
+            scope = "category"
         owner = local_owner_key()
         cache_key = (owner, track.casefold(), category.casefold(), model.casefold(), filename.casefold(), scope)
         now = time.monotonic()
@@ -516,22 +520,21 @@ class DeltaWidget(QWidget):
             )
             if event_time > lap_start > 0.0:
                 elapsed = event_time - lap_start
-        if track_length <= 0.0 or elapsed <= 0.0 or len(trace) < 2:
+        if (
+            not math.isfinite(track_length)
+            or track_length <= 0.0
+            or not math.isfinite(elapsed)
+            or elapsed <= 0.0
+            or not math.isfinite(distance)
+            or len(trace) < 2
+        ):
             return None
         fraction = max(0.0, min(1.0, distance / track_length))
-        right_index = next(
-            (index for index, point in enumerate(trace) if float(point.get("distance", 0.0)) >= fraction),
-            len(trace) - 1,
-        )
-        right = trace[right_index]
-        left = trace[max(0, right_index - 1)]
-        left_x = float(left.get("distance", 0.0))
-        right_x = float(right.get("distance", 1.0))
-        span = right_x - left_x
-        ratio = 0.0 if span <= 1e-9 else max(0.0, min(1.0, (fraction - left_x) / span))
-        reference_elapsed = float(left.get("elapsed_s", 0.0)) + (
-            float(right.get("elapsed_s", 0.0)) - float(left.get("elapsed_s", 0.0))
-        ) * ratio
+        reference_elapsed = interpolate_trace_elapsed(trace, fraction)
+        if reference_elapsed is None:
+            return None
+        # Sinal igual ao TinyPedal: positivo = mais lento que o PB;
+        # negativo = mais rápido que o PB, sempre na mesma distância.
         return elapsed - reference_elapsed
 
     def update_config(

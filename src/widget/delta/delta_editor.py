@@ -436,7 +436,7 @@ class DeltaEditor(QDialog):
         personal = QGroupBox("Comparação com sua melhor volta")
         personal_form = QFormLayout(personal)
         enabled = QCheckBox("Usar a melhor volta pessoal salva como referência")
-        enabled.setChecked(bool(self.config.get("compare_personal_best", False)))
+        enabled.setChecked(bool(self.config.get("compare_personal_best", True)))
         enabled.toggled.connect(
             lambda value: self._set_root("compare_personal_best", value)
         )

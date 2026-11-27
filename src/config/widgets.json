@@ -32,6 +32,8 @@
       "announce_initial_fastest": false,
       "show_manufacturer_logo": true,
       "logo_directory": "images/logos",
+      "compare_personal_best": true,
+      "personal_best_scope": "category",
       "font": {
         "family": "Bahnschrift Condensed"
       },
@@ -1141,6 +1143,8 @@
       "announce_initial_fastest": false,
       "show_manufacturer_logo": true,
       "logo_directory": "images/logos",
+      "compare_personal_best": true,
+      "personal_best_scope": "category",
       "font": {
         "family": "Bahnschrift Condensed"
       },
@@ -2254,6 +2258,8 @@
           "announce_initial_fastest": false,
           "show_manufacturer_logo": true,
           "logo_directory": "images/logos",
+          "compare_personal_best": true,
+          "personal_best_scope": "category",
           "font": {
             "family": "Arial"
           },
@@ -3276,6 +3282,8 @@
           "announce_initial_fastest": false,
           "show_manufacturer_logo": true,
           "logo_directory": "images/logos",
+          "compare_personal_best": true,
+          "personal_best_scope": "category",
           "font": {
             "family": "Arial"
           },
