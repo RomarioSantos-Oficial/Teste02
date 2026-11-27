@@ -524,6 +524,15 @@ class MapEditor(QDialog):
                 " px",
             ),
             (
+                "vehicle_number_font_size",
+                "Tamanho dos números:",
+                5.0,
+                32.0,
+                1.0,
+                10.0,
+                " px",
+            ),
+            (
                 "leader_marker_size",
                 "Tamanho dos ícones de líder:",
                 6.0,

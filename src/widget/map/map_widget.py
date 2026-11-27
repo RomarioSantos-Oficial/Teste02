@@ -1632,7 +1632,15 @@ class TrackMapWidget(QWidget):
             font_name = str(self.config.get("font_name", "Arial"))
             font_size = max(
                 6,
-                round(float(self.config.get("font_size", 14)) * 0.62 * s),
+                round(
+                    float(
+                        self.config.get(
+                            "vehicle_number_font_size",
+                            10.0,
+                        )
+                    )
+                    * s
+                ),
             )
             font_key = (font_name, font_size)
             font = self._vehicle_font_cache.get(font_key)

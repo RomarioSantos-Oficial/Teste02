@@ -447,6 +447,28 @@ class LMUAdapter:
                 )
                 driver.position_in_class = class_positions[class_name]
 
+            # Em algumas leituras do LMU, mIsPlayer chega atrasado ou falso
+            # durante a troca de sessão. playerVehicleIdx aponta para o
+            # registro oficial do carro local; use-o para manter o destaque
+            # do jogador estável no mapa e nos demais overlays.
+            player_vehicle_index = safe_int(
+                getattr(telemetry, "playerVehicleIdx", -1),
+                -1,
+            )
+            player_slot_id = -1
+            if 0 <= player_vehicle_index < active_telemetry:
+                player_slot_id = safe_int(
+                    getattr(
+                        telemetry.telemInfo[player_vehicle_index],
+                        "mID",
+                        -1,
+                    ),
+                    -1,
+                )
+            if player_slot_id >= 0:
+                for driver in drivers:
+                    driver.is_player = driver.slot_id == player_slot_id
+
             player_row = next(
                 (driver for driver in drivers if driver.is_player),
                 None,
