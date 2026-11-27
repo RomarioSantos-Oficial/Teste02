@@ -370,3 +370,6 @@ Na próxima abertura, os padrões serão recriados.
 ## Documentação adicional
 
 Consulte [app/README.md](app/README.md) para conhecer cada widget, uso diário, limitações e diagnósticos detalhados.
+
+
+##Romario Santos
