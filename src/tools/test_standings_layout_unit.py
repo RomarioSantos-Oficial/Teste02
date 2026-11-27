@@ -50,6 +50,12 @@ class StandingsLayoutUnitTests(unittest.TestCase):
             [4, 2, 3],
         )
 
+        categories[2].rows[-1].is_player = True
+        self.assertEqual(
+            StandingsWidget._allocate_category_row_counts(categories, 2),
+            [1, 0, 1],
+        )
+
     def test_player_highlight_excludes_position_brand_number_and_delta(self) -> None:
         for column in ("position", "brand", "number", "delta"):
             with self.subTest(column=column):

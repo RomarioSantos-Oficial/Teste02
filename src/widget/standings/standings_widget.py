@@ -863,12 +863,21 @@ class StandingsWidget(QWidget):
         counts = [0] * len(categories)
         remaining = max(0, int(row_capacity))
 
-        # Reserva uma linha por categoria primeiro. Assim uma classe no topo
-        # não consome todo o painel e esconde as classes seguintes.
-        for index, category in enumerate(categories):
+        # Reserva primeiro uma linha para o jogador, caso a classe dele
+        # esteja no fim da lista, e depois uma linha para cada outra classe.
+        player_indices = [
+            index
+            for index, category in enumerate(categories)
+            if any(row.is_player for row in category.rows)
+        ]
+        allocation_order = player_indices + [
+            index for index in range(len(categories))
+            if index not in player_indices
+        ]
+        for index in allocation_order:
             if remaining <= 0:
                 break
-            if category.rows:
+            if categories[index].rows:
                 counts[index] = 1
                 remaining -= 1
 
@@ -876,9 +885,10 @@ class StandingsWidget(QWidget):
         # limite de cada categoria e mantendo todas representadas.
         while remaining > 0:
             changed = False
-            for index, category in enumerate(categories):
+            for index in allocation_order:
                 if remaining <= 0:
                     break
+                category = categories[index]
                 if counts[index] < len(category.rows):
                     counts[index] += 1
                     remaining -= 1
