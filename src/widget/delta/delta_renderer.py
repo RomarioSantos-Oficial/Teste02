@@ -1153,7 +1153,9 @@ class DeltaRenderer:
         font.setPixelSize(
             max(7, int(pixel_size))
         )
-        font.setBold(bold)
+        # Todas as fontes do Delta usam peso em negrito, inclusive
+        # textos auxiliares e fallbacks que antes solicitavam fonte normal.
+        font.setBold(True)
         return font
 
     def _fit_font(
