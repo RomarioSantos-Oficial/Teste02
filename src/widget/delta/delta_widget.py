@@ -535,7 +535,7 @@ class DeltaWidget(QWidget):
                 else (None, None, None)
             )
             self._personal_best_cache_key = cache_key
-            self._next_personal_best_check = now + 2.0
+            self._next_personal_best_check = now + 0.25
 
         live = getattr(driver, "live_scoring", None)
         live = live if isinstance(live, dict) else {}

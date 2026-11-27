@@ -252,6 +252,106 @@ class LapArchiveStoreTests(unittest.TestCase):
         self.assertTrue(all(record.car_number == "17" for record in saved))
         self.assertTrue(all(len(record.trace) >= 1000 for record in saved))
 
+    def test_recorder_saves_when_scoring_counter_updates_before_telemetry_counter(self) -> None:
+        recorder = LapRecorder(self.store)
+        recorder.set_owner_key("discord-account-a")
+        clock = itertools.count()
+        player = SimpleNamespace(
+            current_lap_invalidated=False, throttle=0.6, brake=0.1,
+            speed_kmh=180.0,
+        )
+        # mLapNumber is already one ahead. At the finish line mTotalLaps
+        # advances first, so max(mTotalLaps, mLapNumber) does not change.
+        driver = SimpleNamespace(
+            is_player=True, slot_id=17, driver_name="R. Lima",
+            laps=1, lap_number=2, lap_distance_m=0.0,
+            time_into_lap_s=0.0, lap_start_event_time_s=0.0,
+            last_lap_s=0.0, last_lap_invalidated=False,
+            last_sector1_s=33.0, last_sector2_s=33.0, last_sector3_s=34.0,
+            vehicle_class="LMGT3", vehicle_model="Ferrari 296 GT3",
+            vehicle_filename="ferrari_296_gt3", car_number="17",
+        )
+        session = SimpleNamespace(
+            connected=True, telemetry_paused=False, is_replay_active=False,
+            player_has_vehicle=True, in_realtime=True, race_finished=False,
+            track_name="Silverstone", session=1, start_event_time_s=5.0,
+            track_length_m=5000.0, current_event_time_s=0.0,
+            player=player, drivers=[driver],
+        )
+        saved = []
+        with patch("src.laps.archive.time.monotonic", side_effect=lambda: next(clock) * 0.05):
+            for index in range(61):
+                fraction = index / 60
+                driver.lap_distance_m = fraction * session.track_length_m
+                driver.time_into_lap_s = fraction * 100.0
+                saved.extend(recorder.observe(session))
+
+            # Official scoring changes first; telemetry lap number remains 2.
+            driver.laps = 2
+            driver.lap_distance_m = 0.0
+            driver.time_into_lap_s = 0.0
+            driver.last_lap_s = 100.0
+            saved.extend(recorder.observe(session))
+            for _ in range(22):
+                saved.extend(recorder.observe(session))
+
+        self.assertEqual(len(saved), 2)
+        self.assertEqual(
+            self.store.best("Silverstone", "LMGT3", owner_key="discord-account-a").lap_seconds,
+            100.0,
+        )
+        self.assertEqual(
+            self.store.best(
+                "Silverstone", "LMGT3", car_filename="ferrari_296_gt3",
+                scope="model", owner_key="discord-account-a",
+            ).lap_seconds,
+            100.0,
+        )
+
+    def test_recorder_does_not_require_sector_splits_to_save_valid_lap(self) -> None:
+        recorder = LapRecorder(self.store)
+        recorder.set_owner_key("discord-account-a")
+        clock = itertools.count()
+        player = SimpleNamespace(
+            current_lap_invalidated=False, throttle=0.6, brake=0.1,
+            speed_kmh=180.0,
+        )
+        driver = SimpleNamespace(
+            is_player=True, slot_id=17, driver_name="R. Lima",
+            laps=1, lap_number=1, lap_distance_m=0.0,
+            time_into_lap_s=0.0, lap_start_event_time_s=0.0,
+            last_lap_s=0.0, last_lap_invalidated=False,
+            last_sector1_s=0.0, last_sector2_s=0.0, last_sector3_s=0.0,
+            vehicle_class="LMGT3", vehicle_model="Ferrari 296 GT3",
+            vehicle_filename="ferrari_296_gt3", car_number="17",
+        )
+        session = SimpleNamespace(
+            connected=True, telemetry_paused=False, is_replay_active=False,
+            player_has_vehicle=True, in_realtime=True, race_finished=False,
+            track_name="Silverstone", session=1, start_event_time_s=5.0,
+            track_length_m=5000.0, current_event_time_s=0.0,
+            player=player, drivers=[driver],
+        )
+        saved = []
+        with patch("src.laps.archive.time.monotonic", side_effect=lambda: next(clock) * 0.05):
+            for index in range(61):
+                fraction = index / 60
+                driver.lap_distance_m = fraction * session.track_length_m
+                driver.time_into_lap_s = fraction * 100.0
+                saved.extend(recorder.observe(session))
+            driver.laps = 2
+            driver.lap_number = 2
+            driver.lap_distance_m = 0.0
+            driver.time_into_lap_s = 0.0
+            driver.last_lap_s = 100.0
+            saved.extend(recorder.observe(session))
+            for _ in range(22):
+                saved.extend(recorder.observe(session))
+
+        self.assertEqual(len(saved), 2)
+        self.assertTrue(all(record.lap_seconds == 100.0 for record in saved))
+        self.assertTrue(all(record.sector1 == 0.0 for record in saved))
+
     def test_resampled_trace_uses_official_completed_lap_time_at_finish(self) -> None:
         samples = [
             (

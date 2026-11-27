@@ -511,6 +511,9 @@ class LapRecorder:
         self._pending_samples: list[tuple[float, float, float, float, float]] | None = None
         self._pending_since = 0.0
         self._pending_scoring_laps: int | None = None
+        # Counter value for which the sample buffer was already reset. LMU's
+        # scoring and telemetry lap counters can arrive on different frames.
+        self._last_reset_scoring_laps: int | None = None
         self._active = False
         self._last_finished_key = ""
         self._last_trace_time = 0.0
@@ -532,6 +535,7 @@ class LapRecorder:
         self._pending_samples = None
         self._pending_since = 0.0
         self._pending_scoring_laps = None
+        self._last_reset_scoring_laps = None
 
     @staticmethod
     def _player_driver(session: Any) -> Any | None:
@@ -585,6 +589,7 @@ class LapRecorder:
             self._pending_samples = None
             self._pending_since = 0.0
             self._pending_scoring_laps = None
+            self._last_reset_scoring_laps = None
         self._driver_slot = int(getattr(driver, "slot_id", -1))
 
         live = getattr(driver, "live_scoring", None)
@@ -597,32 +602,51 @@ class LapRecorder:
         )
         lap_marker = max(scoring_laps, telemetry_laps)
         now = time.monotonic()
-        if self._last_scoring_laps is None:
-            self._last_scoring_laps = scoring_laps
+        previous_scoring_laps = self._last_scoring_laps
+        if previous_scoring_laps is None:
+            previous_scoring_laps = scoring_laps
+        scoring_advanced = scoring_laps > previous_scoring_laps
+        marker_advanced = (
+            self._lap_marker is not None and lap_marker > self._lap_marker
+        )
 
         if self._lap_marker is None:
             self._lap_marker = lap_marker
-        elif lap_marker > self._lap_marker:
-            if lap_marker == self._lap_marker + 1 and self._samples:
-                # Keep the just-finished lap apart from the new lap. LMU can
-                # advance mLapNumber before mTotalLaps/last_lap_s are ready.
-                self._pending_samples = list(self._samples)
-                self._pending_since = now
-                self._pending_scoring_laps = self._last_scoring_laps
-            else:
-                self._pending_samples = None
-                self._pending_since = 0.0
-                self._pending_scoring_laps = None
-            self._samples.clear()
-            self._last_recorded_distance_m = None
-            self._lap_marker = lap_marker
-        elif lap_marker < self._lap_marker:
+        elif lap_marker < self._lap_marker or scoring_laps < previous_scoring_laps:
+            # A session/counter reset is not a completed lap. Discard stale
+            # samples and pending timing rather than attaching them to a new lap.
             self._samples.clear()
             self._last_recorded_distance_m = None
             self._pending_samples = None
             self._pending_since = 0.0
             self._pending_scoring_laps = None
+            self._last_reset_scoring_laps = None
             self._lap_marker = lap_marker
+        elif marker_advanced:
+            self._lap_marker = lap_marker
+            # mLapNumber can change before mTotalLaps. Capture the trace now,
+            # then wait for the official scoring counter/time to catch up.
+            # If scoring already reset this same lap, this is only the delayed
+            # telemetry counter catching up and must not create another lap.
+            if self._last_reset_scoring_laps != scoring_laps:
+                if self._pending_samples is None:
+                    self._pending_samples = list(self._samples)
+                    self._pending_since = now
+                    self._pending_scoring_laps = previous_scoring_laps
+                self._samples.clear()
+                self._last_recorded_distance_m = None
+                self._last_reset_scoring_laps = scoring_laps
+        elif scoring_advanced:
+            # mTotalLaps may update first while mLapNumber is still one lap
+            # ahead/behind. It is also a valid line-crossing signal: capture
+            # the completed trace here so we do not wait for the other counter.
+            if self._pending_samples is None:
+                self._pending_samples = list(self._samples)
+                self._pending_since = now
+                self._pending_scoring_laps = previous_scoring_laps
+                self._samples.clear()
+                self._last_recorded_distance_m = None
+            self._last_reset_scoring_laps = scoring_laps
 
         if (
             self._pending_samples is not None
@@ -700,7 +724,13 @@ class LapRecorder:
         sector1 = float(getattr(driver, "last_sector1_s", 0.0) or 0.0)
         sector2 = float(getattr(driver, "last_sector2_s", 0.0) or 0.0)
         sector3 = float(getattr(driver, "last_sector3_s", 0.0) or 0.0)
-        if min(sector1, sector2, sector3) < 0.0 or sum((sector1, sector2, sector3)) <= 0.0:
+        # Sector timing may arrive a frame later than the official lap time.
+        # Missing splits should not discard an otherwise valid complete lap;
+        # zero values remain unavailable and are handled by the Delta sector UI.
+        if any(
+            not math.isfinite(value) or value < 0.0
+            for value in (sector1, sector2, sector3)
+        ):
             return None
         return LapRecord(
             record_id=str(uuid.uuid4()), scope="category",
@@ -785,4 +815,5 @@ class LapRecorder:
         self._pending_samples = None
         self._pending_since = 0.0
         self._pending_scoring_laps = None
+        self._last_reset_scoring_laps = None
         self._active = False
