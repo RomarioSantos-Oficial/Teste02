@@ -37,6 +37,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.widget.base.editor_layout import build_editor_tabs
+
 
 class MapEditor(QDialog):
     config_changed = Signal(dict)
@@ -69,20 +71,11 @@ class MapEditor(QDialog):
         )
 
         root = QVBoxLayout(self)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        root.addWidget(scroll)
-
-        content = QWidget()
-        self.content_layout = QVBoxLayout(
-            content
-        )
-        scroll.setWidget(content)
-
-        self._build_display()
-        self._build_mapping()
-        self._build_sizes()
-        self._build_appearance()
+        build_editor_tabs(root, self, (
+            ("Exibição", (self._build_display, self._build_mapping,)),
+            ("Dimensões", (self._build_sizes,)),
+            ("Aparência", (self._build_appearance,)),
+        ))
 
         actions = QHBoxLayout()
         rebuild = QPushButton(

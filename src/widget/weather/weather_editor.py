@@ -37,6 +37,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.widget.base.editor_layout import build_editor_tabs
+
 from src.i18n import tr
 
 
@@ -65,20 +67,11 @@ class WeatherEditor(QDialog):
         self.resize(580, 760)
 
         root = QVBoxLayout(self)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        root.addWidget(scroll)
-
-        content = QWidget()
-        self.content_layout = QVBoxLayout(
-            content
-        )
-        scroll.setWidget(content)
-
-        self._build_content()
-        self._build_forecast()
-        self._build_responsive()
-        self._build_appearance()
+        build_editor_tabs(root, self, (
+            ("Geral", (self._build_content, self._build_forecast,)),
+            ("Layout", (self._build_responsive,)),
+            ("Aparência", (self._build_appearance,)),
+        ))
 
         actions = QHBoxLayout()
         restore = QPushButton(

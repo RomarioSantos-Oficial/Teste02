@@ -24,6 +24,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.widget.base.editor_layout import build_editor_tabs
+
 from src.i18n import tr
 
 
@@ -50,24 +52,12 @@ class DeltaEditor(QDialog):
         self._section_style_buttons: dict[tuple[str, str], QPushButton] = {}
 
         root = QVBoxLayout(self)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        root.addWidget(scroll)
-
-        content = QWidget()
-        self.content_layout = QVBoxLayout(
-            content
-        )
-        scroll.setWidget(content)
-
-        self._build_elements()
-        self._build_fastest_lap()
-        self._build_geometry()
-        self._build_delta_behavior()
-        self._build_penalties()
-        self._build_sectors()
-        self._build_logos()
-        self._build_appearance()
+        build_editor_tabs(root, self, (
+            ("Geral", (self._build_elements, self._build_fastest_lap,)),
+            ("Layout e comportamento", (self._build_geometry, self._build_delta_behavior,)),
+            ("Penalidades e setores", (self._build_penalties, self._build_sectors,)),
+            ("Logos e aparência", (self._build_logos, self._build_appearance,)),
+        ))
 
         actions = QHBoxLayout()
         restore = QPushButton(

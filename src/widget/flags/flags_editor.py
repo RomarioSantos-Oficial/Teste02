@@ -21,6 +21,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.widget.base.editor_layout import build_editor_tabs
+
 
 class FlagsEditor(QDialog):
     config_changed = Signal(dict)
@@ -45,20 +47,11 @@ class FlagsEditor(QDialog):
         self.resize(570, 760)
 
         root = QVBoxLayout(self)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        root.addWidget(scroll)
-
-        content = QWidget()
-        self.content_layout = QVBoxLayout(
-            content
-        )
-        scroll.setWidget(content)
-
-        self._build_behavior()
-        self._build_detection()
-        self._build_responsive()
-        self._build_visual()
+        build_editor_tabs(root, self, (
+            ("Geral", (self._build_behavior, self._build_detection,)),
+            ("Layout", (self._build_responsive,)),
+            ("Aparência", (self._build_visual,)),
+        ))
 
         actions = QHBoxLayout()
         restore = QPushButton(

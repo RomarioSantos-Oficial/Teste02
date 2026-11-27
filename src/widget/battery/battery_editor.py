@@ -35,6 +35,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.widget.base.editor_layout import build_editor_tabs
+
 
 class BatteryEditor(QDialog):
     config_changed = Signal(dict)
@@ -61,20 +63,11 @@ class BatteryEditor(QDialog):
         self.resize(610, 800)
 
         root = QVBoxLayout(self)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        root.addWidget(scroll)
-
-        content = QWidget()
-        self.content_layout = QVBoxLayout(
-            content
-        )
-        scroll.setWidget(content)
-
-        self._build_data()
-        self._build_tracking()
-        self._build_responsive()
-        self._build_appearance()
+        build_editor_tabs(root, self, (
+            ("Geral", (self._build_data, self._build_tracking,)),
+            ("Layout", (self._build_responsive,)),
+            ("Aparência", (self._build_appearance,)),
+        ))
 
         actions = QHBoxLayout()
         restore = QPushButton(

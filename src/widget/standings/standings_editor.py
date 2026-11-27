@@ -23,6 +23,8 @@ from PySide6.QtWidgets import (
     QSpinBox, QVBoxLayout, QWidget,
 )
 
+from src.widget.base.editor_layout import build_editor_tabs
+
 
 class StandingsEditor(QDialog):
     config_changed = Signal(dict)
@@ -56,17 +58,11 @@ class StandingsEditor(QDialog):
         self.setWindowTitle("Editar Standings Hybrid")
         self.resize(650, 820)
         root = QVBoxLayout(self)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        root.addWidget(scroll)
-        content = QWidget()
-        self.layout_content = QVBoxLayout(content)
-        scroll.setWidget(content)
-        self._build_rules()
-        self._build_columns()
-        self._build_dimensions()
-        self._build_local_source()
-        self._build_colors()
+        build_editor_tabs(root, self, (
+            ("Geral", (self._build_rules, self._build_columns,)),
+            ("Layout e dados", (self._build_dimensions, self._build_local_source,)),
+            ("Aparência", (self._build_colors,)),
+        ))
         actions = QHBoxLayout()
         restore = QPushButton("Restaurar padrão")
         close = QPushButton("Fechar")

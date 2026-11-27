@@ -36,6 +36,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.widget.base.editor_layout import build_editor_tabs
+
 
 class TyresEditor(QDialog):
     config_changed = Signal(dict)
@@ -62,26 +64,12 @@ class TyresEditor(QDialog):
         self.resize(610, 820)
 
         root = QVBoxLayout(self)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        root.addWidget(scroll)
-
-        content = QWidget()
-        self.content_layout = QVBoxLayout(
-            content
-        )
-        scroll.setWidget(content)
-
-        self._build_data()
-        self._build_lmp3_temperature()
-        self._build_lmp2_temperature()
-        self._build_gte_temperature()
-        self._build_gt3_temperature()
-        self._build_hyper_temperature()
-        self._build_units()
-        self._build_thresholds()
-        self._build_responsive()
-        self._build_appearance()
+        build_editor_tabs(root, self, (
+            ("Geral", (self._build_data, self._build_units,)),
+            ("Temperaturas", (self._build_lmp3_temperature, self._build_lmp2_temperature, self._build_gte_temperature, self._build_gt3_temperature, self._build_hyper_temperature,)),
+            ("Alertas", (self._build_thresholds,)),
+            ("Layout e aparência", (self._build_responsive, self._build_appearance,)),
+        ))
 
         actions = QHBoxLayout()
         restore = QPushButton(
