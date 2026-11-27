@@ -785,7 +785,10 @@ class StandingsLogic:
         player: StandingRow | None,
         session: Any,
     ) -> list[CategoryBlock]:
-        if player is None:
+        # Sem o jogador ativo na pista nao existe referencia util para o Relative.
+        # Isso tambem impede que o proprio jogador continue aparecendo apos ir
+        # para a garagem ou abandonar a corrida (DNF/DQ).
+        if player is None or not self._is_relative_car_visible(player):
             return []
         track_length = float(getattr(session, "track_length_m", 0.0) or 0.0)
         if track_length <= 1.0:
@@ -889,15 +892,14 @@ class StandingsLogic:
 
     @staticmethod
     def _is_relative_car_visible(row: StandingRow) -> bool:
-        """Relative conserva carros na garagem para exibir o estado do pit."""
-        finish = str(row.finish_state or "").strip().casefold()
-        if row.in_garage:
-            return True
+        """Relative mostra somente carros ativos e fora da garagem."""
+        finish = normalize_identity(row.finish_state)
         return not (
-            row.finish_status in {2, 3}
+            row.in_garage
+            or row.finish_status in {2, 3}
             or finish in {
-                "dnf", "didnotfinish", "did not finish", "fstat_dnf", "2",
-                "dq", "disqualified", "fstat_dq", "3",
+                "dnf", "didnotfinish", "fstatdnf", "2",
+                "dq", "disqualified", "fstatdq", "3",
             }
         )
 

@@ -662,7 +662,7 @@ class StandingsLogicUnitTests(unittest.TestCase):
         self.assertEqual(by_name["Player"].overall_position, 2)
         self.assertEqual(by_name["Leader"].gap_text, "-1L")
 
-    def test_relative_keeps_garage_rows_but_excludes_dnf_and_dq(self) -> None:
+    def test_relative_excludes_garage_dnf_and_dq_cars(self) -> None:
         session = SessionData(
             connected=True,
             session=10,
@@ -680,10 +680,32 @@ class StandingsLogicUnitTests(unittest.TestCase):
         ).build(session, {}, "API").categories[0].rows
         self.assertEqual(
             {row.driver_name for row in rows},
-            {"Player", "Active", "Garage"},
+            {"Player", "Active"},
         )
-        garage = next(row for row in rows if row.driver_name == "Garage")
-        self.assertEqual(garage.pit_status_label, "DNF")
+
+    def test_relative_hides_entire_list_when_player_is_in_garage_or_dnf(self) -> None:
+        player = DriverData(
+            slot_id=1, driver_name="Player", vehicle_class="LMGT3",
+            position=1, lap_distance_m=1000.0, best_lap_s=100.0,
+            is_player=True,
+        )
+        opponent = DriverData(
+            slot_id=2, driver_name="Opponent", vehicle_class="LMGT3",
+            position=2, lap_distance_m=1020.0, best_lap_s=100.0,
+        )
+        session = SessionData(
+            connected=True, session=10, track_length_m=5000.0,
+            drivers=[player, opponent],
+        )
+        logic = StandingsLogic({"relative_mode": True})
+
+        player.in_garage = True
+        self.assertEqual(logic.build(session, {}, "API").categories, [])
+
+        player.in_garage = False
+        player.finish_status = 2
+        player.finish_status_name = "DNF"
+        self.assertEqual(logic.build(session, {}, "API").categories, [])
 
     def test_relative_matches_lmu_circular_lists_before_start(self) -> None:
         session = SessionData(
