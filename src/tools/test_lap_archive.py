@@ -125,6 +125,22 @@ class LapArchiveStoreTests(unittest.TestCase):
         self.assertTrue(all(record.car_number == "17" for record in saved))
         self.assertTrue(all(len(record.trace) == 240 for record in saved))
 
+    def test_resampled_trace_uses_official_completed_lap_time_at_finish(self) -> None:
+        samples = [
+            (
+                index / 60.0 * 0.99,
+                index / 60.0 * 51.7,
+                0.5,
+                0.1,
+                180.0,
+            )
+            for index in range(61)
+        ]
+        trace = LapRecorder._resample(samples, 5000.0, lap_seconds=52.0)
+        self.assertIsNotNone(trace)
+        self.assertAlmostEqual(trace[-1]["distance"], 1.0)
+        self.assertAlmostEqual(trace[-1]["elapsed_s"], 52.0)
+
     def test_recorder_never_persists_offline_session_laps(self) -> None:
         recorder = LapRecorder(self.store)
         recorder.set_owner_key("discord-account-a")

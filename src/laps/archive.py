@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import math
 import os
 import sqlite3
 import threading
@@ -557,7 +558,7 @@ class LapRecorder:
             self._samples.clear()
             return None
         length = float(getattr(session, "track_length_m", 0.0) or 0.0)
-        trace = self._resample(self._samples, length)
+        trace = self._resample(self._samples, length, lap_seconds=lap_seconds)
         self._samples.clear()
         if trace is None:
             return None
@@ -580,7 +581,11 @@ class LapRecorder:
         )
 
     @staticmethod
-    def _resample(samples: list[tuple[float, float, float, float, float]], track_length: float) -> list[dict[str, float]] | None:
+    def _resample(
+        samples: list[tuple[float, float, float, float, float]],
+        track_length: float,
+        lap_seconds: float | None = None,
+    ) -> list[dict[str, float]] | None:
         if track_length <= 0.0 or len(samples) < 30:
             return None
         ordered = sorted(samples, key=lambda sample: sample[0])
@@ -605,8 +610,18 @@ class LapRecorder:
             span = right[0] - left[0]
             ratio = 0.0 if span <= 1e-9 else max(0.0, min(1.0, (x - left[0]) / span))
             values = [left[column] + (right[column] - left[column]) * ratio for column in range(1, 5)]
+            elapsed_at_point = max(0.0, values[0])
+            if (
+                index == TRACE_POINTS - 1
+                and lap_seconds is not None
+                and math.isfinite(float(lap_seconds))
+                and float(lap_seconds) > 0.0
+            ):
+                # O ultimo ponto usa o tempo oficial da volta mesmo se o
+                # ultimo quadro de telemetria chegou pouco antes da linha.
+                elapsed_at_point = float(lap_seconds)
             output.append({
-                "distance": x, "elapsed_s": max(0.0, values[0]),
+                "distance": x, "elapsed_s": elapsed_at_point,
                 "throttle": max(0.0, min(1.0, values[1])),
                 "brake": max(0.0, min(1.0, values[2])),
                 "speed_kmh": max(0.0, values[3]),

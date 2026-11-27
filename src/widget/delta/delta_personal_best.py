@@ -67,3 +67,26 @@ def interpolate_trace_elapsed(
         elapsed_values[right_index] - elapsed_values[right_index - 1]
     ) * ratio
     return result if math.isfinite(result) else None
+
+def completed_lap_delta(
+    last_lap_seconds: float,
+    personal_best_seconds: float,
+    *,
+    invalidated: bool = False,
+) -> float | None:
+    """Return completed lap time minus the archived personal-best lap time."""
+    if invalidated:
+        return None
+    try:
+        current = float(last_lap_seconds)
+        reference = float(personal_best_seconds)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if (
+        not math.isfinite(current)
+        or not math.isfinite(reference)
+        or not 1.0 < current < 3600.0
+        or not 1.0 < reference < 3600.0
+    ):
+        return None
+    return current - reference

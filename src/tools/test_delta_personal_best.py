@@ -34,6 +34,14 @@ class DeltaPersonalBestTests(unittest.TestCase):
         ]
         self.assertAlmostEqual(interpolate_trace_elapsed(trace, 0.25), 25.0)
 
+    def test_completed_lap_delta_uses_full_lap_times(self) -> None:
+        from src.widget.delta.delta_personal_best import completed_lap_delta
+
+        self.assertAlmostEqual(completed_lap_delta(56.0, 52.0), 4.0)
+        self.assertAlmostEqual(completed_lap_delta(50.0, 52.0), -2.0)
+        self.assertIsNone(completed_lap_delta(56.0, 52.0, invalidated=True))
+        self.assertIsNone(completed_lap_delta(0.0, 52.0))
+
     def test_returns_none_when_trace_has_insufficient_valid_points(self) -> None:
         self.assertIsNone(interpolate_trace_elapsed([], 0.5))
         self.assertIsNone(interpolate_trace_elapsed(

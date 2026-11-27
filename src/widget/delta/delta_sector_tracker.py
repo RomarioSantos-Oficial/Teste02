@@ -39,7 +39,12 @@ class DeltaSectorTracker:
         self._display = self._empty()
         self.last_changed_index = None
 
-    def update(self, session: Any, session_key: str) -> list[DeltaSectorData]:
+    def update(
+        self,
+        session: Any,
+        session_key: str,
+        personal_best_sectors: tuple[float | None, float | None, float | None] | None = None,
+    ) -> list[DeltaSectorData]:
         self.last_changed_index = None
         if session_key != self._session_key:
             self._session_key = session_key
@@ -62,14 +67,29 @@ class DeltaSectorTracker:
             ) or self._positive(getattr(player_row, "last_sector2_s", 0.0)),
             self._positive(getattr(player_row, "last_sector3_s", 0.0)),
         ]
-        personal_best = [
+        session_personal_best = [
             self._positive(getattr(player_row, "best_sector1_s", 0.0)),
             self._positive(getattr(player_row, "best_sector2_s", 0.0)),
             self._positive(getattr(player_row, "best_sector3_s", 0.0)),
         ]
+        archived_personal_best = (
+            [self._positive(value) for value in personal_best_sectors[:3]]
+            if isinstance(personal_best_sectors, (list, tuple))
+            else [None, None, None]
+        )
+        if len(archived_personal_best) < 3:
+            archived_personal_best.extend([None] * (3 - len(archived_personal_best)))
+        personal_best = [
+            archived_personal_best[index] or session_personal_best[index]
+            for index in range(3)
+        ]
         for index, value in enumerate(personal_best):
-            if self._personal_best_values[index] is None and value is not None:
+            if value is not None:
+                # O traçado arquivado e a referencia fixa; nao o substituimos
+                # por um setor isolado mais rapido obtido em outra volta.
                 self._personal_best_values[index] = value
+            elif self._personal_best_values[index] is None and session_personal_best[index] is not None:
+                self._personal_best_values[index] = session_personal_best[index]
         session_best = self._session_best_sectors(
             session,
             str(getattr(player_row, "vehicle_class", "") or ""),
@@ -136,8 +156,11 @@ class DeltaSectorTracker:
                 status=status,
             )
             if (
-                self._personal_best_values[index] is None
-                or current < self._personal_best_values[index]
+                archived_personal_best[index] is None
+                and (
+                    self._personal_best_values[index] is None
+                    or current < self._personal_best_values[index]
+                )
             ):
                 self._personal_best_values[index] = current
             self.last_changed_index = index

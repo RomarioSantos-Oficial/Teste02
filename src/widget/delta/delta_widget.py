@@ -16,7 +16,10 @@ from .delta_models import DeltaViewData, FastestLapData
 from .delta_renderer import DeltaRenderer
 from .delta_sector_tracker import DeltaSectorTracker
 from .delta_session_tracker import DeltaSessionTracker
-from .delta_personal_best import interpolate_trace_elapsed
+from .delta_personal_best import (
+    completed_lap_delta,
+    interpolate_trace_elapsed,
+)
 from src.laps.archive import LapArchiveStore, local_owner_key
 from src.widget.standings.standings_logic import StandingsLogic
 
@@ -71,6 +74,13 @@ class DeltaWidget(QWidget):
         self.lap_archive: LapArchiveStore | None = None
         self._personal_best_cache_key: tuple[str, ...] | None = None
         self._personal_best_trace: list[dict[str, float]] = []
+        self._personal_best_lap_seconds = 0.0
+        self._personal_best_sectors: tuple[float | None, float | None, float | None] = (
+            None, None, None,
+        )
+        self._personal_best_lap_count: int | None = None
+        self._completed_lap_delta: float | None = None
+        self._completed_lap_delta_until = 0.0
         self._next_personal_best_check = 0.0
 
         self.view_data = DeltaViewData()
@@ -343,6 +353,9 @@ class DeltaWidget(QWidget):
                 raw_delta
             )
             self.sector_tracker.reset()
+            self._personal_best_lap_count = None
+            self._completed_lap_delta = None
+            self._completed_lap_delta_until = 0.0
 
         personal_best_delta = self._personal_best_delta(session, player)
         if personal_best_delta is not None:
@@ -458,7 +471,15 @@ class DeltaWidget(QWidget):
             if player_driver is not None
             else "--"
         )
-        sector_values = self.sector_tracker.update(session, result.session_key)
+        sector_values = self.sector_tracker.update(
+            session,
+            result.session_key,
+            personal_best_sectors=(
+                self._personal_best_sectors
+                if bool(self.config.get("compare_personal_best", True))
+                else None
+            ),
+        )
         changed_index = self.sector_tracker.last_changed_index
         if changed_index is not None:
             self.view_data.sectors = [sector_values[changed_index]]
@@ -477,8 +498,9 @@ class DeltaWidget(QWidget):
             (row for row in (getattr(session, "drivers", []) or []) if bool(getattr(row, "is_player", False))),
             None,
         )
-        if driver is None or bool(getattr(player, "current_lap_invalidated", False)):
+        if driver is None:
             return None
+
         track = str(getattr(session, "track_name", "") or "")
         category = str(getattr(driver, "vehicle_class", "") or "")
         model = str(getattr(driver, "vehicle_model", "") or "")
@@ -496,12 +518,58 @@ class DeltaWidget(QWidget):
                 track, category, model, filename, scope, owner,
             )
             self._personal_best_trace = record.trace if record is not None else []
+            self._personal_best_lap_seconds = (
+                float(record.lap_seconds) if record is not None else 0.0
+            )
+            self._personal_best_sectors = (
+                (
+                    float(record.sector1) if record.sector1 > 0.0 else None,
+                    float(record.sector2) if record.sector2 > 0.0 else None,
+                    float(record.sector3) if record.sector3 > 0.0 else None,
+                )
+                if record is not None
+                else (None, None, None)
+            )
             self._personal_best_cache_key = cache_key
             self._next_personal_best_check = now + 2.0
-        trace = self._personal_best_trace
-        track_length = float(getattr(session, "track_length_m", 0.0) or 0.0)
+
         live = getattr(driver, "live_scoring", None)
         live = live if isinstance(live, dict) else {}
+        lap_count = int(live.get("laps", getattr(driver, "laps", 0)) or 0)
+        previous_lap_count = self._personal_best_lap_count
+
+        # mLapDist/mTimeIntoLap reset at the start/finish line. Capture the
+        # completed lap against the PB lap time before reading the new lap.
+        if previous_lap_count is None:
+            self._personal_best_lap_count = lap_count
+        elif lap_count > previous_lap_count:
+            self._completed_lap_delta = completed_lap_delta(
+                getattr(driver, "last_lap_s", 0.0),
+                self._personal_best_lap_seconds,
+                invalidated=bool(getattr(driver, "last_lap_invalidated", False)),
+            )
+            self._completed_lap_delta_until = (
+                now + 1.35 if self._completed_lap_delta is not None else 0.0
+            )
+            self._personal_best_lap_count = lap_count
+        elif lap_count < previous_lap_count:
+            self._personal_best_lap_count = lap_count
+            self._completed_lap_delta = None
+            self._completed_lap_delta_until = 0.0
+
+        if (
+            self._completed_lap_delta is not None
+            and now < self._completed_lap_delta_until
+        ):
+            return self._completed_lap_delta
+        if now >= self._completed_lap_delta_until:
+            self._completed_lap_delta = None
+
+        if bool(getattr(player, "current_lap_invalidated", False)):
+            return None
+
+        trace = self._personal_best_trace
+        track_length = float(getattr(session, "track_length_m", 0.0) or 0.0)
         distance = float(
             live.get("lap_distance_m", getattr(driver, "lap_distance_m", 0.0)) or 0.0
         )
@@ -533,8 +601,8 @@ class DeltaWidget(QWidget):
         reference_elapsed = interpolate_trace_elapsed(trace, fraction)
         if reference_elapsed is None:
             return None
-        # Sinal igual ao TinyPedal: positivo = mais lento que o PB;
-        # negativo = mais rápido que o PB, sempre na mesma distância.
+        # Positivo = tempo perdido contra o PB; negativo = tempo ganho.
+        # Esta e a diferenca acumulada na mesma distancia da pista.
         return elapsed - reference_elapsed
 
     def update_config(
@@ -574,6 +642,9 @@ class DeltaWidget(QWidget):
     def reset_session_state(self) -> None:
         self.session_tracker.reset()
         self.sector_tracker.reset()
+        self._personal_best_lap_count = None
+        self._completed_lap_delta = None
+        self._completed_lap_delta_until = 0.0
         self._fastest_fade.reset()
         self._fastest_data = []
         self._delta_history.clear()
